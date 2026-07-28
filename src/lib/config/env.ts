@@ -52,11 +52,17 @@ const serverSchema = z.object({
     Math.min(value, SIGNED_URL_TTL_FREE_MAX_SECONDS),
   ),
 
-  /** Fenêtre de vente exclusive avant entrée dans l'abonnement, en jours. */
-  NEW_RELEASE_WINDOW_DAYS: positiveInt(90),
-
-  /** Période de grâce après un échec de prélèvement, en jours. */
-  PAYMENT_GRACE_PERIOD_DAYS: positiveInt(7),
+  /**
+   * La fenêtre de vente exclusive et la période de grâce NE SONT PAS ici.
+   *
+   * Elles vivent dans la table `business_settings`, source unique. Une
+   * politique RLS ne peut pas lire l'environnement du processus : les garder
+   * ici en aurait fait une seconde source, que seul un test de concordance
+   * aurait surveillée — c'est-à-dire qu'il aurait constaté la divergence une
+   * fois installée, au lieu de la rendre impossible.
+   *
+   * Voir `src/lib/settings/business-settings.ts`.
+   */
 
   /** Nombre de pages d'extrait par défaut, quand le titre n'en fixe pas. */
   EXCERPT_PAGES_DEFAULT: positiveInt(3),

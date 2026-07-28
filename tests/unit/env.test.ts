@@ -80,13 +80,25 @@ describe('getServerEnv', () => {
     expect(() => getServerEnv()).toThrow(/FAKE_WEBHOOK_SECRET/);
   });
 
-  it('applique les valeurs par défaut du métier', () => {
+  it('applique les valeurs par défaut', () => {
     useEnv();
 
     const env = getServerEnv();
 
-    expect(env.NEW_RELEASE_WINDOW_DAYS).toBe(90);
-    expect(env.PAYMENT_GRACE_PERIOD_DAYS).toBe(7);
+    expect(env.EXCERPT_PAGES_DEFAULT).toBe(3);
+    expect(env.INVOICE_RETENTION_YEARS).toBe(10);
+  });
+
+  it('ne porte plus la fenêtre de nouveauté ni la période de grâce', () => {
+    // Source unique : la table `business_settings`. Les garder ici en aurait
+    // fait une seconde source, vouée à diverger — et un test de concordance
+    // n'aurait fait que constater la divergence une fois installée.
+    useEnv({ NEW_RELEASE_WINDOW_DAYS: '30', PAYMENT_GRACE_PERIOD_DAYS: '1' });
+
+    const cles = Object.keys(getServerEnv());
+
+    expect(cles).not.toContain('NEW_RELEASE_WINDOW_DAYS');
+    expect(cles).not.toContain('PAYMENT_GRACE_PERIOD_DAYS');
   });
 });
 

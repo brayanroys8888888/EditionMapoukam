@@ -601,16 +601,4 @@ describe('paramètres métier', () => {
     expect(parametres).toEqual({ fenetre: 90, grace: 7 });
   });
 
-  it('concordent avec la configuration de l’application', async () => {
-    // La base est l'autorité, parce qu'une politique RLS ne peut pas lire
-    // l'environnement du processus. Si les deux divergeaient, l'application et
-    // la base n'appliqueraient pas la même règle.
-    const parametres = await queryOne<{ fenetre: number; grace: number }>(
-      `select fenetre_nouveaute_jours as fenetre, periode_grace_jours as grace
-       from public.business_settings where id = 1`,
-    );
-
-    expect(parametres?.fenetre).toBe(Number(process.env['NEW_RELEASE_WINDOW_DAYS'] ?? 90));
-    expect(parametres?.grace).toBe(Number(process.env['PAYMENT_GRACE_PERIOD_DAYS'] ?? 7));
-  });
 });

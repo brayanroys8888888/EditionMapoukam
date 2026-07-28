@@ -232,21 +232,64 @@ export type Database = {
           fenetre_nouveaute_jours: number
           id: number
           maj_le: string
+          maj_par: string | null
           periode_grace_jours: number
         }
         Insert: {
           fenetre_nouveaute_jours?: number
           id?: number
           maj_le?: string
+          maj_par?: string | null
           periode_grace_jours?: number
         }
         Update: {
           fenetre_nouveaute_jours?: number
           id?: number
           maj_le?: string
+          maj_par?: string | null
           periode_grace_jours?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "business_settings_maj_par_fkey"
+            columns: ["maj_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      business_settings_audit: {
+        Row: {
+          apres: Json
+          avant: Json
+          id: string
+          modifie_le: string
+          modifie_par: string | null
+        }
+        Insert: {
+          apres: Json
+          avant: Json
+          id?: string
+          modifie_le?: string
+          modifie_par?: string | null
+        }
+        Update: {
+          apres?: Json
+          avant?: Json
+          id?: string
+          modifie_le?: string
+          modifie_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_settings_audit_modifie_par_fkey"
+            columns: ["modifie_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cart_items: {
         Row: {
@@ -1258,6 +1301,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      titres_impactes_par_fenetre: {
+        Args: { p_at?: string; p_nouvelle_fenetre: number }
+        Returns: {
+          entrent_dans_abonnement: number
+          sortent_de_l_abonnement: number
+        }[]
       }
     }
     Enums: {

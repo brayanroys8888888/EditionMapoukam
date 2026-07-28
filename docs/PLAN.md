@@ -108,6 +108,7 @@ spécification fait foi et qu'un écart doit être traçable.
 | `book_translations.statut` ajouté | ajout | Une traduction en brouillon reste invisible, même pour un acheteur (D2, point 4) |
 | `orders.zone`, `order_items.devise`, `order_items.zone` ajoutés | ajout | Fige les conditions tarifaires au moment de l'achat (D4) |
 | `entitlements.source_id` ajouté | ajout | Porte l'origine du droit et rend possible l'index unique qui garantit l'idempotence au niveau base (D1 point 8) |
+| `book_pages` : protection **applicative** et non plus seulement base | **écart assumé avec la règle de sécurité n°1 de CLAUDE.md** | Voir §2.6 ci-dessous |
 | `subscriptions.zone` ajouté | ajout | Zone figée à la souscription, jamais recalculée (D4, point 4) |
 | `orders.prestataire` accepte `fake` | élargissement d'énumération | Mode de développement local ; `stripe` et `mobile_money` restent prévus |
 
@@ -187,7 +188,40 @@ elle-même ; les politiques RLS retombent sur `app_now()`.
   décalée est bien retournée — et par un test vérifiant qu'un client anonyme ne
   peut pas influencer `app_now()`.
 
-### 2.6 Signature des webhooks
+### 2.6 `book_pages` — écart assumé avec la règle de sécurité n°1
+
+**Ce qui est vrai.** `book_pages` a RLS activée et une politique de refus total.
+Aucun client `anon` ou `authenticated` ne l'atteint : ni privilège `SELECT`, ni
+politique permissive. De ce côté, la protection est intacte.
+
+**Ce qui ne l'est pas.** Le serveur y accède avec `service_role`, qui contourne
+RLS par construction. Sur cette table — la plus sensible du schéma, puisqu'elle
+porte le contenu vendu — **la base ne rattrape donc pas une erreur applicative**.
+Une requête serveur qui oublierait de vérifier les droits obtiendrait les pages.
+
+C'est un écart avec la règle n°1 de `CLAUDE.md`, et il doit rester visible.
+
+**La compensation, architecturale.** Un point de passage unique,
+`src/lib/content/page-service.ts`, où la vérification par `access_for` est
+intégrée et placée **avant** toute lecture de contenu. Il est impossible
+d'obtenir une page sans traverser le contrôle, parce qu'aucun autre chemin
+n'existe.
+
+**Ce qui rend la règle réelle plutôt que verbale :**
+`tests/unit/book-pages-architecture.test.ts` parcourt `src/**` et échoue si un
+autre fichier référence `book_pages`. Vérifié par une sonde jetable : un fichier
+tiers mentionnant la table fait tomber le test, qui redevient vert une fois la
+sonde retirée. Sans ce test, la protection du contenu ne reposerait que sur la
+mémoire du prochain développeur.
+
+Un troisième contrôle vérifie que l'appel à `getAccess` **précède** la lecture
+dans le fichier : lire puis filtrer laisserait une fenêtre où le contenu est en
+mémoire, et un `return` oublié suffirait à le laisser sortir.
+
+**Option plus forte, chiffrée pour l'étape 16.** Voir l'estimation en fin
+d'étape 16.
+
+### 2.7 Signature des webhooks
 
 En-tête `x-webhook-signature: t=<timestamp>,v1=<hmac>` où
 `hmac = HMAC-SHA256(secret, "<timestamp>.<corps brut>")`, comparaison à temps
@@ -758,7 +792,11 @@ application » reste entière pour tout ce qui est commité (voir R1).
 |---|---|
 | `access_for_books` est l'**implémentation de référence**, `access_for` un simple raccourci | Il ne doit exister qu'une écriture des règles. Un test compare les deux sur tout le catalogue, titre par titre |
 | Les fonctions sont `security definer` | Elles lisent `entitlements` et `subscriptions`, tables auxquelles `anon` n'a aucun accès. Sans cela, un visiteur ne pourrait jamais lire un conte gratuit |
-| Table `business_settings` : fenêtre de 90 jours, grâce de 7 jours | Une politique RLS ne peut pas lire l'environnement du processus Node. La base est donc l'autorité, et un test vérifie que `NEW_RELEASE_WINDOW_DAYS` et `PAYMENT_GRACE_PERIOD_DAYS` concordent — s'ils divergeaient, l'application et la base n'appliqueraient pas la même règle |
+| Table `business_settings` : **source unique**, fenêtre de 90 jours, grâce de 7 jours | Une politique RLS ne peut pas lire l'environnement du processus Node. Les variables `NEW_RELEASE_WINDOW_DAYS` et `PAYMENT_GRACE_PERIOD_DAYS` ont été **retirées** : les conserver en aurait fait une seconde source, que seul un test de concordance aurait surveillée — c'est-à-dire qu'il aurait constaté la divergence une fois installée, au lieu de la rendre impossible. L'application lit la table, avec un cache de 30 secondes invalidé à l'écriture |
+| Bornes des paramètres métier en base, par contrainte `CHECK` | Fenêtre 0–730 jours, grâce 0–90 jours. Un formulaire d'administration se contourne : par un appel direct, un script de reprise ou une console. La contrainte, elle, tient |
+| Table d'audit `business_settings_audit` | Ces réglages ont un effet commercial direct : savoir qui les a changés, quand et depuis quelles valeurs n'est pas un luxe. Le déclencheur ne trace que les changements réels de valeur |
+| Fonction `titres_impactes_par_fenetre` | **Effet rétroactif** : modifier la fenêtre fait basculer, à la seconde, des titres vendus à l'unité vers la lecture incluse — sans migration ni déploiement. L'écran d'administration (étape 13) doit afficher ce nombre AVANT validation, dans les deux sens : titres qui entrent, titres qui sortent |
+| `access_for` est `security definer` | Elle doit pouvoir lire `business_settings` quel que soit le rôle appelant, y compris `anon`. Le jour où le privilège de lecture publique serait retiré, rien ne doit cesser de fonctionner pour un visiteur |
 | `src/domain/access` ne contient **que des types** | Un test parcourt le répertoire et échoue s'il y trouve `inclus_abonnement`, `peut_telecharger`, un calcul de fenêtre ou de grâce, ou seulement une fonction exportée — la tentation d'y glisser un calcul viendrait avec la première fonction |
 | L'appelant TypeScript vit dans `src/lib/access` | `src/domain` ne connaît ni Next, ni Supabase (règle ESLint). L'appelant doit parler à la base : sa place est dans `lib` |
 | Une erreur de résolution **lève**, elle n'ouvre pas | Un moteur de droits en panne doit refuser. Test dédié avec un client simulé en échec |
@@ -1121,6 +1159,39 @@ le moteur.
     expiration → **les achats restent accessibles**
   - `docs/SECURITY-REVIEW.md`
   - Section « Brancher un prestataire réel » ci-dessous, complétée
+
+#### Option évaluée pour l'étape 16 — rôle PostgreSQL dédié au service des pages
+
+**Le problème à résoudre.** `service_role` contourne RLS : sur `book_pages`, la
+base ne rattrape pas une erreur applicative (§2.6). La compensation actuelle est
+un test d'architecture ; il tient tant que personne ne le désactive.
+
+**L'option.** Un rôle `contenu_lecteur`, sans `BYPASSRLS`, avec le seul
+privilège `SELECT` sur `book_pages`, et une politique appelant `access_for`. Le
+service de pages ouvrirait ses connexions sous ce rôle en positionnant
+l'identifiant de l'utilisateur dans le contexte de session. Une erreur
+applicative — un contrôle oublié, une condition inversée — serait alors
+**rattrapée par la base**.
+
+**Chiffrage : 2 à 3 jours-homme.**
+
+| Poste | Charge | Détail |
+|---|---|---|
+| Rôle, privilèges, politique | 0,5 j | Migration, plus la politique appelant `access_for` sur le contexte de session |
+| Propagation de l'identité | 1 j | Le point délicat : PostgREST ne permet pas de changer de rôle par requête. Il faut une seconde connexion, ouverte par `pg` sous ce rôle, avec `set local` de l'identifiant — donc un chemin d'accès distinct de celui de `supabase-js` |
+| Reprise du service de pages | 0,5 j | Bascule de `supabase-js` vers cette connexion, et adaptation des tests |
+| Tests de sécurité | 0,5 à 1 j | Preuve qu'un contrôle applicatif retiré est bien rattrapé par la base — c'est tout l'intérêt de l'option, et c'est ce qui doit être démontré |
+
+**Gain.** Défense en profondeur réelle sur la table la plus sensible : deux
+barrières indépendantes au lieu d'une barrière et d'un test.
+
+**Coût caché.** Une seconde voie d'accès à la base, avec son pool, sa gestion
+d'erreurs et son contexte de session — donc une surface à maintenir. À mettre en
+regard du fait que le test d'architecture, lui, coûte zéro à l'exécution.
+
+**Recommandation.** À implémenter si le catalogue prend de la valeur ou si
+l'équipe s'élargit — le test d'architecture protège d'un oubli, pas d'un
+contournement délibéré par quelqu'un qui ne connaît pas l'intention.
 - **Critères d'acceptation**
   ```bash
   npm run test -- e2e
