@@ -6,7 +6,12 @@ import { requireAdmin, requireUser } from '@/lib/auth/session';
 
 import { closePool, query } from '../helpers/db';
 import { corpsJson, get, postJson, type ReponseErreur } from '../helpers/http';
-import { createTestUser, deleteTestUser, serviceClient } from '../helpers/users';
+import {
+  createTestUser,
+  deleteTestUser,
+  deleteTestUserByEmail,
+  serviceClient,
+} from '../helpers/users';
 
 /**
  * Élévation de privilège.
@@ -19,10 +24,9 @@ import { createTestUser, deleteTestUser, serviceClient } from '../helpers/users'
 const comptesCrees: string[] = [];
 
 afterAll(async () => {
-  for (const email of comptesCrees) {
-    const lignes = await query<{ id: string }>(`select id from auth.users where email = $1`, [email]);
-    for (const ligne of lignes) await serviceClient().auth.admin.deleteUser(ligne.id);
-  }
+  // Depuis la migration 0012, plus rien ne cascade depuis `users` : supprimer
+  // l'identité d'authentification laisserait la ligne métier derrière elle.
+  for (const email of comptesCrees) await deleteTestUserByEmail(email);
   await closePool();
 });
 
@@ -155,7 +159,7 @@ describe('gardes de route', () => {
     // conserver les clés du back-office.
     const administrateur = await createTestUser({ admin: true });
     try {
-      await query(`update public.users set suspendu = true where id = $1`, [administrateur.id]);
+      await query(`update public.users set statut = 'suspendu' where id = $1`, [administrateur.id]);
 
       const resultat = await requireAdmin(get('/api/admin/x', { jeton: administrateur.accessToken }));
 

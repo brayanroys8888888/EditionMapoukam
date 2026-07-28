@@ -40,7 +40,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const profil = await createServiceClient()
     .from('users')
-    .select('id, email, role, langue_preferee, suspendu')
+    .select('id, email, role, langue_preferee, statut')
     .eq('id', data.user.id)
     .maybeSingle();
 
@@ -48,11 +48,13 @@ export async function POST(request: Request): Promise<Response> {
     return errors.interne(profil.error?.message ?? 'profil métier absent');
   }
 
-  if (profil.data.suspendu) {
-    // Session immédiatement révoquée : un compte suspendu ne doit pas repartir
-    // avec un jeton valide en poche.
-    await createServiceClient().auth.admin.signOut(data.session.access_token);
-    return errors.compteSuspendu();
+  if (profil.data.statut !== 'actif') {
+    // Session immédiatement révoquée : un compte suspendu ou anonymisé ne doit
+    // pas repartir avec un jeton valide en poche.
+    await createServiceClient().auth.admin.signOut(data.session.access_token, 'global');
+    return profil.data.statut === 'suspendu'
+      ? errors.compteSuspendu()
+      : errors.identifiantsInvalides();
   }
 
   loginRateLimiter.reinitialiser(cle);

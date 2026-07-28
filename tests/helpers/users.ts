@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import type { Database } from '@/lib/supabase/database.types';
+import { query } from './db';
 
 /**
  * Création de comptes de test.
@@ -82,6 +83,46 @@ export async function createTestUser(options: { admin?: boolean } = {}): Promise
   return { id, email, password, accessToken, client };
 }
 
+/**
+ * Nettoyage complet d'un compte de test.
+ *
+ * Depuis la migration 0012, plus aucune clé étrangère ne cascade depuis
+ * `users` : supprimer l'identité d'authentification ne suffit plus, et la
+ * ligne métier resterait derrière. Les tests doivent donc effacer eux-mêmes
+ * leurs dépendances, dans l'ordre imposé par les contraintes.
+ *
+ * Ce nettoyage est une commodité de test, et non le chemin de production : en
+ * production, un compte n'est jamais supprimé, il est anonymisé
+ * (`anonymize_user`), puis purgé à l'échéance de conservation de ses factures.
+ */
+/** Nettoyage par adresse, pour les comptes créés via la route d'inscription. */
+export async function deleteTestUserByEmail(email: string): Promise<void> {
+  const lignes = await query<{ id: string }>(
+    `select id from public.users where email = $1
+     union select id from auth.users where email = $1`,
+    [email],
+  );
+  for (const ligne of lignes) {
+    await deleteTestUser({ id: ligne.id });
+  }
+}
+
 export async function deleteTestUser(user: Pick<TestUser, 'id'>): Promise<void> {
+  await query(`delete from public.favorites where user_id = $1`, [user.id]);
+  await query(
+    `delete from public.cart_items where cart_id in (select id from public.carts where user_id = $1)`,
+    [user.id],
+  );
+  await query(`delete from public.carts where user_id = $1`, [user.id]);
+  await query(`delete from public.entitlements where user_id = $1`, [user.id]);
+  await query(`delete from public.reading_progress where user_id = $1`, [user.id]);
+  await query(`delete from public.download_logs where user_id = $1`, [user.id]);
+  await query(`delete from public.promo_redemptions where user_id = $1`, [user.id]);
+  await query(`delete from public.payment_events where user_id = $1`, [user.id]);
+  await query(`delete from public.invoices where user_id = $1`, [user.id]);
+  await query(`delete from public.orders where user_id = $1`, [user.id]);
+  await query(`delete from public.subscriptions where user_id = $1`, [user.id]);
+  await query(`update public.email_log set user_id = null where user_id = $1`, [user.id]);
+  await query(`delete from public.users where id = $1`, [user.id]);
   await serviceClient().auth.admin.deleteUser(user.id);
 }

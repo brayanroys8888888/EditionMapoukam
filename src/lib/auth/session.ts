@@ -18,7 +18,7 @@ export interface Appelant {
   email: string;
   role: 'user' | 'admin';
   langue_preferee: string;
-  suspendu: boolean;
+  statut: 'actif' | 'suspendu' | 'anonymise';
   accessToken: string;
 }
 
@@ -54,7 +54,7 @@ export async function identifierAppelant(request: Request): Promise<Appelant | n
 
   const profil = await createServiceClient()
     .from('users')
-    .select('id, email, role, langue_preferee, suspendu')
+    .select('id, email, role, langue_preferee, statut')
     .eq('id', data.user.id)
     .maybeSingle();
 
@@ -74,7 +74,7 @@ export async function identifierAppelant(request: Request): Promise<Appelant | n
     email: profil.data.email,
     role: profil.data.role,
     langue_preferee: profil.data.langue_preferee,
-    suspendu: profil.data.suspendu,
+    statut: profil.data.statut,
     accessToken: jeton,
   };
 }
@@ -83,11 +83,17 @@ export type GardeResultat =
   | { ok: true; appelant: Appelant }
   | { ok: false; response: Response };
 
-/** Exige un utilisateur connecté et non suspendu. */
+/** Exige un compte connecté et actif. */
 export async function requireUser(request: Request): Promise<GardeResultat> {
   const appelant = await identifierAppelant(request);
   if (!appelant) return { ok: false, response: errors.nonAuthentifie() };
-  if (appelant.suspendu) return { ok: false, response: errors.compteSuspendu() };
+  if (appelant.statut === 'suspendu') return { ok: false, response: errors.compteSuspendu() };
+  if (appelant.statut === 'anonymise') {
+    // Un compte anonymisé n'a plus d'identité d'authentification : son jeton ne
+    // devrait plus valider. Le cas est traité malgré tout, parce qu'un jeton
+    // encore en circulation ne doit jamais rouvrir un compte effacé.
+    return { ok: false, response: errors.nonAuthentifie() };
+  }
   return { ok: true, appelant };
 }
 

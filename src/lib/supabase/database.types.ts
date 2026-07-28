@@ -478,6 +478,39 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          ajoute_le: string
+          book_id: string
+          user_id: string
+        }
+        Insert: {
+          ajoute_le?: string
+          book_id: string
+          user_id: string
+        }
+        Update: {
+          ajoute_le?: string
+          book_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingestion_jobs: {
         Row: {
           book_id: string | null
@@ -531,6 +564,113 @@ export type Database = {
             columns: ["translation_id"]
             isOneToOne: false
             referencedRelation: "book_translations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invoice_counters: {
+        Row: {
+          annee: number
+          dernier_numero: number
+        }
+        Insert: {
+          annee: number
+          dernier_numero?: number
+        }
+        Update: {
+          annee?: number
+          dernier_numero?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          conservation_jusqu_au: string
+          devise: string
+          emise_le: string
+          facture_adresse: Json
+          facture_email: string
+          facture_nom: string
+          facture_pays: string | null
+          id: string
+          lignes: Json
+          montant_ht: number
+          montant_ttc: number
+          montant_tva: number
+          numero: string
+          order_id: string | null
+          subscription_id: string | null
+          taux_tva: number
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Insert: {
+          conservation_jusqu_au: string
+          devise: string
+          emise_le?: string
+          facture_adresse?: Json
+          facture_email: string
+          facture_nom: string
+          facture_pays?: string | null
+          id?: string
+          lignes: Json
+          montant_ht: number
+          montant_ttc: number
+          montant_tva?: number
+          numero: string
+          order_id?: string | null
+          subscription_id?: string | null
+          taux_tva?: number
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Update: {
+          conservation_jusqu_au?: string
+          devise?: string
+          emise_le?: string
+          facture_adresse?: Json
+          facture_email?: string
+          facture_nom?: string
+          facture_pays?: string | null
+          id?: string
+          lignes?: Json
+          montant_ht?: number
+          montant_ttc?: number
+          montant_tva?: number
+          numero?: string
+          order_id?: string | null
+          subscription_id?: string | null
+          taux_tva?: number
+          user_id?: string
+          zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_devise_fkey"
+            columns: ["devise"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -929,6 +1069,7 @@ export type Database = {
       }
       users: {
         Row: {
+          anonymise_le: string | null
           cree_le: string
           email: string
           id: string
@@ -936,9 +1077,10 @@ export type Database = {
           maj_le: string
           nom_complet: string | null
           role: Database["public"]["Enums"]["user_role"]
-          suspendu: boolean
+          statut: Database["public"]["Enums"]["user_status"]
         }
         Insert: {
+          anonymise_le?: string | null
           cree_le?: string
           email: string
           id: string
@@ -946,9 +1088,10 @@ export type Database = {
           maj_le?: string
           nom_complet?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          suspendu?: boolean
+          statut?: Database["public"]["Enums"]["user_status"]
         }
         Update: {
+          anonymise_le?: string | null
           cree_le?: string
           email?: string
           id?: string
@@ -956,7 +1099,7 @@ export type Database = {
           maj_le?: string
           nom_complet?: string | null
           role?: Database["public"]["Enums"]["user_role"]
-          suspendu?: boolean
+          statut?: Database["public"]["Enums"]["user_status"]
         }
         Relationships: []
       }
@@ -998,8 +1141,74 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      anonymize_user: {
+        Args: { p_user_id: string }
+        Returns: {
+          anonymise_le: string | null
+          cree_le: string
+          email: string
+          id: string
+          langue_preferee: string
+          maj_le: string
+          nom_complet: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          statut: Database["public"]["Enums"]["user_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       app_now: { Args: never; Returns: string }
+      emettre_facture: {
+        Args: {
+          p_adresse?: Json
+          p_nom?: string
+          p_order_id: string
+          p_pays?: string
+          p_retention_years?: number
+        }
+        Returns: {
+          conservation_jusqu_au: string
+          devise: string
+          emise_le: string
+          facture_adresse: Json
+          facture_email: string
+          facture_nom: string
+          facture_pays: string | null
+          id: string
+          lignes: Json
+          montant_ht: number
+          montant_ttc: number
+          montant_tva: number
+          numero: string
+          order_id: string | null
+          subscription_id: string | null
+          taux_tva: number
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "invoices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       is_admin: { Args: { p_user?: string }; Returns: boolean }
+      prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
+      purge_expired_invoices: {
+        Args: { p_at?: string }
+        Returns: Database["public"]["CompositeTypes"]["purge_report"]
+        SetofOptions: {
+          from: "*"
+          to: "purge_report"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       access_reason:
@@ -1019,9 +1228,14 @@ export type Database = {
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
       translation_status: "brouillon" | "publie"
       user_role: "user" | "admin"
+      user_status: "actif" | "suspendu" | "anonymise"
     }
     CompositeTypes: {
-      [_ in never]: never
+      purge_report: {
+        factures_supprimees: number | null
+        commandes_supprimees: number | null
+        comptes_supprimes: number | null
+      }
     }
   }
 }
@@ -1167,6 +1381,7 @@ export const Constants = {
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
       translation_status: ["brouillon", "publie"],
       user_role: ["user", "admin"],
+      user_status: ["actif", "suspendu", "anonymise"],
     },
   },
 } as const

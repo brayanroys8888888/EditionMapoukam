@@ -13,7 +13,7 @@ import { ACCESS_TOKEN_COOKIE } from '@/lib/auth/cookies';
 import { closePool, query } from '../helpers/db';
 import { corpsJson, cookiesPoses, get, postJson, type ReponseErreur } from '../helpers/http';
 import { attendreEmail, compterEmails, viderBoite } from '../helpers/mailpit';
-import { createTestUser, deleteTestUser, serviceClient } from '../helpers/users';
+import { createTestUser, deleteTestUser, deleteTestUserByEmail } from '../helpers/users';
 
 const MOT_DE_PASSE = 'MotDePasse2026';
 const comptesCrees: string[] = [];
@@ -22,12 +22,9 @@ function adresseNeuve(): string {
   return `inscription-${randomUUID()}@exemple.test`;
 }
 
-async function supprimerParEmail(email: string): Promise<void> {
-  const lignes = await query<{ id: string }>(`select id from auth.users where email = $1`, [email]);
-  for (const ligne of lignes) {
-    await serviceClient().auth.admin.deleteUser(ligne.id);
-  }
-}
+// Depuis la migration 0012, plus rien ne cascade depuis `users` : supprimer
+// l'identité d'authentification laisserait la ligne métier derrière elle.
+const supprimerParEmail = deleteTestUserByEmail;
 
 beforeEach(() => {
   // Le limiteur est un singleton de module : sans remise à zéro, un test
@@ -222,7 +219,7 @@ describe('connexion', () => {
   it('refuse un compte suspendu', async () => {
     const utilisateur = await createTestUser();
     try {
-      await query(`update public.users set suspendu = true where id = $1`, [utilisateur.id]);
+      await query(`update public.users set statut = 'suspendu' where id = $1`, [utilisateur.id]);
 
       const reponse = await connecter(
         postJson('/api/auth/login', { email: utilisateur.email, password: utilisateur.password }),
@@ -340,7 +337,7 @@ describe('profil de l’appelant', () => {
     // en base, à chaque requête, qui ferme la porte (CLAUDE.md règle 4).
     const utilisateur = await createTestUser();
     try {
-      await query(`update public.users set suspendu = true where id = $1`, [utilisateur.id]);
+      await query(`update public.users set statut = 'suspendu' where id = $1`, [utilisateur.id]);
 
       const reponse = await profil(get('/api/auth/me', { jeton: utilisateur.accessToken }));
 

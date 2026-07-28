@@ -78,7 +78,7 @@ describe('users', () => {
   });
 
   it('empêche un utilisateur de lever sa propre suspension', async () => {
-    const { error } = await alice.client.from('users').update({ suspendu: false }).eq('id', alice.id);
+    const { error } = await alice.client.from('users').update({ statut: 'actif' }).eq('id', alice.id);
 
     expect(error).not.toBeNull();
   });

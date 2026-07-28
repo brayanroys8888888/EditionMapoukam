@@ -64,6 +64,15 @@ const serverSchema = z.object({
   /** Pages servies par heure et par adresse IP à un visiteur non authentifié. */
   ANON_PAGE_RATE_LIMIT: positiveInt(60),
 
+  /**
+   * Durée de conservation des factures, en années (§11.3).
+   *
+   * Configurable parce que la durée dépend du pays d'immatriculation, question
+   * encore ouverte (§16.2 point 6). Elle est figée sur chaque facture à son
+   * émission : changer cette valeur n'affecte jamais les factures déjà émises.
+   */
+  INVOICE_RETENTION_YEARS: positiveInt(10),
+
   // ---- Tarifs de démonstration, en plus petite unité monétaire ----
   PRICE_UNIT_DEFAULT: positiveInt(499),
   PRICE_SUBSCRIPTION_MONTHLY: positiveInt(799),

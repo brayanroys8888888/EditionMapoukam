@@ -1100,6 +1100,56 @@ dont les 96 de l'étape 1. Cycle complet rejoué depuis une base vierge.
 
 ---
 
+### R2 — Effacement de compte : anonymisation et conservation comptable
+
+**Migrations `…0012_no_cascade_from_users`, `…0013_invoices`,
+`…0014_anonymize_and_purge`.** Demandé par le client, en remplacement de la
+cascade retenue à l'étape 1.
+
+**Le principe.** Le droit à l'effacement et les obligations comptables ne
+s'opposent pas : l'article 17.3.b du RGPD écarte l'effacement lorsque la
+conservation répond à une obligation légale. Deux périmètres, et non un
+arbitrage : les **données de compte**, effaçables, et les **pièces
+comptables**, conservées puis purgées à échéance.
+
+**Ce qui change.**
+
+| Décision | Mise en œuvre |
+|---|---|
+| Aucune suppression physique d'utilisateur | Toutes les clés étrangères vers `users` passent en `on delete restrict`. Un test énumère `pg_constraint` et échoue s'il subsiste une cascade |
+| `public.users` détaché de `auth.users` | La clé étrangère est retirée. C'est ce détachement qui permet de supprimer l'identité d'authentification en conservant la ligne métier — et qui libère l'ancienne adresse email |
+| `users.statut ∈ {actif, suspendu, anonymise}` et `users.anonymise_le` | Remplacent le booléen `suspendu`. `anonymise` est un état **terminal**, imposé par un déclencheur : aucune réactivation, même par le serveur |
+| Table `invoices` immuable | Numérotation **sans trou** par compteur verrouillé, une séquence PostgreSQL laissant des trous à chaque transaction annulée. `UPDATE` refusé par déclencheur, `DELETE` conservé — c'est par lui que passe la purge, elle-même une obligation |
+| La facture porte sa propre copie de l'identité | `facture_nom`, `facture_email`, `facture_adresse` figés à l'émission, jamais resynchronisés. C'est précisément ce qui rend l'anonymisation possible |
+| `anonymize_user(uuid)` | Une seule transaction, idempotente. Efface `entitlements`, `reading_progress`, `download_logs`, `favorites`, panier ; remplace l'email par un jeton non réversible ; supprime l'identité d'authentification ; conserve `orders`, `order_items`, `subscriptions`, `invoices` |
+| Jeton d'anonymisation tiré au hasard, non haché | Un hachage de l'adresse resterait vulnérable à une attaque par dictionnaire, l'espace des adresses email étant énumérable |
+| `purge_expired_invoices(timestamptz)` | Facture échue, puis commande devenue sans facture, puis compte anonymisé devenu orphelin. Instant paramétrable : les tests avancent l'horloge de onze ans plutôt que d'attendre |
+| `INVOICE_RETENTION_YEARS`, défaut 10 | Le pays d'immatriculation n'est pas arrêté (§16.2 point 6). La valeur est figée sur chaque facture à l'émission : la modifier n'affecte aucune facture déjà émise |
+| Table `favorites` créée (§4.2 F7) | La procédure d'anonymisation doit l'effacer. Une procédure qui oublierait une table de données personnelles donnerait l'illusion de la conformité |
+| Information préalable | `GET /api/account/anonymize` renvoie ce qui est effacé, ce qui est conservé, la durée et le caractère irréversible. Source unique, destinée à l'écran de confirmation comme à la politique de confidentialité |
+
+**Le test qui donne son sens à la correction :** le chiffre d'affaires agrégé,
+sur les commandes comme sur les factures, est **strictement inchangé** après
+anonymisation. Complété par : reconnexion impossible, jeton en circulation
+refusé, réactivation refusée par la base, et ancienne adresse email réutilisable
+pour une inscription **neuve** dont l'identifiant diffère de l'ancien.
+
+**Conséquence pour l'étape 14.** Les statistiques s'appuient sur `orders` et
+`invoices`, jamais sur `users`. Un test le vérifie déjà.
+
+**Une transparence sur la méthode.** Les migrations 0012 à 0014 ont été
+corrigées **en place** après un premier échec — `revoke all … from public`
+retire l'exécution à `service_role` aussi, ce qui faisait échouer la route de
+suppression. Elles n'avaient alors jamais été commitées ni appliquées ailleurs
+que sur la base locale, rejouée intégralement depuis zéro. La règle « jamais de
+migration modifiée après application » reste entière pour tout ce qui est
+commité, comme l'illustre R1.
+
+**Vérification.** `npm run verify` relancé **en entier** : code 0, 162 tests.
+`npm run build` : code 0. Cycle rejoué depuis une base vierge.
+
+---
+
 ## 8. Brancher un prestataire réel
 
 *(section rédigée à l'étape 16)*
