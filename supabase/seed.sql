@@ -223,3 +223,26 @@ join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
 cross join generate_series(1, 6) as p(numero)
 where b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait')
 on conflict (translation_id, numero) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Fichiers téléchargeables et couvertures
+--
+-- Chemins de stockage seulement : les objets eux-mêmes seront produits par la
+-- chaîne d'ingestion (étape 7). Ils existent ici pour que le service de
+-- fichiers protégé soit éprouvable — un test doit buter sur un refus de droit,
+-- jamais sur un chemin manquant.
+-- ---------------------------------------------------------------------------
+
+update public.book_translations t
+set fichier_telechargement = 'book-downloads/' || b.slug || '/' || t.langue || '/' || b.slug || '.pdf',
+    fichier_lecture = 'book-pages/' || b.slug || '/' || t.langue,
+    maj_le = public.app_now()
+from public.books b
+where b.id = t.book_id
+  and t.statut = 'publie'
+  and b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait');
+
+update public.books
+set couverture_url = 'covers/' || slug || '/fiche.webp',
+    maj_le = public.app_now()
+where statut = 'publie';

@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étapes 0 à 5 terminées. Prochaine étape : 6.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 à 6 terminées. Prochaine étape : 7.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -910,7 +910,10 @@ n'apparaît désormais qu'à un seul endroit du code applicatif.
 
 ### Étape 6 — Service de fichiers protégé
 
-- [ ] **Objectif** — Buckets privés, droits vérifiés à chaque requête, URL
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 349 tests,
+  dont 26 pour le seul service de fichiers. Cycle rejoué depuis une base
+  vierge, `npm run build` vert.
+- **Objectif** — Buckets privés, droits vérifiés à chaque requête, URL
   signées courtes, limitation de débit sur la lecture anonyme.
 - **Dépendances** — étapes 4, 5
 - **Fichiers produits**
@@ -938,6 +941,36 @@ n'apparaît désormais qu'à un seul endroit du code applicatif.
                               #   élevée (D6)
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 6
+
+| Décision | Raison |
+|---|---|
+| Quatre bucket : `book-sources`, `book-pages`, `book-downloads` privés, `covers` **public** | Une couverture est un argument de vente : elle doit être indexable (§5.4) et servie par le CDN. Les trois autres ne sortent jamais sans URL signée |
+| Refus **explicite** sur les bucket privés, en plus de l'absence de politique | `storage.objects` refuse déjà tout par défaut ; l'intention doit malgré tout se lire dans le schéma (CLAUDE.md règle 1) |
+| Pas de `comment on table storage.objects` | Cette table appartient à `supabase_storage_admin` : poser des politiques y est permis, la commenter ne l'est pas. Constaté par sonde avant d'adapter |
+| Les plafonds de durée sont appliqués **dans le code**, pas seulement en configuration | Un `.env` recopié d'un autre projet rendrait un lien de contenu payant partageable pendant des heures. Un test force `SIGNED_URL_TTL=86400` et vérifie que 300 s s'applique quand même |
+| `dureeValidite()` est exportée et testée seule | C'est une décision de sécurité : elle mérite mieux qu'une vérification indirecte à travers une route |
+| Le fichier **téléchargeable** n'a jamais la durée longue, même pour un titre gratuit | La gratuité porte sur la LECTURE (§3.2). Un lien de fichier valable une heure serait partageable — précisément ce que §6.2 cherche à empêcher |
+| `Cache-Control: private, no-store` sur tout contenu payant | La réponse porte une URL signée nominative. Seuls les titres gratuits sont cachables par le CDN (D6) |
+| La borne de l'extrait est vérifiée **avant** l'existence de la page | Sans cet ordre, un visiteur distinguerait « page absente » de « page interdite » et retrouverait la longueur du livre en sondant page après page. Un acheteur, lui, reçoit bien 404 : il connaît déjà la longueur |
+| `expire_le` est calculé sur l'heure **réelle**, non sur l'horloge simulée | La signature émise par le stockage expire selon le temps du monde, que la console ait déplacé l'horloge métier ou non. Annoncer autre chose serait mentir |
+| Le quota anonyme ne vise que les visiteurs | Un utilisateur connecté est déjà identifiable, traçable et suspendable. Lui compter ses pages gênerait la lecture d'un enfant qui feuillette, sans rien protéger |
+
+**Le test central de l'étape**, et il passe : un abonné actif obtient 200 sur la
+page 1 du titre et **403 sur son téléchargement** — mêmes utilisateur et titre,
+seule la nature de l'accès change. Le message d'erreur explique la différence,
+sans quoi l'abonné croirait à une panne.
+
+**Objets de démonstration déposés par les tests.** Les seeds SQL posent les
+chemins ; les objets vivent dans le stockage, hors de portée d'une migration.
+Sans eux, `createSignedUrl` échouerait sur « objet introuvable » et chaque test
+buterait là plutôt que sur la règle qu'il vise.
+
+**Un test m'a repris.** J'attendais 404 sur une page inexistante d'un titre
+payant demandée anonymement ; l'implémentation renvoie 403. Elle a raison :
+vérifier la borne de l'extrait avant l'existence empêche l'énumération. C'est
+mon attente qui était fausse, et le cas est désormais testé dans les deux sens.
 
 ---
 

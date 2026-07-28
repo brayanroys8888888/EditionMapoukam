@@ -45,6 +45,8 @@ export interface PageServie {
   texte: string | null;
   /** Vrai si la page est servie au titre de l'extrait, non d'un droit complet. */
   auTitreDeLExtrait: boolean;
+  /** Détermine la durée de validité de l'URL signée à émettre (D6). */
+  livreGratuit: boolean;
 }
 
 export type RefusPage =
@@ -60,6 +62,15 @@ export type ResultatPage =
 interface ContexteLecture {
   translationId: string;
   nbPagesExtrait: number;
+  /**
+   * Le titre est-il gratuit ?
+   *
+   * Détermine la durée de validité de l'URL signée émise ensuite : 3 600
+   * secondes pour un titre gratuit, 300 pour tout contenu payant (D6). À ne pas
+   * déduire du motif d'accès — un conte gratuit lu par un abonné renvoie
+   * `subscription`, et resterait pourtant éligible à la durée longue.
+   */
+  livreGratuit: boolean;
 }
 
 /**
@@ -75,7 +86,7 @@ async function contexte(
 ): Promise<ContexteLecture | null> {
   const { data } = await client
     .from('book_translations')
-    .select('id, books!inner(nb_pages_extrait)')
+    .select('id, books!inner(nb_pages_extrait, gratuit)')
     .eq('book_id', bookId)
     .eq('langue', langue)
     .eq('statut', 'publie')
@@ -87,6 +98,7 @@ async function contexte(
   return {
     translationId: data.id,
     nbPagesExtrait: data.books.nb_pages_extrait ?? parDefaut,
+    livreGratuit: data.books.gratuit,
   };
 }
 
@@ -151,6 +163,7 @@ export async function servirPage(
       hauteur: data.hauteur,
       texte: data.texte,
       auTitreDeLExtrait,
+      livreGratuit: contexteLecture.livreGratuit,
     },
   };
 }
