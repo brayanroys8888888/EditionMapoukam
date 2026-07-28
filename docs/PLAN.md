@@ -972,6 +972,24 @@ payant demandée anonymement ; l'implémentation renvoie 403. Elle a raison :
 vérifier la borne de l'extrait avant l'existence empêche l'énumération. C'est
 mon attente qui était fausse, et le cas est désormais testé dans les deux sens.
 
+#### Durcissement du bucket public (correction demandée après validation)
+
+Le bucket `covers` est le seul en accès libre du projet. Aucune barrière
+technique ne l'y limite aux couvertures : un bucket public l'est pour tout ce
+qu'on y met. Une erreur d'aiguillage dans la chaîne d'ingestion y déposerait des
+pages de livre ou un fichier complet, librement téléchargeables et indexables —
+et le modèle économique tomberait sans qu'aucune alarme ne se déclenche.
+
+| Garantie | Mise en œuvre |
+|---|---|
+| **Un seul module y écrit** | `src/lib/storage/covers.ts`. Un test d'architecture parcourt `src/**` et échoue si un autre fichier appelle `from('covers')`. Un second test vérifie que ce module ne dépose que du `image/webp`, jamais un PDF ni un EPUB |
+| **Chemins non devinables** | Le nom de fichier repose sur un jeton aléatoire de 32 caractères, jamais sur le titre ni sur un identifiant séquentiel. Sans cela, la couverture d'un titre en brouillon serait accessible à qui devine l'URL, et les prochaines parutions du client fuiteraient avant leur annonce. Les seeds suivent la même règle |
+| **Résolutions bornées** | Trois tailles d'affichage seulement — vignette 320 px, fiche 800 px, mise en avant 1600 px. `publierCouverture` refuse toute image plus large, et la borne est vérifiée dans le module, pas seulement chez l'appelant. L'original haute définition reste dans le stockage privé, avec les fichiers sources : c'est lui qui servirait à une réimpression |
+
+Le test d'intégration sur la chaîne d'ingestion — vérifier que **seule** la
+couverture atterrit dans ce bucket — est livré à l'étape 7, la chaîne n'existant
+pas encore.
+
 ---
 
 ### Étape 7 — Chaîne d'ingestion des PDF

@@ -242,7 +242,10 @@ where b.id = t.book_id
   and t.statut = 'publie'
   and b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait');
 
+-- Jeton aléatoire, jamais le slug : la couverture d'un titre en brouillon ne
+-- doit pas être accessible à qui devine l'URL, sinon les prochaines parutions
+-- fuiteraient avant leur annonce.
 update public.books
-set couverture_url = 'covers/' || slug || '/fiche.webp',
+set couverture_url = 'covers/' || replace(gen_random_uuid()::text, '-', '') || '/fiche.webp',
     maj_le = public.app_now()
 where statut = 'publie';
