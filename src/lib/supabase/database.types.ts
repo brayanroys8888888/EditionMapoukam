@@ -227,6 +227,27 @@ export type Database = {
         }
         Relationships: []
       }
+      business_settings: {
+        Row: {
+          fenetre_nouveaute_jours: number
+          id: number
+          maj_le: string
+          periode_grace_jours: number
+        }
+        Insert: {
+          fenetre_nouveaute_jours?: number
+          id?: number
+          maj_le?: string
+          periode_grace_jours?: number
+        }
+        Update: {
+          fenetre_nouveaute_jours?: number
+          id?: number
+          maj_le?: string
+          periode_grace_jours?: number
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           ajoute_le: string
@@ -1141,6 +1162,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      access_for: {
+        Args: { p_at?: string; p_book: string; p_user: string }
+        Returns: Database["public"]["CompositeTypes"]["access_decision"]
+        SetofOptions: {
+          from: "*"
+          to: "access_decision"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      access_for_books: {
+        Args: { p_at?: string; p_books: string[]; p_user: string }
+        Returns: {
+          book_id: string
+          can_download: boolean
+          can_read: boolean
+          reason: Database["public"]["Enums"]["access_reason"]
+        }[]
+      }
       anonymize_user: {
         Args: { p_user_id: string }
         Returns: {
@@ -1241,6 +1281,11 @@ export type Database = {
       user_status: "actif" | "suspendu" | "anonymise"
     }
     CompositeTypes: {
+      access_decision: {
+        can_read: boolean | null
+        can_download: boolean | null
+        reason: Database["public"]["Enums"]["access_reason"] | null
+      }
       dev_reset_report: {
         commandes: number | null
         abonnements: number | null

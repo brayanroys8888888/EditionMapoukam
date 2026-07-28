@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étapes 0 à 3 terminées. Prochaine étape : 4.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 à 4 terminées. Prochaine étape : 5.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -699,7 +699,10 @@ application » reste entière pour tout ce qui est commité (voir R1).
 
 ### Étape 4 — Moteur de droits d'accès
 
-- [ ] **Objectif** — La fonction unique qui répond à « cet utilisateur peut-il
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 261 tests,
+  dont 37 pour la seule matrice de droits. Cycle rejoué depuis une base vierge,
+  `npm run build` vert.
+- **Objectif** — La fonction unique qui répond à « cet utilisateur peut-il
   lire ce titre ? peut-il le télécharger ? ». Module qui concentre le risque du
   projet. Implémentation **en PostgreSQL** (D1 point 2).
 - **Dépendances** — étapes 1, 3
@@ -748,6 +751,52 @@ application » reste entière pour tout ce qui est commité (voir R1).
   npm run test -- access      # toute la matrice au vert
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 4
+
+| Décision | Raison |
+|---|---|
+| `access_for_books` est l'**implémentation de référence**, `access_for` un simple raccourci | Il ne doit exister qu'une écriture des règles. Un test compare les deux sur tout le catalogue, titre par titre |
+| Les fonctions sont `security definer` | Elles lisent `entitlements` et `subscriptions`, tables auxquelles `anon` n'a aucun accès. Sans cela, un visiteur ne pourrait jamais lire un conte gratuit |
+| Table `business_settings` : fenêtre de 90 jours, grâce de 7 jours | Une politique RLS ne peut pas lire l'environnement du processus Node. La base est donc l'autorité, et un test vérifie que `NEW_RELEASE_WINDOW_DAYS` et `PAYMENT_GRACE_PERIOD_DAYS` concordent — s'ils divergeaient, l'application et la base n'appliqueraient pas la même règle |
+| `src/domain/access` ne contient **que des types** | Un test parcourt le répertoire et échoue s'il y trouve `inclus_abonnement`, `peut_telecharger`, un calcul de fenêtre ou de grâce, ou seulement une fonction exportée — la tentation d'y glisser un calcul viendrait avec la première fonction |
+| L'appelant TypeScript vit dans `src/lib/access` | `src/domain` ne connaît ni Next, ni Supabase (règle ESLint). L'appelant doit parler à la base : sa place est dans `lib` |
+| Une erreur de résolution **lève**, elle n'ouvre pas | Un moteur de droits en panne doit refuser. Test dédié avec un client simulé en échec |
+| `book_pages` reste **totalement fermé** aux clients | On aurait pu y poser une politique appelant `access_for` ; ce serait plus faible que l'existant, puisque aucun privilège `SELECT` n'y est accordé. Ouvrir la table exposerait les chemins de stockage |
+| `reading_progress` en écriture appelle `access_for` | Sans cette condition, la table deviendrait un journal des titres qu'on a tenté d'ouvrir sans y avoir droit, et un moyen de tester l'existence d'un identifiant |
+| Les favoris n'exigent **pas** l'accès au titre | On met en favori ce qu'on envisage d'acheter. Seule condition : le titre est au catalogue, sinon les favoris révéleraient les titres en préparation |
+
+**Une interprétation que je signale.** Le plan disait « brouillon ou archivé,
+jamais lisible hors admin ». Appliqué tel quel à un titre **archivé**, cela
+contredirait §3.1, qui promet à l'acheteur un accès « sans limite de durée ».
+Retirer un titre du catalogue est une décision éditoriale : elle ne peut pas
+révoquer un droit payé, ce serait un manquement au contrat de vente. La règle
+retenue, et testée :
+
+| Statut | Acheteur | Abonné | Visiteur |
+|---|---|---|---|
+| `publie` | lecture et téléchargement | selon fenêtre et inclusion | extrait |
+| `archive` | **lecture et téléchargement conservés** | rien | rien (`none`) |
+| `brouillon` | rien, même avec un droit | rien | rien (`none`) |
+
+Un titre en brouillon n'a jamais été vendu : un droit portant sur lui serait une
+anomalie, et n'ouvre donc pas l'accès. Un test le vérifie.
+
+**Ce que la matrice prouve, au-delà des neuf cas obligatoires :** essai valant
+abonnement actif ; impayé conservant l'accès pendant la grâce puis le perdant ;
+annulation tenant jusqu'à la fin de période payée ; abonnement `actif` dont la
+période est échue n'ouvrant plus rien ; droits à durée limitée expirés ;
+ouverture de la fenêtre de vente **au jour près** ; conte gratuit à l'intérieur
+de sa fenêtre ; conte gratuit **et** acheté renvoyant `purchase` — un acheteur
+ne voit jamais « gratuit » ; conte gratuit **et** couvert par l'abonnement
+renvoyant `subscription` ; et le pont complet `DevClock` → paramètre de session
+→ `app_now()` → `access_for`, qui fait basculer la fenêtre de 3 mois en
+déplaçant l'horloge.
+
+**Un test m'a repris pendant l'écriture.** Le contrôle d'ouverture de la fenêtre
+échouait à +70 jours : mon abonné de test avait une période de 30 jours, donc
+échue avant même que la fenêtre s'ouvre. Le scénario était contradictoire, pas
+le moteur.
 
 ---
 
