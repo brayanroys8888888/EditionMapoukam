@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étapes 0 à 4 terminées. Prochaine étape : 5.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 à 5 terminées. Prochaine étape : 6.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -840,7 +840,10 @@ le moteur.
 
 ### Étape 5 — API catalogue
 
-- [ ] **Objectif** — Liste paginée, filtres, tri, recherche, fiche détail,
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 323 tests,
+  dont 44 pour le seul catalogue. Cycle rejoué depuis une base vierge,
+  `npm run build` vert.
+- **Objectif** — Liste paginée, filtres, tri, recherche, fiche détail,
   extraits, versions linguistiques.
 - **Dépendances** — étapes 1, 4
 - **Fichiers produits**
@@ -868,6 +871,40 @@ le moteur.
                               # 40 titres → 1 requête d'accès
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 5
+
+| Décision | Raison |
+|---|---|
+| La liste est une **fonction PostgreSQL**, pas une requête assemblée en TypeScript | La recherche plein texte doit passer par les index GIN, ce qu'un filtre appliqué après coup ne permet pas ; le total de pagination doit être calculé dans la même passe, sinon c'est un aller-retour de plus à chaque page ; et le repli de prix d'une zone sur l'autre est une jointure, pas une boucle |
+| Deux vecteurs de recherche, sur `books` et sur `book_translations` | Les termes cherchés vivent dans deux tables : titre et résumé dépendent de la langue, auteur et origine culturelle appartiennent au livre |
+| Configuration `french` pour la recherche | Sans elle, « animaux » et « animal » seraient deux termes sans rapport, et une recherche sur l'un manquerait l'autre |
+| Fonction `themes_texte` déclarée immuable | `array_to_string` est marquée *stable* dans PostgreSQL parce qu'elle accepte `anyarray`. Sur `text[]` le résultat est déterministe : l'enveloppe restreint la signature et peut donc être immuable sans mentir — ce que la colonne générée exige |
+| Un **départage stable** clôt tous les tris | Sans lui, deux titres de même rang peuvent s'échanger entre deux requêtes : un titre apparaîtrait en double d'une page à l'autre, un autre disparaîtrait |
+| Le filtre `acces=abonnement` applique la **fenêtre de vente** | « Accessible par abonnement » signifie accessible maintenant. Lister un titre encore en vente exclusive comme inclus serait une promesse fausse |
+| Une entrée sans traduction publiée dans la langue demandée **n'apparaît pas** | Il n'y aurait rien à afficher. C'est aussi ce qui garde une traduction en brouillon hors du catalogue |
+| Brouillon, archivé et slug inconnu renvoient tous **404** | Du point de vue d'un visiteur, les trois doivent se ressembler : sinon le catalogue à venir serait devinable un slug à la fois |
+| Le catalogue n'expose **aucun chemin de stockage** | Un test cherche `fichier_lecture`, `fichier_telechargement` et `chemin_haute` dans la réponse brute |
+| La zone est un paramètre d'**affichage** | Provisoire et sans effet financier (D4 point 5). La zone d'encaissement est déterminée au paiement, depuis le pays réel du moyen de paiement |
+| L'extrait délègue au service de pages | Il ne réimplémente ni la longueur de l'extrait ni le contrôle d'accès : ce sont les mêmes règles qui servent le lecteur en ligne |
+| Limitation de débit sur la lecture **anonyme** | D3 point 6. Un utilisateur connecté est déjà identifiable et traçable ; un visiteur ne l'est pas, et un conte gratuit entier est une cible d'aspiration |
+
+**Formule de popularité — à arbitrer.** §4.1 F2 demande un tri par popularité
+sans la définir. Retenu : **nombre d'achats payés + nombre de lecteurs
+distincts**, les deux flux de revenus pesant le même poids. Sans cela, un titre
+très lu par les abonnés serait invisible face à un titre peu vendu, ou
+l'inverse. C'est un choix, pas une donnée de la spécification : dites-moi si
+vous voulez pondérer autrement.
+
+**Pages de démonstration ajoutées aux seeds.** Six pages pour trois titres. La
+chaîne d'ingestion (étape 7) produira les vraies ; sans celles-ci, chaque test
+de lecture buterait sur une absence de contenu plutôt que sur la règle qu'il
+vise.
+
+**Le test d'architecture de `book_pages` a mordu**, sur un commentaire de la
+route d'extrait qui nommait la table. Reformulé plutôt qu'assoupli : une règle
+stricte et triviale à respecter vaut mieux qu'un test malin. Le nom de la table
+n'apparaît désormais qu'à un seul endroit du code applicatif.
 
 ---
 

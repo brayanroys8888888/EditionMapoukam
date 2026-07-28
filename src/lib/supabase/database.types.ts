@@ -105,6 +105,13 @@ export type Database = {
             foreignKeyName: "book_prices_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "book_prices_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -127,6 +134,7 @@ export type Database = {
           langue: string
           maj_le: string
           nb_pages: number | null
+          recherche: unknown
           resume: string | null
           statut: Database["public"]["Enums"]["translation_status"]
           titre: string
@@ -140,6 +148,7 @@ export type Database = {
           langue: string
           maj_le?: string
           nb_pages?: number | null
+          recherche?: unknown
           resume?: string | null
           statut?: Database["public"]["Enums"]["translation_status"]
           titre: string
@@ -153,11 +162,19 @@ export type Database = {
           langue?: string
           maj_le?: string
           nb_pages?: number | null
+          recherche?: unknown
           resume?: string | null
           statut?: Database["public"]["Enums"]["translation_status"]
           titre?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "book_translations_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
           {
             foreignKeyName: "book_translations_book_id_fkey"
             columns: ["book_id"]
@@ -183,6 +200,7 @@ export type Database = {
           nb_pages_extrait: number | null
           origine_culturelle: string | null
           publie_le: string | null
+          recherche: unknown
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
@@ -202,6 +220,7 @@ export type Database = {
           nb_pages_extrait?: number | null
           origine_culturelle?: string | null
           publie_le?: string | null
+          recherche?: unknown
           slug: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
@@ -221,6 +240,7 @@ export type Database = {
           nb_pages_extrait?: number | null
           origine_culturelle?: string | null
           publie_le?: string | null
+          recherche?: unknown
           slug?: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
@@ -314,6 +334,13 @@ export type Database = {
           langue?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
           {
             foreignKeyName: "cart_items_book_id_fkey"
             columns: ["book_id"]
@@ -431,6 +458,13 @@ export type Database = {
             foreignKeyName: "download_logs_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "download_logs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -523,6 +557,13 @@ export type Database = {
             foreignKeyName: "entitlements_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "entitlements_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -559,6 +600,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "favorites_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
           {
             foreignKeyName: "favorites_book_id_fkey"
             columns: ["book_id"]
@@ -616,6 +664,13 @@ export type Database = {
           translation_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "ingestion_jobs_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
           {
             foreignKeyName: "ingestion_jobs_book_id_fkey"
             columns: ["book_id"]
@@ -768,6 +823,13 @@ export type Database = {
           zone?: Database["public"]["Enums"]["price_zone"]
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
           {
             foreignKeyName: "order_items_book_id_fkey"
             columns: ["book_id"]
@@ -1053,6 +1115,13 @@ export type Database = {
             foreignKeyName: "reading_progress_book_id_fkey"
             columns: ["book_id"]
             isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "reading_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
             referencedRelation: "books"
             referencedColumns: ["id"]
           },
@@ -1202,7 +1271,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      book_popularity: {
+        Row: {
+          achats: number | null
+          book_id: string | null
+          lecteurs: number | null
+          score: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       access_for: {
@@ -1245,6 +1322,46 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      catalog_list: {
+        Args: {
+          p_acces?: string
+          p_age_max?: number
+          p_age_min?: number
+          p_at?: string
+          p_langue?: string
+          p_origine?: string
+          p_page?: number
+          p_recherche?: string
+          p_taille?: number
+          p_themes?: string[]
+          p_tri?: string
+          p_zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          age_max: number
+          age_min: number
+          auteur: string
+          book_id: string
+          couverture_url: string
+          devise: string
+          disponible_achat: boolean
+          gratuit: boolean
+          illustrateur: string
+          inclus_abonnement: boolean
+          langues: string[]
+          montant: number
+          nb_pages: number
+          origine_culturelle: string
+          publie_le: string
+          resume: string
+          score_popularite: number
+          slug: string
+          themes: string[]
+          titre: string
+          total: number
+          zone_prix: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
       dev_reset_demo_state: {
         Args: never
         Returns: Database["public"]["CompositeTypes"]["dev_reset_report"]
@@ -1302,6 +1419,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_impactes_par_fenetre: {
         Args: { p_at?: string; p_nouvelle_fenetre: number }
         Returns: {

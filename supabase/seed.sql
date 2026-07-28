@@ -199,3 +199,27 @@ on conflict (code) do update set
   expire_le = excluded.expire_le,
   actif = excluded.actif,
   usage_max = excluded.usage_max;
+
+-- ---------------------------------------------------------------------------
+-- Pages de lecture
+--
+-- La chaîne d'ingestion (étape 7) produira les vraies. Celles-ci existent pour
+-- que l'extrait, le lecteur et le service de fichiers soient éprouvables dès
+-- maintenant : sans elles, chaque test de lecture buterait sur une absence de
+-- contenu plutôt que sur la règle qu'il vise.
+--
+-- Six pages pour trois titres : un gratuit, un payant hors fenêtre, un titre
+-- d'appel gratuit et vendu.
+-- ---------------------------------------------------------------------------
+
+insert into public.book_pages (translation_id, numero, chemin_haute, chemin_allegee, largeur, hauteur, texte)
+select t.id, p.numero,
+       'book-pages/' || b.slug || '/' || t.langue || '/haute/' || lpad(p.numero::text, 3, '0') || '.webp',
+       'book-pages/' || b.slug || '/' || t.langue || '/allegee/' || lpad(p.numero::text, 3, '0') || '.webp',
+       1600, 2000,
+       'Page ' || p.numero::text || ' de « ' || t.titre || ' ».'
+from public.books b
+join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
+cross join generate_series(1, 6) as p(numero)
+where b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait')
+on conflict (translation_id, numero) do nothing;
