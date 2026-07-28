@@ -1162,6 +1162,16 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      dev_reset_demo_state: {
+        Args: never
+        Returns: Database["public"]["CompositeTypes"]["dev_reset_report"]
+        SetofOptions: {
+          from: "*"
+          to: "dev_reset_report"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       emettre_facture: {
         Args: {
           p_adresse?: Json
@@ -1231,6 +1241,13 @@ export type Database = {
       user_status: "actif" | "suspendu" | "anonymise"
     }
     CompositeTypes: {
+      dev_reset_report: {
+        commandes: number | null
+        abonnements: number | null
+        droits: number | null
+        webhooks: number | null
+        comptes: number | null
+      }
       purge_report: {
         factures_supprimees: number | null
         commandes_supprimees: number | null

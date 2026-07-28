@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étapes 0 à 2 terminées. Prochaine étape : 3.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 à 3 terminées. Prochaine étape : 4.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -621,7 +621,10 @@ le message ne distingue pas un mot de passe faux d'une adresse inconnue.
 
 ### Étape 3 — Adaptateurs locaux et console de simulation
 
-- [ ] **Objectif** — Les contrats `PaymentProvider` et `Mailer`, leurs
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 204 tests.
+  Cycle rejoué depuis une base vierge, `npm run build` vert et sans
+  avertissement.
+- **Objectif** — Les contrats `PaymentProvider` et `Mailer`, leurs
   implémentations locales, et la console `/dev`. Aucune logique métier.
 - **Dépendances** — étape 0 (étape 1 pour la lecture d'état par la console)
 - **Fichiers produits**
@@ -649,6 +652,48 @@ le message ne distingue pas un mot de passe faux d'une adresse inconnue.
   npm run test -- webhook-signature
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 3
+
+| Décision | Raison |
+|---|---|
+| Transport HTTP **injectable** dans `FakePaymentProvider` | Le vrai gestionnaire de webhooks n'arrive qu'à l'étape 9. Les tests capturent la requête émise et vérifient sa signature avec le module réel, sans dépendre d'un récepteur qui n'existe pas encore |
+| Le corps est sérialisé **une seule fois** | C'est cette chaîne exacte qui est signée puis transmise. Re-sérialiser après signature change l'ordre des clés et les espaces, donc les octets, donc la signature : c'est l'erreur classique de ce montage, et un test la reproduit délibérément |
+| Identifiant d'événement imposable (`id`) | Permet de rejouer un événement à l'identique depuis la console, donc d'éprouver l'idempotence pour de bon à l'étape 9 |
+| Aucun type du contrat ne nomme un prestataire | §7.3.4. Un type qui s'appellerait `StripeSession` ferait entrer sa terminologie dans toute la base de code. Le vocabulaire retenu est celui du métier, en français |
+| `FileMailer` écrit du `.eml` RFC 5322, non du JSON | Un JSON maison serait plus simple, mais on ne verrait pas ce que le destinataire verra. En-têtes accentués encodés selon la RFC 2047, sans quoi « Votre commande est prête » s'affiche en caractères illisibles |
+| La console lit la base, mais n'y écrit qu'à la remise à zéro | Voir ci-dessous |
+| Refus en **404**, non en 403 | En production ces routes ne doivent pas seulement être interdites : elles ne doivent pas exister. Un 403 confirmerait à un visiteur qu'une console de simulation est déployée. Un test vérifie en plus que le corps du refus ne contient ni « dev », ni « simulation », ni « console » |
+| Le garde-fou lit `process.env` directement | Et non l'environnement validé et mémorisé : il doit rester exact quelle que soit l'ordre de lecture de la configuration, et être vérifiable par un test qui bascule la variable |
+
+**L'exception assumée sur la remise à zéro.** `CLAUDE.md` pose que la console ne
+modifie jamais la base directement. Cette règle vise les **transitions
+métier** — payer, souscrire, annuler — qui passent toutes par un événement
+signé, sans exception. Remettre le jeu de démonstration à zéro n'est pas une
+transition métier : c'est l'équivalent de `npm run db:reset`, en plus rapide.
+Une console dotée d'un bouton « réinitialiser » qui ne réinitialise rien ne
+servirait à personne. Deux garde-fous encadrent l'exception : la fonction SQL
+refuse de s'exécuter si l'artefact `dev_clock_activation` est absent — donc sur
+toute base où les seeds de développement n'ont pas été joués — et elle n'efface
+aucune donnée de catalogue. Les deux sont testés.
+
+**Deux obstacles rencontrés, tous deux instructifs.**
+
+- **`pg_safeupdate`.** Supabase l'active sur le rôle de l'API : tout `DELETE` ou
+  `UPDATE` sans clause `WHERE` y est refusé, garde-fou contre l'effacement
+  accidentel d'une table entière. La fonction de remise à zéro en fait quatorze,
+  délibérément : chacune porte désormais un `where true` explicite, et le
+  commentaire de la migration dit pourquoi.
+- **Traçage de fichiers de Next.** Un `path.join(process.cwd(), …)` dynamique
+  dans `FileMailer` faisait embarquer tout le projet dans le bundle. Corrigé par
+  le commentaire d'exclusion documenté par Next ; le build ne produit plus
+  aucun avertissement.
+
+**Transparence sur la méthode.** La migration 0015 a été corrigée **en place**
+après l'échec dû à `pg_safeupdate`, comme les migrations 0012 à 0014 avant elle :
+jamais commitée, jamais appliquée ailleurs que sur la base locale, rejouée
+intégralement depuis zéro. La règle « jamais de migration modifiée après
+application » reste entière pour tout ce qui est commité (voir R1).
 
 ---
 
