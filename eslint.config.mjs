@@ -50,6 +50,8 @@ export default tseslint.config(
       'coverage/**',
       "conte d'afrique/**",
       'next-env.d.ts',
+      // Artefacts générés par `supabase start` (fonctions edge de démonstration).
+      'supabase/.temp/**',
     ],
   },
 

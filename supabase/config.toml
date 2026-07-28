@@ -92,7 +92,17 @@ enabled = true
 # max_header_length = 4096
 
 [studio]
-enabled = true
+# Désactivé volontairement. Deux raisons :
+#  1. Ce chantier est backend : l'interface d'administration web n'est pas
+#     nécessaire, et psql ou les tests d'intégration suffisent à inspecter la base.
+#  2. Sur ce poste, la couche /usr/local/bin/docker-entrypoint.sh de l'image
+#     supabase/studio est vide (0 octet) — blob corrompu lors d'une saturation
+#     du disque. Le conteneur échoue donc en boucle avec « exec format error »
+#     et fait échouer `supabase start` en entier.
+# Pour la réactiver : purger le stockage Docker (Docker Desktop → Troubleshoot →
+# Clean / Purge data), ce qui forcera un retéléchargement propre du blob, puis
+# repasser enabled à true.
+enabled = false
 # Port to use for Supabase Studio.
 port = 54323
 # External URL of the API server that frontend connects to.

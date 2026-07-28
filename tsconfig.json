@@ -29,5 +29,5 @@
     "plugins": [{ "name": "next" }]
   },
   "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "conte d'afrique"]
+  "exclude": ["node_modules", ".next", "conte d'afrique", "supabase/.temp"]
 }

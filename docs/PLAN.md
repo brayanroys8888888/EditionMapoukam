@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étape 0 en cours.**
+**Statut global : plan validé le 2026-07-28. Étape 0 terminée. Prochaine étape : 1.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -20,17 +20,16 @@ Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 | Node | v22.17.0 — conforme (Node 20+) |
 | npm | 10.9.2 |
 | git | 2.51.2 — **le dossier n'est pas encore un dépôt git** (`git init` à l'étape 0) |
-| Docker | client 29.2.1 installé, **démon non démarré** — bloquant pour `supabase start` |
-| Supabase CLI | **non installé** — sera ajouté en dépendance de développement (`npx supabase`) |
+| Docker | client 29.2.1 — démon opérationnel depuis le 2026-07-28, voir l'incident de poste à l'étape 0 |
+| Supabase CLI | en dépendance de développement, pile locale démarrée (PostgreSQL 17.6) |
 | poppler | `pdftoppm` 25.07.0 disponible dans le PATH — conforme à l'étape 7 |
-| `.env.local` | **absent** — seul `env.example.txt` est présent |
+| `.env.local` | généré le 2026-07-28, non versionné (vérifié par `git check-ignore`) |
 | Contenu de test | `conte d'afrique/` contient 16 PDF, 16 EPUB et 16 couvertures — matière réelle pour l'étape 7 et les seeds |
 | Projet Node | aucun `package.json` — le socle est à créer intégralement |
 
-**Deux actions vous incombent avant l'étape 0 :** démarrer Docker Desktop, puis
-me laisser lancer `npx supabase start` pour récupérer les clés locales et écrire
-`.env.local`. Sans le démon Docker, aucune étape à partir de la 1 ne peut être
-validée, puisque les tests d'intégration tournent contre la vraie base locale.
+**Prérequis levés le 2026-07-28** : Docker démarré, pile Supabase locale en
+marche, `.env.local` généré. Les tests d'intégration peuvent désormais tourner
+contre la vraie base locale, comme l'exige CLAUDE.md.
 
 ---
 
@@ -404,12 +403,9 @@ pour toute nouvelle route ; aucun secret en dur, aucun `any` non justifié, aucu
 
 ### Étape 0 — Socle technique
 
-- [x] **Livrée le 2026-07-28** — `npm run verify` sort en code 0 (26 tests).
-  **Non close** : le dernier critère, `npx supabase start`, est bloqué par le
-  démon Docker, arrêté. L'étape sera cochée définitivement dès que la pile
-  locale aura démarré et que `.env.local` aura été généré. Aucune étape
-  suivante ne commence avant.
-- [ ] **Objectif** — Un dépôt qui compile, se relit, se teste, et une pile
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 (26 tests),
+  la pile Supabase locale tourne, `.env.local` est généré.
+- **Objectif** — Un dépôt qui compile, se relit, se teste, et une pile
   Supabase locale qui démarre. Aucune logique métier.
 - **Dépendances** — aucune (démon Docker requis pour la partie Supabase)
 - **Fichiers produits**
@@ -452,6 +448,36 @@ pour toute nouvelle route ; aucun secret en dur, aucun `any` non justifié, aucu
 **Garde-fous ESLint vérifiés par une sonde jetable** (fichier temporaire placé
 dans `src/domain`, linté, puis supprimé) : import de `@supabase/*`, `new Date()`,
 `Date.now()` et division par 100 déclenchent bien chacun une erreur.
+
+#### Incident de poste — Supabase Studio désactivé
+
+Le disque `C:` est arrivé à saturation pendant le premier
+`npx supabase start`. Docker a alors écrit des couches d'images tronquées.
+Conséquence durable : dans l'image `supabase/studio`, le fichier
+`/usr/local/bin/docker-entrypoint.sh` fait **0 octet** tout en restant marqué
+exécutable, ce que Linux signale par `exec format error`. Le conteneur échoue
+en boucle et fait échouer `supabase start` en entier.
+
+Supprimer puis retélécharger l'image ne corrige rien : le magasin de contenu de
+containerd conserve le blob tronqué et le réutilise — c'est aussi pourquoi
+l'espace disque libéré par la suppression n'était pas revenu.
+
+Les huit autres images de la pile ont été vérifiées une par une : toutes saines.
+
+**Décision : `[studio] enabled = false` dans `supabase/config.toml`**, motif
+écrit dans le fichier. L'interface d'administration web n'a aucun rôle dans un
+chantier backend — psql et les tests d'intégration inspectent la base. La
+capture d'emails (`mailpit`, port 54324) reste active : elle sert à l'étape 2.
+
+**Dette de poste à solder, hors périmètre projet :** réparer le blob exige de
+purger le stockage Docker (Docker Desktop → Troubleshoot → Clean / Purge data),
+ce qui détruirait les volumes des projets `archora` et `atlink` présents sur la
+machine. À faire après sauvegarde de ces volumes. Studio se réactive ensuite en
+repassant le drapeau à `true`.
+
+Note secondaire : le conteneur `vector` (collecteur de journaux) redémarre en
+boucle. Il n'a aucun rôle fonctionnel ici et ne bloque ni la base, ni
+l'authentification, ni le stockage. À regarder si les journaux deviennent utiles.
 
 ---
 
