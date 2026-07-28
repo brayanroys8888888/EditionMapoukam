@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étapes 0 et 1 terminées. Prochaine étape : 2.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 à 2 terminées. Prochaine étape : 3.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -573,7 +573,9 @@ dès que l'artefact d'activation est absent.
 
 ### Étape 2 — Authentification
 
-- [ ] **Objectif** — Inscription, connexion, vérification d'email,
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 142 tests.
+  Cycle rejoué depuis une base vierge, `npm run build` vert, six routes servies.
+- **Objectif** — Inscription, connexion, vérification d'email,
   réinitialisation de mot de passe, rôles `user` / `admin`, sur Supabase Auth
   local.
 - **Dépendances** — étape 1
@@ -592,6 +594,28 @@ dès que l'artefact d'activation est absent.
                               # email non vérifié, entrée Zod invalide rejetée
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 2
+
+| Décision | Raison |
+|---|---|
+| Les gestionnaires sont des fonctions `Request → Response`, sans `next/headers` | Un test les appelle directement, sans démarrer de serveur : c'est le vrai code qui est éprouvé, et la suite reste rapide. Les cookies sont lus dans l'en-tête de la requête et posés sur la réponse |
+| Jeton porté par l'en-tête **et** par un cookie `HttpOnly` | L'en-tête est le porteur naturel d'une API ; le cookie existe parce que la console `/dev` est servie dans un navigateur, qui ne pose pas d'en-tête d'autorisation sur une navigation ordinaire. `SameSite=Lax` neutralise l'essentiel du CSRF (§5.2) |
+| Le rôle n'est **jamais** lu depuis les métadonnées du jeton | Ces métadonnées sont modifiables par le client via l'API d'Auth. Le rôle vient de `public.users`, relu à chaque requête. Un test écrit `role: admin` dans les métadonnées et vérifie que `/me` répond toujours `user` |
+| Le profil est relu **à chaque requête** | CLAUDE.md règle 4. C'est ce qui permet à une suspension de prendre effet immédiatement, alors que le jeton reste cryptographiquement valide |
+| Limitation des tentatives avancée de l'étape 16 à l'étape 2 | §5.2 l'exige explicitement pour la connexion. La clé combine IP et email : par IP seule un réseau partagé bloquerait des innocents, par email seul n'importe qui verrouillerait le compte d'autrui. La tentative refusée n'est pas comptée, sinon l'insistance prolongerait le blocage |
+| Mot de passe : 10 caractères, au moins une lettre et un chiffre | Le compte porte des moyens de paiement et une bibliothèque achetée. La règle est posée deux fois — Zod pour expliquer le refus en français, `config.toml` pour que Supabase l'applique par tout autre chemin |
+| Déconnexion et changement de mot de passe passent par l'API d'administration | `signOut()` et `updateUser()` de supabase-js s'appuient sur une session interne, qu'un client construit à partir du seul en-tête d'autorisation ne possède pas : ils échouaient silencieusement. **Vérifié empiriquement** : avec `admin.signOut`, le jeton est refusé dès l'appel suivant ; sans lui, il reste accepté |
+| `email_sent` relevé à 200 dans `config.toml` | La suite crée des dizaines de comptes, chacun déclenchant un email de vérification. À 2 par heure, les tests échouaient en 429 sans qu'aucun défaut applicatif soit en cause. Valeur locale uniquement, les emails ne quittent pas la machine |
+
+**Trouvaille de sécurité, remontée par un test de l'étape :** une seconde
+inscription sur une adresse déjà connue renvoyait 429, tandis qu'une adresse
+nouvelle renvoyait 201 — il suffisait de comparer les codes de réponse pour
+savoir si une adresse possède un compte. La limite de fréquence des emails de
+confirmation est désormais traitée comme un succès, et un test compare les deux
+réponses **octet par octet**. La même précaution vaut pour la demande de
+réinitialisation, qui répond 204 dans tous les cas, et pour la connexion, dont
+le message ne distingue pas un mot de passe faux d'une adresse inconnue.
 
 ---
 
@@ -1042,7 +1066,37 @@ dès que l'artefact d'activation est absent.
 indique la raison, la portée et le résultat de `npm run verify` relancé en
 entier)*
 
-Aucune à ce jour.
+### R1 — Privilèges de `service_role` (étape 1 reprise à l'étape 2)
+
+**Migration corrective `20260728000011_service_role_grants.sql`.** Aucune
+migration appliquée n'a été modifiée, conformément à CLAUDE.md.
+
+**Pourquoi c'était nécessaire.** Les tables créées par les migrations 0002 à
+0009 n'accordaient à `service_role` que `REFERENCES`, `TRIGGER` et `TRUNCATE` —
+ni `SELECT`, ni `INSERT`, ni `UPDATE`, ni `DELETE`. Toute lecture de
+`public.users` par le serveur échouait en « permission denied for table users ».
+Sans correction, aucune route de l'étape 2 ne pouvait fonctionner.
+
+**Origine, vérifiée et non supposée.** Ce n'est pas une conséquence des
+révocations de la migration 0010, qui ne visaient qu'`anon` et `authenticated`.
+Les privilèges par défaut du rôle `postgres` dans le schéma `public` — celui
+sous lequel les migrations s'exécutent — n'accordent à `service_role` que
+`Dxtm`. Contrôlé empiriquement : une table créée à l'instant dans `public`
+recevait exactement les mêmes privilèges partiels.
+
+**Pourquoi le défaut a échappé à l'étape 1.** `service_role` n'y était sollicité
+que par l'API d'administration de Supabase Auth, qui ne passe pas par PostgREST.
+La première lecture d'une table par le serveur a eu lieu à l'étape 2. Les 96
+tests de l'étape 1 étaient donc verts sur un socle qui n'aurait pas tenu — un
+rappel utile de ce qu'un test ne couvre pas tant qu'il n'exerce pas le chemin
+réel.
+
+**Portée.** Octroi explicite à `service_role` sur les tables existantes et sur
+les tables futures, plus les séquences. Aucun changement pour `anon` ni
+`authenticated`, qui conservent les privilèges restreints de la migration 0010.
+
+**Vérification.** `npm run verify` relancé **en entier** : code 0, 142 tests,
+dont les 96 de l'étape 1. Cycle complet rejoué depuis une base vierge.
 
 ---
 
