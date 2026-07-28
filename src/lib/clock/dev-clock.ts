@@ -12,9 +12,12 @@ import { SystemClock } from './system-clock';
  * en base (CLAUDE.md), et le décalage doit survivre au rechargement du serveur
  * Next.js, ce qu'une variable en mémoire ne permet pas.
  *
- * Ce décalage est ensuite transmis à PostgreSQL par `SET LOCAL app.now`, où il
- * n'est honoré que si l'artefact d'activation existe en base — voir
- * docs/PLAN.md §2.5. `DevClock` n'est jamais instancié en production.
+ * Ce décalage est ensuite transmis à PostgreSQL par le module
+ * `src/lib/supabase/dev-clock-session.ts`, seul autorisé à nommer le paramètre
+ * de session correspondant, et il n'y est honoré que si l'artefact
+ * d'activation existe en base — voir docs/PLAN.md §2.5.
+ *
+ * `DevClock` n'est jamais instanciée en production.
  */
 export const DEV_CLOCK_FILENAME = '.devclock.json';
 

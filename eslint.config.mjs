@@ -52,6 +52,9 @@ export default tseslint.config(
       'next-env.d.ts',
       // Artefacts générés par `supabase start` (fonctions edge de démonstration).
       'supabase/.temp/**',
+      // Types générés par `npm run db:types` depuis le schéma réel. Fichier
+      // régénéré, jamais modifié à la main : le relire n'apporte rien.
+      'src/lib/supabase/database.types.ts',
     ],
   },
 

@@ -7,7 +7,7 @@ décisions techniques, modifications rétroactives).
 - Contexte permanent : `CLAUDE.md`
 - Porte de validation d'une étape : `npm run verify` doit sortir en code 0
 
-**Statut global : plan validé le 2026-07-28. Étape 0 terminée. Prochaine étape : 1.**
+**Statut global : plan validé le 2026-07-28. Étapes 0 et 1 terminées. Prochaine étape : 2.**
 Décisions métier arrêtées en §3 (D1 à D4) et §4 (D5, D6). La règle 3 de
 `CLAUDE.md` a été réécrite en conséquence (D6).
 
@@ -483,7 +483,11 @@ l'authentification, ni le stockage. À regarder si les journaux deviennent utile
 
 ### Étape 1 — Schéma de base de données, RLS, seeds
 
-- [ ] **Objectif** — La totalité du modèle (§8, amendé par D1 à D4 et §2.2),
+- [x] **Terminée le 2026-07-28.** `npm run verify` sort en code 0 : 96 tests,
+  dont 52 d'intégration et de sécurité contre la base locale réelle. Cycle
+  complet rejoué depuis une base vierge (`db:reset` puis `db:seed` puis
+  `verify`).
+- **Objectif** — La totalité du modèle (§8, amendé par D1 à D4 et §2.2),
   RLS activée et refusante par défaut sur chaque table, jeu de démonstration
   couvrant tous les cas de figure.
 - **Dépendances** — étape 0
@@ -537,6 +541,33 @@ l'authentification, ni le stockage. À regarder si les journaux deviennent utile
   droit et vérifie que la base **rejette** le doublon (D1 point 8). Un
   quatrième parcourt les sources et échoue si `app.now` apparaît hors du seul
   module autorisé (§2.5 b).
+
+#### Décisions techniques prises à l'étape 1
+
+| Décision | Raison |
+|---|---|
+| `app_now()` remonté en migration 0002, avant toutes les tables | Les colonnes horodatées prennent `app_now()` comme valeur par défaut. Une ligne insérée sans horodatage explicite pendant un test à horloge décalée porterait sinon l'heure réelle. Une fonction ne peut pas servir de défaut avant d'exister |
+| Migrations nommées `202607280000NN_nom.sql` | Convention d'horodatage attendue par la CLI Supabase, tout en restant lisiblement séquentielles |
+| Le déclencheur de création de profil est livré à l'étape 1, non à l'étape 2 | La table `users` et le mécanisme qui la peuple forment un tout. Sans lui, aucun test de sécurité ne pourrait créer d'utilisateur par le chemin réel |
+| Table nommée `public.users`, et non `profiles` | §8.1 la nomme ainsi et la spécification fait foi. Elle est adossée à `auth.users`, qui reste la source de vérité de l'authentification |
+| `public.users.suspendu` ajouté | §4.3 F11 prévoit la suspension d'un compte. L'ajouter maintenant évite une migration corrective à l'étape 13 |
+| Sécurité en **deux barrières** : privilèges ET politiques | Une politique oubliée sur une table laisse tout passer si le privilège subsiste ; un privilège de lecture expose toutes les lignes sans RLS. Les deux sont posées dans la seule migration 0010, pour que le modèle se relise d'un tenant |
+| `alter default privileges … revoke all` sur les tables futures | Toute table créée par une migration ultérieure sera muette par défaut. Un oubli d'octroi devient visible, au lieu d'ouvrir silencieusement l'accès |
+| Le rôle et la suspension sont protégés par le **privilège de colonne**, pas par RLS | Une politique RLS agit sur les lignes, jamais sur les colonnes. `grant update (nom_complet, langue_preferee)` est la seule façon d'empêcher un utilisateur de se promouvoir administrateur |
+| Aucun privilège d'écriture sur `orders` pour un client | Structurant : une commande est créée par le serveur, qui relit les prix en base. Le client ne peut donc pas soumettre son propre montant |
+| `publie_le` en `timestamptz` alors que §8.1 dit `date` | La fenêtre de 3 mois se teste en déplaçant l'horloge à la seconde près |
+| Types TypeScript générés depuis la base (`npm run db:types`) | Une requête mal orthographiée devient une erreur de compilation. C'est aussi ce qui a permis de supprimer les `any` que le lint refusait |
+| Suppression d'un utilisateur en cascade sur ses commandes | Cohérent avec le droit à l'effacement (§11.2). **À arbitrer avant production** : la conservation des factures répond à des obligations comptables qui peuvent contredire cette cascade |
+| `applyPercentage` porte le seul `eslint-disable` du dépôt | Le 100 y est un diviseur de pourcentage, pas une conversion de devise. La levée est locale, commentée et unique |
+
+**Ce que les tests prouvent, au-delà du dénombrement :** aucune table du schéma
+`public` sans RLS ni sans politique explicite (vérifié par énumération de
+`pg_tables`, pas par relecture) ; un utilisateur ne peut ni s'octroyer un droit,
+ni se promettre le téléchargement, ni se promouvoir administrateur, ni créer une
+commande, ni prolonger son abonnement, ni lire quoi que ce soit d'un autre ; le
+rejeu d'un même octroi échoue au niveau base, y compris pour deux octrois
+manuels dont l'origine est nulle ; et `app_now()` ignore le décalage d'horloge
+dès que l'artefact d'activation est absent.
 
 ---
 
