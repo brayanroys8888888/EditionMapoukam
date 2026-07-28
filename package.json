@@ -1,0 +1,49 @@
+{
+  "name": "editionmapoukam",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Plateforme de contes africains illustrés — backend, 100 % local.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --project unit",
+    "test:watch": "vitest",
+    "verify": "npm run typecheck && npm run lint && npm run test",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "db:migrate": "supabase migration up --local",
+    "db:reset": "supabase db reset",
+    "db:seed": "node scripts/db-seed.mjs"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.9",
+    "next": "^16.2.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.1.2",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "dotenv": "^17.4.2",
+    "eslint": "^10.8.0",
+    "pg": "^8.22.0",
+    "supabase": "^2.110.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
+  }
+}

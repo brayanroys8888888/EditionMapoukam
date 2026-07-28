@@ -1,0 +1,37 @@
+# dépendances
+node_modules/
+
+# build Next.js
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# environnement — jamais versionné (CLAUDE.md, règle 6)
+.env
+.env.local
+.env*.local
+
+# adaptateurs locaux
+.mails/
+.devclock.json
+
+# Supabase local
+supabase/.temp/
+supabase/.branches/
+
+# artefacts d'ingestion
+.ingestion/
+
+# Contenu éditorial — volontairement hors dépôt.
+# 36 Mo aujourd'hui, et la spécification (§7.4.6) prévoit ~20 Mo par titre :
+# un catalogue de 40 titres approcherait le gigaoctet. Ce sont des livrables du
+# client, pas du code. La chaîne d'ingestion (étape 7) sera testée sur un
+# fichier de test réduit, versionné dans tests/fixtures/.
+conte d'afrique/
+
+# divers
+.DS_Store
+Thumbs.db
+coverage/
+*.log
