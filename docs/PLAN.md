@@ -1012,6 +1012,19 @@ dès que l'artefact d'activation est absent.
 
 ---
 
+## 5 bis. Dispositions prises sur les points de poste (2026-07-28)
+
+| Point | Disposition | État |
+|---|---|---|
+| `conte d'afrique/` hors dépôt | Confirmé par le client : le dossier reste hors git et servira au téléversement des livres par la chaîne d'ingestion (étape 7) | **Réglé** |
+| `env.example.txt` redondant | Supprimé. Son contenu est intégralement repris et enrichi dans `.env.example` | **Réglé** |
+| `vector` redémarrait en boucle | Cause identifiée : sur Docker Desktop pour Windows, le collecteur ne parvient pas à joindre le socket Docker (« Listing currently running containers failed »), et il entraînait `logflare`. `[analytics] enabled = false`. Aucune perte fonctionnelle : ces services agrègent des journaux de développement ; `docker logs` reste disponible | **Réglé** |
+| 3 vulnérabilités `npm audit` | Résolues par `overrides` npm — `sharp >= 0.35.0` et `postcss > 8.5.17` — sans rétrograder Next, ce que proposait le correctif automatique (Next 9.3.3). `npm audit` : 0 vulnérabilité. `npm run verify` et `npm run build` restent verts | **Réglé** |
+| Magasin d'images Docker incohérent | Rétabli de lui-même après redémarrage. `docker system df` répond de nouveau. 11,5 Go de cache de compilation purgés au passage — l'espace libre est remonté à 27 Go | **Réglé** |
+| Image `supabase/studio` corrompue | **Non réglé, et délibérément.** Le retéléchargement ne corrige rien : containerd croit détenir la couche et la réutilise. Seule une purge complète du stockage Docker la réparerait, ce qui détruirait les volumes des projets `archora` et `atlink` présents sur la machine. Studio est l'interface d'administration web : elle n'a aucun rôle dans un chantier backend, et y consacrer davantage serait disproportionné. Elle se réactive en une ligne le jour d'une purge | **Assumé** |
+
+---
+
 ## 6. Ce que je ne ferai pas sans votre accord
 
 - Modifier `docs/cahier-des-charges.md`
