@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import { ACCES_REFUSE, ORDRE_MOTIFS } from '@/domain/access/types';
+
+import { fichiersSources } from '../helpers/sources';
 
 /**
  * Unicité de l'implémentation du moteur de droits.
@@ -15,16 +17,6 @@ import { ACCES_REFUSE, ORDRE_MOTIFS } from '@/domain/access/types';
  * énoncer une règle ; il ne suffit pas à la tenir dans six mois.
  */
 const RACINE = process.cwd();
-
-function fichiers(racine: string): string[] {
-  const trouves: string[] = [];
-  for (const entree of readdirSync(racine)) {
-    const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) trouves.push(...fichiers(chemin));
-    else if (chemin.endsWith('.ts')) trouves.push(chemin);
-  }
-  return trouves;
-}
 
 /**
  * Motifs qui trahiraient une règle d'accès réimplémentée en TypeScript.
@@ -56,7 +48,7 @@ describe('src/domain/access', () => {
   it('ne réimplémente aucune règle d’accès', () => {
     const coupables: string[] = [];
 
-    for (const chemin of fichiers(join(RACINE, 'src', 'domain', 'access'))) {
+    for (const chemin of fichiersSources(join(RACINE, 'src', 'domain', 'access'))) {
       const source = readFileSync(chemin, 'utf8');
       for (const { motif, explication } of MOTIFS_INTERDITS) {
         if (motif.test(source)) {
@@ -71,7 +63,7 @@ describe('src/domain/access', () => {
   it('ne contient que des types et des constantes', () => {
     // Aucune fonction exportée : dès qu'il y en aurait une, la tentation
     // d'y glisser un calcul deviendrait irrésistible.
-    for (const chemin of fichiers(join(RACINE, 'src', 'domain', 'access'))) {
+    for (const chemin of fichiersSources(join(RACINE, 'src', 'domain', 'access'))) {
       const source = readFileSync(chemin, 'utf8');
       expect({ chemin: relative(RACINE, chemin), fonctions: /export function /.test(source) }).toEqual({
         chemin: relative(RACINE, chemin),
@@ -85,7 +77,7 @@ describe('src/lib/access', () => {
   it('n’est qu’un appelant : aucune règle métier', () => {
     const coupables: string[] = [];
 
-    for (const chemin of fichiers(join(RACINE, 'src', 'lib', 'access'))) {
+    for (const chemin of fichiersSources(join(RACINE, 'src', 'lib', 'access'))) {
       const source = readFileSync(chemin, 'utf8');
       for (const { motif, explication } of MOTIFS_INTERDITS) {
         if (motif.test(source)) {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+
+import { fichiersSources } from '../helpers/sources';
 
 /**
  * UN SEUL CHEMIN MÈNE AU FICHIER D'UN LIVRE, ET IL FILIGRANE.
@@ -35,17 +37,6 @@ const TYPES_GENERES = join('src', 'lib', 'supabase', 'database.types.ts');
 
 /** Seule route autorisée à servir un fichier de livre. */
 const ROUTE_TELECHARGEMENT = join('src', 'app', 'api', 'downloads', '[bookId]', 'route.ts');
-
-function fichiersSources(racine: string): string[] {
-  if (!existsSync(racine)) return [];
-  const trouves: string[] = [];
-  for (const entree of readdirSync(racine)) {
-    const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) trouves.push(...fichiersSources(chemin));
-    else if (/\.(ts|tsx)$/.test(chemin)) trouves.push(chemin);
-  }
-  return trouves;
-}
 
 describe('la route de contournement a bien disparu', () => {
   it('n’existe plus sur le disque', () => {

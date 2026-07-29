@@ -1806,6 +1806,45 @@ livrables de l'étape 13.
 
 ---
 
+## 5 quinquies. INVENTAIRE DES RÈGLES À DEUX NIVEAUX
+
+> **Pourquoi cette section existe.** Quatre fois, une logique d'autorisation ou
+> de borne présente à la fois en SQL et en TypeScript a rendu des verdicts
+> opposés. Les quatre fois, c'est un test qui l'a rattrapée **par accident**,
+> jamais par construction. Une règle écrite deux fois ne diverge pas le jour où
+> on l'écrit : elle diverge le jour où on en corrige une seule.
+>
+> **La règle de tenue de cette section.** Toute règle qui existe aux deux
+> niveaux figure ici, avec l'un des deux traitements — jamais aucun :
+>
+> * **(A) une seule implémentation**, l'autre niveau l'appelant ;
+> * **(B) un test qui compare les deux verdicts** sur les mêmes entrées.
+>
+> Le traitement (A) est toujours préférable. (B) n'est légitime que lorsque
+> l'unification est impossible — typiquement quand une couche doit décider sans
+> aller en base.
+
+| Règle | Où | Traitement | Test qui le tient |
+|---|---|---|---|
+| **Moteur de droits** (lecture, téléchargement, motif) | `access_for_books()` (SQL) ; RLS et application l'appellent | **A** — `src/domain/access` ne contient que types et constantes | `tests/unit/access-purity.test.ts` — échoue si `src/domain/access` nomme `inclus_abonnement`, `peut_telecharger`, la fenêtre ou la grâce |
+| **Longueur d'une version** (borne haute de lecture) | `pages_publiees()` (SQL, migration 0033) ; appelée par `reprise_lecture` **et** par `enregistrerProgression` | **A** — `book_pages` fait autorité, `nb_pages` est une métadonnée déclarative | `tests/integration/double-implementation.test.ts` — le cas où `nb_pages` **ment** est le seul qui discrimine |
+| **Fenêtre de vente de 3 mois** (§3.2) | `fenetre_de_vente_ecoulee()` (SQL, migration 0033) ; appelée par `access_for_books` **et** `catalog_list` | **A** | idem — plus un test qui échoue si le calcul en clair (`publie_le + make_interval`) réapparaît dans l'une des deux |
+| **Droit d'écrire une progression** | politique RLS `reading_progress` (SQL) ; `enregistrerProgression` (TS) | **B** — le service passe par `service_role`, qui contourne RLS : il doit donc rejouer la condition | `tests/integration/reading-progress.test.ts` — « applique la MÊME condition que la politique RLS » : les deux chemins refusent au même point |
+| **Validation à la publication** | `manques_pour_publication()` (SQL) + déclencheur ; l'API d'administration l'appelle | **A** — le déclencheur est la vraie barrière, l'API ne fait que rendre le motif lisible | `tests/integration/publication-validation.test.ts` |
+| **Statut effectif d'un abonnement** | colonne calculée `statut_effectif` (SQL) ; `src/lib/subscriptions/handlers.ts` la **lit** sans la recalculer | **A** | `tests/integration/subscriptions.test.ts` |
+| **Zone d'encaissement** | `zonePourPays()` (TS) — une seule implémentation, la base ne décide pas | **A** | `tests/unit/zone-encaissement-architecture.test.ts` — échoue si un schéma Zod de route accepte à nouveau une zone |
+| **Total d'une commande et remise** | `src/domain/orders` (TS) ; `create_order()` ne calcule **aucun** prix | **A** — la base reçoit des montants déjà résolus | `tests/unit/order-total.test.ts`, `tests/integration/orders.test.ts` |
+
+**Ce que cet inventaire ne couvre pas, et pourquoi.** Les contraintes `check` du
+schéma dupliquent volontairement des validations Zod (bornes de page, format de
+code promotionnel, cohérence de période). Ce n'est pas la même chose : Zod
+**refuse tôt et explique** à l'utilisateur, la contrainte **empêche** quoi qu'il
+arrive. Elles ne peuvent pas rendre de verdicts opposés — la plus stricte gagne
+toujours, et c'est la base. Une divergence y produit un message d'erreur moins
+clair, jamais un droit accordé à tort.
+
+---
+
 ## 6. Ce que je ne ferai pas sans votre accord
 
 - Modifier `docs/cahier-des-charges.md`

@@ -154,7 +154,7 @@ export async function enregistrerProgression(
 
   const version = await client
     .from('book_translations')
-    .select('id, nb_pages')
+    .select('id')
     .eq('book_id', bookId)
     .eq('langue', langue)
     .eq('statut', 'publie')
@@ -164,10 +164,43 @@ export async function enregistrerProgression(
     return { ok: false, raison: 'version_introuvable' };
   }
 
-  // La borne vient de la version RÉELLEMENT ouverte : une page 19 est valide en
-  // français et ne l'est pas dans une version anglaise de seize pages.
-  const nbPages = version.data.nb_pages ?? 0;
-  if (page < 1 || (nbPages > 0 && page > nbPages)) {
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ `pages_publiees`, ET NON `book_translations.nb_pages`.                  │
+  // │                                                                        │
+  // │ Les deux répondent à « combien de pages a cette version ? » et ne       │
+  // │ s'accordaient pas. `nb_pages` est une métadonnée DÉCLARÉE à            │
+  // │ l'ingestion ; la table des pages rendues, elle, dit ce qu'on sait       │
+  // │ réellement servir — et c'est elle qui fait autorité.                    │
+  // │                                                                        │
+  // │ La divergence était active : sur un titre annonçant 12 pages dont 6     │
+  // │ seulement étaient rendues, ce service acceptait d'enregistrer la page   │
+  // │ 10 — que `servirPage` refusait d'ouvrir, et que la reprise ramenait     │
+  // │ ensuite à 6 en invoquant une « pagination divergente entre langues »   │
+  // │ dont il n'était pas question. Le lecteur était rembobiné en silence,   │
+  // │ sur un faux motif.                                                     │
+  // │                                                                        │
+  // │ La borne vient donc de la MÊME fonction SQL que `reprise_lecture`       │
+  // │ (migration 0033), pour que les deux ne puissent plus diverger.         │
+  // └────────────────────────────────────────────────────────────────────────┘
+  //
+  // La borne reste celle de la version RÉELLEMENT ouverte : une page 19 est
+  // valide en français et ne l'est pas dans une version anglaise de 16 pages.
+  const compte = await client.rpc('pages_publiees', {
+    p_book_id: bookId,
+    p_langue: langue,
+  });
+
+  if (compte.error) {
+    logger.warn('Longueur de version indisponible', {
+      bookId,
+      langue,
+      detail: compte.error.message,
+    });
+    return { ok: false, raison: 'version_introuvable' };
+  }
+
+  const nbPages = compte.data ?? 0;
+  if (page < 1 || page > nbPages) {
     return { ok: false, raison: 'page_hors_bornes' };
   }
 

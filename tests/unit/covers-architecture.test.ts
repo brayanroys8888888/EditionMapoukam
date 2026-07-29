@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 import {
@@ -8,6 +8,8 @@ import {
   cheminCouverture,
   nouveauJetonCouverture,
 } from '@/lib/storage/covers';
+
+import { fichiersSources } from '../helpers/sources';
 
 /**
  * LE BUCKET PUBLIC NE CONTIENT QUE DES COUVERTURES.
@@ -23,16 +25,6 @@ import {
  */
 const RACINE = process.cwd();
 const MODULE_AUTORISE = join('src', 'lib', 'storage', 'covers.ts');
-
-function fichiersSources(racine: string): string[] {
-  const trouves: string[] = [];
-  for (const entree of readdirSync(racine)) {
-    const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) trouves.push(...fichiersSources(chemin));
-    else if (/\.(ts|tsx)$/.test(chemin)) trouves.push(chemin);
-  }
-  return trouves;
-}
 
 describe('écriture dans le bucket public', () => {
   it('n’est faite que par le module de couvertures', () => {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+
+import { fichiersSources } from '../helpers/sources';
 
 /**
  * CE TEST REMPLACE UN FILET DE SÉCURITÉ.
@@ -43,19 +45,6 @@ const MODULE_ECRITURE = join('src', 'lib', 'ingestion', 'pages-repository.ts');
 
 /** Fichier généré depuis le schéma : il décrit toutes les tables, par nature. */
 const TYPES_GENERES = join('src', 'lib', 'supabase', 'database.types.ts');
-
-function fichiersSources(racine: string): string[] {
-  const trouves: string[] = [];
-  for (const entree of readdirSync(racine)) {
-    const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) {
-      trouves.push(...fichiersSources(chemin));
-    } else if (/\.(ts|tsx)$/.test(chemin)) {
-      trouves.push(chemin);
-    }
-  }
-  return trouves;
-}
 
 describe('accès à book_pages', () => {
   it('n’est référencée que par le service de pages et le dépôt d’ingestion', () => {

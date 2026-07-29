@@ -217,36 +217,36 @@ on conflict (code) do update set
 -- maintenant : sans elles, chaque test de lecture buterait sur une absence de
 -- contenu plutôt que sur la règle qu'il vise.
 --
--- Six pages pour trois titres : un gratuit, un payant hors fenêtre, un titre
--- d'appel gratuit et vendu.
--- ---------------------------------------------------------------------------
-
-insert into public.book_pages (translation_id, numero, chemin_haute, chemin_allegee, largeur, hauteur, texte)
-select t.id, p.numero,
-       'book-pages/' || b.slug || '/' || t.langue || '/haute/' || lpad(p.numero::text, 3, '0') || '.webp',
-       'book-pages/' || b.slug || '/' || t.langue || '/allegee/' || lpad(p.numero::text, 3, '0') || '.webp',
-       1600, 2000,
-       'Page ' || p.numero::text || ' de « ' || t.titre || ' ».'
-from public.books b
-join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
-cross join generate_series(1, 6) as p(numero)
-where b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait')
-on conflict (translation_id, numero) do nothing;
-
--- ---------------------------------------------------------------------------
--- Pagination DIVERGENTE entre deux versions linguistiques.
+-- ┌────────────────────────────────────────────────────────────────────────────┐
+-- │ TOUTE VERSION PUBLIÉE A EXACTEMENT `nb_pages` PAGES. SANS EXCEPTION.      │
+-- │                                                                            │
+-- │ Une version antérieure posait six pages pour trois titres, et rien pour    │
+-- │ les autres — alors que `nb_pages` annonçait 12, 16 ou 18. Le jeu de        │
+-- │ données se contredisait donc lui-même, et ce n'était pas sans conséquence :│
+-- │ deux modules bornent la lecture, l'un sur `nb_pages`, l'autre sur le       │
+-- │ nombre de lignes réellement présentes ici. Tant que les deux divergeaient  │
+-- │ dans le jeu de démonstration, aucun test ne pouvait voir qu'ils            │
+-- │ divergeaient aussi dans le code.                                           │
+-- │                                                                            │
+-- │ Une fixture plus faible que ce qu'elle représente ne fait pas échouer les  │
+-- │ tests : elle les fait passer sans les exercer. C'est le pire des deux.     │
+-- │                                                                            │
+-- │ En production, les deux valeurs sont écrites par le même passage de la     │
+-- │ chaîne d'ingestion et ne peuvent pas diverger. Le jeu de données doit      │
+-- │ respecter cette propriété, sans quoi il ne représente rien de réel.        │
+-- │                                                                            │
+-- │ Une version en BROUILLON n'a en revanche aucune page : c'est l'état d'un   │
+-- │ titre dont le rendu n'a pas encore tourné, et il mérite d'être représenté. │
+-- └────────────────────────────────────────────────────────────────────────────┘
 --
--- `kouassi-et-le-tam-tam` fait 20 pages en français et 16 en anglais. Ce n'est
--- pas une coquette : deux versions linguistiques sont deux PDF distincts,
--- produits par deux passages séparés de la chaîne d'ingestion, et un texte
--- traduit se recompose. Rien ne garantit le même nombre de pages.
+-- Au passage, `kouassi-et-le-tam-tam` fait 20 pages en français et 16 en
+-- anglais. Ce n'est pas une coquette : deux versions linguistiques sont deux
+-- PDF distincts, produits par deux passages séparés de la chaîne d'ingestion,
+-- et un texte traduit se recompose. Rien ne garantit le même nombre de pages.
 --
 -- C'est la matière du cas que la reprise de lecture doit gérer : un lecteur
 -- arrivé page 19 en français, qui bascule en anglais, ne peut pas y être
 -- renvoyé à une page qui n'existe pas.
---
--- Le nombre de pages suit `nb_pages` de chaque version, plutôt qu'une constante :
--- c'est la seule façon que le jeu de données reste cohérent avec lui-même.
 -- ---------------------------------------------------------------------------
 
 insert into public.book_pages (translation_id, numero, chemin_haute, chemin_allegee, largeur, hauteur, texte)
@@ -257,8 +257,9 @@ select t.id, p.numero,
        'Page ' || p.numero::text || ' de « ' || t.titre || ' ».'
 from public.books b
 join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
+-- `t.nb_pages`, jamais une constante : c'est la seule façon que le jeu de
+-- données reste cohérent avec lui-même quand une version change de longueur.
 cross join lateral generate_series(1, t.nb_pages) as p(numero)
-where b.slug = 'kouassi-et-le-tam-tam'
 on conflict (translation_id, numero) do nothing;
 
 -- ---------------------------------------------------------------------------

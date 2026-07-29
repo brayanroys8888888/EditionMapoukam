@@ -79,17 +79,59 @@ function decouper(cheminComplet: string): { bucket: string; chemin: string } {
   };
 }
 
+/**
+ * Dépôts menés en parallèle, par lots.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CE N'EST PAS UNE OPTIMISATION GRATUITE.                        │
+ * │                                                                          │
+ * │ Le jeu de démonstration posait auparavant six pages pour trois titres.   │
+ * │ Depuis qu'il est cohérent avec `nb_pages` — c'est-à-dire depuis qu'il    │
+ * │ représente quelque chose de réel — il en compte près de deux cents, soit │
+ * │ presque quatre cents objets à déposer.                                   │
+ * │                                                                          │
+ * │ En séquentiel, le `beforeAll` dépassait le délai de dix secondes. Un     │
+ * │ `beforeAll` qui échoue ne fait pas échouer les tests : il les SAUTE, et  │
+ * │ vingt-six d'entre eux — dont toute la suite de sécurité des fichiers —   │
+ * │ disparaissaient de la suite en laissant un total presque tout vert.      │
+ * │                                                                          │
+ * │ C'est la même classe de défaut que celle auditée ici : un test qui ne    │
+ * │ s'exécute pas ne proteste pas.                                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const PARALLELISME = 24;
+
+async function deposerEnLots(
+  taches: readonly { bucket: string; chemin: string; contenu: Buffer; type: string }[],
+): Promise<void> {
+  for (let debut = 0; debut < taches.length; debut += PARALLELISME) {
+    await Promise.all(
+      taches
+        .slice(debut, debut + PARALLELISME)
+        .map((t) => deposer(t.bucket, t.chemin, t.contenu, t.type)),
+    );
+  }
+}
+
 /** Dépose un objet pour chaque page et chaque fichier téléchargeable du jeu. */
 export async function deposerFichiersDeDemonstration(): Promise<void> {
   const pages = await query<{ chemin_haute: string; chemin_allegee: string }>(
     `select chemin_haute, chemin_allegee from public.book_pages`,
   );
-  for (const page of pages) {
-    for (const complet of [page.chemin_haute, page.chemin_allegee]) {
-      const { bucket, chemin } = decouper(complet);
-      await deposer(bucket, chemin, PIXEL_WEBP, 'image/webp');
-    }
-  }
+
+  // Une image d'un pixel suffit ICI, et seulement ici : le service de pages
+  // signe une URL vers l'objet, il ne décode jamais son contenu. Les fichiers
+  // téléchargeables, eux, sont RÉELLEMENT ouverts par le filigrane — d'où les
+  // vrais PDF et EPUB ci-dessous.
+  await deposerEnLots(
+    pages.flatMap((page) =>
+      [page.chemin_haute, page.chemin_allegee].map((complet) => ({
+        ...decouper(complet),
+        contenu: PIXEL_WEBP,
+        type: 'image/webp',
+      })),
+    ),
+  );
 
   const fichiers = await query<{ fichier_telechargement: string }>(
     `select fichier_telechargement from public.book_translations
@@ -100,9 +142,18 @@ export async function deposerFichiersDeDemonstration(): Promise<void> {
   const pdf = await pdfDeDemonstration();
   const epub = await epubDeDemonstration();
 
-  for (const fichier of fichiers) {
-    const { bucket, chemin } = decouper(fichier.fichier_telechargement);
-    await deposer(bucket, chemin, pdf, 'application/pdf');
-    await deposer(bucket, chemin.replace(/\.pdf$/, '.epub'), epub, 'application/epub+zip');
-  }
+  await deposerEnLots(
+    fichiers.flatMap((fichier) => {
+      const { bucket, chemin } = decouper(fichier.fichier_telechargement);
+      return [
+        { bucket, chemin, contenu: pdf, type: 'application/pdf' },
+        {
+          bucket,
+          chemin: chemin.replace(/\.pdf$/, '.epub'),
+          contenu: epub,
+          type: 'application/epub+zip',
+        },
+      ];
+    }),
+  );
 }

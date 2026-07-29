@@ -100,6 +100,36 @@ describe('le jeu de démonstration porte bien la divergence', () => {
       { langue: 'fr', pages: '20' },
     ]);
   });
+
+  it('ne se contredit JAMAIS lui-même sur la longueur d’une version', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ AUDIT DES FIXTURES — une fixture plus faible que ce qu'elle          │
+    // │ représente ne fait pas échouer les tests : elle les fait passer sans │
+    // │ les exercer.                                                         │
+    // │                                                                      │
+    // │ Le jeu de données annonçait 12, 16 ou 18 pages par `nb_pages` en n'en│
+    // │ posant que 6 dans `book_pages` — ou aucune. Deux modules bornent la  │
+    // │ lecture, l'un sur chacune de ces deux valeurs : tant qu'elles        │
+    // │ divergeaient ICI, aucun test ne pouvait voir qu'elles divergeaient   │
+    // │ aussi DANS LE CODE. C'est exactement ce qui s'est produit.           │
+    // │                                                                      │
+    // │ En production, les deux valeurs sont écrites par le même passage de  │
+    // │ la chaîne d'ingestion et ne peuvent pas diverger. Le jeu de données  │
+    // │ doit respecter cette propriété, sans quoi il ne représente rien.     │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const incoherentes = await query<{ slug: string; annonce: number; reelles: number }>(
+      `select b.slug, t.nb_pages as annonce, count(bp.id)::int as reelles
+         from public.book_translations t
+         join public.books b on b.id = t.book_id
+         left join public.book_pages bp on bp.translation_id = t.id
+        where t.statut = 'publie'
+        group by b.slug, t.langue, t.nb_pages
+       having count(bp.id) <> t.nb_pages
+        order by b.slug`,
+    );
+
+    expect(incoherentes).toEqual([]);
+  });
 });
 
 describe('PAGINATION DIVERGENTE — la reprise ne renvoie jamais hors du livre', () => {

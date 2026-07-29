@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
+
+import { fichiersSources } from '../helpers/sources';
 
 /**
  * Discipline d'horloge, vérifiée sur les sources plutôt que sur le
@@ -16,22 +18,9 @@ import { join, relative } from 'node:path';
 const SRC = join(process.cwd(), 'src');
 const MODULE_AUTORISE = join('src', 'lib', 'supabase', 'dev-clock-session.ts');
 
-function fichiersTypeScript(racine: string): string[] {
-  const trouves: string[] = [];
-  for (const entree of readdirSync(racine)) {
-    const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) {
-      trouves.push(...fichiersTypeScript(chemin));
-    } else if (chemin.endsWith('.ts') || chemin.endsWith('.tsx')) {
-      trouves.push(chemin);
-    }
-  }
-  return trouves;
-}
-
 describe('paramètre de session app.now', () => {
   it('n’est nommé que par le module autorisé', () => {
-    const coupables = fichiersTypeScript(SRC)
+    const coupables = fichiersSources(SRC)
       .filter((chemin) => readFileSync(chemin, 'utf8').includes('app.now'))
       .map((chemin) => relative(process.cwd(), chemin))
       .filter((chemin) => chemin !== MODULE_AUTORISE);
@@ -50,15 +39,13 @@ describe('lecture directe du temps dans la logique métier', () => {
   it('src/domain n’appelle jamais new Date() ni Date.now()', () => {
     // Doublon volontaire de la règle ESLint : le lint peut être contourné par
     // un commentaire de désactivation, pas ce test.
-    let fichiers: string[];
-    try {
-      fichiers = fichiersTypeScript(join(SRC, 'domain'));
-    } catch {
-      // src/domain n'existe pas encore : la règle n'a rien à surveiller.
-      return;
-    }
-
-    const coupables = fichiers
+    //
+    // Une version antérieure enveloppait ce parcours dans un `try/catch` qui
+    // rendait la main quand `src/domain` était introuvable — écrit à l'époque
+    // où le dossier n'existait pas encore. Il rendait la règle silencieusement
+    // désactivable : renommer `src/domain` aurait suffi à la faire taire, au
+    // vert. L'absence du dossier doit faire ÉCHOUER ce test, pas le sauter.
+    const coupables = fichiersSources(join(SRC, 'domain'))
       .filter((chemin) => /new Date\(\s*\)|Date\.now\(\s*\)/.test(readFileSync(chemin, 'utf8')))
       .map((chemin) => relative(process.cwd(), chemin));
 

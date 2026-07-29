@@ -1549,6 +1549,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      fenetre_de_vente_ecoulee: {
+        Args: { p_at: string; p_fenetre_jours: number; p_publie_le: string }
+        Returns: boolean
+      }
       fulfill_order: {
         Args: {
           p_order_id: string
@@ -1564,6 +1568,10 @@ export type Database = {
       manques_pour_publication: {
         Args: { p_book_id: string }
         Returns: string[]
+      }
+      pages_publiees: {
+        Args: { p_book_id: string; p_langue: string }
+        Returns: number
       }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
       purge_expired_invoices: {

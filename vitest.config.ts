@@ -44,6 +44,21 @@ export default defineConfig({
           // entre fichiers, sous peine de courses sur les données de seed.
           fileParallelism: false,
           testTimeout: 30_000,
+          // ┌────────────────────────────────────────────────────────────────┐
+          // │ LE DÉLAI DES HOOKS EST RÉGLÉ EXPLICITEMENT, ET C'EST IMPORTANT.│
+          // │                                                                │
+          // │ Il valait 10 s par défaut, quand les tests en avaient 30. Un    │
+          // │ `beforeAll` qui dépasse ne fait pas ÉCHOUER les tests du        │
+          // │ fichier : il les SAUTE. Le fichier est bien signalé en échec,   │
+          // │ mais le décompte affiche « 811 passés, 26 ignorés » — et un     │
+          // │ total presque tout vert n'attire pas l'œil.                     │
+          // │                                                                │
+          // │ C'est arrivé : compléter le jeu de démonstration a porté la     │
+          // │ préparation du stockage de dix-huit à près de quatre cents      │
+          // │ objets, et toute la suite de sécurité des fichiers a disparu de │
+          // │ l'exécution. Un test qui ne s'exécute pas ne proteste pas.      │
+          // └────────────────────────────────────────────────────────────────┘
+          hookTimeout: 30_000,
         },
       },
     ],
