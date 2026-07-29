@@ -994,23 +994,35 @@ pas encore.
 
 ### Étape 7 — Chaîne d'ingestion des PDF
 
-- [ ] **Objectif** — Un PDF déposé produit automatiquement : analyse, pages
+- [x] **Objectif** — Un PDF déposé produit automatiquement : analyse, pages
   WebP en deux résolutions, couverture, EPUB à mise en page fixe, couche texte,
   fiche en brouillon (§7.4).
 - **Dépendances** — étapes 1, 6
-- **Fichiers produits**
-  - `src/domain/ingestion/analyze.ts` — `pdftotext`, nombre de pages,
-    dimensions, présence d'une couche texte
-  - `src/domain/ingestion/render-pages.ts` — `pdftoppm` puis `sharp`, deux
-    résolutions
-  - `src/domain/ingestion/cover.ts` — vignette, fiche, mise en avant
+- **Fichiers produits** *(emplacements corrigés à la livraison : le calcul pur
+  reste dans `src/domain/`, tout ce qui touche un sous-processus, le disque ou
+  la base passe dans `src/lib/` — voir les décisions ci-dessous)*
+  - `src/domain/ingestion/text.ts` — normalisation, recollage des lettrines
   - `src/domain/ingestion/epub.ts` — EPUB à mise en page fixe assemblé à la
     main (aucune dépendance AGPL), avec bloc de texte masqué accessible quand
     la couche texte existe
-  - `src/domain/ingestion/pipeline.ts` — orchestration, reprise, journalisation
+  - `src/domain/ingestion/slug.ts` — slug du titre, et résolution des collisions
+  - `src/lib/ingestion/poppler.ts` — résolution **vérifiée** des binaires
+  - `src/lib/ingestion/analyze.ts` — `pdfinfo`/`pdftotext`, nombre de pages,
+    dimensions, présence d'une couche texte, empreinte
+  - `src/lib/ingestion/render-pages.ts` — `pdftoppm` puis `sharp`, deux
+    résolutions
+  - `src/lib/ingestion/cover.ts` — vignette, fiche, mise en avant
+  - `src/lib/ingestion/storage.ts` — dépôt dans les trois bucket privés
+  - `src/lib/ingestion/pages-repository.ts` — seul module autorisé à écrire
+    dans `book_pages`
+  - `src/lib/ingestion/pipeline.ts` — orchestration, reprise, journalisation
   - `src/app/api/admin/books/ingest/route.ts`
-  - `tests/integration/ingestion.test.ts` — sur un PDF réel de
-    `conte d'afrique/`
+  - `supabase/migrations/20260728000021_ingestion_empreinte.sql` — idempotence
+  - `tests/unit/ingestion-text.test.ts`, `ingestion-epub.test.ts`,
+    `ingestion-slug.test.ts`
+  - `tests/integration/ingestion.test.ts` — chaîne complète sur un PDF réel
+  - `tests/integration/ingestion-corpus.test.ts` — extraction sur les **seize**
+    contes de `conte d'afrique/`
 - **Points de vigilance** — sous-processus invoqués sans shell, arguments en
   tableau : aucune injection par un nom de fichier (les titres contiennent des
   apostrophes et des accents). L'EPUB doit s'ouvrir dans un lecteur standard.
@@ -1021,6 +1033,82 @@ pas encore.
                               # N pages de texte, 1 livre en brouillon
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 7
+
+| Décision | Raison |
+|---|---|
+| Les modules à effets de bord vivent dans `src/lib/ingestion/`, pas `src/domain/` | Écart avec l'arborescence annoncée plus haut. `src/domain` est réservé au calcul pur — une règle ESLint et un test y interdisent la lecture directe de l'heure. Poppler, `sharp` et le stockage n'y ont pas leur place. Restent purs, donc dans `src/domain/ingestion/` : `text.ts`, `epub.ts`, `slug.ts` |
+| Chaque binaire poppler est **résolu et vérifié** au lieu d'être appelé par le PATH | Sur ce poste, Git for Windows livre un `pdftotext.exe` issu d'Xpdf qui **masque** celui de poppler. Xpdf ne connaît pas `-bbox`, dont l'extraction dépend — alors que `pdftoppm` et `pdfinfo` résolvaient bien vers poppler. La chaîne aurait mélangé deux outillages sans le signaler. La bannière de version est lue et doit mentionner poppler |
+| Le faux discriminant écarté : « Glyph & Cog » | Les **deux** bannières le mentionnent, poppler étant un fork d'Xpdf qui en crédite les auteurs. Filtrer là-dessus aurait rejeté les deux outils |
+| `pdftoppm` écrit dans un dossier temporaire, jamais sur la sortie standard | Vérifié : sous Windows, un préfixe `-` est pris au pied de la lettre et produit un fichier nommé `-.png`, en laissant stdout **vide**. Une chaîne qui s'y serait fiée aurait produit des pages de zéro octet, sans erreur ni code de retour |
+| Détection de la lettrine **géométrique**, jamais lexicale | Le gabarit du corpus détache la lettrine : `pdftotext` rend « I l y a très longtemps ». Une règle « majuscule isolée » corromprait « Y a-t-il », phrase française normale. Le discriminant est la hauteur du glyphe : lettrines à 2,96 × la médiane, toute autre majuscule isolée à 1,30 × au plus |
+| « À » et « Ô » ne sont **jamais** recollés | Ce sont des mots français complets. « À l'entrée du village » est la sortie correcte ; recoller donnerait « Àl'entrée ». Mais « A u milieu » doit devenir « Au milieu » — un « A » non accentué en tête de phrase est nécessairement un mot coupé. La distinction tient sur l'accent seul, et les seize contes la confirment |
+| `œ` et `æ` **conservés** dans le texte, **transcrits** dans le slug | Deux règles contraires pour deux usages contraires. Dans un conte, « oeufs » est une faute d'orthographe ; dans une URL, « œ » n'est pas un caractère ASCII. Chaque module documente le versant opposé |
+| Deux résolutions : 1600 px et 800 px | §5.1 — une part importante de l'audience est en Afrique francophone sur connexion lente. L'allégée est aussi plus compressée (qualité 62 contre 80) : son rôle est de peser peu. Un test vérifie qu'elle fait moins de la moitié du poids de la haute |
+| Mise à l'échelle par **poppler**, pas par `sharp` | Le rendu part des vecteurs du PDF à la taille finale, au lieu d'agrandir une image déjà tramée. Le texte des illustrations reste net |
+| EPUB assemblé à la main, avec JSZip (MIT) pour seule dépendance | CLAUDE.md interdit `PyMuPDF` et `ebooklib` (AGPL). Les bibliothèques EPUB courantes tombent sous cette interdiction |
+| Images **JPEG** dans l'EPUB, WebP en ligne | Les deux sorties n'ont pas le même lecteur. En ligne, un navigateur récent, où WebP pèse moins lourd. L'EPUB doit s'ouvrir **partout**, y compris sur les liseuses anciennes : WebP n'est un type autorisé que depuis EPUB 3.3. Un test vérifie que les octets embarqués sont bien du JPEG, et non seulement que le manifeste l'annonce |
+| `mimetype` en première entrée du zip, **non compressée** | Exigence OCF : c'est ce qui permet de reconnaître un EPUB sans le décompresser. Compressée ou déplacée, l'archive reste un zip valide et s'ouvre à la main — mais un distributeur la refuse. Erreur silencieuse à la fabrication, bruyante à la publication. Le test lit les octets 30 à 58 du fichier produit |
+| Bloc de texte masqué par `clip-path`, jamais par `display: none` | Correctif d'accessibilité de §7.4.2. `display: none` retire l'élément de l'arbre d'accessibilité : la synthèse vocale ne le voit plus du tout. C'est le piège exact que le correctif doit éviter, et un test l'interdit nommément |
+| Les métadonnées d'accessibilité **changent** selon la présence d'une couche texte | Annoncer `textual` sur un album muet serait une fausse déclaration : un lecteur malvoyant choisirait le titre sur cette foi et n'y trouverait rien à écouter (§7.4.4) |
+| `dcterms:modified` tronqué à la seconde | EPUB 3 impose `AAAA-MM-JJTHH:MM:SSZ`. `toISOString()` produit des millisecondes, qu'un validateur refuse |
+| L'ingestion crée le livre en **brouillon**, et n'y touche plus | §7.4.3 étape 6. `publie_le` reste nul — la fenêtre de vente de 3 mois ne court donc pas encore. `inclus_abonnement`, `disponible_achat` et `gratuit` restent faux : la chaîne ne décide jamais du modèle économique d'un titre (§3.2) |
+| Idempotence par l'empreinte SHA-256 du **contenu** | Migration corrective 0021. Un double clic dans le back-office, un envoi relancé après coupure : chacun créerait un second livre en brouillon avec ses images en double. Le nom du fichier ne peut pas servir — il change à chaque réenregistrement, le contenu non |
+| Unicité **partielle** de l'empreinte : seulement sur `statut = 'termine'` | Un échec — PDF corrompu, stockage coupé — ne doit pas interdire de redéposer le fichier une fois le problème réglé. Une contrainte simple aurait transformé chaque échec en impasse définitive |
+| La route de dépôt **téléverse** le fichier ; le client ne désigne jamais un chemin serveur | Accepter un chemin aurait donné à tout compte administrateur une lecture arbitraire du système de fichiers : déposer un `.env` l'aurait recopié dans le stockage, puis rendu par une URL signée. Restreindre à un dossier autorisé n'aurait fait que déplacer le problème sur la qualité de la vérification anti-remontée |
+| La signature `%PDF-` est vérifiée sur les octets | Le type déclaré par le client n'est pas une preuve. Un test envoie un fichier annonçant `application/pdf` qui n'en est pas un |
+| Le nettoyage après échec efface les **fichiers**, jamais le livre en brouillon | Le brouillon porte la trace de l'échec pour l'éditeur, il est invisible au catalogue, et le supprimer effacerait la ligne de suivi qui explique ce qui s'est passé. Seuls les fichiers occupent du stockage sans que rien ne les rattache |
+
+**La règle d'accès à `book_pages` a été scindée, et non assouplie.** La chaîne
+doit alimenter cette table, que l'étape 4 avait réservée à un module unique. Ce
+que cette règle protège est la **lecture** : la garantie « aucune page ne sort
+sans être passée par `access_for` » ne tient que parce qu'aucun autre chemin de
+lecture n'existe. L'écriture fait entrer du contenu, elle n'en fait pas sortir.
+
+| Module | Droit | Vérifié par |
+|---|---|---|
+| `src/lib/content/page-service.ts` | Seul à **lire**, et toujours après `getAccess` | Position de `getAccess(` avant celle de `from('book_pages')` |
+| `src/lib/ingestion/pages-repository.ts` | Seul à **écrire**, et **incapable de lire** | Aucun `.select(`, aucun `.single(`/`.maybeSingle(`, uniquement `upsert` et `delete` |
+
+La dernière clause est ce qui empêche l'ouverture de dégénérer : sans elle, le
+module d'écriture deviendrait un second chemin de lecture sans contrôle de
+droits, et la garantie d'origine tomberait sans que rien ne le signale.
+
+**Le test d'intégration promis à l'étape 6 est livré** : seule la couverture
+atterrit dans le bucket public, aux trois formats attendus, et les trois bucket
+privés restent inaccessibles au client — vérifié avec un vrai client soumis à
+RLS, pas par lecture du code.
+
+**Le corpus est un corpus de test, pas un exemple.** Les assertions
+d'extraction tournent sur les **seize** contes, pas sur un seul : un défaut de
+gabarit se répète d'un titre à l'autre, et le vérifier sur un exemplaire ne
+prouverait rien sur les quinze autres. La chaîne complète, elle, est jouée sur
+un conte réel — quatorze pages, une minute de traitement.
+
+**Un test m'a repris.** J'attendais le slug `petit-baobab` ; l'ingestion produit
+`petit-baobab-2`. Le jeu de démonstration porte déjà ce slug, et la résolution
+de collision a fonctionné exactement comme prévu. C'est mon attente qui était
+fausse, et le test vérifie désormais le cas de collision — sur la vraie
+contrainte d'unicité de la base, ce qui vaut mieux que ce que j'avais écrit.
+
+#### Point en suspens — validation par epubcheck
+
+`epubchecker` est en dépendance de développement, mais le paquet npm **ne
+contient pas** le validateur : son script d'installation télécharge l'archive
+Java depuis GitHub. Ce poste n'a pas accès au réseau, le téléchargement échoue
+**sans faire échouer `npm install`**, et le dossier `vendors/` reste absent.
+
+Le test correspondant est donc conditionné à la présence réelle du fichier —
+c'est le seul test ignoré de la suite, et il est nommé pour qu'on le voie. Il ne
+remplace pas les vérifications de structure, qui s'exécutent toujours et
+couvrent la conformité OCF, la déclaration de mise en page fixe, la cohérence du
+manifeste et du dos, la validité des images embarquées et le bon échappement
+XML.
+
+Pour l'activer sur un poste connecté : `npm rebuild epubchecker`, puis
+`npm run verify`. **À faire avant toute remise du premier titre à un
+distributeur.**
 
 ---
 

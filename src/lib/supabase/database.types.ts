@@ -629,9 +629,11 @@ export type Database = {
           chemin_source: string
           couche_texte: boolean | null
           cree_le: string
+          empreinte: string | null
           erreur: string | null
           etape: string | null
           id: string
+          jeton: string | null
           maj_le: string
           nb_pages: number | null
           statut: Database["public"]["Enums"]["ingestion_status"]
@@ -642,9 +644,11 @@ export type Database = {
           chemin_source: string
           couche_texte?: boolean | null
           cree_le?: string
+          empreinte?: string | null
           erreur?: string | null
           etape?: string | null
           id?: string
+          jeton?: string | null
           maj_le?: string
           nb_pages?: number | null
           statut?: Database["public"]["Enums"]["ingestion_status"]
@@ -655,9 +659,11 @@ export type Database = {
           chemin_source?: string
           couche_texte?: boolean | null
           cree_le?: string
+          empreinte?: string | null
           erreur?: string | null
           etape?: string | null
           id?: string
+          jeton?: string | null
           maj_le?: string
           nb_pages?: number | null
           statut?: Database["public"]["Enums"]["ingestion_status"]
