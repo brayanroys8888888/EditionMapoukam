@@ -1425,6 +1425,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fail_order: {
+        Args: {
+          p_motif?: string
+          p_order_id: string
+          p_webhook_event_id?: string
+        }
+        Returns: boolean
+      }
+      fulfill_order: {
+        Args: {
+          p_order_id: string
+          p_reference_paiement?: string
+          p_webhook_event_id?: string
+        }
+        Returns: {
+          deja_traite: boolean
+          nb_droits: number
+        }[]
+      }
       is_admin: { Args: { p_user?: string }; Returns: boolean }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
       purge_expired_invoices: {
@@ -1436,6 +1455,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      refund_order: {
+        Args: { p_order_id: string; p_webhook_event_id?: string }
+        Returns: number
       }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_impactes_par_fenetre: {

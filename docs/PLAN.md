@@ -1176,7 +1176,7 @@ refaire.
 
 ### Étape 9 — Paiement simulé et gestionnaire de webhooks
 
-- [ ] **Objectif** — Tunnel branché sur `FakePaymentProvider`, vrai gestionnaire
+- [x] **Objectif** — Tunnel branché sur `FakePaymentProvider`, vrai gestionnaire
   de webhooks : signature vérifiée, traitement idempotent, octroi atomique.
 - **Dépendances** — étapes 3, 4, 8
 - **Fichiers produits**
@@ -1199,6 +1199,40 @@ refaire.
   npm run test -- webhooks
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 9
+
+| Décision | Raison |
+|---|---|
+| L'ordre des opérations du gestionnaire est la sécurité même | 1. lire le corps **brut** ; 2. vérifier la signature **avant tout parsing** ; 3. journaliser ; 4. appliquer. Inverser 2 et 3 ferait traiter un corps non authentifié ; inverser 3 et 4 rendrait un rejeu indiscernable d'un premier passage |
+| `webhook_events` distingue **reçu** et **traité** | Un événement reçu dont l'application échoue garde `traite_le` nul : une réémission le reprend au lieu de le croire fait. Marquer « traité » à la réception aurait transformé chaque panne passagère en paiement définitivement perdu |
+| Un événement authentifié mais non appliqué rend **500** | Un prestataire réel réémet tant qu'il n'a pas reçu de 200. Répondre 200 sur un événement non traité le ferait cesser, et le paiement resterait sans droits |
+| Un rejeu déjà traité rend **200** | C'est le fonctionnement normal, pas une erreur : un 500 ferait boucler le prestataire |
+| Un corps à signature invalide est journalisé sous un identifiant **préfixé** | Sans préfixe, une contrefaçon portant l'identifiant d'un événement à venir ferait rejeter le vrai comme un rejeu. Un test le vérifie |
+| Les réponses du gestionnaire sont **muettes** | Un prestataire n'a besoin que du code HTTP. Détailler la cause d'un rejet indiquerait à un attaquant ce qui manque à sa contrefaçon |
+| Verrou de ligne `for update` sur la commande, **avant** toute lecture d'état | Sans lui, deux webhooks concurrents liraient tous deux `en_attente` et tenteraient tous deux l'octroi. L'index unique de `entitlements` reste la dernière ligne de défense (D1 point 8), éprouvée séparément |
+| Un échec qui arrive **après** un paiement réussi ne défait rien | Les événements d'un prestataire ne sont pas garantis dans l'ordre, et un paiement encaissé ne se retire pas sur la foi d'un message tardif : cela demande un remboursement explicite |
+| Un remboursement **retire** le droit acquis | §3.2 fait du droit la contrepartie du paiement. Rembourser sans retirer laisserait le contenu accessible gratuitement et à perpétuité. Seuls les droits de **cette** commande sont retirés (`source_id`) : un octroi manuel sur le même titre survit |
+| Le code promotionnel n'est décompté **qu'ici**, au paiement | Une commande en attente peut être abandonnée. L'unicité `(promo_code_id, order_id)` empêche qu'un rejeu décompte deux fois |
+| Un événement d'abonnement rend **500**, il n'est pas ignoré | L'accepter en silence ferait cesser les réémissions, et l'abonnement serait perdu sans trace. L'étape 10 les traitera |
+| Un type **inconnu** est ignoré avec un 200 | Un prestataire en ajoute au fil du temps ; refuser ferait réessayer indéfiniment un événement qui ne nous concerne pas |
+| `fulfillment.ts` est dans `src/lib`, non `src/domain` | Même écart qu'à l'étape 7 : il appelle la base. `src/domain` reste au calcul pur |
+
+**Le test d'atomicité, en la faisant échouer.** Une commande dont on a supprimé
+les lignes fait lever la fonction *après* le passage en `paye`. Si les deux
+écritures n'étaient pas dans la même transaction, la commande resterait payée
+sans le moindre droit — le client aurait payé et n'aurait rien reçu. Le test
+vérifie que la commande est toujours `en_attente` et `paye_le` toujours nul.
+
+**Le montage entier est éprouvé de bout en bout.** Un dernier test fait
+fabriquer, signer et transmettre l'événement par `FakePaymentProvider`, puis
+vérifie que le droit de téléchargement est acquis. Aucun raccourci : c'est le
+code de production des deux côtés.
+
+**Le schéma m'a repris.** `payment_events` n'a pas de colonne `motif` — elle
+porte un `detail jsonb`, commune à tous les types d'événements qui ne
+transportent pas les mêmes informations. Ma fonction `fail_order` échouait donc
+à l'insertion, et le webhook rendait 500.
 
 ---
 

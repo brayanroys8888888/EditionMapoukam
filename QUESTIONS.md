@@ -8,6 +8,41 @@ Ordre : les plus engageants d'abord.
 
 ---
 
+## Étape 9 — Paiement et webhooks
+
+### Q9.1 — Un remboursement retire le droit d'accès. Est-ce bien votre intention ?
+
+**Ce que j'ai fait.** `remboursement.effectue` retire les droits que la commande
+avait octroyés, et repasse la commande en `rembourse`.
+
+**Mon raisonnement.** §3.2 fait du droit d'accès la contrepartie du paiement.
+Rembourser sans retirer laisserait le titre lisible et téléchargeable
+gratuitement, à perpétuité — un remboursement deviendrait un moyen d'obtenir le
+contenu sans payer.
+
+**Pourquoi je vous le signale quand même.** C'est une décision **commerciale**
+autant que technique, et certains éditeurs choisissent l'inverse par geste
+commercial. J'ai pris garde à ne retirer que les droits issus de **cette**
+commande : un octroi manuel d'administrateur sur le même titre survit au
+remboursement.
+
+**Ce dont j'ai besoin de vous.** Un simple accord, ou l'inverse si vous préférez
+que le client garde le titre.
+
+### Q9.2 — Le fichier téléchargeable n'est pas encore filigrané
+
+**Constat, pas question.** L'ingestion (étape 7) dépose le PDF source tel quel
+dans `book-downloads`, et la route de téléchargement (étape 6) le sert. Le
+filigrane personnalisé de §9.4 est produit **à l'achat**, ce qui est l'objet de
+l'étape 11.
+
+Autrement dit : **depuis maintenant, un achat donne un PDF non filigrané.** La
+chaîne est fonctionnelle mais la protection annoncée au §10.2 n'existe pas
+encore. Rien à décider — c'est le calendrier prévu — mais il ne faut pas
+diffuser de titre acheté avant l'étape 11.
+
+---
+
 ## Étape 8 — Panier et commandes
 
 ### Q8.1 — La zone d'encaissement est transmise par le client (à corriger avec un vrai prestataire)
