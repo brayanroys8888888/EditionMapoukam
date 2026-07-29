@@ -1297,8 +1297,12 @@ qui plante sur une entrée inattendue est une panne, pas un refus.
 
 ### Étape 11 — Téléchargement filigrané
 
-- [ ] **Objectif** — Fichier filigrané généré à la demande par combinaison
+- [x] **Objectif** — Fichier filigrané généré à la demande par combinaison
   langue × format, journalisé, avec limitation de débit (§9.4, §10.2).
+  **Périmètre étendu : l’EPUB est filigrané aussi.** L’étape s’intitulait
+  « PDF filigrané », mais un achat livre les deux formats — un EPUB nu rendrait
+  le filigrane du PDF décoratif, puisque qui veut partager le livre partage le
+  format qui ne porte pas son adresse.
 - **Dépendances** — étapes 6, 9
 - **Fichiers produits**
   - `src/domain/downloads/watermark.ts` — `pdf-lib`, filigrane discret (email
@@ -1321,6 +1325,50 @@ qui plante sur une entrée inattendue est une panne, pas un refus.
                               # fichier de A jamais servi à B
   npm run verify              # code 0
   ```
+
+#### Posture — ce filigrane est un DRM social
+
+**Il dissuade et il trace. Il n'empêche pas.** Un utilisateur déterminé le
+retirera, et c'est un choix assumé de §10.2 : « privilégier le filigrane
+personnalisé à un DRM technique fort. Ce dernier est coûteux, dégrade fortement
+l'expérience utilisateur et reste contournable. »
+
+On ne cherche donc **pas** à le renforcer par du chiffrement PDF : celui-ci se
+casse en quelques secondes avec un outil gratuit, et gêne surtout les lecteurs
+légitimes — liseuses anciennes, synthèses vocales, outils d'accessibilité.
+L'objectif est que l'achat reste le chemin le plus simple, pas que la copie soit
+impossible. Les tests vérifient en conséquence que la trace est **présente et
+juste**, jamais qu'elle est inviolable.
+
+#### Décisions techniques prises à l'étape 11
+
+| Décision | Raison |
+|---|---|
+| **Échec fermé** : jamais de repli sur le fichier nu | Ce serait la panne silencieuse parfaite — l'acheteur reçoit son livre, tout semble fonctionner, et les fichiers partent sans protection pendant des semaines. On ne s'en apercevrait qu'en trouvant un exemplaire en circulation sans pouvoir dire d'où il vient, c'est-à-dire au moment précis où la trace devait servir. Un test force l'échec et vérifie qu'aucune URL n'est servie, et que ni copie ni journal ne sont écrits |
+| L'**EPUB** est filigrané aussi | Filigraner un format sur deux, c'est n'en filigraner aucun : qui veut partager le livre partage celui qui ne porte pas son adresse |
+| Filigrane dessiné dans le **flux de contenu**, jamais en annotation | Une annotation — et à plus forte raison un calque — se retire d'un clic dans n'importe quel éditeur, y compris gratuit et en ligne. Le filigrane serait présent à la livraison, absent au premier partage |
+| Sur **toutes** les pages | Un filigrane en première page se retire en supprimant une page. Sur quarante-huit pages, il faut quarante-huit interventions |
+| Police TrueType **embarquée** avec sous-ensemble de glyphes | Les polices standard de pdf-lib sont en WinAnsi et **lèvent une exception** sur tout caractère hors de ce jeu. Une adresse internationalisée aurait fait échouer la génération. Un test le prouve avec `Дмитрий.Петров@пример.test`, et un contre-test vérifie que la police standard aurait bien échoué |
+| **Deuxième couche invisible** : l'identifiant dans les métadonnées | Si quelqu'un rogne le pied de page, la trace subsiste. Sans elle, le journal ne dit que « ces vingt personnes ont téléchargé ce titre », ce qui ne désigne personne |
+| Clé de cache **déterministe** | C'est ce qui rend la purge sans danger : une copie effacée se reconstruit à l'identique. Un identifiant aléatoire aurait fait perdre la trace au moment où elle sert |
+| Purge des copies non redemandées depuis `retention_copies_mois` | À 2 000 acheteurs et 40 titres en deux langues et deux formats, cela ferait 320 000 fichiers. Le stockage deviendrait le premier poste de coût de la plateforme |
+| Sémaphore à **trois** générations simultanées, et délai de 60 s | `pdf-lib` travaille en mémoire : le source, le document reconstruit et le résultat coexistent. Dix téléchargements simultanés d'un album lourd épuisent le processus — et ce n'est pas la requête coupable qui tombe, ce sont toutes, lecture en ligne comprise |
+| L'anonymisation d'un compte **efface ses copies** | Une copie porte l'adresse de son acheteur, dans son pied de page et ses métadonnées. La conserver garderait la donnée personnelle que l'effacement vise à retirer, dans le format le plus difficile à retrouver : à l'intérieur d'un binaire du stockage |
+| Le quota compte par **utilisateur**, pas par IP | §5.1 — l'adresse est partagée derrière la plupart des connexions mobiles africaines. Trente par heure : le quota vise l'automate, pas le lecteur qui reprend après une coupure |
+
+**Un test d'architecture m'a repris.** `download_copies.user_id` était en
+`on delete cascade`. La migration 0012 a supprimé toute cascade depuis `users` :
+un compte ne se supprime plus, il s'anonymise, et une suppression accidentelle
+doit échouer franchement plutôt qu'emporter l'historique. Corrigé en
+`on delete restrict` — ce qui a mis au jour la conséquence ci-dessus sur
+l'anonymisation.
+
+**Une méprise de test, notée pour mémoire.** J'ai d'abord cru que `setProducer`
+était écrasé à l'écriture. C'était la **relecture** du test qui le réécrivait :
+`PDFDocument.load` applique `updateMetadata: true` par défaut et remplace
+`Producer` et `ModDate` en mémoire. Le fichier livré, lui, portait bien la
+bonne valeur — un test complémentaire le vérifie désormais sur les octets bruts,
+en cherchant la forme hexadécimale UTF-16BE réellement écrite.
 
 ---
 

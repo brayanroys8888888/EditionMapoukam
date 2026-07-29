@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { appliquerEvenement, abonnementCourant } from '@/lib/subscriptions/handlers';
+import { STATUTS_EFFECTIFS } from '@/domain/subscriptions/state-machine';
 import { getAccess } from '@/lib/access/engine';
 import { FixedClock } from '@/lib/clock';
 import {
@@ -577,6 +578,121 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
 
     expect(await effectif(jours(10))).toBe('expire');
     expect(acces.canRead).toBe(false);
+  });
+});
+
+describe('la COLONNE CALCULÉE, lue par le chemin réel de l’application', () => {
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ CE QUI RATTRAPE UNE ASSERTION DE TYPE DEVENUE FAUSSE.                │
+   * │                                                                      │
+   * │ `handlers.ts` AFFIRME le type de `statut_effectif` à la main : le    │
+   * │ générateur de Supabase n'émet pas les colonnes calculées. Une        │
+   * │ assertion manuelle ne se vérifie pas toute seule — modifier le SQL   │
+   * │ sans toucher au type TypeScript passerait inaperçu, et l'application │
+   * │ lirait une valeur qu'elle croit connaître.                           │
+   * │                                                                      │
+   * │ Ces tests lisent la colonne PAR LE CHEMIN RÉEL — `abonnementCourant`,│
+   * │ celui qu'emploie la route — dans chaque scénario, et comparent la    │
+   * │ valeur rendue. Ils échouent si le SQL change sans le type, et si le  │
+   * │ type change sans le SQL.                                             │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+
+  /** Installe un abonnement dans un état donné, dates relatives à l'horloge. */
+  async function poser(
+    statut: string,
+    bornes: { finDansJours: number; impayeDepuisJours?: number },
+  ): Promise<void> {
+    await query(`delete from public.subscriptions where user_id = $1`, [abonne.id]);
+    await query(
+      `insert into public.subscriptions
+         (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant,
+          impaye_depuis)
+       values ($1, 'mensuel', $2::public.subscription_status,
+               public.app_now() - interval '60 days',
+               public.app_now() + make_interval(days => $3::int),
+               'international', 'EUR', 799,
+               case when $4::int is null then null
+                    else public.app_now() - make_interval(days => $4::int) end)`,
+      [abonne.id, statut, bornes.finDansJours, bornes.impayeDepuisJours ?? null],
+    );
+  }
+
+  it('rend « essai » pour un essai en cours', async () => {
+    await poser('essai', { finDansJours: 5 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('essai');
+  });
+
+  it('rend « actif » pour un abonnement actif dans sa période', async () => {
+    await poser('actif', { finDansJours: 20 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('actif');
+  });
+
+  it('rend « annule » tant que la période payée court', async () => {
+    // §9.1 — l'accès est maintenu jusqu'au terme de la période payée.
+    await poser('annule', { finDansJours: 10 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('annule');
+  });
+
+  it('rend « expire » pour un annulé dont la période est échue', async () => {
+    await poser('annule', { finDansJours: -5 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('expire');
+  });
+
+  it('rend « impaye » pendant la période de grâce', async () => {
+    // Grâce de 7 jours : deux jours après l'échec, elle court encore.
+    await poser('impaye', { finDansJours: -3, impayeDepuisJours: 2 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('impaye');
+  });
+
+  it('rend « expire » pour un impayé dont la grâce est écoulée', async () => {
+    await poser('impaye', { finDansJours: -30, impayeDepuisJours: 20 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('expire');
+  });
+
+  it('rend « anomalie » pour un actif dont la période est échue', async () => {
+    await poser('actif', { finDansJours: -10 });
+
+    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('anomalie');
+  });
+
+  it('rend le statut rapporté À CÔTÉ du statut observé', async () => {
+    // Les deux doivent circuler ensemble : l'un décrit la réalité, l'autre
+    // conserve la distinction annulé/impayé dont l'analyse de rétention a
+    // besoin. Confondre les deux perdrait l'information.
+    await poser('annule', { finDansJours: -5 });
+
+    const courant = await abonnementCourant(abonne.id);
+    expect(courant?.statut).toBe('annule');
+    expect(courant?.statutEffectif).toBe('expire');
+  });
+
+  it('n’expose que les valeurs que le TypeScript déclare connaître', async () => {
+    // Le filet qui rattrape une valeur AJOUTÉE au type SQL sans l'être au type
+    // TypeScript : l'application recevrait alors une chaîne qu'elle traite
+    // comme impossible.
+    const valeursSql = await query<{ v: string }>(
+      `select unnest(enum_range(null::public.subscription_status_effectif))::text as v`,
+    );
+
+    expect(valeursSql.map((l) => l.v).sort()).toEqual([...STATUTS_EFFECTIFS].sort());
+  });
+
+  it('couvre exactement les statuts stockés, plus l’anomalie', async () => {
+    // Un statut ajouté à `subscription_status` sans l'être au type dérivé
+    // ferait échouer la conversion en base, silencieusement à la lecture.
+    const stockes = await query<{ v: string }>(
+      `select unnest(enum_range(null::public.subscription_status))::text as v`,
+    );
+
+    expect([...stockes.map((l) => l.v), 'anomalie'].sort()).toEqual([...STATUTS_EFFECTIFS].sort());
   });
 });
 

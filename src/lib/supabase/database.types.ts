@@ -273,6 +273,7 @@ export type Database = {
           maj_le: string
           maj_par: string | null
           periode_grace_jours: number
+          retention_copies_mois: number
           tolerance_renouvellement_heures: number
         }
         Insert: {
@@ -282,6 +283,7 @@ export type Database = {
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
+          retention_copies_mois?: number
           tolerance_renouvellement_heures?: number
         }
         Update: {
@@ -291,6 +293,7 @@ export type Database = {
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
+          retention_copies_mois?: number
           tolerance_renouvellement_heures?: number
         }
         Relationships: [
@@ -448,6 +451,64 @@ export type Database = {
           note?: string
         }
         Relationships: []
+      }
+      download_copies: {
+        Row: {
+          book_id: string
+          chemin: string
+          copie_id: string
+          cree_le: string
+          dernier_acces_le: string
+          format: Database["public"]["Enums"]["download_format"]
+          langue: string
+          octets: number
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          chemin: string
+          copie_id: string
+          cree_le?: string
+          dernier_acces_le?: string
+          format: Database["public"]["Enums"]["download_format"]
+          langue: string
+          octets: number
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          chemin?: string
+          copie_id?: string
+          cree_le?: string
+          dernier_acces_le?: string
+          format?: Database["public"]["Enums"]["download_format"]
+          langue?: string
+          octets?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "download_copies_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "download_copies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       download_logs: {
         Row: {
@@ -1410,6 +1471,14 @@ export type Database = {
         Returns: {
           nombre: number
           statut: Database["public"]["Enums"]["subscription_status_effectif"]
+        }[]
+      }
+      copies_purgeables: {
+        Args: { p_at?: string }
+        Returns: {
+          chemin: string
+          copie_id: string
+          dernier_acces_le: string
         }[]
       }
       create_order: {

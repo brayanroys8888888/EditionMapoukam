@@ -6,6 +6,7 @@ import { parseJsonBody } from '@/lib/http/validate';
 import { requireUser } from '@/lib/auth/session';
 import { noticeSuppression } from '@/lib/account/notice';
 import { getServerEnv } from '@/lib/config/env';
+import { effacerCopiesDe } from '@/lib/downloads/service';
 import { logger } from '@/lib/logger';
 
 /**
@@ -42,6 +43,17 @@ export async function POST(request: Request): Promise<Response> {
 
   const corps = await parseJsonBody(request, confirmationSchema);
   if (!corps.ok) return corps.response;
+
+  // AVANT l'anonymisation : les copies filigranées portent l'adresse email de
+  // leur acheteur, dans leur pied de page et dans leurs métadonnées. Les
+  // effacer après coup demanderait de retrouver un identifiant qui n'existe
+  // plus. Un échec ici interrompt l'anonymisation — mieux vaut la refaire que
+  // de laisser des fichiers nominatifs derrière un compte réputé effacé.
+  try {
+    await effacerCopiesDe(garde.appelant.id);
+  } catch (erreur) {
+    return errors.interne(erreur);
+  }
 
   const { error } = await createServiceClient().rpc('anonymize_user', {
     p_user_id: garde.appelant.id,
