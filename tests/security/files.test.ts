@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { GET as pageRoute } from '@/app/api/books/[id]/pages/[page]/route';
-import { GET as fichierRoute } from '@/app/api/books/[id]/file/route';
+import { GET as fichierRoute } from '@/app/api/downloads/[bookId]/route';
 import { dureeValidite } from '@/lib/storage/signed-url';
 import {
   resetServerEnvCache,
@@ -30,7 +30,7 @@ let livrePayant: string;
 let livreGratuit: string;
 
 const ctxPage = (id: string, page: string) => ({ params: Promise.resolve({ id, page }) });
-const ctxFichier = (id: string) => ({ params: Promise.resolve({ id }) });
+const ctxFichier = (bookId: string) => ({ params: Promise.resolve({ bookId }) });
 
 beforeAll(async () => {
   await deposerFichiersDeDemonstration();
@@ -86,7 +86,7 @@ describe('LA règle : l’abonnement ne donne jamais le téléchargement (§3.2)
     expect(lecture.status).toBe(200);
 
     const telechargement = await fichierRoute(
-      get(`/api/books/${livrePayant}/file`, { jeton: abonne.accessToken }),
+      get(`/api/downloads/${livrePayant}`, { jeton: abonne.accessToken }),
       ctxFichier(livrePayant),
     );
 
@@ -103,13 +103,18 @@ describe('LA règle : l’abonnement ne donne jamais le téléchargement (§3.2)
       ctxPage(livrePayant, '1'),
     );
     const telechargement = await fichierRoute(
-      get(`/api/books/${livrePayant}/file`, { jeton: acheteur.accessToken }),
+      get(`/api/downloads/${livrePayant}`, { jeton: acheteur.accessToken }),
       ctxFichier(livrePayant),
     );
 
     expect(lecture.status).toBe(200);
     expect(telechargement.status).toBe(200);
-    expect((await corpsJson<{ motif: string }>(telechargement)).motif).toBe('purchase');
+    // La route filigranée rend la RÉFÉRENCE de la copie plutôt que le motif :
+    // c'est elle qui figure dans le fichier et qu'un service après-vente
+    // demandera.
+    expect((await corpsJson<{ reference: string }>(telechargement)).reference).toMatch(
+      /^[0-9a-f]{12}$/,
+    );
   });
 
   it('refuse le téléchargement d’un conte GRATUIT à qui ne l’a pas acheté', async () => {
@@ -120,7 +125,7 @@ describe('LA règle : l’abonnement ne donne jamais le téléchargement (§3.2)
       ctxPage(livreGratuit, '1'),
     );
     const telechargement = await fichierRoute(
-      get(`/api/books/${livreGratuit}/file`, { jeton: visiteurConnecte.accessToken }),
+      get(`/api/downloads/${livreGratuit}`, { jeton: visiteurConnecte.accessToken }),
       ctxFichier(livreGratuit),
     );
 
@@ -274,7 +279,7 @@ describe('durée de validité des URL signées (docs/PLAN.md D6)', () => {
     // Même pour un titre gratuit : la gratuité porte sur la lecture, jamais sur
     // le téléchargement. Un lien de fichier valable une heure serait partageable.
     const reponse = await fichierRoute(
-      get(`/api/books/${livrePayant}/file`, { jeton: acheteur.accessToken }),
+      get(`/api/downloads/${livrePayant}`, { jeton: acheteur.accessToken }),
       ctxFichier(livrePayant),
     );
 
@@ -326,7 +331,7 @@ describe('bucket privés', () => {
 describe('accès au téléchargement', () => {
   it('exige un compte', async () => {
     const reponse = await fichierRoute(
-      get(`/api/books/${livrePayant}/file`),
+      get(`/api/downloads/${livrePayant}`),
       ctxFichier(livrePayant),
     );
 
@@ -335,17 +340,19 @@ describe('accès au téléchargement', () => {
 
   it('refuse un utilisateur sans droit', async () => {
     const reponse = await fichierRoute(
-      get(`/api/books/${livrePayant}/file`, { jeton: visiteurConnecte.accessToken }),
+      get(`/api/downloads/${livrePayant}`, { jeton: visiteurConnecte.accessToken }),
       ctxFichier(livrePayant),
     );
 
     expect(reponse.status).toBe(403);
-    expect((await corpsJson<ReponseErreur>(reponse)).erreur.message).toMatch(/ne possédez pas/i);
+    expect((await corpsJson<ReponseErreur>(reponse)).erreur.code).toBe(
+      'telechargement_non_inclus',
+    );
   });
 
   it('refuse une langue dont la traduction n’est pas publiée', async () => {
     const reponse = await fichierRoute(
-      get(`/api/books/${livrePayant}/file?langue=en`, { jeton: acheteur.accessToken }),
+      get(`/api/downloads/${livrePayant}?langue=en`, { jeton: acheteur.accessToken }),
       ctxFichier(livrePayant),
     );
 
@@ -355,7 +362,7 @@ describe('accès au téléchargement', () => {
   it('sert les deux formats', async () => {
     for (const format of ['pdf', 'epub'] as const) {
       const reponse = await fichierRoute(
-        get(`/api/books/${livrePayant}/file?format=${format}`, { jeton: acheteur.accessToken }),
+        get(`/api/downloads/${livrePayant}?format=${format}`, { jeton: acheteur.accessToken }),
         ctxFichier(livrePayant),
       );
       expect({ format, statut: reponse.status }).toEqual({ format, statut: 200 });
@@ -364,7 +371,7 @@ describe('accès au téléchargement', () => {
 
   it('refuse un format inconnu', async () => {
     const reponse = await fichierRoute(
-      get(`/api/books/${livrePayant}/file?format=mobi`, { jeton: acheteur.accessToken }),
+      get(`/api/downloads/${livrePayant}?format=mobi`, { jeton: acheteur.accessToken }),
       ctxFichier(livrePayant),
     );
 

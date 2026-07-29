@@ -1410,6 +1410,10 @@ en cherchant la forme hexadécimale UTF-16BE réellement écrite.
   - le back-office affiche les **abonnements en anomalie** en évidence, avec
     leur nombre et depuis quand (`abonnements_en_anomalie()`), et la liste des
     manques de chaque brouillon (`manques_pour_publication()`)
+  - **déclenchement manuel de la purge des copies filigranées** — solution
+    intermédiaire pour P1 de la section « À brancher avant la mise en
+    production » : un déclenchement à la main vaut mieux qu'un appel qui
+    n'existe pas
   - `tests/integration/admin.test.ts`, `tests/security/admin.test.ts`
 - **Points de vigilance** — chaque route admin est refusée à un utilisateur
   ordinaire (403) et à un visiteur (401) : test **route par route**, pas un
@@ -1718,6 +1722,36 @@ Le validateur est versionné sous `vendors/epubcheck/` (34 Mo, licence BSD à
 trois clauses), la dépendance npm est retirée, et le test s'exécute toujours.
 **La suite ne comporte plus aucun test ignoré, et l'EPUB produit passe la
 validation W3C sans la moindre erreur.**
+
+---
+
+## 5 quater. À BRANCHER AVANT LA MISE EN PRODUCTION
+
+> **Section unique et volontairement centralisée.** Ces points ont en commun de
+> ne bloquer aucun développement et de ne casser aucun test : le code existe,
+> il est éprouvé, et **rien ne l'appelle**. Dispersés dans les notes de chaque
+> étape, ils passeraient à travers exactement parce qu'ils ne font pas de bruit.
+>
+> Chaque note concernée renvoie ici. Tout ajout à cette liste doit s'y faire
+> aussi, et nulle part ailleurs.
+
+| # | À brancher | Ce qui existe déjà | Conséquence si oublié |
+|---|---|---|---|
+| P1 | **Purge des copies filigranées** — appeler `purgerCopies()` périodiquement | Fonction livrée et testée (étape 11), `copies_purgeables()` en base, durée dans `business_settings.retention_copies_mois` | Le stockage croît sans fin. À 2 000 acheteurs × 40 titres × 2 langues × 2 formats, 320 000 fichiers — premier poste de coût de la plateforme |
+| P2 | **Génération de filigrane hors du fil de requête** — ouvrier séparé et file persistante | Sémaphore à 3 places et délai de 60 s (étape 11), qui font *attendre* au lieu de *tomber* | Un acheteur sur connexion lente attend la génération **puis** le téléchargement. Ce n'est pas une panne, c'est une lenteur — mais §5.1 la rend coûteuse |
+| P3 | **Expiration des abonnements échus** — rien ne déclenche la transition `expire` | `statut_effectif()` replie les dates à la lecture, et l'accès est correctement refusé (étape 10) | Aucune faille d'accès. Mais les abonnements restent affichés « annulé » ou « impayé » indéfiniment, et l'état `anomalie` s'accumule sans que personne ne le voie |
+| P4 | **Purge des factures échues** — `purge_expired_invoices()` n'est appelée par rien | Fonction livrée à l'étape 1 (migration 0014), durée dans `INVOICE_RETENTION_YEARS` | Conservation de pièces comptables au-delà de la durée légale — un passif, pas un manque |
+
+**Pourquoi aucune tâche planifiée n'est livrée.** Le mode 100 % local n'a pas
+d'ordonnanceur, et en introduire un serait un service de plus à simuler. Deux
+voies à l'arbitrage, au déploiement :
+
+1. une tâche planifiée d'hébergeur appelant une route d'administration protégée ;
+2. un déclenchement **manuel depuis le back-office** (étape 13).
+
+La seconde est une bonne solution intermédiaire pour P1 : un déclenchement à la
+main vaut mieux qu'un appel qui n'existe pas. Elle est consignée dans les
+livrables de l'étape 13.
 
 ---
 

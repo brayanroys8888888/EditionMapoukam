@@ -1,3 +1,6 @@
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+
+import { assemblerEpub } from '@/domain/ingestion/epub';
 import { serviceClient } from './users';
 import { query } from './db';
 
@@ -15,7 +18,45 @@ const PIXEL_WEBP = Buffer.from(
   'UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAgA0JaQAA3AA/vuUAAA=',
   'base64',
 );
-const PDF_MINIMAL = Buffer.from('%PDF-1.4\n%%EOF\n', 'utf8');
+
+/**
+ * PDF et EPUB RÉELLEMENT exploitables, et non des chaînes de circonstance.
+ *
+ * Une version antérieure déposait `%PDF-1.4\n%%EOF\n` — assez pour qu'une URL
+ * signée existe, pas assez pour que quoi que ce soit puisse l'ouvrir. Depuis
+ * l'étape 11, le téléchargement FILIGRANE le fichier : un faux PDF fait échouer
+ * la génération, et le test buterait là plutôt que sur la règle qu'il vise.
+ */
+async function pdfDeDemonstration(): Promise<Buffer> {
+  const doc = await PDFDocument.create();
+  const fonte = await doc.embedFont(StandardFonts.Helvetica);
+  for (const numero of [1, 2]) {
+    const page = doc.addPage([420, 634]);
+    page.drawText(`Page ${String(numero)}`, { x: 40, y: 300, size: 18, font: fonte });
+  }
+  return Buffer.from(await doc.save());
+}
+
+async function epubDeDemonstration(): Promise<Buffer> {
+  return await assemblerEpub(
+    [
+      {
+        numero: 1,
+        image: PIXEL_WEBP,
+        largeur: 420,
+        hauteur: 634,
+        texte: 'Texte de démonstration.',
+      },
+    ],
+    {
+      titre: 'Conte de démonstration',
+      auteur: 'Tradition orale',
+      langue: 'fr',
+      identifiant: '00000000-0000-4000-8000-000000000001',
+      modifieLe: new Date('2026-07-29T00:00:00Z'),
+    },
+  );
+}
 
 async function deposer(bucket: string, chemin: string, contenu: Buffer, type: string): Promise<void> {
   const { error } = await serviceClient()
@@ -54,9 +95,14 @@ export async function deposerFichiersDeDemonstration(): Promise<void> {
     `select fichier_telechargement from public.book_translations
      where fichier_telechargement is not null`,
   );
+  // Construits une seule fois : filigraner exige de vrais fichiers, et les
+  // rebâtir par titre coûterait sans rien prouver de plus.
+  const pdf = await pdfDeDemonstration();
+  const epub = await epubDeDemonstration();
+
   for (const fichier of fichiers) {
     const { bucket, chemin } = decouper(fichier.fichier_telechargement);
-    await deposer(bucket, chemin, PDF_MINIMAL, 'application/pdf');
-    await deposer(bucket, chemin.replace(/\.pdf$/, '.epub'), PDF_MINIMAL, 'application/epub+zip');
+    await deposer(bucket, chemin, pdf, 'application/pdf');
+    await deposer(bucket, chemin.replace(/\.pdf$/, '.epub'), epub, 'application/epub+zip');
   }
 }

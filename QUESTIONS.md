@@ -54,30 +54,17 @@ Consigné dans la liste des fichiers produits de l'étape 13.
 
 ## Étape 11 — points signalés
 
-### N5 — La génération n'est pas réellement sortie du fil de requête
+### N5 et N6 — voir « À brancher avant la mise en production »
 
-**Ce que j'ai fait.** Un sémaphore à trois places et un délai maximal de
-60 secondes. Rien n'est écrit sur disque — `pdf-lib` et JSZip travaillent en
-mémoire — donc il n'y a pas de fichier temporaire à nettoyer ; c'est la mémoire
-qui est la ressource bornée, et le sémaphore la borne.
+Ces deux points — la génération hors du fil de requête, et le déclenchement de
+la purge des copies — dépendent tous deux d'un ordonnanceur que le mode local
+n'a pas. Ils sont consignés en **§5 quater de `docs/PLAN.md`**, section unique,
+avec deux autres du même genre.
 
-**Ce qui reste vrai.** La génération occupe toujours le fil de requête : elle
-fait *attendre* au lieu de *tomber*, ce qui n'est pas la même panne, mais un
-acheteur sur connexion lente attend la génération **puis** le téléchargement.
-
-Une génération réellement asynchrone demanderait un ouvrier séparé et une file
-persistante — hors du périmètre du mode 100 % local, qui n'a pas d'ordonnanceur.
-À rouvrir au moment du déploiement réel, en même temps que la question de la
-tâche planifiée de purge.
-
-### N6 — La purge des copies n'a pas de déclencheur automatique
-
-`purgerCopies()` existe et est testée, mais **rien ne l'appelle tout seul** —
-même raison qu'en N5 : pas d'ordonnanceur en mode local. Elle sera branchée sur
-une tâche planifiée au déploiement, ou exposée au back-office à l'étape 13.
-
-Sans appel, le stockage croît indéfiniment. Ce n'est pas urgent au volume
-actuel, mais c'est à ne pas oublier avant la mise en production.
+Le principe : ces points ne bloquent aucun développement et ne cassent aucun
+test — le code existe, il est éprouvé, et rien ne l'appelle. Dispersés dans les
+notes de chaque étape, ils passeraient à travers **précisément parce qu'ils ne
+font pas de bruit**. Toute dette de ce type s'ajoute là, et nulle part ailleurs.
 
 ### N7 — La police embarquée ne couvre pas toutes les écritures
 
