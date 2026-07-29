@@ -196,15 +196,33 @@ on conflict (book_id, zone) do update set
 -- Codes promotionnels de démonstration (§3.4)
 -- ---------------------------------------------------------------------------
 
-insert into public.promo_codes (code, type, valeur, devise, expire_le, actif, usage_max)
+-- ┌────────────────────────────────────────────────────────────────────────────┐
+-- │ UN CODE À MONTANT FIXE PORTE SA ZONE, UN CODE EN POURCENTAGE N'EN A PAS.  │
+-- │                                                                            │
+-- │ « 2 € de remise » n'a aucun sens sur un panier en francs CFA : appliqué     │
+-- │ tel quel, il retirerait deux francs. Un pourcentage, lui, vaut partout.     │
+-- │ Deux contraintes symétriques l'imposent (migration 0036) ; le jeu de        │
+-- │ données porte donc un exemplaire de chaque forme.                          │
+-- └────────────────────────────────────────────────────────────────────────────┘
+
+insert into public.promo_codes (code, type, valeur, devise, zone, expire_le, actif, usage_max)
 values
-  ('BIENVENUE', 'pourcentage', 20, null, public.app_now() + interval '6 months', true, 100),
-  ('CONTE2EUR', 'montant', 200, 'EUR', public.app_now() + interval '3 months', true, 50),
-  ('EXPIRE',    'pourcentage', 50, null, public.app_now() - interval '1 day',   true, null)
+  ('BIENVENUE', 'pourcentage', 20, null, null, public.app_now() + interval '6 months', true, 100),
+  ('CONTE2EUR', 'montant', 200, 'EUR', 'international',
+                public.app_now() + interval '3 months', true, 50),
+  -- Le pendant africain du précédent : même intention commerciale, libellée
+  -- dans la devise et la grille où elle a un sens.
+  -- 500 et non 50000 : le franc CFA n'a PAS de sous-unité (migration 0005).
+  -- Recopier la logique de l'euro donnerait ici cinq cents francs de remise
+  -- multipliés par cent.
+  ('CONTE500F', 'montant', 500, 'XOF', 'afrique',
+                public.app_now() + interval '3 months', true, 50),
+  ('EXPIRE',    'pourcentage', 50, null, null, public.app_now() - interval '1 day', true, null)
 on conflict (code) do update set
   type = excluded.type,
   valeur = excluded.valeur,
   devise = excluded.devise,
+  zone = excluded.zone,
   expire_le = excluded.expire_le,
   actif = excluded.actif,
   usage_max = excluded.usage_max;

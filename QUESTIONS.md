@@ -99,7 +99,75 @@ seul fait qu'il marche.
 Le point signalé aux étapes 9 et 10 est levé : `GET /api/downloads/[bookId]`
 sert désormais une copie filigranée, PDF **et** EPUB.
 
-Reste une survivance : `GET /api/books/[bookId]/file`, livrée à l'étape 6, sert
-toujours le fichier générique non filigrané. Les deux routes coexistent, et la
-seconde devrait disparaître au profit de la première — à traiter à l'étape 16,
-avec la revue de sécurité.
+`GET /api/books/[bookId]/file`, la route de contournement livrée à l'étape 6,
+**est supprimée** — le jour même où son remplaçant a été livré, et non à
+l'étape 16 comme je le proposais d'abord. `tests/unit/telechargement-architecture.test.ts`
+échoue désormais si une route servant un fichier de livre réapparaît hors du
+module filigrané.
+
+---
+
+## Étape 13 — points à votre attention
+
+### A1 — Un octroi manuel sans acteur reste possible, et c'est délibéré
+
+Le déclencheur d'audit exige un motif **dès lors qu'un administrateur est
+identifié**. Une écriture système — un seed, une migration, une fixture de test —
+peut encore créer un droit `offert` sans motif ; elle est alors tracée avec un
+acteur nul, ce qui la distingue d'une décision humaine au lieu de la confondre
+avec elle.
+
+**Pourquoi ne pas l'interdire tout court.** L'interdire obligerait les seeds et
+une dizaine de tests existants à porter un motif fictif, ce qui remplirait le
+journal de motifs qui n'en sont pas. Et surtout : le seul chemin par lequel un
+humain peut octroyer un droit est `admin_octroyer_droit`, où le motif est un
+paramètre obligatoire. Le geste humain est donc couvert ; ce qui reste ouvert,
+c'est l'écriture technique, qui est visible.
+
+**Si vous préférez le verrou total**, dites-le : c'est une contrainte `check` de
+plus et une passe sur les fixtures.
+
+### A2 — La suppression d'un droit `offert` n'est pas réversible
+
+`admin_retirer_droit` efface la ligne. Le journal conserve qui, quand et quoi —
+utilisateur, titre, droit de téléchargement — mais pas de quoi la reconstituer à
+l'identique si la décision était une erreur. Un retrait suivi d'un nouvel octroi
+produit un droit neuf, avec une nouvelle date.
+
+C'est cohérent avec le reste du schéma, où les droits ne sont pas historisés.
+Je le signale parce que le geste est irréversible et qu'il tient à un seul appel.
+
+### A3 — Le quota d'administration vit en mémoire du processus
+
+300 requêtes par quart d'heure et par administrateur, comptées dans un `Map`.
+Même limite que la limitation de débit de la lecture, et acceptable pour la même
+raison : avec deux instances, un attaquant obtiendrait deux fois le quota, ce qui
+reste très en dessous de ce qu'exigerait l'aspiration de la base de clientèle.
+Un stockage partagé — Redis, ou une table — le rendrait exact ; il ajouterait un
+service à la pile locale, que le mode 100 % local n'a pas.
+
+### A4 — La liste des commandes ne rend jamais l'identité de facturation
+
+C'est le point 6 de vos consignes, et il méritait plus qu'un test : la facture
+conserve légitimement `facture_nom` et `facture_email`, figés à l'émission. Ce
+n'est pas la conservation qui ré-identifie, c'est la **jointure**. J'ai donc
+retiré ces colonnes de toutes les vues de liste et ne rends que le **numéro** de
+facture, qui satisfait l'obligation comptable sans désigner personne.
+
+**Conséquence pratique à connaître :** consulter le détail nominatif d'une
+facture — ce qu'un contrôle comptable peut exiger — n'est possible par aucune
+route aujourd'hui. Si ce besoin apparaît, il devra passer par un chemin dédié,
+tracé au journal d'audit comme une consultation, et non par un élargissement des
+listes existantes.
+
+### A5 — `admin/books/ingest` n'a pas de quota de débit
+
+Livrée à l'étape 7, elle utilise `requireAdmin` directement et non la garde
+commune de l'étape 13. Elle **est** protégée — le rôle est vérifié en base à
+chaque requête — mais elle échappe au quota. Son coût est borné autrement : un
+PDF de 100 Mo au maximum, traité en sous-processus.
+
+L'écart est inscrit **dans le test d'architecture lui-même**, qui attend
+exactement cette route et échouera si une autre s'en écarte. La faire passer par
+la garde commune est une petite reprise ; je ne l'ai pas faite pour ne pas
+toucher à la chaîne d'ingestion pendant une étape qui ne la concerne pas.

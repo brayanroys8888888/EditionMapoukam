@@ -24,6 +24,14 @@ export interface CodePromo {
   valeur: number;
   /** Renseignée seulement pour un code de type `montant`. */
   devise: string | null;
+  /**
+   * Zone tarifaire, renseignée seulement pour un code de type `montant`.
+   *
+   * La devise ne suffit pas à cantonner une remise : deux zones pourraient
+   * partager une devise, et une remise consentie sur une grille tarifaire ne se
+   * transpose pas à l'autre.
+   */
+  zone: 'international' | 'afrique' | null;
   expireLe: Date | null;
   actif: boolean;
   usageMax: number | null;
@@ -35,7 +43,8 @@ export type RefusPromo =
   | 'inactif'
   | 'expire'
   | 'epuise'
-  | 'devise_incompatible';
+  | 'devise_incompatible'
+  | 'zone_incompatible';
 
 export type ResultatPromo =
   | { ok: true; remise: number }
@@ -52,6 +61,7 @@ export function calculerRemise(
   sousTotal: number,
   devise: string,
   maintenant: Date,
+  zone: 'international' | 'afrique',
 ): ResultatPromo {
   if (!promo) return { ok: false, raison: 'inconnu' };
   if (!promo.actif) return { ok: false, raison: 'inactif' };
@@ -76,6 +86,23 @@ export function calculerRemise(
   // retirerait cinq francs là où le code promettait cinq euros.
   if (promo.devise !== devise) {
     return { ok: false, raison: 'devise_incompatible' };
+  }
+
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ LA DEVISE NE SUFFIT PAS : LA ZONE EST VÉRIFIÉE AUSSI.                  │
+  // │                                                                        │
+  // │ La zone `afrique` couvre XAF ET XOF (D4 point 4), et rien n'interdit    │
+  // │ que deux zones partagent un jour une devise. Une remise consentie sur   │
+  // │ une grille tarifaire ne se transpose alors pas à l'autre : le même      │
+  // │ montant nominal n'y représente pas la même part du prix.                │
+  // │                                                                        │
+  // │ Un code à montant fixe SANS zone est refusé plutôt que toléré. Les      │
+  // │ contraintes de la migration 0036 le rendent impossible en base ; si     │
+  // │ l'un apparaissait malgré tout, l'accepter partout serait le pire des    │
+  // │ deux comportements.                                                    │
+  // └────────────────────────────────────────────────────────────────────────┘
+  if (promo.zone !== zone) {
+    return { ok: false, raison: 'zone_incompatible' };
   }
 
   return { ok: true, remise: Math.min(promo.valeur, sousTotal) };

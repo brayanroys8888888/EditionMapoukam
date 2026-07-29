@@ -71,7 +71,7 @@ async function lirePromo(
 
   const { data } = await client
     .from('promo_codes')
-    .select('id, code, type, valeur, devise, expire_le, actif, usage_max, usage_count')
+    .select('id, code, type, valeur, devise, zone, expire_le, actif, usage_max, usage_count')
     // La colonne impose `code = upper(code)` : la saisie est normalisée ici
     // plutôt que d'exiger de l'utilisateur qu'il respecte la casse.
     .eq('code', code.trim().toUpperCase())
@@ -85,6 +85,9 @@ async function lirePromo(
     type: data.type,
     valeur: data.valeur,
     devise: data.devise,
+    // Cantonne un code à montant fixe à une grille tarifaire. Nulle pour un
+    // code en pourcentage, qui vaut dans toutes les zones.
+    zone: data.zone,
     expireLe: data.expire_le ? new Date(data.expire_le) : null,
     actif: data.actif,
     usageMax: data.usage_max,

@@ -228,6 +228,7 @@ describe('codes promotionnels', () => {
     type: 'pourcentage',
     valeur: 20,
     devise: null,
+    zone: null,
     expireLe: null,
     actif: true,
     usageMax: null,
@@ -236,53 +237,96 @@ describe('codes promotionnels', () => {
   });
 
   it('applique un pourcentage', () => {
-    expect(calculerRemise(promo({}), 1000, 'EUR', MAINTENANT)).toEqual({ ok: true, remise: 200 });
+    expect(calculerRemise(promo({}), 1000, 'EUR', MAINTENANT, 'international')).toEqual({ ok: true, remise: 200 });
   });
 
   it('applique un pourcentage en francs CFA de la même façon', () => {
     // Un pourcentage n'a pas de devise : 20 % valent 20 % partout.
-    expect(calculerRemise(promo({}), 3000, 'XAF', MAINTENANT)).toEqual({ ok: true, remise: 600 });
+    expect(calculerRemise(promo({}), 3000, 'XAF', MAINTENANT, 'afrique')).toEqual({ ok: true, remise: 600 });
   });
 
   it('applique un montant fixe', () => {
-    const code = promo({ type: 'montant', valeur: 200, devise: 'EUR' });
+    const code = promo({ type: 'montant', valeur: 200, devise: 'EUR', zone: 'international' });
 
-    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT)).toEqual({ ok: true, remise: 200 });
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'international')).toEqual({ ok: true, remise: 200 });
   });
 
   it('PLAFONNE la remise au sous-total', () => {
     // Une remise de 10 € sur un panier de 4,99 € donnerait un total négatif,
     // c'est-à-dire un remboursement offert par un code de réduction.
-    const code = promo({ type: 'montant', valeur: 1000, devise: 'EUR' });
+    const code = promo({ type: 'montant', valeur: 1000, devise: 'EUR', zone: 'international' });
 
-    expect(calculerRemise(code, 499, 'EUR', MAINTENANT)).toEqual({ ok: true, remise: 499 });
+    expect(calculerRemise(code, 499, 'EUR', MAINTENANT, 'international')).toEqual({ ok: true, remise: 499 });
   });
 
   it('refuse un montant libellé dans une autre devise', () => {
     // L'appliquer reviendrait à convertir sans taux : 5 sur un panier en FCFA
     // retirerait cinq francs là où le code promettait cinq euros.
-    const code = promo({ type: 'montant', valeur: 500, devise: 'EUR' });
+    const code = promo({ type: 'montant', valeur: 500, devise: 'EUR', zone: 'international' });
 
-    expect(calculerRemise(code, 3000, 'XAF', MAINTENANT)).toEqual({
+    expect(calculerRemise(code, 3000, 'XAF', MAINTENANT, 'afrique')).toEqual({
       ok: false,
       raison: 'devise_incompatible',
+    });
+  });
+
+  it('refuse un montant fixe consenti pour une AUTRE zone', () => {
+    // ┌──────────────────────────────────────────────────────────────────┐
+    // │ LA DEVISE NE SUFFIT PAS À CANTONNER UNE REMISE.                        │
+    // │                                                                      │
+    // │ Le contrôle de devise attrape déjà la plupart des cas, la grille        │
+    // │ actuelle associant une devise à chaque zone. Il ne les attrape pas     │
+    // │ TOUS : la zone `afrique` couvre XAF et XOF, et rien n'interdit que     │
+    // │ deux zones partagent un jour une devise — l'euro se pratique dans      │
+    // │ plusieurs pays d'Afrique.                                             │
+    // │                                                                      │
+    // │ Ce test porte donc sur le contrôle de zone SEUL, devise identique :   │
+    // │ sans lui, la règle ne serait tenue que par coïncidence de la grille.  │
+    // └──────────────────────────────────────────────────────────────────┘
+    const code = promo({ type: 'montant', valeur: 200, devise: 'EUR', zone: 'international' });
+
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'afrique')).toEqual({
+      ok: false,
+      raison: 'zone_incompatible',
+    });
+  });
+
+  it('refuse un montant fixe SANS zone plutôt que de l’accepter partout', () => {
+    // Les contraintes de la migration 0036 le rendent impossible en base. S'il
+    // en apparaissait un malgré tout, l'appliquer dans toutes les zones serait
+    // le pire des deux comportements.
+    const code = promo({ type: 'montant', valeur: 200, devise: 'EUR', zone: null });
+
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'international')).toEqual({
+      ok: false,
+      raison: 'zone_incompatible',
+    });
+  });
+
+  it('applique un POURCENTAGE dans n’importe quelle zone', () => {
+    // Le pendant : un pourcentage est neutre en devise, donc jamais cantonné.
+    const code = promo({ type: 'pourcentage', valeur: 20, zone: null });
+
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'afrique')).toEqual({
+      ok: true,
+      remise: 200,
     });
   });
 
   it('refuse un code expiré, à la seconde près', () => {
     const code = promo({ expireLe: MAINTENANT });
 
-    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT)).toEqual({ ok: false, raison: 'expire' });
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'international')).toEqual({ ok: false, raison: 'expire' });
   });
 
   it('accepte un code qui expire une seconde plus tard', () => {
     const code = promo({ expireLe: new Date(MAINTENANT.getTime() + 1000) });
 
-    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT).ok).toBe(true);
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'international').ok).toBe(true);
   });
 
   it('refuse un code désactivé', () => {
-    expect(calculerRemise(promo({ actif: false }), 1000, 'EUR', MAINTENANT)).toEqual({
+    expect(calculerRemise(promo({ actif: false }), 1000, 'EUR', MAINTENANT, 'international')).toEqual({
       ok: false,
       raison: 'inactif',
     });
@@ -291,11 +335,11 @@ describe('codes promotionnels', () => {
   it('refuse un code épuisé', () => {
     const code = promo({ usageMax: 10, usageCount: 10 });
 
-    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT)).toEqual({ ok: false, raison: 'epuise' });
+    expect(calculerRemise(code, 1000, 'EUR', MAINTENANT, 'international')).toEqual({ ok: false, raison: 'epuise' });
   });
 
   it('refuse un code inconnu', () => {
-    expect(calculerRemise(null, 1000, 'EUR', MAINTENANT)).toEqual({ ok: false, raison: 'inconnu' });
+    expect(calculerRemise(null, 1000, 'EUR', MAINTENANT, 'international')).toEqual({ ok: false, raison: 'inconnu' });
   });
 
   it('n’empêche JAMAIS de commander : un code refusé laisse le total intact', () => {
@@ -314,7 +358,9 @@ describe('codes promotionnels', () => {
   it('déduit la remise du total quand le code est retenu', () => {
     const { lignes } = tarifer([titre({ bookId: 'a' })], 'international');
     const calcul = calculerTotal(lignes, 'international', {
-      promo: promo({ type: 'montant', valeur: 100, devise: 'EUR' }),
+      // Un code a montant fixe porte sa zone : elle doit correspondre a celle
+      // du panier, sans quoi il est refuse.
+      promo: promo({ type: 'montant', valeur: 100, devise: 'EUR', zone: 'international' }),
       maintenant: MAINTENANT,
     });
 

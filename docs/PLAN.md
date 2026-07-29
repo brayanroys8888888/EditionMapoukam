@@ -1445,8 +1445,8 @@ désormais que les deux refusent au même endroit.
 
 ### Étape 13 — API d'administration
 
-- [ ] **Objectif** — Catalogue, utilisateurs, commandes, codes promotionnels
-  (§4.3 F10 à F12).
+- [x] **Objectif** — Catalogue, utilisateurs, commandes, codes promotionnels
+  (§4.3 F10 à F12). **Livré le 30 juillet 2026.**
 - **Dépendances** — étapes 2, 7, 8, 10
 - **Fichiers produits**
   - `src/app/api/admin/books/**` — création, modification, publication,
@@ -1474,6 +1474,54 @@ désormais que les deux refusent au même endroit.
   npm run test -- admin
   npm run verify              # code 0
   ```
+
+#### Ce qui a réellement été livré
+
+**Le journal d'audit est écrit par des DÉCLENCHEURS, pas par les routes**
+(migration 0034). Une route qui écrit la mutation puis la trace peut oublier la
+seconde moitié — un `return` prématuré, une exception rattrapée, une branche
+ajoutée plus tard. Et un journal incomplet est pire qu'absent : on s'y fie.
+Confiée au déclencheur, la trace suit la donnée et tient quel que soit le chemin
+d'écriture, `service_role` compris.
+
+Neuf leviers tracés, chacun séparément : prix, `gratuit`, `inclus_abonnement`,
+`disponible_achat`, statut de publication, `business_settings`, octroi et retrait
+manuels, remboursement, zone d'abonnement, suspension de compte, code
+promotionnel, purge. La table refuse `update`, `delete` et `truncate` **à tout le
+monde, `service_role` inclus** — un journal dont on peut retirer une ligne ne
+prouve rien.
+
+**L'acteur est un ARGUMENT de chaque mutation** (migration 0036). Le détour vaut
+d'être expliqué : les déclencheurs ne reçoivent aucun paramètre applicatif, donc
+l'identité doit passer par un paramètre de session — mais les routes parlent à la
+base par PostgREST, où chaque appel est une transaction distincte. Un paramètre
+posé par la route serait déjà oublié au suivant. Chaque mutation passe donc par
+une fonction `admin_…(p_acteur, …)` qui pose le paramètre dans SA transaction. On
+ne peut pas actionner un levier sans dire qui le fait : l'oubli n'est pas détecté
+après coup, il est impossible.
+
+**Le rôle est vérifié DEUX fois** : dans `requireAdmin`, qui relit le profil en
+base à chaque requête, et dans `admin_poser_acteur` au moment de l'écriture. Le
+second attrape le cas que le premier laisse passer — un administrateur rétrogradé
+dont le jeton, signé pour plusieurs heures, est encore valide.
+
+**Les routes sont énumérées automatiquement** par
+`tests/security/admin.test.ts`, qui les découvre sur le disque et appelle chaque
+méthode avec un jeton de visiteur, d'utilisateur ordinaire et d'administrateur.
+Une route ajoutée plus tard est couverte sans intervention — c'est-à-dire dans le
+cas qui, autrement, passe à travers : celui où l'auteur de la route ne sait pas
+que ce test existe.
+
+**Codes promotionnels — la zone en plus de la devise.** Un code à montant fixe
+porte désormais une zone, imposée par deux contraintes symétriques ; un code en
+pourcentage n'en porte jamais. La devise seule ne suffisait pas : la zone
+`afrique` couvre XAF et XOF, et rien n'interdit que deux zones partagent un jour
+une devise.
+
+**Écart consigné :** `POST /api/admin/books/ingest`, antérieure à cette étape,
+utilise `requireAdmin` directement et n'a donc pas de quota de débit. Son coût
+est borné autrement — 100 Mo au maximum, traités en sous-processus. L'écart est
+inscrit dans un test d'architecture qui échouera si une AUTRE route s'en écarte.
 
 ---
 
@@ -1834,6 +1882,10 @@ livrables de l'étape 13.
 | **Statut effectif d'un abonnement** | colonne calculée `statut_effectif` (SQL) ; `src/lib/subscriptions/handlers.ts` la **lit** sans la recalculer | **A** | `tests/integration/subscriptions.test.ts` |
 | **Zone d'encaissement** | `zonePourPays()` (TS) — une seule implémentation, la base ne décide pas | **A** | `tests/unit/zone-encaissement-architecture.test.ts` — échoue si un schéma Zod de route accepte à nouveau une zone |
 | **Total d'une commande et remise** | `src/domain/orders` (TS) ; `create_order()` ne calcule **aucun** prix | **A** — la base reçoit des montants déjà résolus | `tests/unit/order-total.test.ts`, `tests/integration/orders.test.ts` |
+| **Rôle administrateur** | `requireAdmin` (TS, relit le profil) ; `admin_poser_acteur` (SQL, au moment de l'écriture) | **B** — délibérément deux fois : le second attrape l'administrateur rétrogradé dont le jeton est encore valide | `tests/security/admin.test.ts` — « refuse un administrateur RÉTROGRADÉ », plus deux tests appelant la base sans passer par une route |
+| **Cantonnement d'un code promotionnel** (zone et devise) | contraintes `promo_montant_a_une_zone` et `promo_montant_a_une_devise` (SQL) ; `calculerRemise` (TS) | **B** — la base empêche d'en créer un incohérent, le domaine refuse d'en appliquer un qui le serait | `tests/unit/order-total.test.ts` et `tests/integration/admin.test.ts` — « la base REFUSE elle-même » |
+| **Validation à la publication en LOT** | `books_valider_publication` (déclencheur) ; `admin_changer_publication` boucle sur le chemin unitaire | **A** — il n'existe pas de chemin groupé « rapide » | `tests/integration/admin.test.ts` — « REFUSE le lot entier si UN SEUL titre est incomplet » |
+| **Motif d'un octroi manuel** | déclencheur `entitlements_tracer_octroi` ; paramètre obligatoire de `admin_octroyer_droit` ; schéma Zod de la route | **A** — un seul chemin d'écriture admis, les deux autres niveaux ne font que refuser plus tôt et plus clairement | `tests/integration/admin.test.ts`, `tests/unit/admin-architecture.test.ts` |
 
 **Ce que cet inventaire ne couvre pas, et pourquoi.** Les contraintes `check` du
 schéma dupliquent volontairement des validations Zod (bornes de page, format de

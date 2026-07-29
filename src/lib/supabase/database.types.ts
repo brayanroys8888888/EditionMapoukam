@@ -52,6 +52,50 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_audit_log: {
+        Row: {
+          acteur_id: string | null
+          action: string
+          ancienne_valeur: Json | null
+          cible_id: string | null
+          cible_type: string
+          cree_le: string
+          id: string
+          motif: string | null
+          nouvelle_valeur: Json | null
+        }
+        Insert: {
+          acteur_id?: string | null
+          action: string
+          ancienne_valeur?: Json | null
+          cible_id?: string | null
+          cible_type: string
+          cree_le?: string
+          id?: string
+          motif?: string | null
+          nouvelle_valeur?: Json | null
+        }
+        Update: {
+          acteur_id?: string | null
+          action?: string
+          ancienne_valeur?: Json | null
+          cible_id?: string | null
+          cible_type?: string
+          cree_le?: string
+          id?: string
+          motif?: string | null
+          nouvelle_valeur?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_acteur_id_fkey"
+            columns: ["acteur_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_pages: {
         Row: {
           chemin_allegee: string
@@ -1101,6 +1145,7 @@ export type Database = {
           usage_count: number
           usage_max: number | null
           valeur: number
+          zone: Database["public"]["Enums"]["price_zone"] | null
         }
         Insert: {
           actif?: boolean
@@ -1113,6 +1158,7 @@ export type Database = {
           usage_count?: number
           usage_max?: number | null
           valeur: number
+          zone?: Database["public"]["Enums"]["price_zone"] | null
         }
         Update: {
           actif?: boolean
@@ -1125,6 +1171,7 @@ export type Database = {
           usage_count?: number
           usage_max?: number | null
           valeur?: number
+          zone?: Database["public"]["Enums"]["price_zone"] | null
         }
         Relationships: [
           {
@@ -1408,6 +1455,349 @@ export type Database = {
           reason: Database["public"]["Enums"]["access_reason"]
         }[]
       }
+      acteur_courant: { Args: never; Returns: string }
+      admin_changer_publication: {
+        Args: {
+          p_acteur: string
+          p_book_ids: string[]
+          p_statut: Database["public"]["Enums"]["book_status"]
+        }
+        Returns: {
+          sortie_book_id: string
+          sortie_publie_le: string
+          sortie_statut: Database["public"]["Enums"]["book_status"]
+        }[]
+      }
+      admin_changer_zone_abonnement: {
+        Args: {
+          p_acteur: string
+          p_motif?: string
+          p_subscription_id: string
+          p_zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          annule_le: string | null
+          cree_le: string
+          debut_periode: string
+          devise: string
+          fin_periode: string
+          id: string
+          id_prestataire: string | null
+          impaye_depuis: string | null
+          jours_essai: number
+          maj_le: string
+          montant: number
+          offre: string
+          statut: Database["public"]["Enums"]["subscription_status"]
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_definir_prix: {
+        Args: {
+          p_acteur: string
+          p_book_id: string
+          p_devise: string
+          p_montant: number
+          p_zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          book_id: string
+          devise: string
+          maj_le: string
+          montant: number
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "book_prices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_definir_statut_compte: {
+        Args: {
+          p_acteur: string
+          p_motif?: string
+          p_suspendu: boolean
+          p_user_id: string
+        }
+        Returns: {
+          anonymise_le: string | null
+          cree_le: string
+          email: string
+          id: string
+          langue_preferee: string
+          maj_le: string
+          nom_complet: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          statut: Database["public"]["Enums"]["user_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "users"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_enregistrer_promo: {
+        Args: {
+          p_acteur: string
+          p_actif?: boolean
+          p_code: string
+          p_devise?: string
+          p_expire_le?: string
+          p_type: Database["public"]["Enums"]["promo_type"]
+          p_usage_max?: number
+          p_valeur: number
+          p_zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          actif: boolean
+          code: string
+          cree_le: string
+          devise: string | null
+          expire_le: string | null
+          id: string
+          type: Database["public"]["Enums"]["promo_type"]
+          usage_count: number
+          usage_max: number | null
+          valeur: number
+          zone: Database["public"]["Enums"]["price_zone"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promo_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_lister_abonnements: {
+        Args: { p_page?: number; p_statut?: string; p_taille?: number }
+        Returns: {
+          debut_periode: string
+          devise: string
+          email: string
+          fin_periode: string
+          id: string
+          montant: number
+          offre: string
+          statut: Database["public"]["Enums"]["subscription_status"]
+          statut_observe: Database["public"]["Enums"]["subscription_status_effectif"]
+          total_lignes: number
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lister_audit: {
+        Args: {
+          p_action?: string
+          p_cible_id?: string
+          p_page?: number
+          p_taille?: number
+        }
+        Returns: {
+          acteur_email: string
+          acteur_id: string
+          action: string
+          ancienne_valeur: Json
+          cible_id: string
+          cible_type: string
+          cree_le: string
+          id: string
+          motif: string
+          nouvelle_valeur: Json
+          total_lignes: number
+        }[]
+      }
+      admin_lister_commandes: {
+        Args: {
+          p_page?: number
+          p_statut?: string
+          p_taille?: number
+          p_user_id?: string
+        }
+        Returns: {
+          acheteur_anonymise: boolean
+          cree_le: string
+          devise: string
+          email: string
+          id: string
+          montant_total: number
+          nb_lignes: number
+          numero_facture: string
+          paye_le: string
+          remise: number
+          statut: Database["public"]["Enums"]["order_status"]
+          total_lignes: number
+          user_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lister_livres: {
+        Args: { p_page?: number; p_statut?: string; p_taille?: number }
+        Returns: {
+          auteur: string
+          disponible_achat: boolean
+          gratuit: boolean
+          id: string
+          inclus_abonnement: boolean
+          manques: string[]
+          prix: Json
+          publiable: boolean
+          publie_le: string
+          slug: string
+          statut: Database["public"]["Enums"]["book_status"]
+          total_lignes: number
+        }[]
+      }
+      admin_lister_promos: {
+        Args: { p_page?: number; p_taille?: number }
+        Returns: {
+          actif: boolean
+          code: string
+          devise: string
+          expire_le: string
+          id: string
+          total_lignes: number
+          type: Database["public"]["Enums"]["promo_type"]
+          usage_count: number
+          usage_max: number
+          valeur: number
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lister_utilisateurs: {
+        Args: {
+          p_page?: number
+          p_recherche?: string
+          p_statut?: string
+          p_taille?: number
+        }
+        Returns: {
+          anonymise: boolean
+          cree_le: string
+          email: string
+          id: string
+          nb_commandes: number
+          nb_droits: number
+          nom_complet: string
+          role: Database["public"]["Enums"]["user_role"]
+          statut: Database["public"]["Enums"]["user_status"]
+          total_lignes: number
+        }[]
+      }
+      admin_modifier_livre: {
+        Args: {
+          p_acteur: string
+          p_age_max?: number
+          p_age_min?: number
+          p_auteur?: string
+          p_book_id: string
+          p_disponible_achat?: boolean
+          p_gratuit?: boolean
+          p_inclus_abonnement?: boolean
+          p_nb_pages_extrait?: number
+          p_origine_culturelle?: string
+        }
+        Returns: {
+          age_max: number | null
+          age_min: number | null
+          auteur: string
+          couverture_url: string | null
+          cree_le: string
+          disponible_achat: boolean
+          gratuit: boolean
+          id: string
+          illustrateur: string | null
+          inclus_abonnement: boolean
+          maj_le: string
+          nb_pages_extrait: number | null
+          origine_culturelle: string | null
+          publie_le: string | null
+          recherche: unknown
+          slug: string
+          statut: Database["public"]["Enums"]["book_status"]
+          themes: string[]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "books"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_modifier_parametres: {
+        Args: {
+          p_acteur: string
+          p_fenetre_nouveaute_jours?: number
+          p_jours_essai?: number
+          p_periode_grace_jours?: number
+          p_retention_copies_mois?: number
+          p_tolerance_renouvellement_heures?: number
+        }
+        Returns: {
+          fenetre_nouveaute_jours: number
+          id: number
+          jours_essai: number
+          maj_le: string
+          maj_par: string | null
+          periode_grace_jours: number
+          retention_copies_mois: number
+          tolerance_renouvellement_heures: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "business_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_octroyer_droit: {
+        Args: {
+          p_acteur: string
+          p_book_id: string
+          p_expire_le?: string
+          p_motif: string
+          p_peut_telecharger?: boolean
+          p_user_id: string
+        }
+        Returns: {
+          accorde_le: string
+          book_id: string
+          expire_le: string | null
+          id: string
+          peut_telecharger: boolean
+          source_id: string | null
+          type: Database["public"]["Enums"]["entitlement_type"]
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "entitlements"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_poser_acteur: {
+        Args: { p_acteur: string; p_motif?: string }
+        Returns: undefined
+      }
+      admin_retirer_droit: {
+        Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
+        Returns: undefined
+      }
+      admin_tableau_de_bord: { Args: never; Returns: Json }
+      admin_tracer_purge: {
+        Args: { p_acteur: string; p_nombre: number }
+        Returns: undefined
+      }
       anonymize_user: {
         Args: { p_user_id: string }
         Returns: {
@@ -1565,10 +1955,22 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { p_user?: string }; Returns: boolean }
+      journaliser_admin: {
+        Args: {
+          p_action: string
+          p_ancienne: Json
+          p_cible_id: string
+          p_cible_type: string
+          p_motif?: string
+          p_nouvelle: Json
+        }
+        Returns: string
+      }
       manques_pour_publication: {
         Args: { p_book_id: string }
         Returns: string[]
       }
+      motif_courant: { Args: never; Returns: string }
       pages_publiees: {
         Args: { p_book_id: string; p_langue: string }
         Returns: number
@@ -1617,6 +2019,7 @@ export type Database = {
             Args: { s: Database["public"]["Tables"]["subscriptions"]["Row"] }
             Returns: Database["public"]["Enums"]["subscription_status_effectif"]
           }
+      taille_page_admin: { Args: { p_demandee: number }; Returns: number }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_impactes_par_fenetre: {
         Args: { p_at?: string; p_nouvelle_fenetre: number }

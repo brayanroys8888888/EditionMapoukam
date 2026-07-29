@@ -62,7 +62,16 @@ export function calculerTotal(
     };
   }
 
-  const remise = calculerRemise(options.promo, somme.montant, somme.devise, options.maintenant);
+  // La zone est transmise à la validation du code : un code à montant fixe est
+  // cantonné à une grille tarifaire, et la devise seule ne suffit pas à l'y
+  // cantonner — la zone `afrique` couvre XAF et XOF (D4 point 4).
+  const remise = calculerRemise(
+    options.promo,
+    somme.montant,
+    somme.devise,
+    options.maintenant,
+    zone,
+  );
   if (!remise.ok) {
     return {
       ok: true,
