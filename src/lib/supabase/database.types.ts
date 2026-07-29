@@ -1186,18 +1186,21 @@ export type Database = {
         Row: {
           book_id: string
           derniere_page: number
+          langue: string
           maj_le: string
           user_id: string
         }
         Insert: {
           book_id: string
           derniere_page: number
+          langue: string
           maj_le?: string
           user_id: string
         }
         Update: {
           book_id?: string
           derniere_page?: number
+          langue?: string
           maj_le?: string
           user_id?: string
         }
@@ -1582,6 +1585,14 @@ export type Database = {
         Returns: {
           commande_soldee: boolean
           droits_retires: number
+        }[]
+      }
+      reprise_lecture: {
+        Args: { p_book_id: string; p_langue: string; p_user_id: string }
+        Returns: {
+          borne_appliquee: boolean
+          langue_origine: string
+          page: number
         }[]
       }
       statut_effectif:

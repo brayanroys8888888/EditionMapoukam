@@ -255,7 +255,7 @@ describe('progression de lecture', () => {
   it('laisse chacun écrire la sienne', async () => {
     const { error } = await alice.client
       .from('reading_progress')
-      .insert({ user_id: alice.id, book_id: livreId, derniere_page: 4 });
+      .insert({ user_id: alice.id, book_id: livreId, langue: 'fr', derniere_page: 4 });
 
     expect(error).toBeNull();
   });
@@ -279,7 +279,7 @@ describe('progression de lecture', () => {
   it('empêche d’écrire une progression au nom d’un autre', async () => {
     const { error } = await bob.client
       .from('reading_progress')
-      .insert({ user_id: alice.id, book_id: livreId, derniere_page: 1 });
+      .insert({ user_id: alice.id, book_id: livreId, langue: 'fr', derniere_page: 1 });
 
     expect(error).not.toBeNull();
   });

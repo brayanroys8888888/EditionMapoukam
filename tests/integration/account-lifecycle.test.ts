@@ -62,7 +62,8 @@ async function compteAvecHistorique(): Promise<{
     [utilisateur.id, livreId, orderId],
   );
   await query(
-    `insert into public.reading_progress (user_id, book_id, derniere_page) values ($1, $2, 7)`,
+    `insert into public.reading_progress (user_id, book_id, langue, derniere_page)
+     values ($1, $2, 'fr', 7)`,
     [utilisateur.id, livreId],
   );
   await query(

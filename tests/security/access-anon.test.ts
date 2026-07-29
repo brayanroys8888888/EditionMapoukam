@@ -89,7 +89,7 @@ describe('progression de lecture soumise au moteur de droits', () => {
   it('refuse d’enregistrer la progression d’un titre non accessible', async () => {
     const { error } = await lecteur.client
       .from('reading_progress')
-      .insert({ user_id: lecteur.id, book_id: livrePayant, derniere_page: 3 });
+      .insert({ user_id: lecteur.id, book_id: livrePayant, langue: 'fr', derniere_page: 3 });
 
     expect(error).not.toBeNull();
   });
@@ -97,7 +97,7 @@ describe('progression de lecture soumise au moteur de droits', () => {
   it('accepte la progression sur un conte gratuit', async () => {
     const { error } = await lecteur.client
       .from('reading_progress')
-      .insert({ user_id: lecteur.id, book_id: livreGratuit, derniere_page: 3 });
+      .insert({ user_id: lecteur.id, book_id: livreGratuit, langue: 'fr', derniere_page: 3 });
 
     expect(error).toBeNull();
   });
@@ -116,7 +116,7 @@ describe('progression de lecture soumise au moteur de droits', () => {
 
     const { error } = await lecteur.client
       .from('reading_progress')
-      .insert({ user_id: lecteur.id, book_id: livrePayant, derniere_page: 5 });
+      .insert({ user_id: lecteur.id, book_id: livrePayant, langue: 'fr', derniere_page: 5 });
 
     expect(error).toBeNull();
   });

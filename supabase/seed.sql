@@ -130,8 +130,13 @@ join (values
   ('kouassi-et-le-tam-tam', 'fr', 'Kouassi et le tam-tam',
    'Kouassi hérite du tam-tam de son grand-père et doit apprendre à en jouer avant la fête du village.', 20, 'publie'),
 
+  -- PAGINATION VOLONTAIREMENT DIFFÉRENTE de la version française (20 pages).
+  -- Deux versions linguistiques sont deux PDF distincts, produits par deux
+  -- passages séparés de la chaîne d'ingestion : un texte traduit se recompose,
+  -- et rien ne garantit le même nombre de pages. C'est le cas que la reprise
+  -- de lecture doit gérer — « page 19 » en français n'existe pas ici.
   ('kouassi-et-le-tam-tam', 'en', 'Kouassi and the Talking Drum',
-   'Kouassi inherits his grandfather''s drum and must learn to play it before the village festival.', 20, 'publie'),
+   'Kouassi inherits his grandfather''s drum and must learn to play it before the village festival.', 16, 'publie'),
 
   ('la-girafe-et-l-oiseau-malin', 'fr', 'La girafe et l''oiseau malin',
    'Une girafe trop grande pour voir ses propres pieds se lie d''amitié avec un oiseau qui voit tout.', 16, 'publie'),
@@ -226,6 +231,34 @@ from public.books b
 join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
 cross join generate_series(1, 6) as p(numero)
 where b.slug in ('petit-baobab', 'le-lion-et-la-souris', 'la-riviere-qui-parlait')
+on conflict (translation_id, numero) do nothing;
+
+-- ---------------------------------------------------------------------------
+-- Pagination DIVERGENTE entre deux versions linguistiques.
+--
+-- `kouassi-et-le-tam-tam` fait 20 pages en français et 16 en anglais. Ce n'est
+-- pas une coquette : deux versions linguistiques sont deux PDF distincts,
+-- produits par deux passages séparés de la chaîne d'ingestion, et un texte
+-- traduit se recompose. Rien ne garantit le même nombre de pages.
+--
+-- C'est la matière du cas que la reprise de lecture doit gérer : un lecteur
+-- arrivé page 19 en français, qui bascule en anglais, ne peut pas y être
+-- renvoyé à une page qui n'existe pas.
+--
+-- Le nombre de pages suit `nb_pages` de chaque version, plutôt qu'une constante :
+-- c'est la seule façon que le jeu de données reste cohérent avec lui-même.
+-- ---------------------------------------------------------------------------
+
+insert into public.book_pages (translation_id, numero, chemin_haute, chemin_allegee, largeur, hauteur, texte)
+select t.id, p.numero,
+       'book-pages/' || b.slug || '/' || t.langue || '/haute/' || lpad(p.numero::text, 3, '0') || '.webp',
+       'book-pages/' || b.slug || '/' || t.langue || '/allegee/' || lpad(p.numero::text, 3, '0') || '.webp',
+       1600, 2000,
+       'Page ' || p.numero::text || ' de « ' || t.titre || ' ».'
+from public.books b
+join public.book_translations t on t.book_id = b.id and t.statut = 'publie'
+cross join lateral generate_series(1, t.nb_pages) as p(numero)
+where b.slug = 'kouassi-et-le-tam-tam'
 on conflict (translation_id, numero) do nothing;
 
 -- ---------------------------------------------------------------------------

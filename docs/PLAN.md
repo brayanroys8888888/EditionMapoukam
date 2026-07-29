@@ -1374,7 +1374,7 @@ en cherchant la forme hexadécimale UTF-16BE réellement écrite.
 
 ### Étape 12 — Progression de lecture
 
-- [ ] **Objectif** — Enregistrer et relire la dernière page atteinte, par livre
+- [x] **Objectif** — Enregistrer et relire la dernière page atteinte, par livre
   et non par langue (D2 point 6).
 - **Dépendances** — étapes 4, 6
 - **Fichiers produits**
@@ -1389,6 +1389,57 @@ en cherchant la forme hexadécimale UTF-16BE réellement écrite.
   npm run test -- reading-progress
   npm run verify              # code 0
   ```
+
+#### RÉVISION DE D2 POINT 6 — la progression est par livre ET par langue
+
+D2 point 6 disait : « la progression est conservée PAR LIVRE, pas par langue.
+Basculer de version linguistique ne perd pas la page atteinte. »
+
+**L'intention était juste, la mise en œuvre ne pouvait pas tenir.** Les versions
+française et anglaise sont deux PDF distincts, produits par deux passages
+séparés de la chaîne d'ingestion. Un texte traduit se recompose : « page 19 » en
+français peut simplement **ne pas exister** en anglais. Conserver une page
+unique par livre revenait à promettre une reprise qui, un jour, pointerait
+au-delà de la fin du livre ouvert.
+
+La règle révisée préserve la promesse d'origine :
+
+1. la progression est stockée par **(utilisateur, livre, langue)** ;
+2. à l'ouverture d'une langue sans progression propre, on retombe sur la
+   progression **la plus récente** d'une autre langue du même livre ;
+3. cette reprise est **bornée** au nombre de pages de la version ouverte.
+
+Basculer de version ne perd donc toujours pas la page atteinte — mais on ne
+prétend plus qu'une page d'une version existe dans une autre.
+
+**Le corpus ne portait pas ce cas** : ses seize contes sont monolingues, tous de
+quatorze pages. Le jeu de démonstration non plus — ses deux versions de
+`kouassi-et-le-tam-tam` faisaient vingt pages chacune. La divergence a donc été
+**posée délibérément** dans les seeds : vingt pages en français, seize en
+anglais. Un test vérifie d'abord que cette divergence existe, sans quoi le test
+suivant passerait pour de mauvaises raisons.
+
+#### Décisions techniques prises à l'étape 12
+
+| Décision | Raison |
+|---|---|
+| Le repli choisit la langue la plus **récente**, pas la plus avancée | Être allé loin dans une version abandonnée il y a six mois ne dit rien de la lecture en cours |
+| La borne s'applique **aussi** à sa propre langue | Le titre a pu être réingéré plus court depuis la dernière lecture |
+| Regroupement des écritures côté **serveur**, une par livre et par langue toutes les 10 s | C'est la seule table où un utilisateur écrit souvent : un enfant feuilletant un album de 48 pages produirait 48 écritures. Confier le regroupement au client laisserait une application ancienne imposer sa cadence |
+| Une page **identique** n'est jamais réécrite, quel que soit le délai | Le cas du lecteur qui laisse l'album ouvert |
+| Une écriture regroupée rend **200**, pas une erreur | Distinguer les deux pousserait le client à réessayer, c'est-à-dire à défaire le regroupement |
+| Un échec d'écriture est **tracé, jamais propagé** | Sur connexion lente (§5.1), ces écritures s'empilent derrière la lecture des pages. Une progression perdue coûte un feuilletage ; une lecture bloquée coûte la séance |
+| `maj_le` utilise l'heure **RÉELLE**, non l'horloge métier injectable | Seule colonne du schéma dans ce cas, et l'exception est délibérée : elle arbitre une concurrence entre appareils — dernier écrivain gagnant — elle ne date pas un fait métier. Une console qui reculerait le temps ferait perdre une écriture postérieure au profit d'une antérieure. Un test lit le défaut de la colonne pour le vérifier |
+| L'heure vient du **serveur**, jamais du client | Deux appareils aux horloges décalées feraient reculer la progression |
+| **Lire** sa progression n'exige aucun droit sur le titre | Un abonnement expiré ne l'efface pas : un réabonnement doit reprendre là où l'enfant s'était arrêté |
+| **Écrire** exige `canRead` — la condition exacte de la politique RLS | Le serveur passe par `service_role` et contourne RLS : deux conditions différentes auraient fait accepter par un chemin ce que l'autre refuse, sans que personne sache laquelle fait autorité |
+| Aucune donnée au-delà de la page et de l'horodatage | La progression décrit la lecture d'un enfant. Pas d'historique de sessions, pas de durée, pas de parcours page par page — inutile au produit, et un passif au regard de §11.2. Un test énumère les colonnes et échouera le jour où quelqu'un en ajoutera une « pour mesurer l'engagement » |
+
+**Une divergence rattrapée en cours de route.** Mon service acceptait d'écrire
+au titre de l'extrait (`reason = 'preview'`), là où la politique RLS de l'étape 4
+exige `can_read`. Les deux chemins auraient rendu des verdicts opposés sur la
+même écriture. Le service est aligné sur la politique, et un test vérifie
+désormais que les deux refusent au même endroit.
 
 ---
 
