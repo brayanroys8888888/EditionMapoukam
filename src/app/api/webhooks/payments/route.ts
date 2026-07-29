@@ -3,6 +3,8 @@ import { getClock } from '@/lib/clock';
 import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clients';
 import { SIGNATURE_HEADER } from '@/lib/crypto/webhook-signature';
 import { echouerCommande, honorerCommande, rembourserCommande } from '@/lib/orders/fulfillment';
+import { appliquerEvenement } from '@/lib/subscriptions/handlers';
+import type { EvenementAbonnement } from '@/domain/subscriptions/state-machine';
 import type { EvenementPaiement } from '@/adapters/payment/types';
 import { logger } from '@/lib/logger';
 
@@ -235,10 +237,44 @@ async function appliquer(
     case 'abonnement.renouvele':
     case 'abonnement.prelevement_echoue':
     case 'abonnement.annule':
-    case 'abonnement.expire':
-      throw new Error(
-        `Événement d'abonnement « ${evenement.type} » non encore traité (étape 10).`,
+    case 'abonnement.expire': {
+      const { userId } = evenement.donnees;
+      if (!userId) throw new Error(`${evenement.type} sans identifiant d'utilisateur.`);
+
+      const resultat = await appliquerEvenement(
+        {
+          userId,
+          // Le préfixe `abonnement.` est retiré : la machine à états raisonne
+          // sur l'événement métier, pas sur le nom qu'un prestataire lui donne.
+          evenement: evenement.type.slice('abonnement.'.length) as EvenementAbonnement,
+          ...(evenement.donnees.offre ? { offre: evenement.donnees.offre } : {}),
+          ...(evenement.donnees.montant
+            ? {
+                montant: evenement.donnees.montant.montant,
+                devise: evenement.donnees.montant.devise,
+              }
+            : {}),
+          ...(evenement.donnees.zone ? { zone: evenement.donnees.zone } : {}),
+          ...(evenement.donnees.joursEssai !== undefined
+            ? { joursEssai: evenement.donnees.joursEssai }
+            : {}),
+          webhookEventId,
+        },
+        { client },
       );
+
+      // Une transition refusée n'est PAS une panne : c'est un événement que
+      // l'état courant ne permet pas — un renouvellement après annulation, par
+      // exemple. Rejeter par un 500 ferait réémettre indéfiniment un événement
+      // qui ne deviendra jamais applicable.
+      if (!resultat.ok) {
+        logger.warn('Événement d’abonnement sans effet', {
+          type: evenement.type,
+          raison: resultat.raison,
+        });
+      }
+      return;
+    }
 
     default: {
       // Un type inconnu n'est pas une erreur d'application : un prestataire en

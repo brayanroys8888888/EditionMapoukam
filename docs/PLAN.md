@@ -1238,7 +1238,7 @@ transportent pas les mêmes informations. Ma fonction `fail_order` échouait don
 
 ### Étape 10 — Cycle de vie des abonnements
 
-- [ ] **Objectif** — `essai` → `actif` → renouvellement, échec de prélèvement,
+- [x] **Objectif** — `essai` → `actif` → renouvellement, échec de prélèvement,
   annulation, expiration. Tout déclenchable depuis la console, testable en
   avançant l'horloge.
 - **Dépendances** — étapes 4, 9
@@ -1260,6 +1260,38 @@ transportent pas les mêmes informations. Ma fonction `fail_order` échouait don
   npm run test -- subscription
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 10
+
+| Décision | Raison |
+|---|---|
+| La machine à états ne dit **jamais** qui a le droit de lire | Les règles d'accès — période de grâce, accès maintenu jusqu'au terme payé — vivent dans `access_for_books`, unique implémentation partagée avec les politiques RLS. Les réécrire ici les ferait diverger, et la divergence porterait sur qui a le droit de lire quoi. La machine ne décide que du **statut** |
+| `expire` est le seul état terminal ; `annule` ne l'est pas | La période payée court encore après une annulation, et l'abonnement finira par expirer. C'est ce qui permet à §9.1 de promettre un « accès maintenu jusqu'à la fin de la période payée » |
+| Un abonnement **annulé** ne se renouvelle pas | C'est l'objet même de l'annulation. Un prélèvement qui surviendrait après est une erreur du prestataire, pas une reconduction à honorer |
+| Un échec de prélèvement sur un abonnement annulé est **refusé** | Le faire basculer en `impaye` rouvrirait une période de grâce sur un abonnement que l'utilisateur a résilié |
+| La grâce court depuis le **premier** échec | Un prestataire qui réessaie chaque jour la prolongerait sinon indéfiniment. `demarreGrace` ne rend vrai qu'à la première bascule, et un test vérifie `impaye_depuis` après deux échecs |
+| Le renouvellement repart de `fin_periode` si elle est **devant**, de maintenant sinon | Repartir toujours de maintenant offrirait des jours à qui renouvelle en avance ; repartir toujours de `fin_periode` en offrirait à qui a laissé traîner un impayé |
+| Zone, devise et montant **jamais** touchés par un renouvellement | D4 point 7. Un test fait annoncer au prestataire une zone différente au renouvellement et vérifie que l'abonnement reste en XAF à 2 500 |
+| L'offre du **contrat** prime sur celle de l'événement | Un renouvellement ne change pas d'offre : cela demanderait une souscription nouvelle, à un autre prix |
+| Aucune route ne change le statut d'un abonnement | §9.1 : « Ne jamais activer un abonnement sur la seule base d'une redirection navigateur. » Souscrire ouvre une session, annuler transmet la demande — l'événement signé décide. Un test vérifie qu'après un POST, **rien** n'existe en base |
+| `GET /api/subscriptions` rend `donne_telechargement: false` | La confusion la plus coûteuse du projet, désamorcée dans la réponse elle-même plutôt que laissée à l'interprétation de l'interface |
+| Une transition refusée est journalisée mais rend **200** | Un renouvellement après annulation ne deviendra jamais applicable : un 500 ferait réémettre indéfiniment un événement sans issue |
+
+**Le bug classique a son test dédié, et il est explicite.** Un seul
+utilisateur, deux titres, deux issues opposées : à l'expiration, le titre
+couvert par l'abonnement passe de `subscription` à `preview` et devient
+illisible, tandis que le titre **acheté** reste lisible et téléchargeable avec
+`reason = purchase`. Un second test le vérifie cinq ans plus tard, §3.1
+promettant à l'acheteur un accès « sans limite de durée ».
+
+**La machine à états est éprouvée sur les trente combinaisons** — cinq états
+plus « aucun abonnement », par cinq événements — et non sur les trois d'un
+parcours nominal. Un test vérifie qu'aucune combinaison ne lève : une machine
+qui plante sur une entrée inattendue est une panne, pas un refus.
+
+**Les scénarios temporels n'attendent jamais.** Les transitions reçoivent une
+`FixedClock` ; les vérifications d'accès reçoivent l'instant en paramètre, que
+`access_for_books` accepte pour cette raison même.
 
 ---
 

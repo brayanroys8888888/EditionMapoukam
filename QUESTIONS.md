@@ -8,6 +8,52 @@ Ordre : les plus engageants d'abord.
 
 ---
 
+## Étape 10 — Abonnements
+
+### Q10.1 — Qui déclenche l'expiration d'un abonnement ?
+
+**Le problème.** La transition `expire` existe et fonctionne, mais **rien ne la
+déclenche tout seul**. Aujourd'hui, elle vient d'un événement du prestataire —
+en développement, d'un clic dans la console.
+
+Or deux situations l'exigent sans qu'aucun prestataire n'ait de raison de le
+signaler :
+
+1. un abonnement **annulé** dont la période payée s'achève ;
+2. un abonnement **impayé** dont la période de grâce s'achève.
+
+**Ce que j'ai fait.** Rien de plus, et l'accès est malgré tout correct : le
+moteur de droits compare `fin_periode` et `impaye_depuis` à l'instant courant, si
+bien qu'un abonnement annulé ou impayé **cesse d'ouvrir le droit au bon moment,
+même si son statut dit encore `annule` ou `impaye`**. Il n'y a donc aucune faille
+d'accès.
+
+**Ce qui reste faux, c'est l'affichage et les statistiques.** Un abonnement
+résilié il y a six mois affichera toujours « annulé » au lieu d'« expiré », et
+les comptages d'abonnés de l'étape 14 devront filtrer sur les dates plutôt que
+sur le statut.
+
+**Ce dont j'ai besoin de vous.** Un choix, pas urgent :
+
+1. *(en place)* le statut ne bouge que sur événement du prestataire ;
+2. une tâche planifiée quotidienne fait expirer les abonnements échus ;
+3. une fonction SQL recalcule le statut à la volée à chaque lecture.
+
+Je penche pour la 2, mais elle suppose un ordonnanceur, que le mode 100 % local
+n'a pas encore.
+
+### Q10.2 — L'essai de 7 jours est codé en dur
+
+`JOURS_ESSAI = 7` dans `src/app/api/subscriptions/route.ts`, conformément à
+§3.4. Ce n'est pas dans `business_settings` comme le sont la fenêtre de 3 mois
+et la période de grâce.
+
+Si vous comptez faire varier la durée d'essai par campagne, dites-le-moi : le
+déplacer dans `business_settings` est une petite migration, mais mieux vaut la
+faire avant que des abonnements ne soient créés avec l'ancienne valeur.
+
+---
+
 ## Étape 9 — Paiement et webhooks
 
 ### Q9.1 — Un remboursement retire le droit d'accès. Est-ce bien votre intention ?

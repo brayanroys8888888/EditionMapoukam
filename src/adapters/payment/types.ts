@@ -90,6 +90,15 @@ export interface DonneesEvenement {
   referencePaiement?: string;
   montant?: Montant;
   offre?: 'mensuel' | 'annuel';
+  /**
+   * Zone tarifaire de l'abonnement, figée à la souscription (D4 point 7).
+   *
+   * Portée par l'événement parce qu'elle vient du pays réel du moyen de
+   * paiement, que seul le prestataire connaît (§3.3).
+   */
+  zone?: 'international' | 'afrique';
+  /** Durée de l'essai gratuit, en jours (§3.4). Zéro ou absent = aucun essai. */
+  joursEssai?: number;
   /** Bornes de la période couverte, pour les événements d'abonnement. */
   debutPeriode?: string;
   finPeriode?: string;

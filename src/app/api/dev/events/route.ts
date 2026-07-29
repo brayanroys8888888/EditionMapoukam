@@ -37,6 +37,16 @@ const evenementSchema = z.object({
         .object({ montant: z.number().int().nonnegative(), devise: z.string().length(3) })
         .optional(),
       offre: z.enum(['mensuel', 'annuel']).optional(),
+      /**
+       * Zone tarifaire, figée à la souscription (D4 point 7).
+       *
+       * Chez un prestataire réel, elle vient du pays du moyen de paiement.
+       * Ici, c'est l'opérateur de la console qui joue ce rôle — d'où sa
+       * présence parmi les paramètres.
+       */
+      zone: z.enum(['international', 'afrique']).optional(),
+      /** Essai gratuit, en jours (§3.4). Absent ou zéro = souscription directe. */
+      joursEssai: z.number().int().min(0).max(90).optional(),
       debutPeriode: z.iso.datetime().optional(),
       finPeriode: z.iso.datetime().optional(),
       motif: z.string().max(300).optional(),
