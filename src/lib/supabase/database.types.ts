@@ -34,6 +34,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_price_zones: {
+        Row: {
+          active: boolean
+          maj_le: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Insert: {
+          active?: boolean
+          maj_le?: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Update: {
+          active?: boolean
+          maj_le?: string
+          zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Relationships: []
+      }
       book_pages: {
         Row: {
           chemin_allegee: string
@@ -251,6 +269,7 @@ export type Database = {
         Row: {
           fenetre_nouveaute_jours: number
           id: number
+          jours_essai: number
           maj_le: string
           maj_par: string | null
           periode_grace_jours: number
@@ -258,6 +277,7 @@ export type Database = {
         Insert: {
           fenetre_nouveaute_jours?: number
           id?: number
+          jours_essai?: number
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
@@ -265,6 +285,7 @@ export type Database = {
         Update: {
           fenetre_nouveaute_jours?: number
           id?: number
+          jours_essai?: number
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
@@ -1150,6 +1171,7 @@ export type Database = {
           id: string
           id_prestataire: string | null
           impaye_depuis: string | null
+          jours_essai: number
           maj_le: string
           montant: number
           offre: string
@@ -1166,6 +1188,7 @@ export type Database = {
           id?: string
           id_prestataire?: string | null
           impaye_depuis?: string | null
+          jours_essai?: number
           maj_le?: string
           montant: number
           offre: string
@@ -1182,6 +1205,7 @@ export type Database = {
           id?: string
           id_prestataire?: string | null
           impaye_depuis?: string | null
+          jours_essai?: number
           maj_le?: string
           montant?: number
           offre?: string
@@ -1445,6 +1469,10 @@ export type Database = {
         }[]
       }
       is_admin: { Args: { p_user?: string }; Returns: boolean }
+      manques_pour_publication: {
+        Args: { p_book_id: string }
+        Returns: string[]
+      }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
       purge_expired_invoices: {
         Args: { p_at?: string }
@@ -1457,8 +1485,28 @@ export type Database = {
         }
       }
       refund_order: {
-        Args: { p_order_id: string; p_webhook_event_id?: string }
-        Returns: number
+        Args: {
+          p_book_ids?: string[]
+          p_order_id: string
+          p_webhook_event_id?: string
+        }
+        Returns: {
+          commande_soldee: boolean
+          droits_retires: number
+        }[]
+      }
+      statut_effectif: {
+        Args: {
+          p_at?: string
+          p_fin_periode: string
+          p_impaye_depuis: string
+          p_statut: Database["public"]["Enums"]["subscription_status"]
+        }
+        Returns: Database["public"]["Enums"]["subscription_status"]
+      }
+      statut_effectif_de: {
+        Args: { p_at?: string; p_subscription_id: string }
+        Returns: Database["public"]["Enums"]["subscription_status"]
       }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_impactes_par_fenetre: {

@@ -5,7 +5,20 @@ import { calculerTotal } from '@/domain/orders/total';
 import type { CodePromo, RefusPromo } from '@/domain/orders/promo';
 import type { LigneRefusee, TotalCommande, Zone } from '@/domain/orders/types';
 import { titresDuPanier, viderPanier } from './cart';
+import { zonePourPays } from '@/domain/orders/zones';
+import { getPaymentProvider } from '@/adapters/registry';
 import { logger } from '@/lib/logger';
+
+/**
+ * Appelant, tel que la garde d'authentification le rend.
+ *
+ * L'email accompagne l'identifiant parce que le prestataire en a besoin pour
+ * retrouver le moyen de paiement dont il tire le pays.
+ */
+export interface Appelant {
+  id: string;
+  email: string;
+}
 
 /**
  * Commandes — §4.2 F9, docs/PLAN.md D4.
@@ -82,9 +95,24 @@ async function lirePromo(
 export interface DemandeApercu {
   /** Zone servie à l'affichage — provisoire, sans effet financier (D4 point 5). */
   zoneAffichee: Zone;
-  /** Zone d'encaissement, issue du pays réel du moyen de paiement. */
-  zoneEncaissement: Zone;
   codePromo?: string | null;
+}
+
+/**
+ * Zone d'encaissement de l'appelant.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEMANDÉE AU PRESTATAIRE, JAMAIS REÇUE DU CLIENT.                        │
+ * │                                                                          │
+ * │ §3.3 : « déterminée par le pays de paiement (et non par l'adresse IP,   │
+ * │ plus facilement contournable) ». Un pays inconnu retombe sur             │
+ * │ `international`, la grille la plus chère : une donnée manquante ne doit  │
+ * │ jamais valoir remise.                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+async function zoneEncaissementDe(userId: string, email: string): Promise<Zone> {
+  const pays = await getPaymentProvider().paysDuMoyenDePaiement({ userId, email });
+  return zonePourPays(pays);
 }
 
 /**
@@ -95,15 +123,16 @@ export interface DemandeApercu {
  * implémentations auraient fini par annoncer un montant et en facturer un autre.
  */
 export async function apercu(
-  userId: string,
+  appelant: Appelant,
   demande: DemandeApercu,
   options: { client?: AppSupabaseClient; clock?: Clock } = {},
 ): Promise<ApercuCommande | null> {
   const client = options.client ?? createServiceClient();
   const clock = options.clock ?? getClock();
 
-  const titres = await titresDuPanier(userId, { client });
-  const tarification = tarifer(titres, demande.zoneEncaissement);
+  const zoneEncaissement = await zoneEncaissementDe(appelant.id, appelant.email);
+  const titres = await titresDuPanier(appelant.id, { client });
+  const tarification = tarifer(titres, zoneEncaissement);
 
   const promo = await lirePromo(client, demande.codePromo ?? null);
   const calcul = calculerTotal(tarification.lignes, tarification.zone, {
@@ -147,13 +176,13 @@ export interface DemandeCommande extends DemandeApercu {
  * retrouve son panier intact plutôt qu'un panier vide et aucune commande.
  */
 export async function creerCommande(
-  userId: string,
+  appelant: Appelant,
   demande: DemandeCommande,
   options: { client?: AppSupabaseClient; clock?: Clock } = {},
 ): Promise<ResultatCommande> {
   const client = options.client ?? createServiceClient();
 
-  const chiffrage = await apercu(userId, demande, options);
+  const chiffrage = await apercu(appelant, demande, options);
   if (!chiffrage) {
     return { ok: false, raison: 'panier_vide', apercu: null };
   }
@@ -165,7 +194,7 @@ export async function creerCommande(
   }
 
   const { data, error } = await client.rpc('create_order', {
-    p_user_id: userId,
+    p_user_id: appelant.id,
     p_zone: chiffrage.total.zone,
     p_devise: chiffrage.total.devise,
     p_montant_total: chiffrage.total.total,
@@ -184,10 +213,10 @@ export async function creerCommande(
     throw new Error(`Commande impossible : ${error?.message ?? 'identifiant non rendu'}`);
   }
 
-  await viderPanier(userId, { client });
+  await viderPanier(appelant.id, { client });
 
   logger.info('Commande créée', {
-    userId,
+    userId: appelant.id,
     orderId: data,
     montant: chiffrage.total.total,
     devise: chiffrage.total.devise,

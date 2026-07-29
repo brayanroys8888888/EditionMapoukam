@@ -181,6 +181,10 @@ async function creer(
       zone: demande.zone ?? 'international',
       devise: demande.devise ?? 'EUR',
       montant: demande.montant ?? 0,
+      // FIGÉE ici, et plus jamais relue depuis `business_settings`. Modifier le
+      // réglage global ne doit pas raccourcir un essai en cours : ce serait un
+      // bug de facturation, pas un changement de configuration.
+      jours_essai: statut === 'essai' ? (demande.joursEssai ?? 0) : 0,
       id_prestataire: demande.idPrestataire ?? null,
     })
     .select('id')

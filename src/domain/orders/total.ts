@@ -1,9 +1,4 @@
-// `@/lib/money` est importé depuis `src/domain`, à rebours du sens habituel des
-// couches. C'est délibéré : ce module est un calcul PUR — aucune entrée-sortie,
-// aucune horloge — et il est la seule autorité du dépôt sur le nombre de
-// décimales d'une devise (D4 point 3). Le recopier ici ferait exactement ce que
-// la règle « aucune division par 100 codée en dur » cherche à empêcher.
-import { sumAmounts } from '@/lib/money';
+import { sumAmounts } from '@/domain/money';
 import { calculerRemise, type CodePromo, type ResultatPromo } from './promo';
 import type { LigneCommande, TotalCommande, Zone } from './types';
 

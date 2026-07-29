@@ -22,18 +22,25 @@ import { ZONES } from '@/domain/orders/types';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE ZONE D'ENCAISSEMENT N'EST ACCEPTÉE EN ENTRÉE.                    │
+ * │                                                                          │
+ * │ §3.3 : la zone est « déterminée par le pays de paiement (et non par     │
+ * │ l'adresse IP, plus facilement contournable) ». Elle est donc demandée au │
+ * │ prestataire, seul à connaître le moyen de paiement du client.           │
+ * │                                                                          │
+ * │ `zone_affichee` reste acceptée : elle ne sert QU'À DÉTECTER une          │
+ * │ divergence avec le tarif réellement applicable, jamais à le fixer.      │
+ * │                                                                          │
+ * │ Un test d'architecture échoue si `zone_encaissement` réapparaît dans ce  │
+ * │ schéma. Sans lui, un acheteur européen réclamerait le tarif Afrique et   │
+ * │ paierait 1 500 FCFA au lieu de 4,99 €.                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 const commandeSchema = z.object({
   /** Zone servie à l'affichage — provisoire, sans effet financier. */
   zone_affichee: z.enum(ZONES).default('international'),
-  /**
-   * Zone d'encaissement, issue du pays réel du moyen de paiement (§3.3).
-   *
-   * Transmise par le client à ce stade, faute de prestataire réel : c'est
-   * `FakePaymentProvider` qui joue ce rôle en développement. Avec un
-   * prestataire branché, elle viendra du pays du moyen de paiement et cessera
-   * d'être un paramètre d'entrée — voir la note de l'étape 8 dans PLAN.md.
-   */
-  zone_encaissement: z.enum(ZONES).default('international'),
   code_promo: z.string().trim().min(3).max(32).optional(),
   total_confirme: z.int().nonnegative().optional(),
 });
@@ -71,9 +78,8 @@ export async function POST(request: Request): Promise<Response> {
   const corps = await parseJsonBody(request, commandeSchema);
   if (!corps.ok) return corps.response;
 
-  const resultat = await creerCommande(garde.appelant.id, {
+  const resultat = await creerCommande(garde.appelant, {
     zoneAffichee: corps.data.zone_affichee,
-    zoneEncaissement: corps.data.zone_encaissement,
     codePromo: corps.data.code_promo ?? null,
     totalConfirme: corps.data.total_confirme ?? null,
   });
@@ -155,9 +161,8 @@ export async function PUT(request: Request): Promise<Response> {
   const corps = await parseJsonBody(request, commandeSchema);
   if (!corps.ok) return corps.response;
 
-  const vue = await apercu(garde.appelant.id, {
+  const vue = await apercu(garde.appelant, {
     zoneAffichee: corps.data.zone_affichee,
-    zoneEncaissement: corps.data.zone_encaissement,
     codePromo: corps.data.code_promo ?? null,
   });
 

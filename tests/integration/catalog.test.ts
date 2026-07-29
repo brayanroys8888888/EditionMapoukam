@@ -262,13 +262,34 @@ describe('prix et zones', () => {
     expect(titre?.prix?.affichage.replace(/\s+/g, ' ')).toBe('1 500 FCFA');
   });
 
-  it('retombe sur la zone internationale quand le titre n’a pas de prix local', async () => {
-    // docs/PLAN.md D4 point 8 : le repli vaut mieux que l'absence de titre.
-    const page = await corpsJson<PageCatalogue>(await catalogue(params({ zone: 'afrique' })));
+  it('n’affiche AUCUN prix plutôt que celui d’une autre zone', async () => {
+    // Annoncer « 4,99 € » à un visiteur de la zone Afrique parce que le titre
+    // n'a pas de prix local serait une substitution silencieuse de devise — et
+    // le panier refuserait ensuite ce même titre. Le titre reste LISTÉ, il peut
+    // être lisible par abonnement ; il est simplement sans montant.
+    //
+    // Le cas est fabriqué : depuis la migration 0024, un titre publié et vendu
+    // à l'unité a un prix dans chaque zone active.
+    const livre = await queryOne<{ id: string }>(
+      `select id from public.books where slug = 'la-tortue-et-le-lapin'`,
+    );
+    await query(`delete from public.book_prices where book_id = $1 and zone = 'afrique'`, [
+      livre!.id,
+    ]);
 
-    const sansPrixLocal = page.entrees.find((e) => e.slug === 'la-tortue-et-le-lapin');
-    expect(sansPrixLocal?.prix?.zone).toBe('international');
-    expect(sansPrixLocal?.prix?.devise).toBe('EUR');
+    try {
+      const page = await corpsJson<PageCatalogue>(await catalogue(params({ zone: 'afrique' })));
+
+      const sansPrixLocal = page.entrees.find((e) => e.slug === 'la-tortue-et-le-lapin');
+      expect(sansPrixLocal, 'le titre doit rester listé').toBeDefined();
+      expect(sansPrixLocal?.prix).toBeNull();
+    } finally {
+      await query(
+        `insert into public.book_prices (book_id, zone, montant, devise)
+         values ($1, 'afrique', 1500, 'XAF')`,
+        [livre!.id],
+      );
+    }
   });
 
   it('formate l’euro avec ses centimes', async () => {

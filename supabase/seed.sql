@@ -27,7 +27,7 @@ on conflict (id) do nothing;
 -- |-----------------------------|----------------------------------------------------|
 -- | le-lion-et-la-souris        | abonnement, publié il y a 8 mois → hors fenêtre     |
 -- | l-oiseau-de-feu             | abonnement, publié il y a 1 mois → DANS la fenêtre  |
--- | la-tortue-et-le-lapin       | vente unitaire seule, prix international uniquement |
+-- | la-tortue-et-le-lapin       | vente unitaire seule, prix dans les deux zones      |
 -- | anansi-l-araignee-maligne   | abonnement ET vente unitaire, titre premium         |
 -- | petit-baobab                | gratuit, non vendu                                  |
 -- | la-riviere-qui-parlait      | gratuit ET vendu, DANS la fenêtre → gratuit prime   |
@@ -165,7 +165,11 @@ join (values
   ('le-lion-et-la-souris',        'afrique',       1500, 'XAF'),
   ('l-oiseau-de-feu',             'international', 499,  'EUR'),
   ('l-oiseau-de-feu',             'afrique',       1500, 'XAF'),
+  -- Prix dans les DEUX zones actives : depuis la migration 0024, un titre
+  -- publié et vendu à l'unité ne peut plus en manquer une. Ce jeu de données
+  -- doit rester conforme à la règle qu'il sert à éprouver.
   ('la-tortue-et-le-lapin',       'international', 499,  'EUR'),
+  ('la-tortue-et-le-lapin',       'afrique',       1500, 'XAF'),
   -- titre premium (§3.3) : long et fortement illustré
   ('anansi-l-araignee-maligne',   'international', 699,  'EUR'),
   ('anansi-l-araignee-maligne',   'afrique',       1500, 'XAF'),

@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import JSZip from 'jszip';
 
@@ -12,6 +10,7 @@ import { BUCKETS, cheminTelechargement } from '@/lib/ingestion/storage';
 import { TAILLES_COUVERTURE } from '@/lib/storage/covers';
 import { IMAGE_EPUB } from '@/domain/ingestion/epub';
 
+import { messagesGraves, validerEpub } from '../helpers/epubcheck';
 import { closePool, query, queryOne } from '../helpers/db';
 import { corpsJson, type ReponseErreur } from '../helpers/http';
 import { createTestUser, deleteTestUser, serviceClient, type TestUser } from '../helpers/users';
@@ -332,52 +331,31 @@ describe('EPUB à mise en page fixe produit', () => {
    * Validation par epubcheck, l'implémentation de référence du W3C.
    *
    * ┌────────────────────────────────────────────────────────────────────────┐
-   * │ CE TEST NE S'EXÉCUTE QUE SI LE VALIDATEUR EST INSTALLÉ.                │
+   * │ CE TEST S'EXÉCUTE TOUJOURS. IL N'EST PLUS CONDITIONNÉ À QUOI QUE CE    │
+   * │ SOIT.                                                                  │
    * │                                                                        │
-   * │ `epubchecker` est une dépendance de développement, mais le paquet npm  │
-   * │ ne contient pas le validateur : son script d'installation TÉLÉCHARGE   │
-   * │ l'archive Java depuis GitHub. Sur un poste sans accès réseau — ce qui  │
-   * │ est le cas de celui-ci — le téléchargement échoue SANS faire échouer   │
-   * │ `npm install`, et le dossier `vendors/` reste absent.                  │
+   * │ Le validateur est versionné sous `vendors/epubcheck/`. Auparavant, il  │
+   * │ était téléchargé à l'installation par un paquet npm, et cette          │
+   * │ installation pouvait ÉCHOUER SANS FAIRE ÉCHOUER `npm install` : une    │
+   * │ intégration continue aurait alors été verte sans rien valider — pire   │
+   * │ que pas de test du tout, puisque le tableau de bord affirmait le       │
+   * │ contraire.                                                             │
    * │                                                                        │
-   * │ Le test est donc conditionné à la présence réelle du fichier, et non   │
-   * │ supposé installé. Il ne remplace pas les vérifications de structure    │
-   * │ ci-dessus : celles-ci s'exécutent TOUJOURS et couvrent la conformité   │
-   * │ OCF, la mise en page fixe et la cohérence du manifeste. Elles sont la  │
-   * │ garantie de base ; epubcheck est la ceinture en plus de la bretelle.   │
-   * │                                                                        │
-   * │ Pour l'activer sur un poste connecté : `npm rebuild epubchecker`.      │
+   * │ Les vérifications de structure qui précèdent restent utiles : elles    │
+   * │ disent POURQUOI un fichier est conforme, là où epubcheck se contente   │
+   * │ de dire qu'il l'est.                                                   │
    * └────────────────────────────────────────────────────────────────────────┘
    */
-  const JAR = join(
-    process.cwd(),
-    'node_modules',
-    'epubchecker',
-    'vendors',
-    'epubcheck-5.2.1',
-    'epubcheck.jar',
-  );
-
-  it.skipIf(!existsSync(JAR))(
-    'passe la validation epubcheck du W3C',
+  it(
+    'passe la validation epubcheck du W3C sans aucune erreur',
     async () => {
-      const dossier = await mkdtemp(join(tmpdir(), 'epubcheck-'));
-      const chemin = join(dossier, 'livre.epub');
+      const rapport = await validerEpub(epub);
+      const graves = messagesGraves(rapport);
 
-      try {
-        await writeFile(chemin, epub);
-
-        const { default: epubchecker } = await import('epubchecker');
-
-        const rapport = await epubchecker(chemin, { includeWarnings: false });
-        const graves = rapport.messages.filter(
-          (m) => m.severity === 'ERROR' || m.severity === 'FATAL',
-        );
-
-        expect(graves.map((m) => m.message)).toEqual([]);
-      } finally {
-        await rm(dossier, { recursive: true, force: true });
-      }
+      // Les messages sont rendus en clair : un test qui dirait seulement
+      // « 3 erreurs » obligerait à relancer epubcheck à la main pour savoir
+      // lesquelles.
+      expect(graves.map((m) => `${m.ID ?? '?'} : ${m.message}`)).toEqual([]);
     },
     300_000,
   );

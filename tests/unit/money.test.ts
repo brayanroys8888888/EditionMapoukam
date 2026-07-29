@@ -7,8 +7,8 @@ import {
   sumAmounts,
   toMajorUnits,
   toMinorUnits,
-} from '@/lib/money/money';
-import type { Currency } from '@/lib/money/money';
+} from '@/domain/money/money';
+import type { Currency } from '@/domain/money/money';
 
 const EUR: Currency = { code: 'EUR', decimals: 2, symbole: '€' };
 const XAF: Currency = { code: 'XAF', decimals: 0, symbole: 'FCFA' };

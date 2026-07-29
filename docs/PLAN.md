@@ -1489,6 +1489,131 @@ contournement délibéré par quelqu'un qui ne connaît pas l'intention.
 
 ---
 
+## 5 ter. Arbitrages appliqués (2026-07-29)
+
+Réponses du client aux questions consignées dans `QUESTIONS.md`, et ce qui a été
+fait. Ces décisions traversent plusieurs étapes déjà livrées : elles sont donc
+regroupées ici plutôt que dispersées.
+
+### Le principe qui en résout trois
+
+> « L'ingestion est permissive, la publication est stricte. »
+
+Un titre ne peut passer au statut `publie` que si son auteur est renseigné et
+différent de « À renseigner », son origine culturelle et sa tranche d'âge sont
+renseignées, et — s'il est `disponible_achat` — qu'il a un prix dans **chaque
+zone active**.
+
+**Vérifié en base, par déclencheur** (migration 0024), et non dans le
+formulaire : un contrôle d'interface se contourne par un appel direct à l'API,
+se perd à la première refonte, et ne protège pas des scripts d'import. Le
+déclencheur tient quel que soit le chemin d'écriture, `service_role` compris.
+
+| Détail | Raison |
+|---|---|
+| Contrainte **différée** en fin de transaction | Les prix vivent dans une autre table : un script qui insère le livre puis ses prix présenterait, à l'instant de l'insertion, un titre publié sans prix. Vérifier immédiatement le refuserait alors que la transaction complète est valide. Constaté en écrivant la migration — la version immédiate faisait échouer `npm run db:reset` sur les seeds |
+| Ne mord **qu'au passage** à `publie` | Un titre déjà publié dont on modifie un champ sans rapport n'est pas revalidé. Sans cela, retirer un prix échouerait avec un message parlant de publication, ce qui égarerait plus qu'il n'aiderait |
+| `manques_pour_publication()` exposée séparément | Le back-office (étape 13) affichera la liste des manques **avant** la tentative. La même règle sert aux deux usages, donc aucune divergence possible entre ce que l'écran annonce et ce que le déclencheur refuse |
+| Table `active_price_zones` plutôt qu'une constante | Ouvrir une zone est une décision commerciale, qui doit pouvoir se prendre sans migration. La colonne `active` permet de préparer une zone sans l'imposer aux titres déjà publiés |
+
+**Le déclencheur a immédiatement trouvé un défaut réel** : `la-tortue-et-le-lapin`
+était publié, vendu à l'unité, et n'avait qu'un prix international. Le jeu de
+démonstration a été corrigé — un jeu de données qui viole la règle qu'il sert à
+éprouver donne une base de tests fausse.
+
+### Q8.1 — La zone d'encaissement vient du prestataire
+
+`zone_encaissement` a disparu des entrées de `POST /api/orders` **et** de
+`POST /api/subscriptions`. Le contrat `PaymentProvider` porte désormais
+`paysDuMoyenDePaiement()`, et `zonePourPays()` en dérive la zone.
+
+| Détail | Raison |
+|---|---|
+| Un pays inconnu retombe sur **international** | La grille la plus chère. L'inverse ferait d'une donnée manquante une remise automatique, et un prestataire qui cesserait de renseigner le pays offrirait le tarif réduit à tout le monde |
+| Le pays simulé vit dans une **variable de classe** du faux prestataire | Jamais dans une requête HTTP : un client qui pourrait l'imposer choisirait son propre tarif |
+| Un **test d'architecture** échoue si le champ réapparaît | Une commodité retirée revient toujours par la même porte — un correctif pressé, un test à écrire vite. Le test lit les schémas Zod des routes |
+
+La route d'abonnement avait le même défaut, et il était pire : la zone y est
+**figée pour toute la vie de l'abonnement** (D4 point 7). Un tarif choisi par
+l'abonné, puis verrouillé.
+
+### Q8.2 — Le repli de zone est remplacé par un refus nommé
+
+D4 point 8 prévoyait de retomber sur la zone internationale. Appliqué ligne par
+ligne, ce repli facturait un panier moitié en francs CFA, moitié en euros ;
+appliqué à la commande entière, il faisait passer silencieusement un acheteur
+africain à la grille européenne.
+
+Le repli est retiré de la tarification **et du catalogue** (migration 0028) : la
+zone demandée, ou aucun prix. Le titre reste listé — il peut être lisible par
+abonnement — simplement sans montant. Un panier dont le total change de devise
+sans explication fait abandonner l'acheteur.
+
+Le cas résiduel — une zone ouverte **après** publication — donne
+`sans_prix_dans_la_zone`, un refus qui nomme le titre.
+
+### Q9.1 — Remboursement par ligne
+
+`refund_order` accepte désormais un tableau de titres ; `null` vaut
+remboursement total. Sur un panier de quatre titres, en rembourser un ne fait
+plus perdre les trois autres.
+
+La commande n'est soldée (`rembourse`) que lorsqu'il ne reste plus aucun droit
+issu d'elle. Un remboursement partiel la laisse `paye` : elle a bien donné lieu
+à un encaissement, et une partie du contenu reste due. Un identifiant étranger à
+la commande est écarté — il ne doit pas servir à retirer un droit acquis
+ailleurs.
+
+Le geste commercial — rembourser **sans** retirer — reste possible par l'octroi
+manuel d'un administrateur, que ce remboursement ne touche pas.
+
+### Q10.1 — `statut_effectif()`, sans tâche planifiée ni écrasement
+
+Deux options écartées, pour la même raison de fond :
+
+* **une tâche planifiée** aurait réintroduit la synchronisation d'état dupliqué
+  que D1 avait écartée pour les entitlements. Une tâche de fond qui échoue en
+  silence laisse la base dans un état faux sans que rien ne le signale ;
+* **écraser `statut`** aurait détruit la distinction annulé/impayé, dont
+  l'analyse de rétention (étape 14) a besoin.
+
+`statut` conserve donc ce que le prestataire a rapporté ; `statut_effectif()`
+replie les dates. Affichage et statistiques lisent cette fonction, jamais la
+colonne.
+
+Elle ne corrige **pas une faille** : le moteur de droits comparait déjà les
+dates et refusait l'accès au bon moment. Elle corrige un affichage.
+
+### Q10.2 — `jours_essai` réglable, mais figé sur l'abonnement
+
+Le réglage vit dans `business_settings` ; la valeur appliquée est recopiée sur
+chaque abonnement à sa création, exactement comme `order_items.prix_unitaire`
+fige le prix facturé.
+
+Sans cette copie, ramener le réglage de sept à trois jours prélèverait au
+troisième jour un abonné à qui sept ont été promis. C'est un bug de facturation,
+pas un changement de configuration.
+
+### Q8.3 — `src/lib/money` → `src/domain/money`
+
+Le nombre de décimales d'une devise est une règle métier, pas un utilitaire.
+`src/domain/orders` l'importait à rebours des couches ; le déplacement supprime
+l'entorse au lieu de la documenter. Le message de la règle ESLint suit.
+
+### Q7.1 — epubcheck versionné, test inconditionnel
+
+Le problème n'était pas le réseau : c'était qu'un `npm install` **réussisse**
+alors que le validateur est absent. Une intégration continue aurait été verte
+sans rien valider — pire que pas de test, puisque le tableau de bord affirmait
+le contraire.
+
+Le validateur est versionné sous `vendors/epubcheck/` (34 Mo, licence BSD à
+trois clauses), la dépendance npm est retirée, et le test s'exécute toujours.
+**La suite ne comporte plus aucun test ignoré, et l'EPUB produit passe la
+validation W3C sans la moindre erreur.**
+
+---
+
 ## 6. Ce que je ne ferai pas sans votre accord
 
 - Modifier `docs/cahier-des-charges.md`

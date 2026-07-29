@@ -14,7 +14,7 @@
  * │ montant du code, qui décide de ce qui est déduit.                       │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-import { applyPercentage } from '@/lib/money';
+import { applyPercentage } from '@/domain/money';
 
 export interface CodePromo {
   id: string;

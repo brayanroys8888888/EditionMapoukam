@@ -43,7 +43,6 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "dotenv": "^17.4.2",
-    "epubchecker": "^5.2.1",
     "eslint": "^10.8.0",
     "pg": "^8.22.0",
     "supabase": "^2.110.0",

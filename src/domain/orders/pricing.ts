@@ -20,43 +20,28 @@ import type {
  * │ sans que personne ne l'ait décidé, et rendrait irreproductible le        │
  * │ montant d'une commande passée.                                          │
  * └──────────────────────────────────────────────────────────────────────────┘
- */
-
-/**
- * Zone de repli.
- *
- * D4 point 8 : « Si un conte n'a pas de prix pour la zone résolue, on retombe
- * sur la zone internationale plutôt que d'échouer. »
- */
-export const ZONE_DE_REPLI: Zone = 'international';
-
-/** Prix d'un titre pour une zone, avec repli. */
-export function prixPourZone(prix: readonly PrixZone[], zone: Zone): PrixZone | null {
-  return prix.find((p) => p.zone === zone) ?? prix.find((p) => p.zone === ZONE_DE_REPLI) ?? null;
-}
-
-/**
- * Zone réellement applicable à une commande entière.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ LE REPLI EST DÉCIDÉ POUR LA COMMANDE, PAS LIGNE PAR LIGNE.              │
+ * │ LE REPLI DE D4 POINT 8 A ÉTÉ RETIRÉ, ET REMPLACÉ PAR UN REFUS NOMMÉ.    │
  * │                                                                          │
- * │ Appliqué ligne par ligne, D4 point 8 produirait un panier où un titre    │
- * │ est facturé en FCFA et le suivant en euros. Or `orders` ne porte QU'UNE  │
- * │ devise et QU'UNE zone, et additionner deux devises sans taux de change   │
- * │ n'a aucun sens — `sumAmounts` refuse d'ailleurs de le faire.            │
+ * │ D4 point 8 prévoyait de retomber sur la zone internationale lorsqu'un   │
+ * │ titre n'avait pas de prix dans la zone résolue. Appliqué ligne par      │
+ * │ ligne, ce repli produisait un panier facturé moitié en francs CFA et    │
+ * │ moitié en euros ; appliqué à la commande entière, il faisait passer     │
+ * │ silencieusement un acheteur africain à la grille européenne.            │
  * │                                                                          │
- * │ Si un seul titre du panier n'a pas de prix dans la zone demandée, la     │
- * │ commande entière bascule donc en zone internationale. Le repli reste     │
- * │ celui de D4 point 8 ; c'est sa portée qui est précisée.                 │
+ * │ La protection est désormais EN AMONT : un titre ne peut être publié en  │
+ * │ vente à l'unité que s'il a un prix dans CHAQUE zone active — la base le │
+ * │ vérifie par déclencheur (migration 0024). Le cas résiduel — une zone    │
+ * │ ajoutée après publication — donne ici un refus explicite, jamais un     │
+ * │ changement de devise en silence. Un panier dont le total change sans    │
+ * │ explication fait abandonner l'acheteur.                                 │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-export function zoneApplicable(titres: readonly TitreAchetable[], souhaitee: Zone): Zone {
-  const vendables = titres.filter((t) => t.prix.length > 0);
-  if (vendables.length === 0) return souhaitee;
 
-  const tousServis = vendables.every((t) => t.prix.some((p) => p.zone === souhaitee));
-  return tousServis ? souhaitee : ZONE_DE_REPLI;
+/** Prix d'un titre pour une zone. Aucun repli : la zone demandée, ou rien. */
+export function prixPourZone(prix: readonly PrixZone[], zone: Zone): PrixZone | null {
+  return prix.find((p) => p.zone === zone) ?? null;
 }
 
 export interface Tarification {
@@ -71,9 +56,11 @@ export interface Tarification {
  * Un titre est refusé plutôt qu'ignoré : l'utilisateur doit apprendre POURQUOI
  * son panier ne peut pas être commandé tel quel. Un panier qui se vide en
  * silence est un bogue perçu comme une panne.
+ *
+ * La zone rendue est toujours celle demandée : elle ne se déplace jamais sous
+ * les pieds de l'acheteur.
  */
-export function tarifer(titres: readonly TitreAchetable[], souhaitee: Zone): Tarification {
-  const zone = zoneApplicable(titres, souhaitee);
+export function tarifer(titres: readonly TitreAchetable[], zone: Zone): Tarification {
   const lignes: LigneCommande[] = [];
   const refusees: LigneRefusee[] = [];
 
@@ -98,7 +85,14 @@ export function tarifer(titres: readonly TitreAchetable[], souhaitee: Zone): Tar
 
     const prix = prixPourZone(titre.prix, zone);
     if (!prix) {
-      refusees.push({ bookId: titre.bookId, titre: titre.titre, raison: 'sans_prix' });
+      // Cas résiduel : une zone ouverte après la publication du titre. La
+      // validation de publication empêche qu'il survienne pour un titre publié
+      // dans les zones existantes.
+      refusees.push({
+        bookId: titre.bookId,
+        titre: titre.titre,
+        raison: 'sans_prix_dans_la_zone',
+      });
       continue;
     }
 

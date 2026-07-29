@@ -395,6 +395,139 @@ describe('renouvellement et bornes de période', () => {
   });
 });
 
+describe('statut effectif — les dates repliées sur le statut rapporté', () => {
+  /** Statut effectif de l'abonnement courant, à une date donnée. */
+  async function effectif(at: Date): Promise<string | undefined> {
+    const ligne = await queryOne<{ s: string }>(
+      `select public.statut_effectif(s.statut, s.fin_periode, s.impaye_depuis, $2::timestamptz) as s
+         from public.subscriptions s where s.user_id = $1`,
+      [abonne.id, at.toISOString()],
+    );
+    return ligne?.s;
+  }
+
+  it('NE TOUCHE PAS `statut`, qui garde ce que le prestataire a rapporté', async () => {
+    // « Annulé » et « impayé » ne racontent pas la même histoire : le premier
+    // est un départ volontaire, le second un accident de paiement. Les replier
+    // tous deux sur « expiré » en base détruirait la distinction dont l'analyse
+    // de rétention (étape 14) a besoin.
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'annule' },
+      { clock: new FixedClock(jours(2)) },
+    );
+
+    const enBase = await queryOne<{ statut: string }>(
+      `select statut from public.subscriptions where user_id = $1`,
+      [abonne.id],
+    );
+    expect(enBase?.statut).toBe('annule');
+  });
+
+  it('replie « annulé » sur « expiré » une fois la période payée écoulée', async () => {
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'annule' },
+      { clock: new FixedClock(jours(2)) },
+    );
+
+    // L'essai s'achevait au 7e jour.
+    expect(await effectif(jours(5))).toBe('annule');
+    expect(await effectif(jours(10))).toBe('expire');
+  });
+
+  it('replie « impayé » sur « expiré » une fois la grâce écoulée', async () => {
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { clock: new FixedClock(jours(7)) },
+    );
+
+    // Grâce de 7 jours à compter de l'échec.
+    expect(await effectif(jours(10))).toBe('impaye');
+    expect(await effectif(jours(20))).toBe('expire');
+  });
+
+  it('laisse « actif » tel quel, même période échue', async () => {
+    // Celui-là attend un renouvellement ou un échec de prélèvement, et c'est au
+    // prestataire de trancher. Le replier sur « expiré » inventerait une
+    // décision que personne n'a prise.
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'renouvele' },
+      { clock: new FixedClock(jours(7)) },
+    );
+
+    expect(await effectif(jours(400))).toBe('actif');
+  });
+
+  it('concorde avec le droit d’accès réellement accordé', async () => {
+    // Le moteur de droits comparait déjà les dates : cette fonction ne corrige
+    // pas une faille, elle corrige un AFFICHAGE. Les deux doivent dire la même
+    // chose, sans quoi l'écran mentirait sur ce que l'utilisateur peut lire.
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'annule' },
+      { clock: new FixedClock(jours(2)) },
+    );
+
+    const acces = await getAccess(abonne.id, livreAbonnement, { at: jours(10) });
+
+    expect(await effectif(jours(10))).toBe('expire');
+    expect(acces.canRead).toBe(false);
+  });
+});
+
+describe('durée d’essai figée sur l’abonnement', () => {
+  it('est recopiée à la souscription', async () => {
+    await souscrireAvecEssai();
+
+    const ligne = await queryOne<{ jours_essai: number }>(
+      `select jours_essai from public.subscriptions where user_id = $1`,
+      [abonne.id],
+    );
+    expect(ligne?.jours_essai).toBe(7);
+  });
+
+  it('NE SUIT PAS un changement du réglage global', async () => {
+    // Même principe que `order_items.prix_unitaire` : sans cette copie, ramener
+    // le réglage de 7 à 3 jours prélèverait au troisième jour un abonné à qui
+    // sept ont été promis. C'est un bug de facturation, pas un changement de
+    // configuration.
+    await souscrireAvecEssai();
+
+    await query(`update public.business_settings set jours_essai = 3 where id = 1`);
+    try {
+      const ligne = await queryOne<{ jours_essai: number }>(
+        `select jours_essai from public.subscriptions where user_id = $1`,
+        [abonne.id],
+      );
+      expect(ligne?.jours_essai).toBe(7);
+    } finally {
+      await query(`update public.business_settings set jours_essai = 7 where id = 1`);
+    }
+  });
+
+  it('reste à zéro pour une souscription sans essai', async () => {
+    await appliquerEvenement(
+      {
+        userId: abonne.id,
+        evenement: 'souscrit',
+        offre: 'mensuel',
+        joursEssai: 0,
+      },
+      { clock: new FixedClock(DEPART) },
+    );
+
+    const ligne = await queryOne<{ statut: string; jours_essai: number }>(
+      `select statut, jours_essai from public.subscriptions where user_id = $1`,
+      [abonne.id],
+    );
+    expect(ligne?.statut).toBe('actif');
+    expect(ligne?.jours_essai).toBe(0);
+  });
+});
+
 describe('transitions refusées', () => {
   it('refuse une seconde souscription', async () => {
     await souscrireAvecEssai();

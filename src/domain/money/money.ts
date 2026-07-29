@@ -9,6 +9,10 @@
  * est le seul endroit autorisé à convertir, et il le fait à partir du nombre de
  * décimales déclaré par la table `currencies`, jamais d'une constante.
  *
+ * Il vit dans `src/domain` et non `src/lib` : le nombre de décimales d'une
+ * devise est une RÈGLE MÉTIER, pas un utilitaire technique. C'est elle qui
+ * décide si 1500 XAF vaut mille cinq cents francs ou quinze.
+ *
  * Les montants circulent partout ailleurs dans la PLUS PETITE UNITÉ de leur
  * devise, en entier. Aucun flottant ne traverse la base ni la logique métier.
  */

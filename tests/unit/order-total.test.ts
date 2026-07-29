@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { prixPourZone, tarifer, zoneApplicable, ZONE_DE_REPLI } from '@/domain/orders/pricing';
+import { prixPourZone, tarifer } from '@/domain/orders/pricing';
+import { paysZoneAfrique, zonePourPays } from '@/domain/orders/zones';
 import { calculerRemise, type CodePromo } from '@/domain/orders/promo';
 import { calculerTotal } from '@/domain/orders/total';
 import type { TitreAchetable } from '@/domain/orders/types';
@@ -39,11 +40,14 @@ describe('résolution du prix par zone', () => {
     expect(prixPourZone(prix, 'afrique')).toEqual({ zone: 'afrique', montant: 1500, devise: 'XAF' });
   });
 
-  it('retombe sur l’international quand la zone manque', () => {
-    // D4 point 8 : « on retombe sur la zone internationale plutôt que d'échouer ».
+  it('NE retombe PAS sur l’international quand la zone manque', () => {
+    // Le repli de D4 point 8 a été retiré : il faisait passer silencieusement
+    // un acheteur africain à la grille européenne. La protection est désormais
+    // à la publication — un titre vendu à l'unité doit avoir un prix dans
+    // chaque zone active — et le cas résiduel donne un refus nommé.
     const prix = [{ zone: 'international' as const, montant: 499, devise: 'EUR' }];
 
-    expect(prixPourZone(prix, 'afrique')?.zone).toBe(ZONE_DE_REPLI);
+    expect(prixPourZone(prix, 'afrique')).toBeNull();
   });
 
   it('ne rend rien pour un titre sans aucun prix', () => {
@@ -63,31 +67,71 @@ describe('résolution du prix par zone', () => {
   });
 });
 
-describe('zone applicable à une commande entière', () => {
-  it('garde la zone demandée quand tous les titres y ont un prix', () => {
-    expect(zoneApplicable([titre({ bookId: 'a' }), titre({ bookId: 'b' })], 'afrique')).toBe(
-      'afrique',
-    );
+describe('zone tarifaire d’un pays de paiement', () => {
+  it('sert la grille Afrique aux pays de la zone franc CFA', () => {
+    // §3.3 — « Zone Afrique — paiement par Mobile Money ».
+    for (const pays of ['SN', 'CI', 'CM', 'BF']) {
+      expect(zonePourPays(pays), pays).toBe('afrique');
+    }
   });
 
-  it('bascule TOUTE la commande en repli si un seul titre manque à l’appel', () => {
-    // Appliqué ligne par ligne, le repli produirait un panier facturé moitié en
-    // FCFA moitié en euros — or une commande ne porte qu'une devise, et
-    // additionner deux devises sans taux de change n'a aucun sens.
+  it('sert la grille internationale partout ailleurs', () => {
+    for (const pays of ['FR', 'BE', 'US', 'CA', 'JP']) {
+      expect(zonePourPays(pays), pays).toBe('international');
+    }
+  });
+
+  it('retombe sur l’INTERNATIONAL — la grille la plus chère — si le pays est inconnu', () => {
+    // Le repli doit se faire vers le tarif le plus élevé : l'inverse ferait
+    // d'une donnée manquante une remise automatique, et un prestataire qui
+    // cesserait de renseigner le pays offrirait le tarif réduit à tout le monde.
+    expect(zonePourPays(null)).toBe('international');
+    expect(zonePourPays(undefined)).toBe('international');
+    expect(zonePourPays('')).toBe('international');
+    expect(zonePourPays('ZZ')).toBe('international');
+  });
+
+  it('ignore la casse et les espaces', () => {
+    expect(zonePourPays(' sn ')).toBe('afrique');
+  });
+
+  it('ne liste que des codes ISO à deux lettres majuscules', () => {
+    for (const pays of paysZoneAfrique()) {
+      expect(pays, pays).toMatch(/^[A-Z]{2}$/);
+    }
+  });
+});
+
+describe('titre sans prix dans la zone d’encaissement', () => {
+  it('est REFUSÉ, jamais reporté sur une autre grille', () => {
+    // Un panier dont le total change de devise sans explication fait abandonner
+    // l'acheteur. Le refus le nomme.
     const sansAfrique = titre({
       bookId: 'b',
       prix: [{ zone: 'international', montant: 699, devise: 'EUR' }],
     });
 
-    expect(zoneApplicable([titre({ bookId: 'a' }), sansAfrique], 'afrique')).toBe('international');
+    const { lignes, refusees } = tarifer([titre({ bookId: 'a' }), sansAfrique], 'afrique');
+
+    expect(lignes.map((l) => l.bookId)).toEqual(['a']);
+    expect(refusees[0]).toEqual({
+      bookId: 'b',
+      titre: 'Conte b',
+      raison: 'sans_prix_dans_la_zone',
+    });
   });
 
-  it('ignore les titres sans aucun prix dans ce choix', () => {
-    // Un titre sans prix sera refusé ensuite : il n'a pas à faire basculer la
-    // zone des titres qui, eux, sont vendables.
-    const sansPrix = titre({ bookId: 'c', prix: [] });
+  it('ne déplace jamais la zone des titres qui, eux, ont un prix', () => {
+    const sansAfrique = titre({
+      bookId: 'b',
+      prix: [{ zone: 'international', montant: 699, devise: 'EUR' }],
+    });
 
-    expect(zoneApplicable([titre({ bookId: 'a' }), sansPrix], 'afrique')).toBe('afrique');
+    const { lignes, zone } = tarifer([titre({ bookId: 'a' }), sansAfrique], 'afrique');
+
+    expect(zone).toBe('afrique');
+    expect(lignes[0]?.devise).toBe('XAF');
+    expect(lignes[0]?.prixUnitaire).toBe(1500);
   });
 });
 
@@ -114,10 +158,10 @@ describe('tarification du panier', () => {
     expect(refusees[0]?.raison).toBe('deja_possede');
   });
 
-  it('refuse un titre sans prix', () => {
+  it('refuse un titre sans aucun prix', () => {
     const { refusees } = tarifer([titre({ bookId: 'a', prix: [] })], 'international');
 
-    expect(refusees[0]?.raison).toBe('sans_prix');
+    expect(refusees[0]?.raison).toBe('sans_prix_dans_la_zone');
   });
 
   it('nomme le titre refusé, plutôt que de le retirer en silence', () => {

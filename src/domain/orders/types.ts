@@ -51,7 +51,14 @@ export type RefusLigne =
   | 'non_disponible_achat'
   | 'non_publie'
   | 'deja_possede'
-  | 'sans_prix';
+  /**
+   * Aucun prix dans la zone d'encaissement de l'acheteur.
+   *
+   * Cas résiduel : une zone tarifaire ouverte après la publication du titre. La
+   * validation de publication (migration 0024) exige un prix dans chaque zone
+   * active, ce qui rend ce refus impossible pour les zones déjà en place.
+   */
+  | 'sans_prix_dans_la_zone';
 
 export interface LigneRefusee {
   bookId: string;

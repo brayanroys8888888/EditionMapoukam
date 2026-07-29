@@ -9,6 +9,8 @@ import {
 } from '@/app/api/orders/route';
 import { GET as detailCommande } from '@/app/api/orders/[id]/route';
 
+import { FakePaymentProvider } from '@/adapters/payment/fake/fake-payment-provider';
+
 import { closePool, query, queryOne } from '../helpers/db';
 import { corpsJson, get, postJson, type ReponseErreur } from '../helpers/http';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
@@ -39,6 +41,24 @@ async function idDuLivre(slug: string): Promise<string> {
   return ligne.id;
 }
 
+/**
+ * Joue un scénario avec un pays de moyen de paiement donné.
+ *
+ * La zone d'encaissement n'est plus un paramètre de requête : elle se déduit du
+ * pays que le prestataire rapporte (§3.3). Le faux prestataire tient ce rôle,
+ * et le pays est remis en place ensuite pour ne pas contaminer les tests
+ * suivants.
+ */
+async function enPayant(codePays: string, scenario: () => Promise<void>): Promise<void> {
+  const precedent = FakePaymentProvider.paysSimule();
+  FakePaymentProvider.simulerPays(codePays);
+  try {
+    await scenario();
+  } finally {
+    FakePaymentProvider.simulerPays(precedent);
+  }
+}
+
 /** Ajoute un titre au panier de l'utilisateur, par son slug. */
 async function ajouterAuPanier(
   user: TestUser,
@@ -61,7 +81,7 @@ interface CorpsCommande {
   zone_divergente: boolean;
   refus_promo: string | null;
   lignes: { livre_id: string; prix_unitaire: number }[];
-  refusees: { livre_id: string; raison: string }[];
+  refusees: { livre_id: string; titre: string; raison: string }[];
 }
 
 beforeAll(async () => {
@@ -157,7 +177,7 @@ describe('total et grille tarifaire', () => {
 
     const corps = await corpsJson<CorpsCommande>(
       await apercuCommande(
-        postJson('/api/orders', { zone_encaissement: 'international' }, { jeton: acheteur.accessToken }),
+        postJson('/api/orders', {}, { jeton: acheteur.accessToken }),
       ),
     );
 
@@ -165,44 +185,63 @@ describe('total et grille tarifaire', () => {
     expect(corps.devise).toBe('EUR');
   });
 
-  it('sert la zone Afrique en francs CFA', async () => {
-    await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
+  it('sert la zone Afrique en francs CFA au porteur d’un moyen de paiement africain', async () => {
+    // La zone vient du PAYS DU MOYEN DE PAIEMENT (§3.3), plus du corps de la
+    // requête : c'est le faux prestataire qui joue ici le rôle du tiers.
+    await enPayant('SN', async () => {
+      await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
 
-    const corps = await corpsJson<CorpsCommande>(
-      await apercuCommande(
-        postJson(
-          '/api/orders',
-          { zone_affichee: 'afrique', zone_encaissement: 'afrique' },
-          { jeton: acheteur.accessToken },
+      const corps = await corpsJson<CorpsCommande>(
+        await apercuCommande(
+          postJson('/api/orders', { zone_affichee: 'afrique' }, { jeton: acheteur.accessToken }),
         ),
-      ),
-    );
+      );
 
-    // 1 500 FCFA se stocke `1500` et vaut 1 500 FCFA — jamais 15,00.
-    expect(corps.total).toBe(1500);
-    expect(corps.devise).toBe('XAF');
+      // 1 500 FCFA se stocke `1500` et vaut 1 500 FCFA — jamais 15,00.
+      expect(corps.total).toBe(1500);
+      expect(corps.devise).toBe('XAF');
+      expect(corps.zone).toBe('afrique');
+    });
   });
 
-  it('bascule TOUTE la commande en international si un titre manque en zone Afrique', async () => {
-    // `la-tortue-et-le-lapin` n'a qu'un prix international. Facturer un panier
-    // moitié en FCFA moitié en euros est impossible : une commande ne porte
-    // qu'une devise.
-    await ajouterAuPanier(acheteur, 'le-lion-et-la-souris'); // les deux zones
-    await ajouterAuPanier(acheteur, 'la-tortue-et-le-lapin'); // international seul
+  it('REFUSE un titre sans prix dans la zone, sans jamais changer la devise', async () => {
+    // Ancien comportement : toute la commande basculait en euros. Un panier
+    // dont le total change de devise sans explication fait abandonner
+    // l'acheteur — désormais le titre est nommé et écarté, les autres sont
+    // facturés dans la devise attendue.
+    //
+    // Le cas est fabriqué : la validation de publication (migration 0024)
+    // garantit qu'un titre publié et vendu a un prix dans chaque zone active.
+    const bookId = await idDuLivre('la-tortue-et-le-lapin');
+    await query(`delete from public.book_prices where book_id = $1 and zone = 'afrique'`, [bookId]);
 
-    const corps = await corpsJson<CorpsCommande>(
-      await apercuCommande(
-        postJson(
-          '/api/orders',
-          { zone_affichee: 'afrique', zone_encaissement: 'afrique' },
-          { jeton: acheteur.accessToken },
-        ),
-      ),
-    );
+    try {
+      await enPayant('SN', async () => {
+        await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
+        await ajouterAuPanier(acheteur, 'la-tortue-et-le-lapin');
 
-    expect(corps.zone).toBe('international');
-    expect(corps.devise).toBe('EUR');
-    expect(corps.total).toBe(998);
+        const corps = await corpsJson<CorpsCommande>(
+          await apercuCommande(postJson('/api/orders', {}, { jeton: acheteur.accessToken })),
+        );
+
+        expect(corps.zone).toBe('afrique');
+        expect(corps.devise).toBe('XAF');
+        expect(corps.total).toBe(1500);
+        // Le titre exact n'est pas figé ici — il vient du jeu de démonstration
+        // et pourrait légitimement changer. Ce qui compte, c'est qu'il soit
+        // NOMMÉ : un refus anonyme laisserait l'acheteur sans recours.
+        expect(corps.refusees).toHaveLength(1);
+        expect(corps.refusees[0]?.livre_id).toBe(bookId);
+        expect(corps.refusees[0]?.raison).toBe('sans_prix_dans_la_zone');
+        expect(corps.refusees[0]?.titre).toBeTruthy();
+      });
+    } finally {
+      await query(
+        `insert into public.book_prices (book_id, zone, montant, devise)
+         values ($1, 'afrique', 1500, 'XAF')`,
+        [bookId],
+      );
+    }
   });
 
   it('facture le même montant pour un conte en FR et en EN', async () => {
@@ -299,20 +338,22 @@ describe('codes promotionnels', () => {
 
   it('refuse un code en euros sur un panier en francs CFA', async () => {
     // L'appliquer reviendrait à convertir sans taux de change.
-    await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
+    await enPayant('SN', async () => {
+      await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
 
-    const corps = await corpsJson<CorpsCommande>(
-      await apercuCommande(
-        postJson(
-          '/api/orders',
-          { zone_affichee: 'afrique', zone_encaissement: 'afrique', code_promo: 'CONTE2EUR' },
-          { jeton: acheteur.accessToken },
+      const corps = await corpsJson<CorpsCommande>(
+        await apercuCommande(
+          postJson(
+            '/api/orders',
+            { zone_affichee: 'afrique', code_promo: 'CONTE2EUR' },
+            { jeton: acheteur.accessToken },
+          ),
         ),
-      ),
-    );
+      );
 
-    expect(corps.refus_promo).toBe('devise_incompatible');
-    expect(corps.total).toBe(1500);
+      expect(corps.refus_promo).toBe('devise_incompatible');
+      expect(corps.total).toBe(1500);
+    });
   });
 
   it('ne rattache PAS un code refusé à la commande', async () => {
@@ -368,7 +409,7 @@ describe('divergence de zone', () => {
     const reponse = await commander(
       postJson(
         '/api/orders',
-        { zone_affichee: 'afrique', zone_encaissement: 'international' },
+        { zone_affichee: 'afrique' },
         { jeton: acheteur.accessToken },
       ),
     );
@@ -395,7 +436,6 @@ describe('divergence de zone', () => {
         '/api/orders',
         {
           zone_affichee: 'afrique',
-          zone_encaissement: 'international',
           total_confirme: 499,
         },
         { jeton: acheteur.accessToken },
@@ -416,7 +456,7 @@ describe('divergence de zone', () => {
     const reponse = await commander(
       postJson(
         '/api/orders',
-        { zone_affichee: 'afrique', zone_encaissement: 'international', total_confirme: 1 },
+        { zone_affichee: 'afrique', total_confirme: 1 },
         { jeton: acheteur.accessToken },
       ),
     );
@@ -430,7 +470,7 @@ describe('divergence de zone', () => {
     const reponse = await commander(
       postJson(
         '/api/orders',
-        { zone_affichee: 'international', zone_encaissement: 'international' },
+        { zone_affichee: 'international' },
         { jeton: acheteur.accessToken },
       ),
     );

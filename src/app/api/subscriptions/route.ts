@@ -6,7 +6,8 @@ import { parseJsonBody } from '@/lib/http/validate';
 import { createServiceClient } from '@/lib/supabase/clients';
 import { getPaymentProvider } from '@/adapters/registry';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
-import { ZONES } from '@/domain/orders/types';
+import { getBusinessSettings } from '@/lib/settings/business-settings';
+import { zonePourPays } from '@/domain/orders/zones';
 import { getServerEnv } from '@/lib/config/env';
 import { getClock } from '@/lib/clock';
 import { logger } from '@/lib/logger';
@@ -27,18 +28,17 @@ import { logger } from '@/lib/logger';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-/** §3.4 — essai gratuit de 7 jours, moyen de paiement requis. */
-const JOURS_ESSAI = 7;
-
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE ZONE N'EST ACCEPTÉE EN ENTRÉE — même règle que pour les commandes.│
+ * │                                                                          │
+ * │ §3.3 : la zone vient du pays du moyen de paiement. Elle est demandée au   │
+ * │ prestataire, puis FIGÉE sur l'abonnement et jamais recalculée aux         │
+ * │ renouvellements (D4 point 7).                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 const souscriptionSchema = z.object({
   offre: z.enum(['mensuel', 'annuel']),
-  /**
-   * Zone d'encaissement, issue du pays réel du moyen de paiement (§3.3).
-   *
-   * Transmise par le client faute de prestataire réel — voir QUESTIONS.md Q8.1.
-   * Elle est FIGÉE à la souscription et jamais recalculée (D4 point 7).
-   */
-  zone: z.enum(ZONES).default('international'),
 });
 
 /** État de l'abonnement de l'appelant. */
@@ -93,34 +93,48 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
+  // §3.4 — essai gratuit, moyen de paiement requis. La durée vient du réglage
+  // métier, jamais d'une constante : elle sera figée sur l'abonnement à sa
+  // création, si bien qu'un changement de réglage ne raccourcit aucun essai en
+  // cours.
+  const reglages = await getBusinessSettings({ client });
+
+  const provider = getPaymentProvider();
+  const zone = zonePourPays(
+    await provider.paysDuMoyenDePaiement({
+      userId: garde.appelant.id,
+      email: garde.appelant.email,
+    }),
+  );
+
   const env = getServerEnv();
   const montant =
     corps.data.offre === 'mensuel'
       ? env.PRICE_SUBSCRIPTION_MONTHLY
       : env.PRICE_SUBSCRIPTION_YEARLY;
 
-  const session = await getPaymentProvider().souscrireAbonnement({
+  const session = await provider.souscrireAbonnement({
     // Aucune ligne n'existe encore en base : c'est le webhook `abonnement.souscrit`
     // qui la créera. L'identifiant transmis est celui de l'utilisateur, que
     // l'événement rapportera.
     subscriptionId: garde.appelant.id,
     offre: corps.data.offre,
-    montant: { montant, devise: corps.data.zone === 'afrique' ? 'XAF' : 'EUR' },
-    zone: corps.data.zone,
+    montant: { montant, devise: zone === 'afrique' ? 'XAF' : 'EUR' },
+    zone,
     client: { userId: garde.appelant.id, email: garde.appelant.email },
-    joursEssai: JOURS_ESSAI,
+    joursEssai: reglages.joursEssai,
   });
 
   logger.info('Souscription ouverte', {
     userId: garde.appelant.id,
     offre: corps.data.offre,
-    zone: corps.data.zone,
+    zone,
   });
 
   return ok({
     url: session.url,
     expire_le: session.expireLe.toISOString(),
-    jours_essai: JOURS_ESSAI,
+    jours_essai: reglages.joursEssai,
     // Explicite : rien n'est actif tant que l'événement signé n'est pas arrivé.
     statut: 'en_attente_paiement',
   });

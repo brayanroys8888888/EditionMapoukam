@@ -444,6 +444,107 @@ describe('remboursement', () => {
     expect(acces.canDownload).toBe(false);
   });
 
+  it('PARTIEL : ne retire que l’article remboursé', async () => {
+    // Sur un panier de plusieurs titres, en rembourser un ne doit pas faire
+    // perdre les autres, qui ont été payés et conservés.
+    const autreLivre = await queryOne<{ id: string }>(
+      `select id from public.books where slug = 'anansi-l-araignee-maligne'`,
+    );
+
+    await ajouter(postJson('/api/cart', { book_id: livreId }, { jeton: acheteur.accessToken }));
+    await ajouter(
+      postJson('/api/cart', { book_id: autreLivre!.id }, { jeton: acheteur.accessToken }),
+    );
+    const corps = await corpsJson<{ commande_id: string }>(
+      await commander(postJson('/api/orders', {}, { jeton: acheteur.accessToken })),
+    );
+    await webhook(requeteSignee(evenement('paiement.reussi', { orderId: corps.commande_id })));
+
+    expect(
+      await query(`select 1 from public.entitlements where user_id = $1`, [acheteur.id]),
+    ).toHaveLength(2);
+
+    // Un seul des deux titres est remboursé.
+    await webhook(
+      requeteSignee(
+        evenement('remboursement.effectue', { orderId: corps.commande_id, livres: [livreId] }),
+      ),
+    );
+
+    const restants = await query<{ book_id: string }>(
+      `select book_id from public.entitlements where user_id = $1`,
+      [acheteur.id],
+    );
+    expect(restants).toHaveLength(1);
+    expect(restants[0]?.book_id).toBe(autreLivre!.id);
+
+    // La commande n'est PAS soldée : elle a bien donné lieu à un encaissement,
+    // et une partie du contenu reste due.
+    const commande = await queryOne<{ statut: string }>(
+      `select statut from public.orders where id = $1`,
+      [corps.commande_id],
+    );
+    expect(commande?.statut).toBe('paye');
+  });
+
+  it('solde la commande quand la dernière ligne est remboursée', async () => {
+    const autreLivre = await queryOne<{ id: string }>(
+      `select id from public.books where slug = 'anansi-l-araignee-maligne'`,
+    );
+
+    await ajouter(postJson('/api/cart', { book_id: livreId }, { jeton: acheteur.accessToken }));
+    await ajouter(
+      postJson('/api/cart', { book_id: autreLivre!.id }, { jeton: acheteur.accessToken }),
+    );
+    const corps = await corpsJson<{ commande_id: string }>(
+      await commander(postJson('/api/orders', {}, { jeton: acheteur.accessToken })),
+    );
+    await webhook(requeteSignee(evenement('paiement.reussi', { orderId: corps.commande_id })));
+
+    await webhook(
+      requeteSignee(
+        evenement('remboursement.effectue', { orderId: corps.commande_id, livres: [livreId] }),
+      ),
+    );
+    await webhook(
+      requeteSignee(
+        evenement('remboursement.effectue', {
+          orderId: corps.commande_id,
+          livres: [autreLivre!.id],
+        }),
+      ),
+    );
+
+    const commande = await queryOne<{ statut: string }>(
+      `select statut from public.orders where id = $1`,
+      [corps.commande_id],
+    );
+    expect(commande?.statut).toBe('rembourse');
+  });
+
+  it('ignore un titre étranger à la commande', async () => {
+    // Un identifiant venu d'ailleurs ne doit pas servir à retirer un droit
+    // acquis sur une autre commande.
+    const etranger = await queryOne<{ id: string }>(
+      `select id from public.books where slug = 'anansi-l-araignee-maligne'`,
+    );
+    const orderId = await commandeEnAttente();
+    await webhook(requeteSignee(evenement('paiement.reussi', { orderId })));
+
+    const reponse = await webhook(
+      requeteSignee(
+        evenement('remboursement.effectue', { orderId, livres: [etranger!.id] }),
+      ),
+    );
+
+    // Aucune ligne applicable : la fonction refuse plutôt que de ne rien faire
+    // en silence.
+    expect(reponse.status).toBe(500);
+    expect(
+      await query(`select 1 from public.entitlements where user_id = $1`, [acheteur.id]),
+    ).toHaveLength(1);
+  });
+
   it('ne touche pas un droit d’une autre origine', async () => {
     // Un octroi manuel d'administrateur sur le même titre ne doit pas
     // disparaître avec le remboursement d'un achat.

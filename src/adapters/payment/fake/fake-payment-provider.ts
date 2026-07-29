@@ -7,6 +7,7 @@ import { logger } from '@/lib/logger';
 import { SIGNATURE_HEADER, signerCharge, verifierSignature } from '@/lib/crypto/webhook-signature';
 import type {
   AbonnementPrestataire,
+  ClientPaiement,
   DemandeAbonnement,
   DemandeCheckout,
   DemandeRemboursement,
@@ -68,6 +69,33 @@ export class FakePaymentProvider implements PaymentProvider {
   // ---------------------------------------------------------------------
   // Contrat PaymentProvider
   // ---------------------------------------------------------------------
+
+  /**
+   * Pays du moyen de paiement simulé.
+   *
+   * Chez un prestataire réel, cette information vient de la carte ou du compte
+   * Mobile Money. Ici, c'est l'opérateur de la console qui la fixe — c'est
+   * exactement le rôle que joue le faux prestataire : simuler ce que seul un
+   * tiers peut savoir.
+   *
+   * La valeur vit dans une variable de classe, jamais dans une requête HTTP :
+   * un client qui pourrait l'imposer choisirait son propre tarif.
+   */
+  paysDuMoyenDePaiement(_client: ClientPaiement): Promise<string | null> {
+    return Promise.resolve(FakePaymentProvider.#paysSimule);
+  }
+
+  static #paysSimule: string | null = 'FR';
+
+  /** Réservé à la console de simulation et aux tests. */
+  static simulerPays(codePays: string | null): void {
+    FakePaymentProvider.#paysSimule = codePays;
+  }
+
+  /** Pays actuellement simulé, pour l'affichage de la console. */
+  static paysSimule(): string | null {
+    return FakePaymentProvider.#paysSimule;
+  }
 
   ouvrirCheckout(demande: DemandeCheckout): Promise<SessionCheckout> {
     const id = `chk_${randomUUID()}`;

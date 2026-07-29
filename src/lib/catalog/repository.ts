@@ -2,8 +2,8 @@ import { createServiceClient } from '@/lib/supabase/clients';
 import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { getAccessForBooks } from '@/lib/access/engine';
 import { ACCES_REFUSE } from '@/domain/access/types';
-import { formatAmount } from '@/lib/money';
-import type { Currency } from '@/lib/money';
+import { formatAmount } from '@/domain/money';
+import type { Currency } from '@/domain/money';
 import { getServerEnv } from '@/lib/config/env';
 import type { CatalogQuery } from '@/domain/catalog/schemas';
 import type {
@@ -208,10 +208,20 @@ export async function lireFiche(
     .eq('statut', 'publie')
     .order('langue');
 
-  const prixZone =
-    livre.book_prices.find((p) => p.zone === query.zone) ??
-    livre.book_prices.find((p) => p.zone === 'international') ??
-    null;
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ AUCUN REPLI SUR UNE AUTRE ZONE : la zone demandée, ou aucun prix.      │
+  // │                                                                        │
+  // │ Afficher « 4,99 € » à un visiteur de la zone Afrique parce que le      │
+  // │ titre n'a pas de prix local serait une substitution silencieuse de     │
+  // │ devise — et le panier refuserait ensuite ce même titre. Mieux vaut ne  │
+  // │ pas annoncer de prix que d'en annoncer un qu'on ne pourra pas          │
+  // │ encaisser.                                                             │
+  // │                                                                        │
+  // │ Le cas est résiduel : depuis la migration 0024, un titre publié et     │
+  // │ vendu à l'unité a un prix dans chaque zone active. Il ne subsiste que  │
+  // │ pour une zone ouverte après la publication.                            │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const prixZone = livre.book_prices.find((p) => p.zone === query.zone) ?? null;
 
   const table = await devises(client);
   const acces = await getAccessForBooks(userId, [livre.id], {

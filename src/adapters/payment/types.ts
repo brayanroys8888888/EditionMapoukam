@@ -99,6 +99,14 @@ export interface DonneesEvenement {
   zone?: 'international' | 'afrique';
   /** Durée de l'essai gratuit, en jours (§3.4). Zéro ou absent = aucun essai. */
   joursEssai?: number;
+  /**
+   * Titres concernés par un remboursement PARTIEL.
+   *
+   * Absent = remboursement total. Détailler les lignes permet de ne retirer que
+   * les droits de l'article remboursé : sur un panier de quatre titres, en
+   * rembourser un ne doit pas faire perdre les trois autres.
+   */
+  livres?: string[];
   /** Bornes de la période couverte, pour les événements d'abonnement. */
   debutPeriode?: string;
   finPeriode?: string;
@@ -131,6 +139,24 @@ export type ResultatVerificationWebhook =
  */
 export interface PaymentProvider {
   readonly nom: string;
+
+  /**
+   * Pays du moyen de paiement du client — code ISO 3166-1 alpha-2.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ C'EST LA SEULE SOURCE DE LA ZONE D'ENCAISSEMENT.                       │
+   * │                                                                        │
+   * │ §3.3 : les zones sont « déterminées par le pays de paiement (et non    │
+   * │ par l'adresse IP, plus facilement contournable) ». Aucune route        │
+   * │ n'accepte de zone en entrée : elle se déduit d'ici, et d'ici seul.     │
+   * └────────────────────────────────────────────────────────────────────────┘
+   *
+   * `null` lorsque le prestataire ne sait pas encore — le client n'a pas
+   * enregistré de moyen de paiement. L'appelant retombe alors sur la zone
+   * internationale, la plus chère : une donnée manquante ne doit jamais valoir
+   * remise.
+   */
+  paysDuMoyenDePaiement(client: ClientPaiement): Promise<string | null>;
 
   ouvrirCheckout(demande: DemandeCheckout): Promise<SessionCheckout>;
 

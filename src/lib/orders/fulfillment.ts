@@ -89,15 +89,34 @@ export async function echouerCommande(
   return data === true;
 }
 
-/** Rembourse une commande et retire les droits qu'elle avait octroyés. */
+export interface ResultatRemboursement {
+  droitsRetires: number;
+  /** Faux pour un remboursement partiel : la commande reste `paye`. */
+  commandeSoldee: boolean;
+}
+
+/**
+ * Rembourse tout ou partie d'une commande.
+ *
+ * @param bookIds titres remboursés. Omis ou `null` = remboursement TOTAL.
+ *                Un remboursement partiel ne retire que les droits de
+ *                l'article remboursé : sur un panier de quatre titres,
+ *                rembourser le premier ne doit pas faire perdre les trois
+ *                autres, qui ont été payés et conservés.
+ */
 export async function rembourserCommande(
   orderId: string,
-  options: { webhookEventId?: string | null; client?: AppSupabaseClient } = {},
-): Promise<number> {
+  options: {
+    bookIds?: readonly string[] | null;
+    webhookEventId?: string | null;
+    client?: AppSupabaseClient;
+  } = {},
+): Promise<ResultatRemboursement> {
   const client = options.client ?? createServiceClient();
 
   const { data, error } = await client.rpc('refund_order', {
     p_order_id: orderId,
+    p_book_ids: options.bookIds ? [...options.bookIds] : null,
     p_webhook_event_id: options.webhookEventId ?? null,
   } as never);
 
@@ -105,7 +124,16 @@ export async function rembourserCommande(
     throw new Error(`Remboursement impossible pour la commande ${orderId} : ${error.message}`);
   }
 
-  const retires = typeof data === 'number' ? data : 0;
-  logger.info('Remboursement enregistré', { orderId, droitsRetires: retires });
-  return retires;
+  const ligne = (data as { droits_retires: number; commande_soldee: boolean }[] | null)?.[0];
+  if (!ligne) {
+    throw new Error(`Remboursement sans résultat pour la commande ${orderId}.`);
+  }
+
+  logger.info('Remboursement enregistré', {
+    orderId,
+    droitsRetires: ligne.droits_retires,
+    partiel: !ligne.commande_soldee,
+  });
+
+  return { droitsRetires: ligne.droits_retires, commandeSoldee: ligne.commande_soldee };
 }

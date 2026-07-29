@@ -19,12 +19,12 @@ const moneyRules = [
   {
     selector: "BinaryExpression[operator='/'][right.value=100]",
     message:
-      'Division par 100 codée en dur : toutes les devises n’ont pas deux décimales (XAF, XOF). Utiliser src/lib/money.',
+      'Division par 100 codée en dur : toutes les devises n’ont pas deux décimales (XAF, XOF). Utiliser src/domain/money.',
   },
   {
     selector: "BinaryExpression[operator='*'][right.value=100]",
     message:
-      'Multiplication par 100 codée en dur : passer par src/lib/money, qui connaît le nombre de décimales de la devise.',
+      'Multiplication par 100 codée en dur : passer par src/domain/money, qui connaît le nombre de décimales de la devise.',
   },
 ];
 

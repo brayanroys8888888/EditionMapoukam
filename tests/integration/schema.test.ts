@@ -204,16 +204,26 @@ describe('jeu de démonstration', () => {
     ]);
   });
 
-  it('comprend un titre sans prix pour la zone afrique, pour éprouver le repli', async () => {
-    // docs/PLAN.md D4 point 8 : si un conte n'a pas de prix pour la zone
-    // résolue, on retombe sur la zone internationale plutôt que d'échouer.
-    const rows = await query<{ zone: string }>(`
-      select p.zone::text from public.book_prices p
-      join public.books b on b.id = p.book_id
-      where b.slug = 'la-tortue-et-le-lapin'
+  it('donne à CHAQUE titre publié et vendu un prix dans chaque zone active', async () => {
+    // Le repli de zone a été retiré : il faisait passer silencieusement un
+    // acheteur africain à la grille européenne. La garantie est désormais posée
+    // à la publication (migration 0024), et le jeu de démonstration doit la
+    // respecter — un jeu de données qui violerait la règle qu'il sert à
+    // éprouver donnerait une base de tests fausse.
+    const manquants = await query<{ slug: string; zone: string }>(`
+      select b.slug, z.zone::text as zone
+        from public.books b
+        cross join public.active_price_zones z
+       where b.statut = 'publie'
+         and b.disponible_achat
+         and z.active
+         and not exists (
+           select 1 from public.book_prices p
+            where p.book_id = b.id and p.zone = z.zone
+         )
     `);
 
-    expect(rows.map((r) => r.zone)).toEqual(['international']);
+    expect(manquants.map((m) => `${m.slug} : ${m.zone}`)).toEqual([]);
   });
 
   it('exprime les montants dans la plus petite unité de leur devise', async () => {

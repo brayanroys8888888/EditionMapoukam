@@ -229,7 +229,15 @@ async function appliquer(
 
     case 'remboursement.effectue': {
       if (!orderId) throw new Error('remboursement.effectue sans identifiant de commande.');
-      await rembourserCommande(orderId, { webhookEventId, client });
+      await rembourserCommande(orderId, {
+        // Absent = remboursement total. Un prestataire qui détaille ses lignes
+        // permet de ne retirer que l'article remboursé : sur un panier de
+        // quatre titres, en rembourser un ne doit pas faire perdre les trois
+        // autres.
+        bookIds: evenement.donnees.livres ?? null,
+        webhookEventId,
+        client,
+      });
       return;
     }
 

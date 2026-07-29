@@ -25,6 +25,15 @@ import { getClock } from '@/lib/clock';
 export interface BusinessSettings {
   fenetreNouveauteJours: number;
   periodeGraceJours: number;
+  /**
+   * Durée d'essai accordée aux NOUVELLES souscriptions (§3.4).
+   *
+   * Réglable, mais sans effet rétroactif : la valeur est recopiée sur chaque
+   * abonnement à sa création (`subscriptions.jours_essai`), comme le prix l'est
+   * sur `order_items`. Sans cela, ramener le réglage de 7 à 3 jours prélèverait
+   * au troisième jour un abonné à qui sept ont été promis.
+   */
+  joursEssai: number;
   majLe: Date;
 }
 
@@ -55,7 +64,7 @@ export async function getBusinessSettings(
   const client = options.client ?? createServiceClient();
   const { data, error } = await client
     .from('business_settings')
-    .select('fenetre_nouveaute_jours, periode_grace_jours, maj_le')
+    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, maj_le')
     .eq('id', 1)
     .maybeSingle();
 
@@ -70,6 +79,7 @@ export async function getBusinessSettings(
   const valeur: BusinessSettings = {
     fenetreNouveauteJours: data.fenetre_nouveaute_jours,
     periodeGraceJours: data.periode_grace_jours,
+    joursEssai: data.jours_essai,
     majLe: new Date(data.maj_le),
   };
   cache = { valeur, expireA: maintenant + DUREE_CACHE_MS };
@@ -111,7 +121,9 @@ export async function simulerChangementDeFenetre(
  * est l'autorité.
  */
 export async function updateBusinessSettings(
-  modifications: Partial<Pick<BusinessSettings, 'fenetreNouveauteJours' | 'periodeGraceJours'>>,
+  modifications: Partial<
+    Pick<BusinessSettings, 'fenetreNouveauteJours' | 'periodeGraceJours' | 'joursEssai'>
+  >,
   auteurId: string,
   options: { client?: AppSupabaseClient } = {},
 ): Promise<BusinessSettings> {
@@ -126,6 +138,7 @@ export async function updateBusinessSettings(
       ...(modifications.periodeGraceJours !== undefined
         ? { periode_grace_jours: modifications.periodeGraceJours }
         : {}),
+      ...(modifications.joursEssai !== undefined ? { jours_essai: modifications.joursEssai } : {}),
       maj_par: auteurId,
     })
     .eq('id', 1);
