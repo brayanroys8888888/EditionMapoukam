@@ -8,6 +8,7 @@ import {
   type EvenementAbonnement,
   type RefusTransition,
   type StatutAbonnement,
+  type StatutEffectif,
 } from '@/domain/subscriptions/state-machine';
 import { logger } from '@/lib/logger';
 
@@ -31,7 +32,15 @@ import { logger } from '@/lib/logger';
 
 export interface AbonnementCourant {
   id: string;
+  /** Statut RAPPORTÉ par le prestataire. Conservé tel quel. */
   statut: StatutAbonnement;
+  /**
+   * Statut OBSERVÉ, dates repliées — c'est celui qu'il faut afficher.
+   *
+   * Vaut `anomalie` quand la période est échue depuis plus que la tolérance
+   * sans qu'aucun événement ne soit arrivé : presque toujours un webhook perdu.
+   */
+  statutEffectif: StatutEffectif;
   finPeriode: Date;
   zone: 'international' | 'afrique';
   devise: string;
@@ -42,6 +51,18 @@ export interface AbonnementCourant {
 export type ResultatTransition =
   | { ok: true; subscriptionId: string; statut: StatutAbonnement; inchange: boolean }
   | { ok: false; raison: RefusTransition };
+
+/** Ligne d'abonnement telle que PostgREST la rend, colonne calculée comprise. */
+interface LigneAbonnement {
+  id: string;
+  statut: StatutAbonnement;
+  statut_effectif: StatutEffectif;
+  fin_periode: string;
+  zone: 'international' | 'afrique';
+  devise: string;
+  montant: number;
+  offre: string;
+}
 
 /** Abonnement en cours de vie d'un utilisateur, s'il y en a un. */
 export async function abonnementCourant(
@@ -54,20 +75,48 @@ export async function abonnementCourant(
   // unique de la migration 0008 empêche d'avoir en double. Un abonnement
   // `annule` dont la période court encore est lu aussi : il ouvre toujours le
   // droit, et un nouvel événement doit le retrouver.
-  const { data } = await client
+  const reponse = await client
     .from('subscriptions')
-    .select('id, statut, fin_periode, zone, devise, montant, offre')
+    // `statut_effectif` est une COLONNE CALCULÉE : la règle vit en base, une
+    // seule fois, partagée avec les statistiques et le back-office. La
+    // réécrire ici la ferait diverger de celle qui compte les abonnés.
+    .select('id, statut, statut_effectif, fin_periode, zone, devise, montant, offre')
     .eq('user_id', userId)
     .in('statut', ['essai', 'actif', 'impaye', 'annule'])
     .order('cree_le', { ascending: false })
     .limit(1)
     .maybeSingle();
 
+  // Le générateur de types de Supabase n'émet PAS les colonnes calculées de
+  // PostgREST : il ne connaît que les colonnes physiques et les fonctions RPC.
+  // La colonne est pourtant bien servie — vérifié à l'exécution. Le type est
+  // donc affirmé ici, plutôt que d'abandonner la colonne calculée et de
+  // recopier la règle en TypeScript, ce qui la ferait diverger de celle qui
+  // compte les abonnés.
+  const data = reponse.data as LigneAbonnement | null;
+
   if (!data) return null;
+
+  const statutEffectif = data.statut_effectif;
+
+  if (statutEffectif === 'anomalie') {
+    // Journalisé à chaque observation, et volontairement en `warn` : c'est le
+    // signal qu'un webhook de renouvellement a été perdu, ou que
+    // l'intégration du prestataire a un défaut. Un abonnement dans cet état
+    // ressemble en tout point à un abonnement sain — sans cette trace, il
+    // passerait inaperçu jusqu'à ce que quelqu'un s'étonne des comptages.
+    logger.warn('Abonnement en anomalie : période échue sans événement', {
+      userId,
+      subscriptionId: data.id,
+      statutRapporte: data.statut,
+      finPeriode: data.fin_periode,
+    });
+  }
 
   return {
     id: data.id,
     statut: data.statut,
+    statutEffectif,
     finPeriode: new Date(data.fin_periode),
     zone: data.zone,
     devise: data.devise,

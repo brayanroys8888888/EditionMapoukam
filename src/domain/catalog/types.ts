@@ -20,6 +20,27 @@ export interface PrixAffiche {
   affichage: string;
 }
 
+/**
+ * Achat impossible faute de prix dans la zone de l'acheteur — arbitrage N1.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE TITRE RESTE AFFICHÉ, L'ACHAT SEUL EST DÉSACTIVÉ.                     │
+ * │                                                                          │
+ * │ Le retirer du catalogue appauvrirait la découverte : il peut être        │
+ * │ parfaitement lisible par abonnement, ou gratuit. Et on ne montre JAMAIS  │
+ * │ le prix d'une autre zone, même à titre indicatif — c'est exactement      │
+ * │ l'incohérence que le retrait du repli a supprimée.                       │
+ * │                                                                          │
+ * │ Sa présence est une ANOMALIE : depuis la migration 0024, un titre publié │
+ * │ et vendu à l'unité a un prix dans chaque zone active. Elle est donc      │
+ * │ journalisée, pas seulement affichée.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export interface AchatHorsZone {
+  code: 'hors_zone';
+  message: string;
+}
+
 export interface EntreeCatalogue {
   id: string;
   slug: string;
@@ -39,6 +60,11 @@ export interface EntreeCatalogue {
   disponible_achat: boolean;
   gratuit: boolean;
   prix: PrixAffiche | null;
+  /**
+   * Renseigné quand le titre est vendu à l'unité mais sans prix dans la zone
+   * demandée. L'achat doit alors être désactivé, la lecture restant normale.
+   */
+  achat_hors_zone: AchatHorsZone | null;
   /** Décision du moteur de droits pour l'appelant. */
   acces: AccessDecision;
 }

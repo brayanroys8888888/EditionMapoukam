@@ -56,7 +56,14 @@ export async function GET(request: Request): Promise<Response> {
 
   return ok({
     abonnement: {
-      statut: courant.statut,
+      // Le statut OBSERVÉ, dates repliées : c'est celui qui décrit la réalité.
+      // `anomalie` signale une période échue sans événement — presque toujours
+      // un webhook perdu.
+      statut: courant.statutEffectif,
+      // Celui que le prestataire a rapporté, conservé à part. « Annulé » et
+      // « impayé » ne racontent pas la même histoire, et l'analyse de rétention
+      // (étape 14) a besoin de la distinction.
+      statut_rapporte: courant.statut,
       offre: courant.offre,
       fin_periode: courant.finPeriode.toISOString(),
       zone: courant.zone,

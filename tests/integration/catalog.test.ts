@@ -283,6 +283,11 @@ describe('prix et zones', () => {
       const sansPrixLocal = page.entrees.find((e) => e.slug === 'la-tortue-et-le-lapin');
       expect(sansPrixLocal, 'le titre doit rester listé').toBeDefined();
       expect(sansPrixLocal?.prix).toBeNull();
+
+      // L'achat est désactivé, avec un message explicite : sans lui,
+      // l'utilisateur verrait un bouton inerte sans comprendre pourquoi.
+      expect(sansPrixLocal?.achat_hors_zone?.code).toBe('hors_zone');
+      expect(sansPrixLocal?.achat_hors_zone?.message).toContain('votre région');
     } finally {
       await query(
         `insert into public.book_prices (book_id, zone, montant, devise)
@@ -290,6 +295,24 @@ describe('prix et zones', () => {
         [livre!.id],
       );
     }
+  });
+
+  it('ne signale RIEN sur un titre non vendu à l’unité', async () => {
+    // `petit-baobab` est gratuit et non vendu : l'absence de prix y est
+    // normale, pas anormale. Un message d'indisponibilité serait absurde.
+    const page = await corpsJson<PageCatalogue>(await catalogue(params({ zone: 'afrique' })));
+
+    const gratuit = page.entrees.find((e) => e.slug === 'petit-baobab');
+    expect(gratuit?.prix).toBeNull();
+    expect(gratuit?.achat_hors_zone).toBeNull();
+  });
+
+  it('ne signale rien quand le prix existe bien dans la zone', async () => {
+    const page = await corpsJson<PageCatalogue>(await catalogue(params({ zone: 'afrique' })));
+
+    const vendu = page.entrees.find((e) => e.slug === 'le-lion-et-la-souris');
+    expect(vendu?.prix?.devise).toBe('XAF');
+    expect(vendu?.achat_hors_zone).toBeNull();
   });
 
   it('formate l’euro avec ses centimes', async () => {

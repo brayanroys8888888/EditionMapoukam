@@ -23,6 +23,24 @@
 export const STATUTS = ['essai', 'actif', 'annule', 'impaye', 'expire'] as const;
 export type StatutAbonnement = (typeof STATUTS)[number];
 
+/**
+ * Statut OBSERVÉ, dates repliées.
+ *
+ * Reprend les statuts rapportés par le prestataire, plus `anomalie` — période
+ * échue depuis plus que la tolérance sans qu'aucun événement ne soit arrivé.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CETTE MACHINE NE PRODUIT JAMAIS `anomalie`.                             │
+ * │                                                                          │
+ * │ `anomalie` n'est pas une transition : c'est un CONSTAT, calculé en base  │
+ * │ par `statut_effectif` (migration 0029) à partir des dates. Aucun         │
+ * │ prestataire ne la rapporte, et rien ne l'écrit jamais dans              │
+ * │ `subscriptions.statut` — le type stocké ne la contient même pas.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const STATUTS_EFFECTIFS = [...STATUTS, 'anomalie'] as const;
+export type StatutEffectif = (typeof STATUTS_EFFECTIFS)[number];
+
 export const EVENEMENTS = [
   'souscrit',
   'renouvele',

@@ -448,17 +448,119 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     expect(await effectif(jours(20))).toBe('expire');
   });
 
-  it('laisse « actif » tel quel, même période échue', async () => {
-    // Celui-là attend un renouvellement ou un échec de prélèvement, et c'est au
-    // prestataire de trancher. Le replier sur « expiré » inventerait une
-    // décision que personne n'a prise.
+  it('signale « anomalie » un actif dont la période est échue', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ UN `actif` À PÉRIODE ÉCHUE RESSEMBLE EXACTEMENT À UN ABONNEMENT SAIN.│
+    // │                                                                      │
+    // │ Dans la liste des abonnés, dans le tableau de bord, dans les         │
+    // │ comptages, rien ne le distingue. Il ne se voit pas, il se fond dans  │
+    // │ la masse — et il fausse les statistiques en comptant un abonné actif │
+    // │ qui ne paie plus. `anomalie` le rend DÉTECTABLE.                     │
+    // └──────────────────────────────────────────────────────────────────────┘
     await souscrireAvecEssai();
     await appliquerEvenement(
       { userId: abonne.id, evenement: 'renouvele' },
       { clock: new FixedClock(jours(7)) },
     );
 
-    expect(await effectif(jours(400))).toBe('actif');
+    // La période court jusqu'au 7e jour + 1 mois, soit le 37e environ.
+    expect(await effectif(jours(400))).toBe('anomalie');
+  });
+
+  it('laisse la tolérance au renouvellement en vol', async () => {
+    // Un prestataire prélève, son événement met quelques minutes à arriver.
+    // Sans tolérance, chaque abonnement clignoterait en anomalie à chaque
+    // échéance, et le signal deviendrait du bruit — donc inutile.
+    await souscrireAvecEssai();
+
+    // L'essai s'achève au 7e jour ; la tolérance est de 48 heures.
+    expect(await effectif(new Date(jours(7).getTime() + 3600_000))).toBe('essai');
+    expect(await effectif(jours(8))).toBe('essai');
+    expect(await effectif(jours(10))).toBe('anomalie');
+  });
+
+  it('signale aussi un essai qui s’achève sans premier prélèvement', async () => {
+    // Même signal : un webhook qui n'est pas arrivé.
+    await souscrireAvecEssai();
+
+    expect(await effectif(jours(30))).toBe('anomalie');
+  });
+
+  it('N’EST PAS une anomalie quand le prestataire a parlé', async () => {
+    // Annulé ou impayé, l'abonnement a une histoire connue : ce n'est pas le
+    // silence qui pose problème, c'est l'absence de nouvelle.
+    await souscrireAvecEssai();
+    await appliquerEvenement(
+      { userId: abonne.id, evenement: 'annule' },
+      { clock: new FixedClock(jours(2)) },
+    );
+
+    expect(await effectif(jours(400))).toBe('expire');
+  });
+
+  it('apparaît dans la liste des anomalies, avec depuis quand', async () => {
+    // Le back-office (étape 13) les affiche en évidence : c'est le signal
+    // qu'un webhook a été perdu ou que l'intégration a un défaut.
+    await souscrireAvecEssai();
+
+    const anomalies = await query<{ subscription_id: string; depuis: string }>(
+      `select subscription_id, depuis::text from public.abonnements_en_anomalie($1::timestamptz)`,
+      [jours(30).toISOString()],
+    );
+
+    expect(anomalies).toHaveLength(1);
+    expect(anomalies[0]?.depuis).toBeTruthy();
+  });
+
+  it('n’est comptée NI en actif NI en expiré', async () => {
+    // La ranger avec les actifs gonflerait le nombre d'abonnés payants ; avec
+    // les expirés, elle masquerait le défaut d'intégration. Les deux
+    // fausseraient l'analyse de rétention, chacune dans un sens.
+    await souscrireAvecEssai();
+
+    const comptes = await query<{ statut: string; nombre: string }>(
+      `select statut::text, nombre::text from public.compter_abonnements($1::timestamptz)`,
+      [jours(30).toISOString()],
+    );
+    const par = new Map(comptes.map((c) => [c.statut, Number(c.nombre)]));
+
+    expect(par.get('anomalie')).toBe(1);
+    expect(par.get('actif')).toBe(0);
+    expect(par.get('expire')).toBe(0);
+  });
+
+  it('est journalisée à l’observation', async () => {
+    // Sans cette trace, l'abonnement passerait inaperçu jusqu'à ce que
+    // quelqu'un s'étonne des comptages.
+    await souscrireAvecEssai();
+    // Les DEUX bornes reculent : la contrainte `subscriptions_periode_coherente`
+    // exige `fin_periode > debut_periode`, et ne déplacer que la fin
+    // produirait une période à l'envers.
+    await query(
+      `update public.subscriptions
+          set debut_periode = public.app_now() - interval '60 days',
+              fin_periode = public.app_now() - interval '30 days'
+        where user_id = $1`,
+      [abonne.id],
+    );
+
+    // Le logger du projet écrit ses avertissements sur la sortie d'erreur : on
+    // l'intercepte le temps de l'observation, plutôt que d'ajouter au code de
+    // production un point d'écoute qui n'existerait que pour ce test.
+    const avertissements: string[] = [];
+    const ecrire = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (ligne: string | Uint8Array) => {
+      avertissements.push(ligne.toString());
+      return true;
+    };
+
+    try {
+      await abonnementCourant(abonne.id);
+    } finally {
+      process.stderr.write = ecrire;
+    }
+
+    expect(avertissements.join('')).toContain('Abonnement en anomalie');
   });
 
   it('concorde avec le droit d’accès réellement accordé', async () => {

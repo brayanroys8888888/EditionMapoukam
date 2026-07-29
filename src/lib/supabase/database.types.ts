@@ -273,6 +273,7 @@ export type Database = {
           maj_le: string
           maj_par: string | null
           periode_grace_jours: number
+          tolerance_renouvellement_heures: number
         }
         Insert: {
           fenetre_nouveaute_jours?: number
@@ -281,6 +282,7 @@ export type Database = {
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
+          tolerance_renouvellement_heures?: number
         }
         Update: {
           fenetre_nouveaute_jours?: number
@@ -289,6 +291,7 @@ export type Database = {
           maj_le?: string
           maj_par?: string | null
           periode_grace_jours?: number
+          tolerance_renouvellement_heures?: number
         }
         Relationships: [
           {
@@ -1312,6 +1315,16 @@ export type Database = {
       }
     }
     Functions: {
+      abonnements_en_anomalie: {
+        Args: { p_at?: string }
+        Returns: {
+          depuis: string
+          fin_periode: string
+          statut_rapporte: Database["public"]["Enums"]["subscription_status"]
+          subscription_id: string
+          user_id: string
+        }[]
+      }
       access_for: {
         Args: { p_at?: string; p_book: string; p_user: string }
         Returns: Database["public"]["CompositeTypes"]["access_decision"]
@@ -1390,6 +1403,13 @@ export type Database = {
           titre: string
           total: number
           zone_prix: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      compter_abonnements: {
+        Args: { p_at?: string }
+        Returns: {
+          nombre: number
+          statut: Database["public"]["Enums"]["subscription_status_effectif"]
         }[]
       }
       create_order: {
@@ -1495,19 +1515,20 @@ export type Database = {
           droits_retires: number
         }[]
       }
-      statut_effectif: {
-        Args: {
-          p_at?: string
-          p_fin_periode: string
-          p_impaye_depuis: string
-          p_statut: Database["public"]["Enums"]["subscription_status"]
-        }
-        Returns: Database["public"]["Enums"]["subscription_status"]
-      }
-      statut_effectif_de: {
-        Args: { p_at?: string; p_subscription_id: string }
-        Returns: Database["public"]["Enums"]["subscription_status"]
-      }
+      statut_effectif:
+        | {
+            Args: {
+              p_at?: string
+              p_fin_periode: string
+              p_impaye_depuis: string
+              p_statut: Database["public"]["Enums"]["subscription_status"]
+            }
+            Returns: Database["public"]["Enums"]["subscription_status_effectif"]
+          }
+        | {
+            Args: { s: Database["public"]["Tables"]["subscriptions"]["Row"] }
+            Returns: Database["public"]["Enums"]["subscription_status_effectif"]
+          }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_impactes_par_fenetre: {
         Args: { p_at?: string; p_nouvelle_fenetre: number }
@@ -1533,6 +1554,13 @@ export type Database = {
       price_zone: "international" | "afrique"
       promo_type: "montant" | "pourcentage"
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
+      subscription_status_effectif:
+        | "essai"
+        | "actif"
+        | "annule"
+        | "impaye"
+        | "expire"
+        | "anomalie"
       translation_status: "brouillon" | "publie"
       user_role: "user" | "admin"
       user_status: "actif" | "suspendu" | "anonymise"
@@ -1698,6 +1726,14 @@ export const Constants = {
       price_zone: ["international", "afrique"],
       promo_type: ["montant", "pourcentage"],
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
+      subscription_status_effectif: [
+        "essai",
+        "actif",
+        "annule",
+        "impaye",
+        "expire",
+        "anomalie",
+      ],
       translation_status: ["brouillon", "publie"],
       user_role: ["user", "admin"],
       user_status: ["actif", "suspendu", "anonymise"],

@@ -26,59 +26,29 @@ technique est dans `docs/PLAN.md`, section « Arbitrages appliqués ». Résumé
 
 ---
 
-## Points nouveaux, nés de ces arbitrages
+## Points nouveaux — arbitrés à leur tour
 
-### N1 — Le catalogue n'affiche plus le prix d'une autre zone
+| Point | Décision | État |
+|---|---|---|
+| N1 | Titre hors zone affiché, achat désactivé avec message ; anomalie journalisée | Appliqué |
+| N2 | État dérivé `anomalie` avec tolérance de 48 h, compteur propre, journalisation | Appliqué (migration 0029) |
+| N3 | epubcheck pèse 34 Mo (jar 1,2 Mo + 38 dépendances Java), pas une dizaine | Constaté, versionné |
+| N4 | Changement de zone d'abonnement par un administrateur, tracé | **Reporté à l'étape 13** |
 
-**Ce que j'ai fait, au-delà de ce qui était demandé.** Q8.2 portait sur le
-panier. Mais `catalog_list` repliait, lui aussi, sur la zone internationale : un
-visiteur de la zone Afrique voyait « 4,99 € » sur un titre sans prix local — puis
-le panier refusait ce même titre. Deux réponses différentes à la même question.
+Le détail est en §5 ter de `docs/PLAN.md`.
 
-J'ai retiré le repli du catalogue également (migration 0028). Le titre reste
-**listé** — il peut être lisible par abonnement — mais sans montant.
+---
 
-**Pourquoi je vous le signale.** C'est une extension de votre décision, prise
-pour éviter une incohérence visible par l'utilisateur. Si vous préférez que le
-catalogue affiche un prix indicatif dans une autre devise, avec une mention
-explicite, dites-le : c'est une décision d'affichage, et elle vous revient.
+## Reste à faire
 
-### N2 — `statut_effectif` ne replie PAS un `actif` dont la période est échue
+### N4 — Changement de zone d'un abonnement (étape 13)
 
-Votre règle disait : `annule` + période dépassée → `expire` ; `impaye` + grâce
-dépassée → `expire` ; sinon tel quel. Je l'ai appliquée à la lettre.
+Le gel de la zone reste la règle par défaut, mais la mobilité d'un abonné est un
+cas réel sur un produit visant la diaspora. L'étape 13 livrera une action
+d'administration **tracée** — qui, quand, ancienne et nouvelle zone — et jamais
+accessible à l'utilisateur.
 
-Reste donc un cas : un abonnement `actif` dont `fin_periode` est passée sans
-qu'aucun renouvellement ni échec ne soit arrivé. Il s'affichera « actif »
-indéfiniment. **L'accès, lui, est correctement refusé** — le moteur de droits
-compare les dates.
-
-Je ne l'ai pas replié parce que cela inventerait une décision que personne n'a
-prise : cet abonnement attend un événement du prestataire, et son absence est
-une anomalie à voir, pas à masquer. Mais si vous préférez qu'il bascule aussi,
-c'est une ligne à ajouter.
-
-### N3 — epubcheck pèse 34 Mo, pas une dizaine
-
-Le jar seul fait 1,2 Mo, mais il ne tourne pas sans ses 38 dépendances Java
-(`lib/`, 33 Mo). Le tout est sous `vendors/epubcheck/`, licence BSD à trois
-clauses.
-
-C'est plus que ce que vous aviez estimé. L'alternative serait de ne versionner
-que `epubcheck.jar` et de reconstruire `lib/` ailleurs — mais on retomberait
-exactement sur le problème que vous vouliez éliminer : une installation qui peut
-manquer sans que rien ne le signale. J'ai donc tout versionné.
-
-**Le test s'exécute désormais toujours, et l'EPUB produit passe la validation
-W3C sans aucune erreur.** La suite ne comporte plus aucun test ignoré.
-
-### N4 — La zone d'un abonnement vient aussi du prestataire
-
-Q8.1 parlait de `POST /api/orders`. `POST /api/subscriptions` avait le même
-défaut : le client choisissait sa zone, laquelle est ensuite **figée pour toute
-la vie de l'abonnement** (D4 point 7) — donc un tarif choisi par l'abonné et
-verrouillé. J'ai appliqué la même correction, et le test d'architecture couvre
-les deux routes.
+Consigné dans la liste des fichiers produits de l'étape 13.
 
 ---
 

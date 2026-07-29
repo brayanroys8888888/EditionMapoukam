@@ -1357,6 +1357,11 @@ qui plante sur une entrée inattendue est une panne, pas un refus.
     (`type = 'offert'`)
   - `src/app/api/admin/orders/**` — liste, remboursement
   - `src/app/api/admin/promos/**`
+  - `src/app/api/admin/subscriptions/[id]/zone` — **changement de zone d'un
+    abonnement** (arbitrage N4, voir ci-dessous)
+  - le back-office affiche les **abonnements en anomalie** en évidence, avec
+    leur nombre et depuis quand (`abonnements_en_anomalie()`), et la liste des
+    manques de chaque brouillon (`manques_pour_publication()`)
   - `tests/integration/admin.test.ts`, `tests/security/admin.test.ts`
 - **Points de vigilance** — chaque route admin est refusée à un utilisateur
   ordinaire (403) et à un visiteur (401) : test **route par route**, pas un
@@ -1599,6 +1604,60 @@ pas un changement de configuration.
 Le nombre de décimales d'une devise est une règle métier, pas un utilitaire.
 `src/domain/orders` l'importait à rebours des couches ; le déplacement supprime
 l'entorse au lieu de la documenter. Le message de la règle ESLint suit.
+
+### N1 — Le titre hors zone reste affiché, l'achat seul est désactivé
+
+Le retirer du catalogue appauvrirait la découverte : il peut être parfaitement
+lisible par abonnement, ou gratuit. La fiche et la liste portent donc
+`achat_hors_zone`, avec un message explicite — « Ce conte n'est pas encore
+proposé à l'achat dans votre région » — et **aucun prix d'une autre zone, même
+à titre indicatif**.
+
+| Détail | Raison |
+|---|---|
+| Le cas est **journalisé** en avertissement, avec le titre et la zone | Ce n'est pas un affichage ordinaire : depuis la migration 0024, un titre publié et vendu à l'unité a un prix dans chaque zone active. Sa présence est un résidu à corriger |
+| Rien n'est signalé sur un titre **non vendu** à l'unité | L'absence de prix y est normale. Un message d'indisponibilité serait absurde sur un conte gratuit |
+| L'accès en lecture n'est pas touché | Le moteur de droits ignore complètement les prix : gratuit ou inclus dans l'abonnement, le titre se lit normalement |
+
+### N2 — L'état dérivé `anomalie`
+
+**Mon premier arbitrage était mauvais, et voici pourquoi.** J'avais laissé un
+abonnement `actif` à période échue tel quel, au motif qu'aucune décision n'avait
+été prise à son sujet. Mais un tel abonnement **ressemble exactement à un
+abonnement sain** : dans la liste des abonnés, dans le tableau de bord, dans les
+comptages, rien ne le distingue. Il ne se voit pas — il se fond dans la masse —
+et il fausse les statistiques en comptant un abonné actif qui ne paie plus.
+C'est la corruption même que `statut_effectif` supprimait pour les annulés et
+les impayés.
+
+Rendre visible, ce n'est pas s'abstenir de transition : c'est **nommer
+l'anomalie**.
+
+| Détail | Raison |
+|---|---|
+| Type **distinct** `subscription_status_effectif`, non une valeur ajoutée à l'énumération stockée | `anomalie` n'est jamais rapportée par un prestataire et ne doit jamais être écrite. L'ajouter au type stocké aurait rendu l'écriture possible, et il aurait fallu une contrainte pour l'interdire — autant que le type la rende impossible |
+| Tolérance de **48 heures**, configurable | Un renouvellement peut être « en vol ». Sans tolérance, chaque abonnement clignoterait en anomalie à chaque échéance, et le signal deviendrait du bruit — donc inutile |
+| `essai` est inclus dans la règle | Un essai qui s'achève sans premier prélèvement est exactement le même signal |
+| Comptée **ni en actif ni en expiré** | Avec les actifs, elle gonflerait le nombre d'abonnés payants ; avec les expirés, elle masquerait le défaut d'intégration. Les deux fausseraient l'analyse de rétention, chacune dans un sens |
+| Journalisée **à chaque observation**, en avertissement | C'est le signal qu'un webhook a été perdu. Sans cette trace, l'abonnement passerait inaperçu jusqu'à ce que quelqu'un s'étonne des comptages |
+| L'accès reste refusé | Inchangé : le moteur de droits comparait déjà les dates |
+
+`statut_effectif` est exposée en **colonne calculée** PostgREST — `select *,
+statut_effectif from subscriptions`. La règle vit donc en base, une seule fois,
+partagée par l'affichage, les statistiques et le back-office. Le générateur de
+types de Supabase n'émet pas les colonnes calculées : le type est affirmé à la
+main dans `handlers.ts`, avec le commentaire qui l'explique, plutôt que de
+recopier la règle en TypeScript et de la laisser diverger.
+
+### N4 — Changement de zone d'un abonnement (reporté à l'étape 13)
+
+Le gel de la zone (D4 point 7) reste la règle par défaut. Mais **sur un produit
+visant la diaspora, la mobilité est un cas réel** : un abonné peut changer de
+pays pour de bon.
+
+L'étape 13 livrera donc une action d'administration permettant de changer la
+zone d'un abonnement, **tracée** — qui, quand, ancienne et nouvelle zone — et
+**jamais accessible à l'utilisateur**, sans quoi le gel n'aurait plus aucun sens.
 
 ### Q7.1 — epubcheck versionné, test inconditionnel
 

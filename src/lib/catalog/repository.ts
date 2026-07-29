@@ -7,12 +7,14 @@ import type { Currency } from '@/domain/money';
 import { getServerEnv } from '@/lib/config/env';
 import type { CatalogQuery } from '@/domain/catalog/schemas';
 import type {
+  AchatHorsZone,
   EntreeCatalogue,
   FicheLivre,
   PageCatalogue,
   PrixAffiche,
   SuggestionLivre,
 } from '@/domain/catalog/types';
+import { logger } from '@/lib/logger';
 
 /**
  * Accès au catalogue.
@@ -66,6 +68,41 @@ async function devises(client: AppSupabaseClient): Promise<Map<string, Currency>
 /** Réservé aux tests : oublie les devises mémorisées. */
 export function invaliderDevises(): void {
   devisesEnCache = null;
+}
+
+/**
+ * Signale un titre vendu à l'unité mais sans prix dans la zone demandée.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ C'EST UNE ANOMALIE, PAS UN AFFICHAGE ORDINAIRE.                         │
+ * │                                                                          │
+ * │ Depuis la migration 0024, un titre publié et vendu à l'unité a un prix   │
+ * │ dans CHAQUE zone active : ce cas ne devrait plus se produire. Il ne      │
+ * │ subsiste que pour une zone ouverte APRÈS la publication d'un titre —     │
+ * │ c'est-à-dire un résidu à corriger. Il est donc journalisé, avec le titre │
+ * │ et la zone, et pas seulement rendu à l'affichage.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * L'achat est désactivé, la lecture ne l'est pas : le titre peut être inclus
+ * dans l'abonnement ou gratuit, et le retirer du catalogue appauvrirait la
+ * découverte.
+ */
+function achatHorsZone(
+  livre: { slug: string; disponible_achat: boolean },
+  prix: PrixAffiche | null,
+  zone: string,
+): AchatHorsZone | null {
+  if (!livre.disponible_achat || prix !== null) return null;
+
+  logger.warn('Titre vendu à l’unité sans prix dans la zone demandée', {
+    slug: livre.slug,
+    zone,
+  });
+
+  return {
+    code: 'hors_zone',
+    message: 'Ce conte n’est pas encore proposé à l’achat dans votre région.',
+  };
 }
 
 function construirePrix(
@@ -126,7 +163,7 @@ export async function listerCatalogue(
 
   const total = lignes[0]?.total ?? 0;
   return {
-    entrees: lignes.map((ligne) => versEntree(ligne, table, acces.get(ligne.book_id))),
+    entrees: lignes.map((ligne) => versEntree(ligne, table, acces.get(ligne.book_id), query.zone)),
     page: query.page,
     taille: query.taille,
     total,
@@ -138,7 +175,10 @@ function versEntree(
   ligne: LigneCatalogue,
   table: Map<string, Currency>,
   acces: EntreeCatalogue['acces'] | undefined,
+  zone: string,
 ): EntreeCatalogue {
+  const prix = construirePrix(ligne, table);
+
   return {
     id: ligne.book_id,
     slug: ligne.slug,
@@ -157,7 +197,8 @@ function versEntree(
     inclus_abonnement: ligne.inclus_abonnement,
     disponible_achat: ligne.disponible_achat,
     gratuit: ligne.gratuit,
-    prix: construirePrix(ligne, table),
+    prix,
+    achat_hors_zone: achatHorsZone(ligne, prix, zone),
     acces: acces ?? ACCES_REFUSE,
   };
 }
@@ -224,6 +265,12 @@ export async function lireFiche(
   const prixZone = livre.book_prices.find((p) => p.zone === query.zone) ?? null;
 
   const table = await devises(client);
+  const prixFiche = prixZone
+    ? construirePrix(
+        { montant: prixZone.montant, devise: prixZone.devise, zone_prix: prixZone.zone },
+        table,
+      )
+    : null;
   const acces = await getAccessForBooks(userId, [livre.id], {
     client,
     ...(options.at ? { at: options.at } : {}),
@@ -247,12 +294,8 @@ export async function lireFiche(
     inclus_abonnement: livre.inclus_abonnement,
     disponible_achat: livre.disponible_achat,
     gratuit: livre.gratuit,
-    prix: prixZone
-      ? construirePrix(
-          { montant: prixZone.montant, devise: prixZone.devise, zone_prix: prixZone.zone },
-          table,
-        )
-      : null,
+    prix: prixFiche,
+    achat_hors_zone: achatHorsZone(livre, prixFiche, query.zone),
     acces: acces.get(livre.id) ?? ACCES_REFUSE,
     pages_extrait: livre.nb_pages_extrait ?? getServerEnv().EXCERPT_PAGES_DEFAULT,
     suggestions: await suggestions(client, livre.id, livre.themes, query.langue),

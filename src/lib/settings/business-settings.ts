@@ -34,6 +34,15 @@ export interface BusinessSettings {
    * au troisième jour un abonné à qui sept ont été promis.
    */
   joursEssai: number;
+  /**
+   * Délai accordé après la fin de période avant qu'un abonnement `actif` ne
+   * soit signalé en anomalie (arbitrage N2).
+   *
+   * Un renouvellement peut être « en vol » : sans tolérance, chaque abonnement
+   * clignoterait en anomalie à chaque échéance, et le signal deviendrait du
+   * bruit — donc inutile.
+   */
+  toleranceRenouvellementHeures: number;
   majLe: Date;
 }
 
@@ -64,7 +73,7 @@ export async function getBusinessSettings(
   const client = options.client ?? createServiceClient();
   const { data, error } = await client
     .from('business_settings')
-    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, maj_le')
+    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, tolerance_renouvellement_heures, maj_le')
     .eq('id', 1)
     .maybeSingle();
 
@@ -80,6 +89,7 @@ export async function getBusinessSettings(
     fenetreNouveauteJours: data.fenetre_nouveaute_jours,
     periodeGraceJours: data.periode_grace_jours,
     joursEssai: data.jours_essai,
+    toleranceRenouvellementHeures: data.tolerance_renouvellement_heures,
     majLe: new Date(data.maj_le),
   };
   cache = { valeur, expireA: maintenant + DUREE_CACHE_MS };
@@ -122,7 +132,13 @@ export async function simulerChangementDeFenetre(
  */
 export async function updateBusinessSettings(
   modifications: Partial<
-    Pick<BusinessSettings, 'fenetreNouveauteJours' | 'periodeGraceJours' | 'joursEssai'>
+    Pick<
+      BusinessSettings,
+      | 'fenetreNouveauteJours'
+      | 'periodeGraceJours'
+      | 'joursEssai'
+      | 'toleranceRenouvellementHeures'
+    >
   >,
   auteurId: string,
   options: { client?: AppSupabaseClient } = {},
@@ -139,6 +155,9 @@ export async function updateBusinessSettings(
         ? { periode_grace_jours: modifications.periodeGraceJours }
         : {}),
       ...(modifications.joursEssai !== undefined ? { jours_essai: modifications.joursEssai } : {}),
+      ...(modifications.toleranceRenouvellementHeures !== undefined
+        ? { tolerance_renouvellement_heures: modifications.toleranceRenouvellementHeures }
+        : {}),
       maj_par: auteurId,
     })
     .eq('id', 1);
