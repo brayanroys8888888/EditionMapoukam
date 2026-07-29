@@ -1368,6 +1368,18 @@ export type Database = {
           zone_prix: Database["public"]["Enums"]["price_zone"]
         }[]
       }
+      create_order: {
+        Args: {
+          p_devise: string
+          p_lignes: Json
+          p_montant_total: number
+          p_promo_code_id: string
+          p_remise: number
+          p_user_id: string
+          p_zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: string
+      }
       dev_reset_demo_state: {
         Args: never
         Returns: Database["public"]["CompositeTypes"]["dev_reset_report"]

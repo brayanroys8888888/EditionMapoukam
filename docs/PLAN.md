@@ -1114,7 +1114,7 @@ distributeur.**
 
 ### Étape 8 — Panier et commandes
 
-- [ ] **Objectif** — Panier multi-titres, commande en `en_attente`, calcul du
+- [x] **Objectif** — Panier multi-titres, commande en `en_attente`, calcul du
   montant selon la zone, code promotionnel.
 - **Dépendances** — étapes 1, 5
 - **Fichiers produits**
@@ -1138,6 +1138,39 @@ distributeur.**
                               # A ne voit pas la commande de B
   npm run verify              # code 0
   ```
+
+#### Décisions techniques prises à l'étape 8
+
+| Décision | Raison |
+|---|---|
+| Le panier ne porte **aucun prix** | `cart_items` ne contient qu'un livre et une langue. Figer un prix au panier aurait créé une seconde source de vérité — celle que le client voit — et l'écart entre les deux serait devenu une faille commerciale plutôt qu'un bogue d'affichage |
+| `GET /api/cart` ne rend **aucun total** | Le total dépend de la zone d'ENCAISSEMENT, que seule la commande connaît. En annoncer un depuis la zone d'affichage reviendrait à promettre un montant qu'on ne facturera peut-être pas |
+| Le repli de zone est décidé **pour la commande entière**, pas ligne par ligne | Appliqué par ligne, D4 point 8 produirait un panier facturé moitié en FCFA moitié en euros. Or `orders` ne porte qu'une devise, et `sumAmounts` refuse d'additionner deux devises. Si un seul titre manque à l'appel dans la zone demandée, la commande bascule en international |
+| La création de commande passe par une fonction PostgreSQL | Le client Supabase ne sait pas ouvrir une transaction. Deux insertions séparées laisseraient, sur coupure, une commande SANS ligne — un montant à payer sans rien à livrer |
+| Cette fonction ne calcule **aucun prix** | Recalculer en SQL aurait créé une seconde implémentation de la grille tarifaire, que rien n'aurait tenue en phase avec `src/domain/orders`. Elle reçoit des montants déjà résolus côté serveur |
+| Le statut n'est pas un paramètre de la fonction | Une commande naît toujours `en_attente`. Laisser l'appelant le choisir aurait fait de cette fonction un chemin d'octroi de droits contournant le gestionnaire de webhooks |
+| Aucun décompte de code promotionnel à la création | Une commande `en_attente` peut être abandonnée : décompter dès maintenant consommerait le code pour des paniers jamais réglés. L'enregistrement appartient à l'étape 9, ce que le commentaire de `promo_redemptions` annonçait déjà |
+| Un code **refusé** n'est pas rattaché à la commande | Sinon le gestionnaire de webhooks croirait devoir le décompter à l'encaissement |
+| Un code refusé **n'empêche jamais de commander** | Bloquer sur un code expiré immobiliserait un panier parfaitement valide. Le total est rendu sans remise, avec le motif du refus |
+| La remise est **plafonnée au sous-total** | Une remise de 10 € sur un panier de 4,99 € donnerait un total négatif — un remboursement offert par un code de réduction |
+| Un code en **montant** est refusé sur une autre devise | L'appliquer reviendrait à convertir sans taux de change : 5 sur un panier en FCFA retirerait cinq francs là où le code promettait cinq euros. Un pourcentage, lui, s'applique partout |
+| `total_confirme` ne sert **qu'à comparer** | Ce n'est pas un prix soumis par le client : c'est un accusé de réception. Un montant qui ne correspond pas fait échouer la commande, il ne la modifie jamais |
+| Le panier est vidé **après** l'écriture de la commande | Sur échec, l'utilisateur retrouve son panier intact plutôt qu'un panier vide et aucune commande |
+| La commande d'autrui rend **404, jamais 403** | Un 403 confirmerait son existence : en sondant des identifiants, on apprendrait le rythme des ventes. Le filtre sur `user_id` est dans la requête — la ligne d'autrui n'est jamais chargée |
+| Un titre non publié et un identifiant inconnu répondent **pareil** | Sans quoi le catalogue à venir serait devinable un identifiant à la fois |
+| Les refus de panier sont **nommés**, jamais silencieux | Un panier qui se vide sans explication est perçu comme une panne. Quatre motifs distincts, parce que chacun appelle une action différente de l'utilisateur |
+
+**Un `grant` m'a repris.** `revoke all on function … from public` retire aussi
+le droit à `service_role`, qui n'en hérite que par `public`. La création de
+commande échouait sur « permission denied for function ». Le `grant execute …
+to service_role` explicite est la convention déjà suivie par les migrations
+0013, 0014, 0015 et 0019 — je l'avais omise.
+
+**Un test m'a repris.** J'affirmais qu'aucune commande n'était écrite en
+comptant *toutes* celles de l'utilisateur — or les tests précédents en avaient
+déjà créé. L'assertion compte désormais l'écart avant/après, et vérifie en plus
+que le panier reste intact pour que l'utilisateur puisse confirmer sans tout
+refaire.
 
 ---
 
