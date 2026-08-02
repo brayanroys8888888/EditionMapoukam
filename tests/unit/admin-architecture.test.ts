@@ -167,19 +167,30 @@ describe('CHAQUE ROUTE D’ADMINISTRATION PASSE PAR LA GARDE COMMUNE', () => {
       .filter((r) => !r.source.includes('gardeAdmin('))
       .map((r) => r.chemin);
 
-    // `books/ingest` est antérieure à l'étape 13 et utilise `requireAdmin`
-    // directement : elle est donc gardée, mais sans quota. C'est un écart
-    // consigné, pas un oubli — voir la note ci-dessous.
-    expect(coupables).toEqual(['src/app/api/admin/books/ingest/route.ts']);
+    // ZÉRO exception. `books/ingest` en était une, livrée à l'étape 7 : elle
+    // vérifiait le rôle mais échappait au quota. La justification tenait en une
+    // phrase — « le plafond de 100 Mo borne déjà son coût » — et cette phrase
+    // était fausse : le plafond borne LA REQUÊTE, pas l'agrégat. Un jeton
+    // compromis pouvait enchaîner les soumissions.
+    expect(coupables).toEqual([]);
   });
 
-  it('la route d’ingestion, seule exception, est gardée par `requireAdmin`', () => {
-    // Elle n'est pas laissée sans contrôle : elle vérifie le rôle, en base, à
-    // chaque requête. Ce qui lui manque est le QUOTA — et son coût est déjà
-    // borné autrement : un PDF de 100 Mo au maximum, traité en sous-processus.
+  it('l’ingestion BORNE SA CONCURRENCE, son coût n’étant pas borné par le quota seul', () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LE QUOTA COMPTE LES REQUÊTES, LE SÉMAPHORE BORNE CE QU'ELLES         │
+    // │ COÛTENT EN MÊME TEMPS.                                               │
+    // │                                                                      │
+    // │ Une ingestion lance poppler et `sharp` sur un document entier, en     │
+    // │ mémoire. Trois cents requêtes par quart d'heure restent trois cents   │
+    // │ requêtes : sans limite de concurrence, elles peuvent toutes être en   │
+    // │ vol au même instant.                                                 │
+    // └──────────────────────────────────────────────────────────────────────┘
     const source = readFileSync(join(ADMIN, 'books', 'ingest', 'route.ts'), 'utf8');
 
-    expect(source).toContain('requireAdmin(request)');
+    expect(source).toContain('new Semaphore(');
+    // L'attente est bornée : une file sans délai transforme une saturation en
+    // requêtes suspendues indéfiniment.
+    expect(source).toContain('avecDelai(');
   });
 
   it('aucune route d’administration ne mute une table directement', () => {

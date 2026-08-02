@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 
-import { requireAdmin } from '@/lib/auth/session';
+import { gardeAdmin } from '@/lib/admin/route-helpers';
+import { Semaphore, avecDelai } from '@/lib/http/concurrence';
 import { errors, fail, created } from '@/lib/http/responses';
 import { ingerer } from '@/lib/ingestion/pipeline';
 import { logger } from '@/lib/logger';
@@ -40,6 +41,37 @@ import { logger } from '@/lib/logger';
  */
 const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
 
+/**
+ * Limitation de concurrence de l'ingestion.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PLAFOND DE 100 Mo BORNE LA REQUÊTE, PAS L'AGRÉGAT.                   │
+ * │                                                                          │
+ * │ C'était l'angle mort de cette route. Un jeton d'administration compromis  │
+ * │ pouvait enchaîner les soumissions : chacune reste sous les 100 Mo, mais   │
+ * │ chacune lance poppler et `sharp` sur un document entier, en mémoire. Le   │
+ * │ coût réel est le PRODUIT du plafond par le nombre d'ingestions            │
+ * │ simultanées, et rien ne bornait le second facteur.                        │
+ * │                                                                          │
+ * │ Deux places, contre trois pour le filigrane : une ingestion rend un       │
+ * │ document complet en deux résolutions, elle est bien plus lourde qu'un     │
+ * │ filigranage.                                                             │
+ * │                                                                          │
+ * │ Comme pour le téléchargement, le sémaphore fait ATTENDRE au lieu de       │
+ * │ faire tomber — et le délai borne l'attente, pour qu'une file ne se        │
+ * │ transforme pas en requêtes suspendues indéfiniment.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const PLACES_INGESTION = 2;
+const DELAI_ATTENTE_MS = 10 * 60 * 1000;
+
+const ingestions = new Semaphore(PLACES_INGESTION);
+
+/** Réservé aux tests : observe la file sans la modifier. */
+export function ingestionsEnAttente(): number {
+  return ingestions.enAttente;
+}
+
 const champsSchema = z.object({
   langue: z.enum(['fr', 'en']).default('fr'),
   titre: z.string().trim().min(1).max(300).optional(),
@@ -47,7 +79,11 @@ const champsSchema = z.object({
 });
 
 export async function POST(request: Request): Promise<Response> {
-  const garde = await requireAdmin(request);
+  // `gardeAdmin` et non `requireAdmin` : elle apporte le QUOTA DE DEBIT en plus
+  // du controle du role. Cette route en etait depourvue — un ecart consigne a
+  // l'etape 13, dont la justification (« le plafond de 100 Mo borne la
+  // requete ») ne tenait pas : il borne la requete, pas l'agregat.
+  const garde = await gardeAdmin(request);
   if (!garde.ok) return garde.response;
 
   let formulaire: FormData;
@@ -105,15 +141,23 @@ export async function POST(request: Request): Promise<Response> {
   try {
     await writeFile(cheminPdf, contenu);
 
-    const resultat = await ingerer({
-      cheminPdf,
-      langue: champs.data.langue,
-      ...(champs.data.titre ? { titre: champs.data.titre } : {}),
-      ...(champs.data.auteur ? { auteur: champs.data.auteur } : {}),
-    });
+    // Une place tenue pendant tout le traitement, rendue quoi qu'il arrive.
+    const resultat = await avecDelai(
+      () =>
+        ingestions.tenir(() =>
+          ingerer({
+            cheminPdf,
+            langue: champs.data.langue,
+            ...(champs.data.titre ? { titre: champs.data.titre } : {}),
+            ...(champs.data.auteur ? { auteur: champs.data.auteur } : {}),
+          }),
+        ),
+      DELAI_ATTENTE_MS,
+      'Ingestion : attente trop longue.',
+    );
 
     logger.info('Ingestion demandée', {
-      userId: garde.appelant.id,
+      userId: garde.acteur.id,
       bookId: resultat.bookId,
       dejaIngere: resultat.dejaIngere,
     });

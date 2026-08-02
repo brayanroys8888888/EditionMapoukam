@@ -1,5 +1,10 @@
 /**
- * Limitation de concurrence — point de vigilance 7 de l'étape 11.
+ * Limitation de concurrence.
+ *
+ * Vit sous `src/lib/http` et non sous un module métier : DEUX traitements de ce
+ * projet tiennent un document entier en mémoire — le filigrane (étape 11) et
+ * l'ingestion (étape 7). Le second l'a appris tard, et l'a payé d'un écart
+ * consigné à l'étape 13.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ UN ALBUM DE QUARANTE-HUIT PAGES EN COULEUR TIENT EN MÉMOIRE PENDANT SA  │

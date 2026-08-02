@@ -8,7 +8,7 @@ import { signer, type UrlSignee } from '@/lib/storage/signed-url';
 import { cheminCopie, identifiantCopie, type DemandeCopie } from '@/domain/downloads/copie';
 import { filigranerPdf, type MetadonneesCopie } from '@/domain/downloads/watermark-pdf';
 import { filigranerEpub } from '@/domain/downloads/watermark-epub';
-import { Semaphore, avecDelai } from './concurrence';
+import { Semaphore, avecDelai } from '@/lib/http/concurrence';
 import { logger } from '@/lib/logger';
 
 /**

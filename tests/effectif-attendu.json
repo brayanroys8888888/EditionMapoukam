@@ -1,0 +1,5 @@
+{
+  "_": "Effectif de la suite. La porte de validation (scripts/porte-tests.mjs) ÉCHOUE si le nombre de tests exécutés descend sous ce seuil. Mis à jour automatiquement à la hausse ; toute baisse doit être corrigée à la main, dans le même commit, pour rester visible.",
+  "total": 918,
+  "maj": "2026-08-02"
+}

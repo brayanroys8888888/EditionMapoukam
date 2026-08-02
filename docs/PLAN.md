@@ -1840,6 +1840,8 @@ validation W3C sans la moindre erreur.**
 | P2 | **Génération de filigrane hors du fil de requête** — ouvrier séparé et file persistante | Sémaphore à 3 places et délai de 60 s (étape 11), qui font *attendre* au lieu de *tomber* | Un acheteur sur connexion lente attend la génération **puis** le téléchargement. Ce n'est pas une panne, c'est une lenteur — mais §5.1 la rend coûteuse |
 | P3 | **Expiration des abonnements échus** — rien ne déclenche la transition `expire` | `statut_effectif()` replie les dates à la lecture, et l'accès est correctement refusé (étape 10) | Aucune faille d'accès. Mais les abonnements restent affichés « annulé » ou « impayé » indéfiniment, et l'état `anomalie` s'accumule sans que personne ne le voie |
 | P4 | **Purge des factures échues** — `purge_expired_invoices()` n'est appelée par rien | Fonction livrée à l'étape 1 (migration 0014), durée dans `INVOICE_RETENTION_YEARS` | Conservation de pièces comptables au-delà de la durée légale — un passif, pas un manque |
+| P5 | **Consultation nominative d'une facture** — aucune route ne la permet | `invoices` conserve `facture_nom` et `facture_email`, figés à l'émission (migration 0014). Les vues d'administration ne rendent QUE le numéro, pour ne pas ré-identifier un compte anonymisé (étape 13, point 6) | Un contrôle comptable exige le détail nominatif. Aujourd'hui il faudrait ouvrir `psql` — c'est-à-dire un accès sans trace. **Le chemin doit exister AVANT le contrôle, pas être improvisé le jour même** : route dédiée, réservée à l'administration, et **journalisée comme une consultation** (une action `facture_consultee` dans `admin_audit_log`), afin que lire une identité laisse une trace au même titre que la modifier |
+| P6 | **Quota d'administration partagé entre instances** — il vit dans un `Map`, en mémoire de processus | `gardeAdmin` (étape 13) : 300 requêtes par quart d'heure et par administrateur | Correct en local, **faux dès la deuxième instance** : chacune accorde son propre quota. Même famille que la limitation de débit de la lecture. Un stockage partagé — Redis, ou une table — le rendrait exact ; il ajoute un service à la pile, que le mode 100 % local n'a pas |
 
 **Pourquoi aucune tâche planifiée n'est livrée.** Le mode 100 % local n'a pas
 d'ordonnanceur, et en introduire un serait un service de plus à simuler. Deux
@@ -1851,6 +1853,72 @@ voies à l'arbitrage, au déploiement :
 La seconde est une bonne solution intermédiaire pour P1 : un déclenchement à la
 main vaut mieux qu'un appel qui n'existe pas. Elle est consignée dans les
 livrables de l'étape 13.
+
+---
+
+## 5 sexies. RÈGLE PERMANENTE — TOUT TEST DOIT PROUVER QU'IL PEUT ÉCHOUER
+
+> **La classe de défaut la plus coûteuse de ce projet n'est pas le bug : c'est la
+> VALIDATION VIDE.** Un test qui ne vérifie rien a pour symptôme un test vert.
+> Personne ne relit un test vert. Il peut donc survivre indéfiniment, en donnant
+> à chaque étape suivante l'assurance qu'il ne fournit pas.
+>
+> Cinq occurrences recensées, toutes découvertes par accident :
+
+| # | Ce qui était vert | Ce qui n'était pas validé |
+|---|---|---|
+| 1 | Le service de fichiers | La fixture valait `%PDF-1.4\n%%EOF` — assez pour qu'une URL signée existe, pas assez pour qu'un filigrane s'applique |
+| 2 | Les bornes de lecture | `nb_pages` et `book_pages` divergeaient **dans le jeu de données**, ce qui masquait une divergence réelle **du code** |
+| 3 | Six tests d'architecture | Leur parcours de sources pouvait rendre `[]` ; une liste d'infractions vide passe pour une absence d'infraction |
+| 4 | La garde des routes d'administration | L'assertion « ni 401 ni 403 » tolérait un 500 — une route morte était certifiée protégée |
+| 5 | Toute la suite de sécurité des fichiers | Un `hookTimeout` trop court a fait **sauter 26 tests**, en affichant « 811 passés, 26 ignorés » |
+
+### La règle
+
+**Tout test dont l'échec protège une règle doit être accompagné de la preuve
+qu'il PEUT échouer.** Cette preuve prend l'une des trois formes suivantes, dans
+cet ordre de préférence :
+
+1. **Le contre-test** — une assertion voisine qui vérifie que le dispositif
+   réagit dans l'autre sens. C'est la forme la plus forte, parce qu'elle vit
+   dans le dépôt et tourne à chaque exécution.
+
+   *Exemples livrés :* `tests/unit/sources-guard.test.ts` éprouve que le parcours
+   de sources REFUSE un dossier vide ; `tests/security/admin.test.ts` vérifie
+   qu'un administrateur n'est refusé par aucune route, sans quoi deux routes
+   refusant tout le monde passeraient les tests de rejet ; le test de
+   pagination divergente affirme d'abord que la divergence EXISTE dans le jeu de
+   données.
+
+2. **La garde d'effectif** — quand le test boucle sur une collection découverte
+   (fichiers, routes, versions linguistiques), une assertion sur la TAILLE de
+   cette collection, avant la boucle. Une boucle vide ne signale rien.
+
+   *Exemples livrés :* `expect(ROUTES.length).toBeGreaterThanOrEqual(10)` ;
+   `fichiersSources()` qui **lève** au lieu de rendre `[]`.
+
+3. **La mutation vérifiée à la main** — introduire le défaut, constater l'échec,
+   retirer le défaut. À consigner dans le message de commit, faute de trace
+   automatique.
+
+   *Exemples livrés :* la régression `nb_pages` réinjectée pour vérifier que le
+   test de convergence la voit ; les trois modes d'échec de la porte de
+   validation, déclenchés un par un.
+
+### Le corollaire, qui est la vraie leçon
+
+**Une fixture doit être aussi forte que ce qu'elle représente.** Une fixture plus
+faible que la réalité ne fait pas échouer les tests — elle les fait passer sans
+les exercer, ce qui est strictement pire. Le corpus réel est préférable partout
+où il est utilisable.
+
+### Ce qui applique la règle
+
+- `scripts/porte-tests.mjs` — la porte : aucun test ignoré, effectif jamais
+  décroissant, échec si zéro test.
+- `tests/unit/porte-tests.test.ts` — garde la porte : liste blanche vide, aucun
+  `.skip` / `.only` / `.todo` dans les sources, délais de hooks alignés.
+- `tests/helpers/sources.ts` — refuse un parcours vide.
 
 ---
 

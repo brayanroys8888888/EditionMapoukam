@@ -26,29 +26,38 @@ import { join, relative } from 'node:path';
  */
 const RACINE = process.cwd();
 
-function parcourir(racine: string): string[] {
+const EXTENSIONS_PAR_DEFAUT = /\.(ts|tsx)$/;
+
+function parcourir(racine: string, extensions: RegExp): string[] {
   const trouves: string[] = [];
   for (const entree of readdirSync(racine)) {
     const chemin = join(racine, entree);
-    if (statSync(chemin).isDirectory()) trouves.push(...parcourir(chemin));
-    else if (/\.(ts|tsx)$/.test(chemin)) trouves.push(chemin);
+    if (statSync(chemin).isDirectory()) trouves.push(...parcourir(chemin, extensions));
+    else if (extensions.test(chemin)) trouves.push(chemin);
   }
   return trouves;
 }
 
 /**
- * Tous les fichiers TypeScript sous `racine`.
+ * Tous les fichiers source sous `racine`.
+ *
+ * @param extensions par défaut `.ts` et `.tsx`. Les règles de ce projet vivent
+ *        aussi en SQL — les migrations écrivent dans les tables sensibles — et
+ *        un test qui les surveille doit pouvoir les lire.
  *
  * @throws si la racine n'existe pas — `readdirSync` s'en charge — ou si elle
- *         ne contient aucun fichier TypeScript. Dans les deux cas, la règle
+ *         ne contient aucun fichier correspondant. Dans les deux cas, la règle
  *         que l'appelant s'apprêtait à vérifier ne porte sur rien.
  */
-export function fichiersSources(racine: string): string[] {
-  const trouves = parcourir(racine);
+export function fichiersSources(
+  racine: string,
+  extensions: RegExp = EXTENSIONS_PAR_DEFAUT,
+): string[] {
+  const trouves = parcourir(racine, extensions);
 
   if (trouves.length === 0) {
     throw new Error(
-      `Aucun fichier TypeScript sous ${relative(RACINE, racine)} : ` +
+      `Aucun fichier ${String(extensions)} sous ${relative(RACINE, racine)} : ` +
         'la règle vérifiée par ce test ne porte sur rien. Le dossier a-t-il été ' +
         'renommé ou déplacé ? Corriger le chemin, jamais retirer le test.',
     );

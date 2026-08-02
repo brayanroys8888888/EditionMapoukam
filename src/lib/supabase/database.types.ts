@@ -1866,6 +1866,7 @@ export type Database = {
           statut: Database["public"]["Enums"]["subscription_status_effectif"]
         }[]
       }
+      contexte_applicatif: { Args: never; Returns: boolean }
       copies_purgeables: {
         Args: { p_at?: string }
         Returns: {

@@ -27,6 +27,12 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           include: ['tests/unit/**/*.test.ts'],
+          // Réglés explicitement, comme pour l'intégration : les valeurs par
+          // défaut de Vitest (5 s et 10 s) sont sous les délais que certains
+          // tests unitaires demandent déjà — le filigrane embarque une police
+          // de 3 104 glyphes.
+          testTimeout: 30_000,
+          hookTimeout: 60_000,
         },
       },
       {
@@ -45,20 +51,30 @@ export default defineConfig({
           fileParallelism: false,
           testTimeout: 30_000,
           // ┌────────────────────────────────────────────────────────────────┐
-          // │ LE DÉLAI DES HOOKS EST RÉGLÉ EXPLICITEMENT, ET C'EST IMPORTANT.│
+          // │ LE DÉLAI DES HOOKS EST ALIGNÉ SUR LE PLUS LENT DES TESTS QU'IL │
+          // │ SERT, PLUS UNE MARGE. IL NE DOIT JAMAIS EXPIRER LE PREMIER.     │
           // │                                                                │
-          // │ Il valait 10 s par défaut, quand les tests en avaient 30. Un    │
-          // │ `beforeAll` qui dépasse ne fait pas ÉCHOUER les tests du        │
-          // │ fichier : il les SAUTE. Le fichier est bien signalé en échec,   │
-          // │ mais le décompte affiche « 811 passés, 26 ignorés » — et un     │
-          // │ total presque tout vert n'attire pas l'œil.                     │
+          // │ Un `beforeAll` qui expire ne fait pas ÉCHOUER les tests du      │
+          // │ fichier : il les SAUTE. Le fichier est bien signalé en échec et  │
+          // │ le code de sortie vaut 1 — mesuré, la porte tient — mais le      │
+          // │ décompte affiche « 811 passés, 26 ignorés », ce qui se lit comme │
+          // │ un succès dans un journal de trois cents lignes.                │
           // │                                                                │
-          // │ C'est arrivé : compléter le jeu de démonstration a porté la     │
-          // │ préparation du stockage de dix-huit à près de quatre cents      │
-          // │ objets, et toute la suite de sécurité des fichiers a disparu de │
-          // │ l'exécution. Un test qui ne s'exécute pas ne proteste pas.      │
+          // │ C'est arrivé : compléter le jeu de démonstration a porté la      │
+          // │ préparation du stockage de dix-huit à près de quatre cents       │
+          // │ objets, et toute la suite de sécurité des fichiers a disparu de  │
+          // │ l'exécution.                                                    │
+          // │                                                                │
+          // │ 360 s = le délai du test le plus lent de ce projet (300 s, la    │
+          // │ chaîne d'ingestion complète) plus 20 %. Un hook qui PRÉPARE un   │
+          // │ test de cinq minutes peut légitimement en demander autant.       │
+          // │                                                                │
+          // │ L'alignement n'est pas seulement écrit ici : il est VÉRIFIÉ par  │
+          // │ tests/unit/porte-tests.test.ts, qui relit ce fichier et les      │
+          // │ délais réellement demandés par les tests. Un commentaire se      │
+          // │ périme, un test non.                                            │
           // └────────────────────────────────────────────────────────────────┘
-          hookTimeout: 30_000,
+          hookTimeout: 360_000,
         },
       },
     ],
