@@ -1920,6 +1920,57 @@ où il est utilisable.
   `.skip` / `.only` / `.todo` dans les sources, délais de hooks alignés.
 - `tests/helpers/sources.ts` — refuse un parcours vide.
 
+### Ce que valait la porte AVANT, mesuré et non supposé
+
+| Situation | Décompte affiché | Code de sortie |
+|---|---|---|
+| `beforeAll` qui expire | « 811 passés, **26 ignorés** » | **1** — rouge |
+| `it.skip` / `it.todo` | fichier « **passé** » | **0** — vert |
+| `--passWithNoTests`, zéro test collecté | « no tests » | **0** — vert |
+
+La porte tenait donc sur le cas qui a servi de révélateur, et **cédait sur les
+deux autres**, qui sont plus larges : un `.skip` ne fait pas même passer le
+fichier en échec.
+
+### Reprise de l'historique — un cas confirmé
+
+`npm run verify` rejoué commit par commit, avec relevé du nombre de tests
+réellement exécutés :
+
+| Commit | Étape | Exécutés | Ignorés | Sortie |
+|---|---|---|---|---|
+| `8272afa` | 7 — ingestion | 528 | **1** | **0** |
+| `fb56934` | 8 — panier et commandes | 604 | **1** | **0** |
+| `0f072ce` | 9 — paiement et webhooks | 632 | **1** | **0** |
+| `b9d4b2c` | 10 — abonnements | 681 | **1** | **0** |
+| `0ea8da9` | arbitrages Q7.x à Q10.x | 724 | 0 | 0 |
+| `ab156dd` | 6 — service de fichiers | 349 | 0 | 0 |
+
+**Le test absent est le même dans les quatre cas** : « EPUB à mise en page fixe
+produit → passe la validation epubcheck du W3C ». Il portait
+`it.skipIf(!existsSync(JAR))`, et le jar venait d'un paquet npm dont le
+téléchargement avait échoué. Quatre étapes ont donc été validées sans que
+l'EPUB assemblé à la main soit jamais confronté à un validateur.
+
+**C'est exactement le défaut que l'arbitrage Q7.1 avait nommé** — « le problème
+n'est pas le réseau, c'est qu'un `npm install` réussisse alors que le validateur
+est absent » — et que `0ea8da9` a corrigé en versionnant le jar sous `vendors/`
+et en rendant le test inconditionnel. La correction est antérieure à cette
+reprise ; celle-ci en mesure la portée exacte.
+
+**Aucune autre étape n'est concernée.** Les étapes 0 à 6 ne portent aucun test
+désactivé — vérifié sur les sources de chaque commit — et l'étape 6, rejouée,
+sort à 349 tests sans aucun ignoré.
+
+> **Réserve de méthode.** Rejouer un commit ancien dans l'environnement
+> d'aujourd'hui n'est pas toujours concluant : `node_modules` a dérivé, et
+> l'étape 5 rejouée échoue sur une incompatibilité de version de
+> `@supabase/supabase-js`, non sur son propre code. Les lignes ci-dessus ne
+> retiennent que les commits dont la reprise s'exécute proprement. Le contrôle
+> STATIQUE — recherche de `.skip`, `.only`, `.todo` dans les sources de chaque
+> commit — est lui indépendant de l'environnement, et il couvre toute
+> l'histoire : il ne trouve que ce seul cas.
+
 ---
 
 ## 5 quinquies. INVENTAIRE DES RÈGLES À DEUX NIVEAUX
