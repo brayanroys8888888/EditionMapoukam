@@ -1667,7 +1667,7 @@ paiement déjà appliqué.
 
 ### Étape 16 — Durcissement et parcours de bout en bout
 
-- [ ] **Objectif** — Revue de sécurité, limitation de débit globale, gestion
+- [x] **Objectif** — Revue de sécurité, limitation de débit globale, gestion
   homogène des erreurs, et les deux parcours complets pilotés par la console.
 - **Dépendances** — toutes les précédentes
 - **Fichiers produits**
@@ -1721,6 +1721,22 @@ contournement délibéré par quelqu'un qui ne connaît pas l'intention.
   npm run build               # code 0
   npm run verify              # code 0
   ```
+
+---
+
+## 5 undecies. FIN DE CHANTIER — les deux documents de remise
+
+L'inventaire de §5 quater est désormais RESTRUCTURÉ et EXTRAIT dans deux
+documents qui se lisent seuls, sans connaissance du code :
+
+| Document | Ce qu'il dit |
+|---|---|
+| `docs/AVANT-MISE-EN-PRODUCTION.md` | Ce qui sépare « les tests passent » de « on peut vendre ». Trois catégories : **bloquant** (la plateforme ne peut pas encaisser ou enfreint une obligation légale), **dégradant** (elle fonctionne mais se détériore), **à surveiller** (hypothèse externe ou limite connue) |
+| `docs/ETAT-DES-LIEUX.md` | Ce qui est couvert, ce qui ne l'est pas, les écarts assumés avec leur raison, le chiffrage du rôle PostgreSQL dédié, et celui du branchement d'un prestataire réel |
+
+**Cinq bloquants, dont trois se résolvent avec l'ordonnanceur.** Le second
+document porte aussi les trois choses que je referais autrement — elles éclairent
+la lecture du dépôt plus que n'importe quelle statistique de couverture.
 
 ---
 
@@ -2144,6 +2160,72 @@ sort à 349 tests sans aucun ignoré.
 > STATIQUE — recherche de `.skip`, `.only`, `.todo` dans les sources de chaque
 > commit — est lui indépendant de l'environnement, et il couvre toute
 > l'histoire : il ne trouve que ce seul cas.
+
+---
+
+## 5 decies. RÈGLE — REDÉCLARER UNE FONCTION SQL
+
+> **Toute redéclaration d'une fonction SQL existante se fait par EXTRACTION
+> VERBATIM de la version précédente, par script, avec les seuls ajouts
+> explicitement voulus — listés dans le message de commit. Jamais de réécriture
+> de mémoire.**
+
+### Pourquoi c'est une règle et non une note
+
+Le mode de défaillance s'est manifesté **trois fois**, toujours de la même
+façon : `create or replace` REMPLACE la fonction entière, alors que l'intention
+ne portait que sur une ligne. Ce qui n'est pas recopié disparaît — et
+silencieusement, puisque la migration s'applique sans erreur.
+
+| Fonction | Ce que la réécriture a coûté |
+|---|---|
+| `catalog_list` | Une forme de retour inventée, incompatible avec l'originale — `create or replace` ne peut pas changer un type de retour, l'erreur a été bruyante |
+| `access_for_books` | Recopiée pour changer un prédicat ; le reste devait être identique et rien ne le vérifiait |
+| `fulfill_order` | **Le garde `if v_nb = 0` perdu**, et un `on conflict do nothing` introduit qui n'existait pas. Une commande sans ligne serait passée pour honorée |
+
+Le troisième cas est le plus instructif : la migration s'appliquait, les tests
+existants passaient, et la perte n'a été vue qu'en relisant l'original ligne à
+ligne. Rien ne l'aurait signalée.
+
+### La procédure
+
+1. **Extraire** la définition courante par script — jamais par copier-coller à
+   l'œil, jamais de mémoire.
+2. **Appliquer** le seul changement voulu.
+3. **Vérifier** avec `npm run diff:sql <fonction>`.
+4. **Lister** les ajouts dans le message de commit.
+
+### Le contrôle
+
+```bash
+npm run diff:sql              # toutes les fonctions redéclarées
+npm run diff:sql fulfill_order   # une seule
+```
+
+Le script rapproche les déclarations successives de chaque fonction dans les
+migrations et affiche un diff ligne à ligne. **Ce qui doit alerter, ce sont les
+lignes RETIRÉES** : une redéclaration légitime ajoute — un appel, un prédicat,
+une colonne — et ne retire presque jamais.
+
+Exemple, sur la redéclaration de `fulfill_order` à l'étape 15 :
+
+```
+  0023_fulfillment.sql  →  0041_file_emails.sql
+    1 ligne retirée, 17 ajoutées
+    - create function public.fulfill_order(
+    + create or replace function public.fulfill_order(
+    + [le bloc `perform public.programmer_email(...)`]
+```
+
+Une seule ligne retirée, et c'est le `create` devenu `create or replace`. C'est
+la signature d'une extraction verbatim réussie.
+
+> **Note sur l'outil lui-même.** Sa première version ne comparait que préfixe et
+> suffixe communs : un changement au milieu du corps rapportait la fonction
+> entière comme perdue, et l'ajout de trois lignes s'affichait comme
+> quatre-vingt-quatorze lignes retirées. Un outil qui crie au loup à chaque
+> redéclaration n'apprend rien et finit ignoré — §5 sexies dans l'autre sens.
+> Remplacé par un diff par plus longue sous-séquence commune.
 
 ---
 

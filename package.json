@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "test": "node scripts/porte-tests.mjs",
     "test:brut": "vitest run",
+    "diff:sql": "node scripts/diff-fonctions-sql.mjs",
     "audit:epub": "vitest run --config vitest.audit.config.ts",
     "test:unit": "node scripts/porte-tests.mjs --project unit",
     "test:watch": "vitest",
