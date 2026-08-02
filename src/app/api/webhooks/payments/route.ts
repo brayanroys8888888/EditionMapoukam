@@ -4,6 +4,7 @@ import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clie
 import { SIGNATURE_HEADER } from '@/lib/crypto/webhook-signature';
 import { echouerCommande, honorerCommande, rembourserCommande } from '@/lib/orders/fulfillment';
 import { appliquerEvenement } from '@/lib/subscriptions/handlers';
+import { viderFileEnArrierePlan } from '@/lib/emails/file';
 import type { EvenementAbonnement } from '@/domain/subscriptions/state-machine';
 import type { EvenementPaiement } from '@/adapters/payment/types';
 import { logger } from '@/lib/logger';
@@ -116,6 +117,25 @@ export async function POST(request: Request): Promise<Response> {
     .from('webhook_events')
     .update({ traite_le: maintenant.toISOString(), erreur: null })
     .eq('id', journal.id);
+
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ L'ENVOI DES EMAILS A LIEU ICI, ET SEULEMENT ICI.                       │
+  // │                                                                        │
+  // │ APRÈS le commit du fait métier, et APRÈS que l'événement a été marqué   │
+  // │ traité. La demande d'email, elle, a été écrite DANS la transaction par  │
+  // │ `programmer_email` : elle est donc atomique avec l'octroi des droits.   │
+  // │                                                                        │
+  // │ Ce vidage ne peut ni faire échouer ce webhook, ni le retarder :         │
+  // │ `viderFileEnArrierePlan` n'est pas attendu et avale ses propres         │
+  // │ erreurs. Un serveur de messagerie en panne laisse des lignes en         │
+  // │ attente — la commande reste payée, les droits restent octroyés, et      │
+  // │ l'email partira au prochain vidage.                                     │
+  // │                                                                        │
+  // │ L'inverse — attendre l'envoi avant de répondre — transformerait une     │
+  // │ panne de messagerie en rejeu de webhook, donc en second traitement      │
+  // │ d'un paiement déjà appliqué.                                            │
+  // └────────────────────────────────────────────────────────────────────────┘
+  viderFileEnArrierePlan({ client });
 
   return reponse(200);
 }

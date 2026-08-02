@@ -650,6 +650,59 @@ export type Database = {
           },
         ]
       }
+      email_outbox: {
+        Row: {
+          cle_idempotence: string
+          cree_le: string
+          derniere_erreur: string | null
+          destinataire: string
+          envoye_le: string | null
+          id: string
+          langue: string
+          modele: string
+          statut: Database["public"]["Enums"]["email_statut"]
+          tentatives: number
+          user_id: string | null
+          variables: Json
+        }
+        Insert: {
+          cle_idempotence: string
+          cree_le?: string
+          derniere_erreur?: string | null
+          destinataire: string
+          envoye_le?: string | null
+          id?: string
+          langue: string
+          modele: string
+          statut?: Database["public"]["Enums"]["email_statut"]
+          tentatives?: number
+          user_id?: string | null
+          variables?: Json
+        }
+        Update: {
+          cle_idempotence?: string
+          cree_le?: string
+          derniere_erreur?: string | null
+          destinataire?: string
+          envoye_le?: string | null
+          id?: string
+          langue?: string
+          modele?: string
+          statut?: Database["public"]["Enums"]["email_statut"]
+          tentatives?: number
+          user_id?: string | null
+          variables?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entitlements: {
         Row: {
           accorde_le: string
@@ -1897,6 +1950,17 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      emails_a_envoyer: {
+        Args: { p_limite?: number }
+        Returns: {
+          destinataire: string
+          id: string
+          langue: string
+          modele: string
+          user_id: string
+          variables: Json
+        }[]
+      }
       emettre_facture: {
         Args: {
           p_adresse?: Json
@@ -1971,6 +2035,10 @@ export type Database = {
         Args: { p_book_id: string }
         Returns: string[]
       }
+      marquer_email: {
+        Args: { p_envoye: boolean; p_erreur?: string; p_id: string }
+        Returns: undefined
+      }
       motif_courant: { Args: never; Returns: string }
       pages_publiees: {
         Args: { p_book_id: string; p_langue: string }
@@ -1984,6 +2052,15 @@ export type Database = {
         }[]
       }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
+      programmer_email: {
+        Args: {
+          p_cle: string
+          p_modele: string
+          p_user_id: string
+          p_variables?: Json
+        }
+        Returns: string
+      }
       purge_expired_invoices: {
         Args: { p_at?: string }
         Returns: Database["public"]["CompositeTypes"]["purge_report"]
@@ -2129,6 +2206,7 @@ export type Database = {
         | "none"
       book_status: "brouillon" | "publie" | "archive"
       download_format: "pdf" | "epub"
+      email_statut: "en_attente" | "envoye" | "echoue"
       entitlement_type: "achat" | "offert"
       ingestion_status: "en_attente" | "en_cours" | "termine" | "echoue"
       order_status: "en_attente" | "paye" | "rembourse" | "echoue"
@@ -2301,6 +2379,7 @@ export const Constants = {
       ],
       book_status: ["brouillon", "publie", "archive"],
       download_format: ["pdf", "epub"],
+      email_statut: ["en_attente", "envoye", "echoue"],
       entitlement_type: ["achat", "offert"],
       ingestion_status: ["en_attente", "en_cours", "termine", "echoue"],
       order_status: ["en_attente", "paye", "rembourse", "echoue"],

@@ -1601,7 +1601,7 @@ peuvent être enchaînées.
 
 ### Étape 15 — Emails transactionnels
 
-- [ ] **Objectif** — Confirmation de commande, bienvenue d'abonnement, échec de
+- [x] **Objectif** — Confirmation de commande, bienvenue d'abonnement, échec de
   prélèvement, liens de téléchargement, via `FileMailer`.
 - **Dépendances** — étapes 3, 9, 10, 11
 - **Fichiers produits**
@@ -1621,6 +1621,47 @@ peuvent être enchaînées.
                               # montant correctement formaté en EUR et en XAF
   npm run verify              # code 0
   ```
+
+---
+
+#### Ce qui a réellement été livré — livré le 30 juillet 2026
+
+**Motif de la BOÎTE D'ENVOI (outbox).** La demande d'email est écrite DANS la
+transaction métier par `programmer_email`, appelée depuis `fulfill_order` ;
+l'ENVOI a lieu après le commit, en lisant `email_outbox`. Un email est donc
+programmé si et seulement si le fait métier a eu lieu, et sa perte est
+impossible.
+
+Les deux erreurs symétriques que ce motif évite : envoyer DANS la transaction —
+l'échec d'envoi annule l'octroi ; envoyer APRÈS sans trace — un serveur qui
+redémarre entre le commit et l'envoi perd l'email en silence.
+
+**L'idempotence porte sur l'ÉVÉNEMENT.** La clé est `commande-payee:<uuid>`,
+dérivée de la commande. Ce n'est pas « ai-je déjà envoyé ce message ? » — question
+à laquelle on répond après coup, et mal — mais « cet événement a-t-il déjà
+programmé son email ? », tranchée par une contrainte d'unicité **au moment de
+l'écriture**. Avec une clé d'envoi, deux appels concurrents passeraient tous deux
+le contrôle avant que l'un n'écrive.
+
+**Aucun lien signé, jamais.** Un modèle ne porte qu'un CHEMIN RELATIF ; l'URL est
+assemblée au rendu. Un modèle n'a donc pas les moyens de fabriquer une URL
+signée. Nos liens expirent en 300 s : un email lu le lendemain donnerait un lien
+mort, et allonger la durée pour l'email transformerait une boîte de réception en
+canal de distribution d'un fichier payant. Le modèle `telechargement_pret` **dit**
+pourquoi il n'y a pas de lien, sans quoi l'utilisateur croirait à une erreur.
+
+**Contenu minimal.** Aucun titre de livre ni montant dans les sujets — vérifié en
+confrontant chaque sujet à tous les titres du catalogue. La référence de commande
+est tronquée à huit caractères : un UUID complet est un identifiant interne qui
+voyagerait en clair.
+
+**Un compte anonymisé ne reçoit plus rien** : son adresse est un jeton
+`@anonymise.invalid`.
+
+**`programmer_email` ne lève jamais** — un défaut d'adresse ne doit pas annuler un
+octroi de droits — et `viderFile` non plus : depuis le gestionnaire de webhooks,
+une exception transformerait un webhook traité en échec, donc en rejeu d'un
+paiement déjà appliqué.
 
 ---
 
@@ -1895,6 +1936,25 @@ validation W3C sans la moindre erreur.**
 | P7 | **Table de taux de change historisés** — aucun total consolidé n'est possible aujourd'hui | Les montants sont ventilés par devise (étape 14) ; `order_items` fige déjà prix, devise et zone à l'achat | Un dirigeant qui demande « le » chiffre d'affaires n'obtient pas de réponse — par refus délibéré, pas par oubli. Un total exigerait un taux **figé à la date de la commande et stocké sur celle-ci**, comme les prix. Convertir à l'exécution rendrait le chiffre du mois dernier différent à chaque consultation |
 | P6 | **Quota d'administration partagé entre instances** — il vit dans un `Map`, en mémoire de processus | `gardeAdmin` (étape 13) : 300 requêtes par quart d'heure et par administrateur | Correct en local, **faux dès la deuxième instance** : chacune accorde son propre quota. Même famille que la limitation de débit de la lecture. Un stockage partagé — Redis, ou une table — le rendrait exact ; il ajoute un service à la pile, que le mode 100 % local n'a pas |
 
+### À LANCER AVANT UNE MISE EN PRODUCTION
+
+Ce qui vit hors de la porte de validation doit avoir un **moment prévu** où il
+est lancé, sinon il ne l'est jamais. C'est la contrepartie exacte de la décision
+de sortir ces vérifications de `npm run verify`.
+
+| Commande | Ce qu'elle prouve | Durée |
+|---|---|---|
+| `npm run audit:epub` | Les seize titres du corpus produisent un EPUB conforme EPUB 3, validé par epubcheck sur l'octet servi par le stockage. **Le seul artefact du projet destiné à sortir vers un tiers.** | ~10 min |
+
+> **L'audit exige une base STABLE.** Il ne doit jamais tourner en concurrence
+> d'un `npm run db:reset` : la première exécution, faussée de cette façon, a
+> rapporté sept titres en échec alors que rien n'était en cause côté EPUB.
+>
+> **C'est §5 sexies dans l'autre sens.** Un test vert qui ne valide rien fait
+> croire à une garantie absente ; un faux rouge répété apprend à ne plus croire
+> l'outil — et le jour où il a raison, personne ne l'écoute. Les deux détruisent
+> la même chose : la valeur informative du résultat.
+
 **Pourquoi aucune tâche planifiée n'est livrée.** Le mode 100 % local n'a pas
 d'ordonnanceur, et en introduire un serait un service de plus à simuler. Deux
 voies à l'arbitrage, au déploiement :
@@ -2087,6 +2147,46 @@ sort à 349 tests sans aucun ignoré.
 
 ---
 
+## 5 nonies. UNE CONSIGNE DÉCLINÉE, ET POURQUOI
+
+> Consignée ici parce qu'une décision sans sa raison se re-litige à chaque
+> relecture — et finit par être reprise dans l'autre sens par quelqu'un qui n'a
+> pas l'argument sous les yeux.
+
+**La consigne.** Étape 14, point (c) : « prévois un seuil minimal d'effectif sur
+toute ventilation géographique ou linguistique ».
+
+**Ce qui a été livré.** Le seuil s'applique aux ventilations COMPORTEMENTALES —
+titres lus, téléchargements par langue, téléchargements par zone. Il ne
+s'applique PAS aux montants.
+
+**La raison du refus.** Un seuil sur les montants produirait un faux comptable.
+Masquer les zones peu peuplées rendrait la somme des ventilations inférieure au
+chiffre d'affaires réel, ce que le **point 1 de la même étape interdit** : « les
+statistiques doivent rester exactes après anonymisation ». Les deux consignes
+étaient en conflit direct, et l'une des deux devait céder.
+
+**Le critère qui départage** — et c'est lui qui compte, pas la conclusion :
+
+> **Ce n'est pas la ventilation qui identifie, c'est la NATURE de ce qu'elle
+> révèle.**
+
+| Nature | Ce qu'un segment à un membre révèle | Traitement |
+|---|---|---|
+| **Comportementale** | Ce qu'une personne a lu ou emporté. §7.7 protège la lecture d'un enfant, et l'administration n'a aucun accès légitime à cette information au niveau individuel | **Seuil appliqué**, compte masqué |
+| **Comptable** | Un montant encaissé — que l'administration voit **déjà** ligne par ligne dans `admin_lister_commandes`, où elle a une raison légitime d'aller | **Aucun seuil.** Il n'ajouterait aucune protection et coûterait l'exactitude |
+
+**Le masquage plutôt que la suppression.** Sous le seuil, la ligne demeure et son
+compte devient nul, avec un drapeau `sous_le_seuil`. Une ligne absente serait
+indiscernable d'un segment à zéro, et l'écart entre deux relevés successifs
+dirait précisément ce qu'on cherche à taire — « la semaine dernière, la ligne
+anglaise avait disparu ».
+
+**Arbitré par le client le 30 juillet 2026** : consigne retirée, ligne de partage
+retenue.
+
+---
+
 ## 5 octies. AUDIT EPUB DU CORPUS — le format livrable, éprouvé
 
 > **Pourquoi cet audit existe.** Le relevé de l'historique a établi que quatre
@@ -2178,6 +2278,13 @@ pour le gratuit) n'entre pas dans ce recensement : la borne est appliquée par
 Supabase Storage, pas par notre schéma. Nous en fixons la valeur ; nous ne
 contrôlons pas si le lien meurt à la seconde 300 ou 301. Le plafond est ce qui
 compte, et il est vérifié par `tests/security/files.test.ts`.
+
+> **C'est une DÉPENDANCE EXTERNE, donc une hypothèse — à revalider si le
+> stockage change.** Tout le raisonnement de sécurité sur la durée de vie des
+> liens repose sur un comportement que nous ne mettons pas en œuvre. Un
+> changement de fournisseur de stockage, ou une évolution de son implémentation,
+> rouvre la question sans qu'aucun test du dépôt ne le signale : nos tests
+> vérifient la valeur DEMANDÉE, pas la valeur HONORÉE.
 
 ---
 

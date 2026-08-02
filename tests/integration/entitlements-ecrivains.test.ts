@@ -41,6 +41,13 @@ const ECRIVAINS_ADMIS: readonly { fichier: string; role: string }[] = [
     role: 'ACHAT — la seule voie qui accorde le droit de télécharger (règle métier centrale)',
   },
   {
+    fichier: 'supabase/migrations/20260730000041_file_emails.sql',
+    role:
+      'ACHAT (reprise) — `fulfill_order` est redéclarée VERBATIM pour y ajouter la ' +
+      'programmation de l’email de confirmation, dans la même transaction que l’octroi. ' +
+      'L’octroi lui-même est inchangé, à la ligne près.',
+  },
+  {
     fichier: 'supabase/migrations/20260728000027_refund_par_ligne.sql',
     role: 'REMBOURSEMENT — retire les droits LIGNE PAR LIGNE (arbitrage Q9.1)',
   },
