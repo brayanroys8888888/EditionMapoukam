@@ -215,8 +215,43 @@ describe('la porte ne peut pas être contournée par la configuration', () => {
     // machine neuve, et la protection disparaîtrait sans bruit.
     const effectif = JSON.parse(
       readFileSync(join(RACINE, 'tests', 'effectif-attendu.json'), 'utf8'),
-    ) as { total: number };
+    ) as { total: number; fichiers: Record<string, number> };
 
     expect(effectif.total).toBeGreaterThan(800);
+  });
+
+  it('tient l’effectif PAR FICHIER, et non en un total unique', () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ UN COMPTEUR GLOBAL NE VOIT PAS UN DÉPLACEMENT COMPENSÉ.              │
+    // │                                                                      │
+    // │ Dix tests de sécurité supprimés, dix tests de formatage ajoutés : le  │
+    // │ total ne bouge pas, la porte reste verte, et la couverture de         │
+    // │ sécurité a fondu. C'est le même angle mort que celui qui a produit    │
+    // │ toute cette section — une mesure agrégée qui masque ce qu'elle agrège.│
+    // └──────────────────────────────────────────────────────────────────────┘
+    const effectif = JSON.parse(
+      readFileSync(join(RACINE, 'tests', 'effectif-attendu.json'), 'utf8'),
+    ) as { total: number; fichiers: Record<string, number> };
+
+    expect(Object.keys(effectif.fichiers).length).toBeGreaterThanOrEqual(40);
+
+    // Les fichiers dont la disparition coûterait le plus cher : ceux qui
+    // portent les règles de sécurité et les invariants d'architecture.
+    for (const attendu of [
+      'tests/security/rls.test.ts',
+      'tests/security/admin.test.ts',
+      'tests/security/files.test.ts',
+      'tests/security/access-anon.test.ts',
+      'tests/integration/entitlements-ecrivains.test.ts',
+      'tests/unit/telechargement-architecture.test.ts',
+    ]) {
+      expect(Object.keys(effectif.fichiers)).toContain(attendu);
+      expect(effectif.fichiers[attendu]).toBeGreaterThan(0);
+    }
+
+    // Le total reste cohérent avec la somme : un écart signalerait un fichier
+    // compté deux fois, ou un relevé partiel enregistré comme complet.
+    const somme = Object.values(effectif.fichiers).reduce((a, b) => a + b, 0);
+    expect(somme).toBe(effectif.total);
   });
 });

@@ -172,8 +172,32 @@ function main() {
       rouge = true;
     }
 
-    // ── Invariant 2 : l'effectif ne diminue jamais ──────────────────────────
+    // ── Invariant 2 : l'effectif ne diminue JAMAIS, FICHIER PAR FICHIER ─────
+    //
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ UN COMPTEUR GLOBAL NE VOIT PAS UN DÉPLACEMENT COMPENSÉ.            │
+    // │                                                                    │
+    // │ Dix tests de sécurité supprimés, dix tests de formatage ajoutés :   │
+    // │ le total ne bouge pas, la porte reste verte, et la couverture de    │
+    // │ sécurité a fondu. C'est le même angle mort que celui qui a produit  │
+    // │ toute cette section — une mesure agrégée qui masque ce qu'elle      │
+    // │ agrège.                                                            │
+    // │                                                                    │
+    // │ L'effectif est donc tenu PAR FICHIER. Un fichier qui perd un test   │
+    // │ le signale, même si un autre en gagne dix ; et un fichier qui       │
+    // │ DISPARAÎT est un cas à part, traité en premier ci-dessous.          │
+    // └────────────────────────────────────────────────────────────────────┘
     const attendu = lireEffectifAttendu();
+
+    /** Tests exécutés par fichier, chemin relatif normalisé. */
+    const parFichier = {};
+    for (const fichier of resultat.testResults ?? []) {
+      const nom = relative(RACINE, fichier.name ?? '')
+        .split(sep)
+        .join('/');
+      if (!nom) continue;
+      parFichier[nom] = (fichier.assertionResults ?? []).length;
+    }
 
     if (partielle) {
       console.log('   (exécution partielle : contrôle d’effectif non applicable)');
@@ -183,36 +207,70 @@ function main() {
           '  ce résultat, et validerait une étape sur rien.',
       );
       rouge = true;
-    } else if (attendu && executes < attendu.total) {
-      console.error(
-        `\n✗ L’EFFECTIF A DIMINUÉ : ${executes} tests exécutés contre ${attendu.total} attendus.\n\n` +
-          `  ${attendu.total - executes} test(s) ont DISPARU de l’exécution. Un test qui\n` +
-          '  disparaît doit être aussi bruyant qu’un test qui échoue — c’est même\n' +
-          '  pire, parce qu’un test absent ne se signale jamais de lui-même.\n\n' +
-          '  Causes probables : un fichier renommé hors du motif d’inclusion, un\n' +
-          '  `describe` commenté, un fichier de test supprimé.\n\n' +
-          `  Si la baisse est VOULUE, corrigez ${'tests/effectif-attendu.json'}\n` +
-          '  dans le même commit, pour que la décision soit visible dans l’historique.',
-      );
-      rouge = true;
-    } else if (!rouge && (!attendu || executes > attendu.total)) {
-      // La hausse est enregistrée. Le fichier est versionné : la variation se
-      // lit dans le diff, ce qui vaut mieux qu'un chiffre à recopier à la main
-      // — une étape à recopier est une étape qu'on oublie.
-      writeFileSync(
-        FICHIER_EFFECTIF,
-        `${JSON.stringify(
-          {
-            _: 'Effectif de la suite. La porte de validation (scripts/porte-tests.mjs) ÉCHOUE si le nombre de tests exécutés descend sous ce seuil. Mis à jour automatiquement à la hausse ; toute baisse doit être corrigée à la main, dans le même commit, pour rester visible.',
-            total: executes,
-            maj: new Date().toISOString().slice(0, 10),
-          },
-          null,
-          2,
-        )}\n`,
-      );
-      const delta = attendu ? executes - attendu.total : executes;
-      console.log(`   effectif porté à ${executes} (+${delta}) — tests/effectif-attendu.json`);
+    } else {
+      const references = attendu?.fichiers ?? {};
+      const disparus = [];
+      const amaigris = [];
+
+      for (const [nom, compte] of Object.entries(references)) {
+        const actuel = parFichier[nom];
+        if (actuel === undefined) {
+          disparus.push(`${nom} (${String(compte)} test(s))`);
+        } else if (actuel < compte) {
+          amaigris.push(`${nom} : ${String(actuel)} au lieu de ${String(compte)}`);
+        }
+      }
+
+      if (disparus.length > 0) {
+        console.error(
+          `\n✗ ${disparus.length} FICHIER(S) DE TEST ONT DISPARU de l’exécution :\n`,
+        );
+        for (const ligne of disparus) console.error(`    ${ligne}`);
+        console.error(
+          '\n  Un fichier renommé hors du motif d’inclusion, déplacé, ou supprimé.\n' +
+            '  Aucune de ces causes ne se signale d’elle-même : la suite reste verte,\n' +
+            '  simplement plus courte.',
+        );
+        rouge = true;
+      }
+
+      if (amaigris.length > 0) {
+        console.error(`\n✗ ${amaigris.length} FICHIER(S) ONT PERDU DES TESTS :\n`);
+        for (const ligne of amaigris) console.error(`    ${ligne}`);
+        console.error(
+          '\n  Un `describe` commenté, un test retiré, une boucle qui itère sur une\n' +
+            '  collection devenue vide. Le total global peut être inchangé — c’est\n' +
+            '  précisément ce que ce contrôle par fichier voit et qu’un compteur\n' +
+            '  global manque.\n\n' +
+            '  Si la baisse est VOULUE, corrigez tests/effectif-attendu.json dans le\n' +
+            '  MÊME commit, pour que la décision se lise dans l’historique.',
+        );
+        rouge = true;
+      }
+
+      if (!rouge) {
+        // Enregistré seulement quand tout est vert : consigner un effectif issu
+        // d'une exécution en échec figerait un état dégradé comme référence.
+        const precedent = attendu?.total ?? 0;
+        writeFileSync(
+          FICHIER_EFFECTIF,
+          `${JSON.stringify(
+            {
+              _: 'Effectif de la suite, PAR FICHIER. La porte (scripts/porte-tests.mjs) échoue si un fichier disparaît ou perd des tests. Par fichier et non en total : un compteur global ne verrait pas dix tests de sécurité remplacés par dix tests de formatage. Mis à jour automatiquement quand tout est vert ; toute baisse doit être corrigée à la main, dans le même commit.',
+              total: executes,
+              fichiers: Object.fromEntries(Object.entries(parFichier).sort()),
+            },
+            null,
+            2,
+          )}\n`,
+        );
+        const delta = executes - precedent;
+        const signe = delta >= 0 ? '+' : '';
+        console.log(
+          `   effectif : ${executes} tests dans ${String(Object.keys(parFichier).length)} fichiers ` +
+            `(${signe}${String(delta)}) — tests/effectif-attendu.json`,
+        );
+      }
     }
 
     console.log('─────────────────────────────────────────────────────────────\n');

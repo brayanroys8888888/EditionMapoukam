@@ -1905,6 +1905,49 @@ cet ordre de préférence :
    test de convergence la voit ; les trois modes d'échec de la porte de
    validation, déclenchés un par un.
 
+### L'ENCHAÎNEMENT — aucun maillon n'est fautif isolément
+
+Le cas epubcheck mérite d'être décomposé, parce qu'il n'a pas de coupable. Quatre
+décisions raisonnables, prises séparément, ont produit quatre étapes vertes sans
+validation :
+
+| # | Le maillon | Pourquoi il paraissait raisonnable |
+|---|---|---|
+| 1 | Un paquet npm dont le téléchargement du jar échoue | `npm install` sort en **0** : l'échec est celui d'un script postinstall, pas de l'installation |
+| 2 | Le test conditionné à la présence du fichier | « Ne pas casser la suite d'un contributeur qui n'a pas le validateur » |
+| 3 | `it.skipIf(...)` | Le moyen idiomatique d'exprimer 2 |
+| 4 | Un test ignoré sort en **0** | Le comportement par défaut de Vitest |
+
+Chaque maillon est défendable. **C'est la chaîne qui produit le défaut**, et
+c'est pourquoi elle a survécu à quatre relectures d'étape : il n'y avait rien à
+voir dans aucun fichier pris isolément.
+
+### La règle générale qui en découle
+
+> **Une dépendance dont l'absence dégrade la validation doit faire échouer
+> l'installation, ou être versionnée dans le dépôt. Jamais conditionner un test à
+> la présence d'un outil.**
+
+Conditionner, c'est déplacer la décision « cette règle est-elle vérifiée ? » de
+l'auteur du test vers l'état de la machine — état que personne ne consulte quand
+la suite est verte.
+
+Les trois issues acceptables, dans l'ordre :
+
+1. **Versionner l'outil** — `vendors/epubcheck/` (34 Mo, BSD-3),
+   `vendors/fonts/NotoSans-Regular.ttf` (Apache-2.0). Coûteux en octets,
+   définitif en garantie.
+2. **Faire échouer l'installation** — si l'outil ne peut pas être versionné, son
+   absence doit rendre `npm install` rouge, jamais seulement bruyant.
+3. **Faire échouer le test** — c'est ce que fait aujourd'hui le test d'epubcheck :
+   validateur absent → test ROUGE, avec un message qui dit quoi installer. Le
+   contributeur est arrêté, ce qui est exactement l'intention ; il n'est pas
+   trompé.
+
+**Le sous-produit qu'il ne faut pas manquer** : un outil versionné rend aussi la
+validation *reproductible*. `epubcheck` 5.2.1 vaudra 5.2.1 dans deux ans, quand
+la version du registre aura changé de comportement.
+
 ### Le corollaire, qui est la vraie leçon
 
 **Une fixture doit être aussi forte que ce qu'elle représente.** Une fixture plus
@@ -1919,6 +1962,11 @@ où il est utilisable.
 - `tests/unit/porte-tests.test.ts` — garde la porte : liste blanche vide, aucun
   `.skip` / `.only` / `.todo` dans les sources, délais de hooks alignés.
 - `tests/helpers/sources.ts` — refuse un parcours vide.
+- `tests/effectif-attendu.json` — l'effectif **par fichier**, versionné. Un
+  compteur global ne verrait pas un déplacement compensé : dix tests de sécurité
+  supprimés, dix tests de formatage ajoutés, total inchangé, porte verte. Le
+  contrôle par fichier signale le fichier amaigri même quand le total ne bouge
+  pas — vérifié en simulant exactement ce cas.
 
 ### Ce que valait la porte AVANT, mesuré et non supposé
 
