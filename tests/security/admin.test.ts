@@ -162,7 +162,7 @@ describe('découverte des routes', () => {
     // │ boucle tourne à vide : aucune route testée, aucun échec, un fichier   │
     // │ tout vert qui ne protège plus rien.                                   │
     // └──────────────────────────────────────────────────────────────────────┘
-    expect(ROUTES.length).toBeGreaterThanOrEqual(10);
+    expect(ROUTES.length).toBeGreaterThanOrEqual(17);
   });
 
   it('couvre bien les routes attendues par le plan', () => {
@@ -177,6 +177,9 @@ describe('découverte des routes', () => {
       '/api/admin/orders',
       '/api/admin/promos',
       '/api/admin/settings',
+      // Les statistiques exposent le CHIFFRE D'AFFAIRES : leur presence dans
+      // cette liste est explicite, et non laissee a la seule decouverte.
+      '/api/admin/stats',
       '/api/admin/subscriptions',
       '/api/admin/users',
     ]) {

@@ -16,6 +16,7 @@
     "lint": "eslint .",
     "test": "node scripts/porte-tests.mjs",
     "test:brut": "vitest run",
+    "audit:epub": "vitest run --config vitest.audit.config.ts",
     "test:unit": "node scripts/porte-tests.mjs --project unit",
     "test:watch": "vitest",
     "verify": "npm run typecheck && npm run lint && npm run test",

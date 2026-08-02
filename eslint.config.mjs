@@ -131,6 +131,19 @@ export default tseslint.config(
     },
   },
 
+  // ---- Audits : leur sortie EST le livrable ----
+  //
+  // Un audit produit un rapport destiné à être lu par un humain, puis rapporté
+  // au client. Le logger du projet écrit du JSON structuré pour l'exploitation
+  // en production ; il rendrait ce rapport illisible. L'exception est donc
+  // cantonnée à `scripts/audit/`, et nulle part ailleurs.
+  {
+    files: ['scripts/audit/**/*.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
   // ---- Scripts d'outillage : hors du programme TypeScript ----
   {
     files: ['**/*.mjs'],

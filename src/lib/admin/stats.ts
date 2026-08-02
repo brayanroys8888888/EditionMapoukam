@@ -146,6 +146,28 @@ export async function titresLus(
   });
 }
 
+/**
+ * Ventilation géographique du COMPORTEMENT de téléchargement.
+ *
+ * Soumise au seuil d'agrégation : un segment à un membre n'est pas un agrégat.
+ * La zone vient de la COMMANDE, jamais d'une géolocalisation d'adresse IP —
+ * `download_logs.adresse_ip` sert à détecter les abus, pas à profiler.
+ */
+export async function telechargementsParZone(periode: Periode = {}, options: Options = {}) {
+  const { client, clock } = contexte(options);
+  return await agreger<unknown[]>(client, clock, 'stats_telechargements_par_zone', {
+    p_debut: periode.debut ?? null,
+    p_fin: periode.fin ?? null,
+  });
+}
+
+/**
+ * Répartition linguistique.
+ *
+ * `achats` est COMPTABLE et reste exact ; `telechargements` et `lecteurs` sont
+ * COMPORTEMENTAUX et sont masqués sous le seuil — masqués, pas supprimés : une
+ * ligne absente serait indiscernable d'un segment à zéro.
+ */
 export async function langues(periode: Periode = {}, options: Options = {}) {
   const { client, clock } = contexte(options);
   return await agreger<unknown[]>(client, clock, 'stats_langues', {

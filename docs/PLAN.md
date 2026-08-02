@@ -1892,6 +1892,7 @@ validation W3C sans la moindre erreur.**
 | P3 | **Expiration des abonnements échus** — rien ne déclenche la transition `expire` | `statut_effectif()` replie les dates à la lecture, et l'accès est correctement refusé (étape 10) | Aucune faille d'accès. Mais les abonnements restent affichés « annulé » ou « impayé » indéfiniment, et l'état `anomalie` s'accumule sans que personne ne le voie |
 | P4 | **Purge des factures échues** — `purge_expired_invoices()` n'est appelée par rien | Fonction livrée à l'étape 1 (migration 0014), durée dans `INVOICE_RETENTION_YEARS` | Conservation de pièces comptables au-delà de la durée légale — un passif, pas un manque |
 | P5 | **Consultation nominative d'une facture** — aucune route ne la permet | `invoices` conserve `facture_nom` et `facture_email`, figés à l'émission (migration 0014). Les vues d'administration ne rendent QUE le numéro, pour ne pas ré-identifier un compte anonymisé (étape 13, point 6) | Un contrôle comptable exige le détail nominatif. Aujourd'hui il faudrait ouvrir `psql` — c'est-à-dire un accès sans trace. **Le chemin doit exister AVANT le contrôle, pas être improvisé le jour même** : route dédiée, réservée à l'administration, et **journalisée comme une consultation** (une action `facture_consultee` dans `admin_audit_log`), afin que lire une identité laisse une trace au même titre que la modifier |
+| P7 | **Table de taux de change historisés** — aucun total consolidé n'est possible aujourd'hui | Les montants sont ventilés par devise (étape 14) ; `order_items` fige déjà prix, devise et zone à l'achat | Un dirigeant qui demande « le » chiffre d'affaires n'obtient pas de réponse — par refus délibéré, pas par oubli. Un total exigerait un taux **figé à la date de la commande et stocké sur celle-ci**, comme les prix. Convertir à l'exécution rendrait le chiffre du mois dernier différent à chaque consultation |
 | P6 | **Quota d'administration partagé entre instances** — il vit dans un `Map`, en mémoire de processus | `gardeAdmin` (étape 13) : 300 requêtes par quart d'heure et par administrateur | Correct en local, **faux dès la deuxième instance** : chacune accorde son propre quota. Même famille que la limitation de débit de la lecture. Un stockage partagé — Redis, ou une table — le rendrait exact ; il ajoute un service à la pile, que le mode 100 % local n'a pas |
 
 **Pourquoi aucune tâche planifiée n'est livrée.** Le mode 100 % local n'a pas
@@ -2061,6 +2062,20 @@ reprise ; celle-ci en mesure la portée exacte.
 désactivé — vérifié sur les sources de chaque commit — et l'étape 6, rejouée,
 sort à 349 tests sans aucun ignoré.
 
+> **UNE ÉTAPE N'A PAS PU ÊTRE REJOUÉE — et l'exclusion reste inscrite ici.**
+> L'étape 5 (`0cc3878`) rejouée échoue sur une incompatibilité de version de
+> `@supabase/supabase-js` : `node_modules` correspond au `package.json`
+> d'aujourd'hui, et l'API d'administration de l'authentification a changé depuis.
+> Les 66 échecs et 133 tests sautés observés sont un artefact de la reprise, non
+> un état historique — l'étape 6, rejouée dans le MÊME environnement, sort à 349
+> tests sans aucun ignoré.
+>
+> **Cette exclusion est justifiée, mais elle reste un angle mort** : rien ne
+> prouve empiriquement que l'étape 5 était saine. Ce qui la couvre est le
+> contrôle STATIQUE — recherche de `.skip`, `.only` et `.todo` dans les sources
+> de ce commit — qui est indépendant de l'environnement et ne trouve rien. C'est
+> une preuve plus faible qu'une exécution, et elle est notée comme telle.
+>
 > **Réserve de méthode.** Rejouer un commit ancien dans l'environnement
 > d'aujourd'hui n'est pas toujours concluant : `node_modules` a dérivé, et
 > l'étape 5 rejouée échoue sur une incompatibilité de version de
@@ -2069,6 +2084,100 @@ sort à 349 tests sans aucun ignoré.
 > STATIQUE — recherche de `.skip`, `.only`, `.todo` dans les sources de chaque
 > commit — est lui indépendant de l'environnement, et il couvre toute
 > l'histoire : il ne trouve que ce seul cas.
+
+---
+
+## 5 octies. AUDIT EPUB DU CORPUS — le format livrable, éprouvé
+
+> **Pourquoi cet audit existe.** Le relevé de l'historique a établi que quatre
+> étapes ont été validées sans qu'aucun EPUB ne soit confronté à un validateur.
+> L'arbitrage Q7.1 garantit que cela ne se reproduira pas ; il ne disait rien des
+> fichiers produits pendant ces quatre étapes.
+>
+> **L'EPUB est le seul artefact du projet destiné à sortir vers un tiers** —
+> liseuse, distributeur, bibliothèque. Sa conformité n'est pas une question de
+> confort interne.
+
+**Résultat, le 30 juillet 2026** — seize titres ingérés par la chaîne courante,
+puis validés par epubcheck 5.2.1 sur **l'octet servi par le stockage**, et non
+sur une reconstruction en mémoire :
+
+```
+CONFORMES : 16/16     ERREURS : 0     AVERTISSEMENTS : 0
+```
+
+Aucun message, d'aucune sévérité, sur aucun titre. Le gabarit à mise en page
+fixe assemblé à la main (`src/domain/ingestion/epub.ts`) est conforme EPUB 3.
+
+**L'audit vit hors de la porte de validation** (`npm run audit:epub`,
+`vitest.audit.config.ts`). Seize ingestions complètes prennent une dizaine de
+minutes : les mettre dans `npm run verify` la rendrait insupportable, et une
+porte insupportable finit contournée.
+
+> **Ce n'est PAS le retour du test conditionnel que §5 sexies interdit.** Un test
+> conditionnel se saute en silence et se donne pour exécuté ; un audit est lancé
+> explicitement, et son absence de la porte est écrite ici. La suite valide UN
+> titre à chaque commit — la régression est donc couverte en continu ; l'audit
+> valide les SEIZE avant une livraison.
+
+**Incident de méthode, consigné parce qu'il a failli passer pour un résultat.**
+La première exécution a été lancée en arrière-plan, puis un `db:reset` a été joué
+pendant qu'elle tournait : sept titres ont échoué sur un cache de schéma
+désynchronisé. Le rapport disait « 7 ÉCHECS » alors que rien n'était en cause
+côté EPUB. Un audit dont l'environnement bouge pendant l'exécution ne mesure
+rien — il a été rejoué sur une base stable.
+
+---
+
+## 5 septies. CONVENTION D'INTERVALLE TEMPOREL — `[début, fin[`
+
+> **Toute borne temporelle du projet est semi-ouverte.** Un fait est valide TANT
+> QUE l'instant courant est strictement avant la borne haute ; à l'instant EXACT
+> de la borne, il a cessé.
+>
+> **Le danger n'est pas qu'une borne soit inclusive ou exclusive — c'est qu'elles
+> divergent entre deux sites qui décrivent le même fait.** Un abonnement expiré
+> côté accès et actif côté comptage produirait un abonné qui ne peut plus rien
+> lire et qui figure pourtant parmi les payants. Cette divergence est invisible
+> partout sauf à l'instant exact de la bascule : elle ne peut donc pas être
+> trouvée par hasard.
+
+### Recensement
+
+| Site | Prédicat | À l'instant exact | Convention |
+|---|---|---|---|
+| Accès par abonnement (`access_for_books`) | `fin_periode > p_at` | accès **refusé** | `[début, fin[` |
+| Statut observé, annulé (`statut_effectif`) | `fin_periode <= p_at` → `expire` | **expiré** | idem — **les deux s'accordent** |
+| Accès pendant la grâce (`access_for_books`) | `impaye_depuis + grâce > p_at` | accès **refusé** | `[impayé, +grâce[` |
+| Statut observé, impayé (`statut_effectif`) | `impaye_depuis + grâce <= p_at` → `expire` | **expiré** | idem — **les deux s'accordent** |
+| Anomalie (`statut_effectif`) | `fin_periode + tolérance <= p_at` | **anomalie** | `[fin, +tolérance[` |
+| Fenêtre de vente de 3 mois (`fenetre_de_vente_ecoulee`) | `publie_le + fenêtre <= p_at` | titre **dans l'abonnement** | `[publication, +fenêtre[` |
+| Droit à durée limitée (`access_for_books`) | `expire_le > p_at` | droit **éteint** | `[octroi, expire[` |
+| Code promotionnel (`calculerRemise`, TS) | `expireLe <= maintenant` → refusé | **refusé** | `[création, expire[` |
+| Purge des factures (`purge_expired_invoices`) | `conservation_jusqu_au <= p_at` | **purgeable** | `[émission, conservation[` |
+| Purge des copies (`copies_purgeables`) | `dernier_acces + rétention <= p_at` | **purgeable** | `[accès, +rétention[` |
+| Périodes statistiques (`periode_stats`) | `>= début and < fin` | — | `[début, fin[` |
+
+**Aucun site n'était à corriger** : le recensement a confirmé que la convention
+était déjà uniforme. Ce qui manquait était la PREUVE — rien ne vérifiait les
+paires à l'instant de la bascule.
+
+### Ce qui tient la convention
+
+- `tests/integration/bornes-temporelles.test.ts` interroge chaque paire **une
+  seconde avant** la borne et **exactement dessus**, et exige que les deux côtés
+  basculent ensemble.
+- Le même fichier porte un contrôle qui survit aux migrations futures : il
+  cherche dans le schéma toute comparaison `>= p_at` ou `< p_at`, formes exactes
+  complémentaires de la convention, qui signaleraient un site ayant basculé.
+
+### Hors convention, et pourquoi
+
+**La durée de validité des URL signées** (300 s pour le contenu payant, 3 600 s
+pour le gratuit) n'entre pas dans ce recensement : la borne est appliquée par
+Supabase Storage, pas par notre schéma. Nous en fixons la valeur ; nous ne
+contrôlons pas si le lien meurt à la seconde 300 ou 301. Le plafond est ce qui
+compte, et il est vérifié par `tests/security/files.test.ts`.
 
 ---
 

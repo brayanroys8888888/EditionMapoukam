@@ -2013,6 +2013,7 @@ export type Database = {
           page: number
         }[]
       }
+      seuil_agregation: { Args: never; Returns: number }
       stats_abonnes: {
         Args: { p_at?: string }
         Returns: {
@@ -2038,6 +2039,8 @@ export type Database = {
         Returns: {
           achats: number
           langue: string
+          lecteurs: number
+          sous_le_seuil: boolean
           telechargements: number
         }[]
       }
@@ -2047,6 +2050,15 @@ export type Database = {
           mouvement: string
           nombre: number
           offre: string
+        }[]
+      }
+      stats_telechargements_par_zone: {
+        Args: { p_at?: string; p_debut?: string; p_fin?: string }
+        Returns: {
+          lecteurs: number
+          sous_le_seuil: boolean
+          telechargements: number
+          zone: Database["public"]["Enums"]["price_zone"]
         }[]
       }
       stats_titres_achetes: {

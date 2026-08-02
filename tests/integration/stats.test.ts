@@ -121,7 +121,7 @@ describe('LES STATISTIQUES NE LISENT JAMAIS `users` (point 1)', () => {
     const fonctions = await query<{ nom: string; corps: string }>(
       `select p.proname as nom, pg_get_functiondef(p.oid) as corps
          from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.proname like 'stats\\_%'`,
+        where n.nspname = 'public' and p.prokind = 'f' and p.proname like 'stats' || chr(92) || '_%'`,
     );
 
     expect(fonctions.length).toBeGreaterThanOrEqual(6);
@@ -478,6 +478,154 @@ describe('SURFACE DE LECTURE — bornes et anonymat (point 4)', () => {
         await deleteTestUser(lecteur);
       }
     }
+  });
+});
+
+describe('LES STATISTIQUES NE RÉINTRODUISENT RIEN QUE L’ÉTAPE 12 A ÉCARTÉ', () => {
+  it('n’a que `derniere_page` et `maj_le` à lire — la table n’en dit pas plus', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LA PROTECTION EST DANS LA TABLE, PAS DANS LA REQUÊTE.                │
+    // │                                                                      │
+    // │ L'étape 12 a délibérément limité `reading_progress` à la dernière     │
+    // │ page et à son horodatage : pas d'historique de sessions, pas de       │
+    // │ durée de lecture, pas de parcours page par page. Une statistique de   │
+    // │ durée de lecture serait donc IMPOSSIBLE à écrire — non parce qu'on    │
+    // │ s'en abstient, mais parce que la donnée n'existe pas.                 │
+    // │                                                                      │
+    // │ C'est la forme forte : on ne peut pas réintroduire par la porte des   │
+    // │ statistiques ce qu'aucune colonne ne porte.                          │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const colonnes = await query<{ column_name: string }>(
+      `select column_name from information_schema.columns
+        where table_schema = 'public' and table_name = 'reading_progress'
+        order by column_name`,
+    );
+
+    expect(colonnes.map((c) => c.column_name)).toEqual([
+      'book_id',
+      'derniere_page',
+      'langue',
+      'maj_le',
+      'user_id',
+    ]);
+  });
+
+  it('aucune fonction de statistique ne compte de DURÉE ni de PARCOURS', async () => {
+    // Le contrôle qui survit à une colonne ajoutée par mégarde : même si
+    // `reading_progress` gagnait un champ demain, aucune statistique ne devrait
+    // en tirer une durée ou une séquence.
+    const fonctions = await query<{ nom: string; corps: string }>(
+      `select p.proname as nom, pg_get_functiondef(p.oid) as corps
+         from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.prokind = 'f' and p.proname like 'stats' || chr(92) || '_%'`,
+    );
+
+    const coupables: string[] = [];
+    for (const f of fonctions) {
+      // Une soustraction d'horodatages, un `age()`, un `lag()` sur les pages :
+      // les formes par lesquelles une durée ou un parcours apparaîtraient.
+      // Une soustraction d'horodatages, un `age()`, une fonction fenêtre sur
+      // les pages : les formes par lesquelles une durée ou un parcours
+      // apparaîtraient dans un agrégat.
+      const formesInterdites = new RegExp(
+        [
+          String.raw`\bage\s*\(`,
+          String.raw`\blag\s*\(`,
+          String.raw`\blead\s*\(`,
+          String.raw`maj_le\s*-\s*`,
+          String.raw`extract\s*\([^)]*from\s+[^)]*maj_le`,
+        ].join('|'),
+        'i',
+      );
+      if (formesInterdites.test(f.corps)) coupables.push(f.nom);
+    }
+
+    expect(coupables).toEqual([]);
+  });
+
+  it('les titres lus ne rendent qu’un NOMBRE de lecteurs, jamais une page', async () => {
+    // « Cet enfant en est page 14 » n'est pas une statistique de catalogue.
+    const resultat = await stats.titresLus(
+      { debut: null, fin: null, page: 1, taille: 25 },
+      { clock: horloge },
+    );
+    const lignes = (resultat.ok ? resultat.donnees : []) as Record<string, unknown>[];
+
+    for (const ligne of lignes) {
+      expect(Object.keys(ligne)).toEqual(
+        expect.arrayContaining(['book_id', 'slug', 'langue', 'nb_lecteurs']),
+      );
+      expect(Object.keys(ligne)).not.toContain('derniere_page');
+      expect(Object.keys(ligne)).not.toContain('maj_le');
+    }
+  });
+});
+
+describe('SEUIL D’AGRÉGATION sur les ventilations comportementales', () => {
+  it('MASQUE un segment linguistique sous le seuil, sans supprimer la ligne', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ MASQUÉ, PAS SUPPRIMÉ — ET LA DIFFÉRENCE COMPTE.                      │
+    // │                                                                      │
+    // │ Une ligne absente serait indiscernable d'un segment à zéro, et        │
+    // │ l'écart entre deux relevés dirait précisément ce qu'on cherche à      │
+    // │ taire : « la semaine dernière, la ligne anglaise avait disparu ».     │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const lecteur = await createTestUser();
+    try {
+      await query(
+        `insert into public.download_logs (user_id, book_id, langue, format, telecharge_le)
+         values ($1, $2, 'en', 'pdf', $3)`,
+        [lecteur.id, livreId, AVANT.toISOString()],
+      );
+
+      const resultat = await stats.langues(
+        { debut: new Date(AVANT.getTime() - 86_400_000).toISOString(), fin: T0.toISOString() },
+        { clock: horloge },
+      );
+      const lignes = (resultat.ok ? resultat.donnees : []) as {
+        langue: string;
+        telechargements: number | null;
+        lecteurs: number | null;
+        sous_le_seuil: boolean;
+      }[];
+
+      const anglais = lignes.find((l) => l.langue === 'en');
+      // La ligne EXISTE...
+      expect(anglais).toBeDefined();
+      // ...mais son compte est masqué, et le masquage est annoncé.
+      expect(anglais?.sous_le_seuil).toBe(true);
+      expect(anglais?.telechargements).toBeNull();
+      expect(anglais?.lecteurs).toBeNull();
+    } finally {
+      await query(`delete from public.download_logs where user_id = $1`, [lecteur.id]);
+      await deleteTestUser(lecteur);
+    }
+  });
+
+  it('laisse le CHIFFRE D’AFFAIRES exact, sans seuil', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LE SEUIL NE S'APPLIQUE PAS AUX MONTANTS, ET C'EST DÉLIBÉRÉ.          │
+    // │                                                                      │
+    // │ Masquer une zone peu peuplée rendrait la somme des zones inférieure   │
+    // │ au chiffre d'affaires réel — un faux comptable, que le point 1 de     │
+    // │ l'étape interdit. Et la protection serait illusoire : l'administration│
+    // │ voit déjà chaque commande, ligne par ligne, dans                      │
+    // │ `admin_lister_commandes`.                                            │
+    // │                                                                      │
+    // │ Ce n'est pas la ventilation qui identifie, c'est la NATURE de ce      │
+    // │ qu'elle révèle — une habitude de lecture, ou un encaissement.         │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const resultat = await stats.chiffreAffaires(
+      {
+        debut: new Date(AVANT.getTime() - 86_400_000).toISOString(),
+        fin: T0.toISOString(),
+      },
+      { clock: horloge },
+    );
+    const lignes = (resultat.ok ? resultat.donnees : []) as never;
+
+    // La zone `afrique` n'a qu'UN acheteur, et son montant est rendu tel quel.
+    expect(montantDe(lignes, 'achat_unitaire', 'XOF')).toBe(3000);
   });
 });
 

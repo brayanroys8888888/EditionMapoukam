@@ -42,6 +42,7 @@ const requeteSchema = periodeSchema.extend(paginationSchema.shape).extend({
       'titres_achetes',
       'titres_lus',
       'langues',
+      'telechargements_par_zone',
     ])
     .default('chiffre_affaires'),
 });
@@ -73,6 +74,8 @@ export async function GET(request: Request): Promise<Response> {
         return await stats.titresLus({ ...periode, ...pagination });
       case 'langues':
         return await stats.langues(periode);
+      case 'telechargements_par_zone':
+        return await stats.telechargementsParZone(periode);
     }
   })();
 
