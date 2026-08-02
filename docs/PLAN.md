@@ -1527,7 +1527,7 @@ inscrit dans un test d'architecture qui échouera si une AUTRE route s'en écart
 
 ### Étape 14 — Statistiques agrégées
 
-- [ ] **Objectif** — Chiffre d'affaires par période et par flux, abonnés actifs,
+- [x] **Objectif** — Chiffre d'affaires par période et par flux, abonnés actifs,
   inscriptions, résiliations, titres les plus lus et achetés, répartition
   linguistique (§4.3 F13).
 - **Dépendances** — étapes 10, 13
@@ -1545,6 +1545,57 @@ inscrit dans un test d'architecture qui échouera si une AUTRE route s'en écart
                               # EUR et XAF jamais additionnés
   npm run verify              # code 0
   ```
+
+#### Ce qui a réellement été livré — livré le 30 juillet 2026
+
+**Les statistiques ne lisent jamais `users`, et c'est structurel.** Elles lisent
+`orders`, `order_items`, `invoices` et `subscriptions` — des faits comptables,
+conservés après anonymisation. Le chiffre d'affaires d'un mois clos ne change
+pas parce qu'un client a demandé l'effacement de son compte : ce serait un faux
+comptable, et — plus discrètement — un moyen de déduire qu'un effacement a eu
+lieu en comparant deux relevés du même mois. Vérifié deux fois : sur le
+comportement (anonymisation réelle, montant identique) et sur le **texte** des
+fonctions, pour qu'une jointure ajoutée demain soit vue même si elle ne changeait
+aucun chiffre le jour où elle est écrite.
+
+**Aucun total consolidé n'existe.** Pas de fonction rendant « le » chiffre
+d'affaires : 499 centimes d'euro et 3 000 francs CFA ne font pas 3 499 de quoi
+que ce soit. Chaque ligne porte sa devise et sa zone. Un total consolidé exigera
+un taux **figé à la date de la commande et stocké sur celle-ci**, comme les prix
+sont figés sur `order_items` — ce n'est pas improvisable.
+
+**Les remboursements sont comptés à part et en négatif.** Les noyer dans le
+chiffre d'affaires masquerait un taux de remboursement anormal ; les omettre
+gonflerait le revenu d'un montant qui a été rendu.
+
+**Les abonnés sont comptés sur `statut_effectif()`.** Le test qui compte vérifie
+d'abord que le `statut` STOCKÉ de l'abonnement en anomalie vaut bien `actif` —
+sans quoi il passerait sur un abonnement déjà marqué expiré et ne prouverait
+rien. Une anomalie n'est comptée ni en actif ni en expiré.
+
+**Seuil d'agrégation sur les titres lus.** Aucun `user_id` n'entre ni ne sort, et
+une ligne n'est rendue qu'à partir de **cinq lecteurs distincts** : « ce titre a
+1 lecteur », croisé avec la liste des acheteurs que l'administration a le droit
+de consulter, nomme quelqu'un. Le seuil coûte une part de finesse sur la longue
+traîne ; c'est le prix de la règle 7 de `CLAUDE.md`.
+
+**L'agrégation est faite en SQL, jamais en mémoire** — et pas pour la vitesse :
+agréger en TypeScript exigerait de rapatrier les lignes nominatives dans le
+processus, et le seuil deviendrait un filtre appliqué *après* leur sortie de la
+base.
+
+**Convention d'intervalle : `[début, fin[`,** semi-ouvert. C'est la seule qui
+permette d'interroger des périodes successives sans double comptage — avec des
+bornes inclusives, une commande payée le 31 janvier à minuit pile figurerait dans
+janvier ET dans février, et la somme des mois dépasserait l'année. Contrepartie
+assumée et testée : une transaction horodatée exactement à l'instant de la
+requête appartient à la période suivante.
+
+**Trois bornes sur la surface de lecture**, dont aucune ne suffit seule : période
+plafonnée à trois ans **en base**, pagination plafonnée par la même fonction que
+les listes d'administration, et quota de `gardeAdmin`. Les deux premières
+limitent ce qu'une requête emporte ; la troisième limite combien de requêtes
+peuvent être enchaînées.
 
 ---
 

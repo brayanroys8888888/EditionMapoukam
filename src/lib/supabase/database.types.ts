@@ -1976,6 +1976,13 @@ export type Database = {
         Args: { p_book_id: string; p_langue: string }
         Returns: number
       }
+      periode_stats: {
+        Args: { p_at?: string; p_debut: string; p_fin: string }
+        Returns: {
+          debut: string
+          fin: string
+        }[]
+      }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
       purge_expired_invoices: {
         Args: { p_at?: string }
@@ -2004,6 +2011,76 @@ export type Database = {
           borne_appliquee: boolean
           langue_origine: string
           page: number
+        }[]
+      }
+      stats_abonnes: {
+        Args: { p_at?: string }
+        Returns: {
+          devise: string
+          nombre: number
+          offre: string
+          statut_observe: Database["public"]["Enums"]["subscription_status_effectif"]
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      stats_chiffre_affaires: {
+        Args: { p_at?: string; p_debut?: string; p_fin?: string }
+        Returns: {
+          devise: string
+          flux: string
+          montant: number
+          nb_transactions: number
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      stats_langues: {
+        Args: { p_at?: string; p_debut?: string; p_fin?: string }
+        Returns: {
+          achats: number
+          langue: string
+          telechargements: number
+        }[]
+      }
+      stats_mouvements_abonnement: {
+        Args: { p_at?: string; p_debut?: string; p_fin?: string }
+        Returns: {
+          mouvement: string
+          nombre: number
+          offre: string
+        }[]
+      }
+      stats_titres_achetes: {
+        Args: {
+          p_at?: string
+          p_debut?: string
+          p_fin?: string
+          p_page?: number
+          p_taille?: number
+        }
+        Returns: {
+          book_id: string
+          devise: string
+          langue: string
+          montant: number
+          nb_achats: number
+          slug: string
+          total_lignes: number
+        }[]
+      }
+      stats_titres_lus: {
+        Args: {
+          p_at?: string
+          p_debut?: string
+          p_fin?: string
+          p_page?: number
+          p_taille?: number
+        }
+        Returns: {
+          book_id: string
+          langue: string
+          nb_lecteurs: number
+          slug: string
+          total_lignes: number
         }[]
       }
       statut_effectif:
