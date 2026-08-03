@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { gardeAdmin, paginationSchema, refusEnReponse } from '@/lib/admin/route-helpers';
+import { gardeAdmin, pagination, paginationSchema, refusEnReponse } from '@/lib/admin/route-helpers';
 import { listerLivres, modifierLivre } from '@/lib/admin/service';
 import { errors, ok } from '@/lib/http/responses';
 import { parseJsonBody, parseSearchParams } from '@/lib/http/validate';
@@ -31,7 +31,16 @@ export async function GET(request: Request): Promise<Response> {
   });
   if (!resultat.ok) return refusEnReponse(resultat.raison);
 
-  return ok({ livres: resultat.donnees, page: query.data.page });
+  return ok({
+    livres: resultat.donnees,
+    // Le total vient de `total_lignes`, porte par chaque ligne. Une page vide
+    // n'en a aucune : l'enveloppe le ramene a zero plutot que de disparaitre.
+    ...pagination(
+      resultat.donnees as { total_lignes?: number | string }[],
+      query.data.page,
+      query.data.taille,
+    ),
+  });
 }
 
 /**

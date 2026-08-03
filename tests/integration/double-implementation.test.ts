@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { servirPage } from '@/lib/content/page-service';
 import { enregistrerProgression, reinitialiserRegroupement } from '@/lib/reading/progress';
@@ -325,5 +327,103 @@ describe('FENÊTRE DE VENTE DE 3 MOIS — deux appelantes, une seule règle', ()
     );
 
     expect(resultat?.ecoulee).toBe(false);
+  });
+});
+
+describe('VALEURS DE TEXTE LIBRE COMPARÉES POUR ÉGALITÉ', () => {
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ LA CLASSE DE DÉFAUT DÉCOUVERTE PAR L'AUDIT FRONTEND.                  │
+  // │                                                                        │
+  // │ `origine_culturelle` s'écrivait de DEUX façons dans le dépôt — une     │
+  // │ apostrophe droite dans les seeds, une apostrophe typographique dans un │
+  // │ test — sans que rien ne le signale, parce que rien ne comparait ces    │
+  // │ deux valeurs.                                                          │
+  // │                                                                        │
+  // │ La cause générale : une donnée jamais comparée peut être fausse sans   │
+  // │ bruit. Le frontend est le premier consommateur à comparer ces valeurs  │
+  // │ — pour choisir une couleur, une traduction, une icône — et c'est       │
+  // │ pourquoi il les révèle. Voir docs/PLAN.md §5 terdecies.                │
+  // └────────────────────────────────────────────────────────────────────────┘
+
+  it('les actions du journal d’audit disent la MÊME liste en base et dans la route', async () => {
+    // La contrainte `check` de `admin_audit_log.action` et l'énumération Zod
+    // de `/api/admin/audit` sont deux copies de la même liste. Une action
+    // ajoutée en base sans l'autre rendrait un filtre d'administration
+    // impossible à saisir — refusé en 400, pour une valeur pourtant réelle.
+    // La contrainte est lue TELLE QUE POSTGRESQL LA REND, puis découpée ici :
+    // l'extraire en SQL demanderait une expression régulière imbriquée dans
+    // une chaîne SQL, elle-même dans une chaîne TypeScript — trois niveaux
+    // d'échappement pour un découpage que JavaScript fait en une ligne.
+    const contrainte = await query<{ definition: string }>(`
+      select pg_get_constraintdef(c.oid) as definition
+      from pg_constraint c
+      join pg_class t on t.oid = c.conrelid
+      where t.relname = 'admin_audit_log'
+        and c.contype = 'c'
+        and c.conname = 'admin_audit_log_action_check'
+    `);
+
+    const definition = contrainte[0]?.definition ?? '';
+    expect(definition, 'contrainte `action` introuvable').toContain('action = ANY');
+
+    const actionsBase = [...definition.matchAll(/'([a-z_]+)'::text/g)]
+      .map((m) => m[1] ?? '')
+      .sort();
+
+    // Garde d'effectif : une extraction ratée rendrait [], et la comparaison
+    // ci-dessous passerait en ne comparant rien.
+    expect(actionsBase.length).toBeGreaterThanOrEqual(10);
+
+    const source = readFileSync(
+      join(process.cwd(), 'src', 'app', 'api', 'admin', 'audit', 'route.ts'),
+      'utf8',
+    );
+    const bloc = /\.enum\(\[([\s\S]*?)\]\)/.exec(source);
+    expect(bloc, 'énumération des actions introuvable dans la route').not.toBeNull();
+
+    const actionsRoute = [...(bloc?.[1] ?? '').matchAll(/'([a-z_]+)'/g)]
+      .map((m) => m[1] ?? '')
+      .sort();
+
+    expect(actionsRoute.length).toBeGreaterThanOrEqual(10);
+    expect(actionsRoute).toEqual(actionsBase);
+  });
+
+  it('toute colonne de texte comparée pour égalité a une contrainte qui ferme ses valeurs', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LE REMÈDE GÉNÉRAL : fermer l'ensemble EN BASE.                       │
+    // │                                                                      │
+    // │ `langue` vaut `in ('fr','en')` sur ses sept sites, `slug` porte une  │
+    // │ expression régulière, `promo_codes.code` impose `= upper(code)`.     │
+    // │ Chacune rend une comparaison d'égalité TOTALE : il n'existe pas deux │
+    // │ écritures de la même valeur.                                         │
+    // │                                                                      │
+    // │ `themes` reste ouvert, et c'est assumé : les pastilles de filtre     │
+    // │ viennent de `catalog_facets()`, donc des valeurs RÉELLEMENT          │
+    // │ présentes. L'interface n'en devine aucune. Deux orthographes y       │
+    // │ produiraient deux pastilles — visible, et corrigeable par l'éditeur. │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const ouvertes = await query<{ colonne: string }>(`
+      select a.attname as colonne
+      from pg_attribute a
+      join pg_class t on t.oid = a.attrelid
+      join pg_namespace n on n.oid = t.relnamespace
+      where n.nspname = 'public'
+        and t.relname = 'books'
+        and a.attname in ('slug', 'origine_culturelle', 'region')
+        and a.attnum > 0
+        and not exists (
+          select 1 from pg_constraint c
+          where c.conrelid = t.oid
+            and (c.contype = 'c' and pg_get_constraintdef(c.oid) like '%' || a.attname || '%')
+        )
+        and format_type(a.atttypid, null) = 'text'
+    `);
+
+    // `region` est une énumération : elle ne figure pas ici, son type ferme
+    // déjà l'ensemble. `origine_culturelle` reste du texte libre DÉLIBÉRÉMENT
+    // — « conte akan — Ghana » n'entre pas dans cinq valeurs — mais elle n'est
+    // plus comparée pour égalité par personne : c'est `region` qui l'est.
+    expect(ouvertes.map((l) => l.colonne)).toEqual(['origine_culturelle']);
   });
 });

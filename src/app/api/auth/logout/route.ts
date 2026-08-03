@@ -1,7 +1,8 @@
 import { createServiceClient } from '@/lib/supabase/clients';
 import { noContent } from '@/lib/http/responses';
 import { cookiesEffaces } from '@/lib/auth/cookies';
-import { extraireJeton } from '@/lib/auth/session';
+import { extraireJeton, identifierAppelant } from '@/lib/auth/session';
+import { revoquerFamilles } from '@/lib/auth/refresh';
 import { logger } from '@/lib/logger';
 
 /**
@@ -26,11 +27,22 @@ export async function POST(request: Request): Promise<Response> {
   const jeton = extraireJeton(request);
 
   if (jeton) {
+    // L'appelant est identifié AVANT la révocation : après, son jeton ne vaut
+    // plus rien et on ne saurait plus quelles lignées fermer.
+    const appelant = await identifierAppelant(request);
+
     const { error } = await createServiceClient().auth.admin.signOut(jeton, 'global');
     if (error) {
       // Un jeton déjà expiré ou inconnu n'est pas une anomalie : on trace sans
       // faire échouer la déconnexion.
       logger.info('Révocation sans effet', { detail: error.message });
+    }
+
+    // Les jetons de RAFRAÎCHISSEMENT survivraient à `signOut` du côté de notre
+    // table : une lignée laissée ouverte ferait accepter, demain, un jeton
+    // qu'une déconnexion était censée annuler.
+    if (appelant) {
+      await revoquerFamilles(appelant.id, 'deconnexion');
     }
   }
 

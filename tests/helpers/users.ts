@@ -122,6 +122,7 @@ export async function deleteTestUser(user: Pick<TestUser, 'id'>): Promise<void> 
   // étrangère. Les FICHIERS du stockage, eux, restent — c'est une commodité de
   // test, pas le chemin de production, qui passe par `effacerCopiesDe`.
   await query(`delete from public.download_copies where user_id = $1`, [user.id]);
+  await query(`delete from public.refresh_token_families where user_id = $1`, [user.id]);
   await query(`delete from public.promo_redemptions where user_id = $1`, [user.id]);
   await query(`delete from public.payment_events where user_id = $1`, [user.id]);
   await query(`delete from public.invoices where user_id = $1`, [user.id]);

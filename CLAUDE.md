@@ -69,6 +69,25 @@ elles sont sous AGPL, ce qui contaminerait une application exposée en réseau.
 Toute nouvelle dépendance doit être sous licence permissive (MIT, Apache 2.0, BSD).
 Les binaires GPL appelés en sous-processus (poppler) sont autorisés.
 
+**Une exception, nommée et bornée : `axe-core`, sous MPL-2.0.** Accordée le
+3 août 2026 pour les tests d'accessibilité automatisés de l'étape F14.
+
+Trois conditions, et l'exception tombe si l'une cesse d'être vraie :
+
+1. **Dépendance de développement uniquement.** Elle n'est jamais distribuée avec
+   l'application, ni incluse dans un bundle client.
+2. **Aucun fichier d'`axe-core` n'est modifié.** MPL-2.0 est un copyleft *au
+   fichier* : il n'oblige qu'à publier les fichiers qu'on modifie. N'en modifier
+   aucun rend l'obligation sans objet.
+3. **L'exception vaut pour `axe-core` seul**, et ne crée aucun précédent pour
+   d'autres licences ni pour d'autres paquets sous MPL.
+
+**Pourquoi c'est écrit plutôt que toléré.** MPL-2.0 n'a pas l'effet de l'AGPL,
+qui est la raison de l'interdiction de PyMuPDF et d'ebooklib — celle-là
+contaminerait une application exposée en réseau. La distinction est réelle, mais
+une exception tacite devient un précédent : dans six mois, personne ne saurait
+plus si MPL a été autorisée par décision ou par inattention.
+
 ## Commandes
 
 ```bash
@@ -179,10 +198,29 @@ pas terminée.
 - **Temps** — les scénarios d'abonnement (fin de période, échec, expiration) sont
   testés en avançant l'horloge injectée, jamais en attendant.
 
+## Périmètre — backend livré, interface en cours
+
+Le **backend est terminé** : seize étapes, mille tests. Le chantier en cours est
+l'**interface**, front-office et back-office, suivant `docs/PLAN-FRONTEND.md`.
+
+Ce fichier a longtemps porté « ne crée pas d'interface utilisateur, ce chantier
+est backend ». C'était vrai jusqu'à l'étape 16 ; ce ne l'est plus. La ligne a été
+retirée le 3 août 2026, après vérification que la **spécification** l'emporte :
+`docs/cahier-des-charges.md` §4.1 et §4.2 décrivent treize écrans, et §5.3 fixe
+un objectif WCAG 2.1 AA qui n'a de sens que sur une interface.
+
+**Ce qui ne change pas :** les sept règles de sécurité ci-dessus s'appliquent
+intégralement à l'interface. En particulier, **le frontend ne recalcule jamais
+une règle métier** — il lit `canRead`, `canDownload`, `prix.affichage`,
+`abonnement_a_partir_du`, jamais une valeur qu'il aurait dérivée lui-même. Un
+test d'architecture l'impose.
+
+Les maquettes de référence sont décrites dans `docs/maquettes/`. Elles sont une
+**intention visuelle**, jamais une autorité sur une donnée ou une règle : leurs
+prix, notamment, sont faux et le dossier le dit.
+
 ## Ce qu'il ne faut pas faire
 
-- Ne crée pas d'interface utilisateur, sauf la console de simulation `/dev`, qui
-  peut rester très rudimentaire. Ce chantier est **backend**.
 - N'installe aucun SDK de service externe (Stripe, Resend, etc.) à ce stade.
 - N'invente pas de règle métier absente de la spécification — pose-moi la question.
 - Ne passe pas à l'étape suivante si `npm run verify` échoue.

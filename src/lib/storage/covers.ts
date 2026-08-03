@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { createServiceClient } from '@/lib/supabase/clients';
+import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
 
 /**
@@ -74,6 +75,45 @@ export function cheminCouverture(jeton: string, taille: TailleCouverture): strin
 /** Jeton aléatoire d'un nouveau jeu de couvertures. */
 export function nouveauJetonCouverture(): string {
   return randomUUID().replace(/-/g, '');
+}
+
+/** Les trois tailles d'un jeu de couvertures, en URL absolues. */
+export interface UrlsCouverture {
+  vignette: string;
+  fiche: string;
+  mise_en_avant: string;
+}
+
+/**
+ * URL publiques des trois tailles.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE MODULE EST LE SEUL À CONNAÎTRE LA CONVENTION DE CHEMIN — ET C'EST     │
+ * │ POURQUOI C'EST LUI QUI CONSTRUIT LES URL.                               │
+ * │                                                                          │
+ * │ La base stocke le JETON, pas trois chemins : elle porte l'identité du    │
+ * │ jeu de couvertures. Reconstituer « vignette » en remplaçant « fiche »    │
+ * │ dans une chaîne, ailleurs, ferait vivre la convention à deux endroits —  │
+ * │ dont l'un ne saurait pas qu'il l'applique.                               │
+ * │                                                                          │
+ * │ Le bucket `covers` est PUBLIC, délibérément : une couverture est un      │
+ * │ argument de vente, elle doit être indexable (§5.4) et servie par le CDN. │
+ * │ C'est le seul contenu du projet dans ce cas.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Rend `null` pour un titre sans couverture — un livre en cours d'ingestion,
+ * par exemple. L'interface affiche alors son propre substitut, plutôt qu'une
+ * image cassée.
+ */
+export function urlsCouverture(jeton: string | null): UrlsCouverture | null {
+  if (!jeton) return null;
+
+  const base = `${getServerEnv().NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${BUCKET_PUBLIC}/${jeton}`;
+  return {
+    vignette: `${base}/vignette.webp`,
+    fiche: `${base}/fiche.webp`,
+    mise_en_avant: `${base}/mise-en-avant.webp`,
+  };
 }
 
 export interface ImageCouverture {

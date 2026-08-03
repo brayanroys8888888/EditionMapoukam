@@ -31,21 +31,29 @@ async function brouillon(
     ageMin?: number | null;
     ageMax?: number | null;
     disponibleAchat?: boolean;
+    /** `null` explicite pour éprouver le manque de région. */
+    region?: string | null;
   } = {},
 ): Promise<string> {
   const slug = `test-publication-${randomUUID().slice(0, 8)}`;
   const ligne = await queryOne<{ id: string }>(
     `insert into public.books
-       (slug, auteur, origine_culturelle, age_min, age_max, disponible_achat, statut)
-     values ($1, $2, $3, $4, $5, $6, 'brouillon')
+       (slug, auteur, origine_culturelle, age_min, age_max, disponible_achat, region, statut)
+     values ($1, $2, $3, $4, $5, $6, $7::public.region_conte, 'brouillon')
      returning id`,
     [
       slug,
       champs.auteur === undefined ? 'Tradition orale' : champs.auteur,
+      // NOTE — cette valeur portait une apostrophe TYPOGRAPHIQUE quand la même
+      // région s'écrivait avec une apostrophe droite dans `supabase/seed.sql`.
+      // Deux chaînes pour une seule région, et rien ne le signalait : c'est le
+      // défaut qui a motivé `books.region`. Le texte libre subsiste ici parce
+      // qu'il est désormais SANS CONSÉQUENCE — plus personne ne le compare.
       champs.origine === undefined ? 'Afrique de l’Ouest' : champs.origine,
       champs.ageMin === undefined ? 3 : champs.ageMin,
       champs.ageMax === undefined ? 7 : champs.ageMax,
       champs.disponibleAchat ?? false,
+      champs.region === undefined ? 'afrique_ouest' : champs.region,
     ],
   );
   creees.push(ligne!.id);
@@ -149,6 +157,54 @@ describe('origine culturelle', () => {
     const id = await brouillon({ origine: '  ' });
 
     expect(await publier(id)).toMatch(/origine_culturelle/);
+  });
+
+  it('reste du TEXTE LIBRE — le corpus écrit « Bassin du Congo », pas une région', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ CE TEST DÉFEND LE CHOIX DES DEUX CHAMPS.                           │
+    // │                                                                    │
+    // │ La tentation, en fermant `region`, serait de fermer aussi celle-ci. │
+    // │ Le corpus réel écrit « Ghana », « Côte d'Ivoire », « Bassin du      │
+    // │ Congo », « Corne de l'Afrique » : aucune énumération à cinq valeurs │
+    // │ ne les porte, et c'est la finesse éditoriale du positionnement.     │
+    // └────────────────────────────────────────────────────────────────────┘
+    const id = await brouillon({ origine: 'Conte akan — Ghana' });
+
+    expect(await publier(id)).toBeNull();
+  });
+});
+
+describe('région', () => {
+  it('est exigée — sans elle le titre s’afficherait sans couleur', async () => {
+    // Le pendant FERMÉ de l'origine culturelle. Elle ne sert qu'à choisir une
+    // couleur, et c'est pourquoi elle peut être close quand l'autre ne le
+    // peut pas.
+    const id = await brouillon({ region: null });
+
+    expect(await publier(id)).toMatch(/region/);
+  });
+
+  it('accepte les cinq valeurs, et rien d’autre', async () => {
+    // Garde d'effectif : une énumération vide ferait passer la boucle sans
+    // rien éprouver.
+    const regions = ['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'];
+    expect(regions.length).toBe(5);
+
+    for (const region of regions) {
+      const id = await brouillon({ region });
+      expect(await publier(id), `région refusée : ${region}`).toBeNull();
+    }
+  });
+
+  it('rejette une valeur hors énumération — la base refuse, pas le code', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE CONTRE-TEST QUI PROUVE QUE LA FERMETURE EST RÉELLE.             │
+    // │                                                                    │
+    // │ Sans lui, une colonne `text` sans contrainte passerait les deux     │
+    // │ tests ci-dessus à l'identique — et l'apostrophe reviendrait par la  │
+    // │ fenêtre.                                                            │
+    // └────────────────────────────────────────────────────────────────────┘
+    await expect(brouillon({ region: 'afrique_du_nord' })).rejects.toThrow();
   });
 });
 

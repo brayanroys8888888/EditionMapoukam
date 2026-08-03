@@ -4,6 +4,7 @@ import { parseJsonBody } from '@/lib/http/validate';
 import { LOGIN_RATE_LIMIT, adresseAppelant, loginRateLimiter } from '@/lib/http/rate-limit';
 import { connexionSchema } from '@/lib/auth/schemas';
 import { cookiesDeSession } from '@/lib/auth/cookies';
+import { ouvrirFamille } from '@/lib/auth/refresh';
 import { logger } from '@/lib/logger';
 
 /**
@@ -58,6 +59,12 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   loginRateLimiter.reinitialiser(cle);
+
+  // Ouvre la lignée de jetons de cette connexion. Sans elle, le premier
+  // rafraîchissement serait refusé — échec fermé, et volontairement : mieux
+  // vaut une reconnexion qu'une session que nous ne savons pas suivre.
+  await ouvrirFamille(profil.data.id, data.session.refresh_token);
+
   logger.info('Connexion réussie', { userId: profil.data.id });
 
   return ok(

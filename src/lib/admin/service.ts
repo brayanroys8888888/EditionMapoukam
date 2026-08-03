@@ -308,6 +308,7 @@ export async function modifierParametres(
     joursEssai?: number;
     toleranceRenouvellementHeures?: number;
     retentionCopiesMois?: number;
+    abonnementOuvert?: boolean;
   },
   options: { client?: AppSupabaseClient } = {},
 ) {
@@ -319,6 +320,7 @@ export async function modifierParametres(
     p_jours_essai: champs.joursEssai ?? null,
     p_tolerance_renouvellement_heures: champs.toleranceRenouvellementHeures ?? null,
     p_retention_copies_mois: champs.retentionCopiesMois ?? null,
+    p_abonnement_ouvert: champs.abonnementOuvert ?? null,
   });
 }
 

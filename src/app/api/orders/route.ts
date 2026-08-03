@@ -45,6 +45,33 @@ const commandeSchema = z.object({
   total_confirme: z.int().nonnegative().optional(),
 });
 
+/**
+ * Titre et slug de chaque (livre, langue) commandé.
+ *
+ * Une seule lecture pour tout l'historique, quel que soit le nombre de lignes.
+ * La clé combine les deux : un même conte acheté en français et en anglais est
+ * deux lignes distinctes, avec deux titres distincts.
+ */
+async function titresParLivreEtLangue(
+  client: ReturnType<typeof createServiceClient>,
+  livres: readonly string[],
+): Promise<Map<string, { slug: string; titre: string }>> {
+  const resultat = new Map<string, { slug: string; titre: string }>();
+  if (livres.length === 0) return resultat;
+
+  const { data } = await client
+    .from('book_translations')
+    .select('book_id, langue, titre, books(slug)')
+    .in('book_id', [...livres]);
+
+  for (const ligne of data ?? []) {
+    const livre = ligne.books as unknown as { slug: string } | null;
+    if (!livre) continue;
+    resultat.set(`${ligne.book_id}:${ligne.langue}`, { slug: livre.slug, titre: ligne.titre });
+  }
+  return resultat;
+}
+
 /** Mise en forme commune, pour que l'aperçu et le refus disent la même chose. */
 function corpsApercu(vue: ApercuCommande): Record<string, unknown> {
   return {
@@ -134,8 +161,25 @@ export async function GET(request: Request): Promise<Response> {
     });
   }
 
+  // ┌──────────────────────────────────────────────────────────────────────┐
+  // │ SANS CETTE JOINTURE, L'HISTORIQUE AFFICHERAIT DES UUID.              │
+  // │                                                                      │
+  // │ `order_items` ne porte que `book_id` : un identifiant technique. Le   │
+  // │ résoudre côté client demanderait un appel par ligne, sans même        │
+  // │ connaître les slugs. Aucun coût de sécurité — l'utilisateur possède   │
+  // │ déjà ces titres.                                                     │
+  // │                                                                      │
+  // │ Le titre est repris à la LANGUE DE LA LIGNE, et non à celle de        │
+  // │ l'interface : c'est la version qu'il a achetée qui figure sur sa      │
+  // │ commande. Une jointure imbriquée ne sait pas dépendre d'une valeur de │
+  // │ la ligne parente, d'où cette seconde lecture.                        │
+  // └──────────────────────────────────────────────────────────────────────┘
+  const commandes = data ?? [];
+  const livres = [...new Set(commandes.flatMap((c) => c.order_items.map((l) => l.book_id)))];
+  const titres = await titresParLivreEtLangue(client, livres);
+
   return ok({
-    commandes: (data ?? []).map((commande) => ({
+    commandes: commandes.map((commande) => ({
       id: commande.id,
       montant_total: commande.montant_total,
       devise: commande.devise,
@@ -148,6 +192,7 @@ export async function GET(request: Request): Promise<Response> {
         livre_id: ligne.book_id,
         langue: ligne.langue,
         prix_unitaire: ligne.prix_unitaire,
+        ...(titres.get(`${ligne.book_id}:${ligne.langue}`) ?? { slug: null, titre: null }),
       })),
     })),
   });

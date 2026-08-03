@@ -1961,6 +1961,20 @@ de sortir ces vérifications de `npm run verify`.
 | Commande | Ce qu'elle prouve | Durée |
 |---|---|---|
 | `npm run audit:epub` | Les seize titres du corpus produisent un EPUB conforme EPUB 3, validé par epubcheck sur l'octet servi par le stockage. **Le seul artefact du projet destiné à sortir vers un tiers.** | ~10 min |
+| `npm run test:session-longue` | Un jeton d'accès **expire réellement**, et la session le traverse sans reconnexion. Voir S6 ci-dessous. | ~3 min |
+
+> **S6 — pourquoi l'expiration réelle vit hors de la porte.** `jwt_expiry` est un
+> réglage de la PILE, pas du test : l'abaisser vaut pour toute la base locale, et
+> les fichiers d'intégration qui tiennent un même jeton pendant plusieurs minutes
+> échoueraient tous — pour une raison étrangère à ce qu'ils vérifient. Le script
+> abaisse le réglage, redémarre, exécute, puis **restaure et redémarre à
+> nouveau**, y compris en cas d'échec.
+>
+> La suite ordinaire éprouve la **reprise** (`tests/e2e/session-longue.test.ts`) ;
+> celle-ci éprouve l'**expiration**, qui est l'hypothèse dont la reprise dépend.
+> Les deux sont nécessaires : si `jwt_expiry` cessait un jour d'être appliqué, la
+> première passerait encore — et la plateforme servirait des jetons éternels sans
+> que rien ne le signale.
 
 > **L'audit exige une base STABLE.** Il ne doit jamais tourner en concurrence
 > d'un `npm run db:reset` : la première exécution, faussée de cette façon, a
@@ -2160,6 +2174,188 @@ sort à 349 tests sans aucun ignoré.
 > STATIQUE — recherche de `.skip`, `.only`, `.todo` dans les sources de chaque
 > commit — est lui indépendant de l'environnement, et il couvre toute
 > l'histoire : il ne trouve que ce seul cas.
+
+---
+
+## 5 quaterdecies. RÈGLE — QUELLE HORLOGE POUR QUELLE COLONNE
+
+> **Un horodatage qui DATE UN FAIT MÉTIER utilise l'horloge injectable
+> (`app_now()`). Un horodatage qui ARBITRE UNE CONCURRENCE utilise l'heure
+> réelle (`now()`).** Toute nouvelle colonne temporelle se range dans l'une des
+> deux catégories, explicitement, à sa création.
+
+### Pourquoi la règle est écrite plutôt que déduite
+
+Elle a été appliquée **deux fois par bon sens** — `reading_progress.maj_le` à
+l'étape 12, `refresh_token_families` à l'étape F0 — et chaque fois le
+raisonnement a dû être refait de zéro. Une règle reconstituée à chaque occurrence
+finit par être appliquée à l'envers la troisième fois, sans que personne ne s'en
+aperçoive : les deux choix produisent le même type de colonne et le même code
+vert.
+
+### Le critère, en une question
+
+> *Si la console de simulation avançait le temps de trente jours, cette valeur
+> devrait-elle bouger avec ?*
+
+- **Oui** → fait métier → `app_now()`. Une commande passée « il y a trente
+  jours » doit vraiment paraître vieille de trente jours, sinon la fenêtre de
+  nouveauté, l'échéance d'abonnement et la purge des factures ne sont pas
+  testables.
+- **Non** → arbitrage de concurrence → `now()`. Comparer deux écritures
+  concurrentes n'a de sens que sur une échelle continue. Sous horloge déplacée,
+  un déplacement du temps ferait perdre une écriture postérieure au profit d'une
+  antérieure — et la course serait arbitrée à l'envers.
+
+### Recensement — 50 colonnes temporelles, état au 3 août 2026
+
+**Horloge injectable (`app_now()`) — 47 colonnes.** C'est le cas ordinaire, et
+il n'a pas besoin d'être justifié : 34 par valeur par défaut, 13 écrites
+explicitement (`books.publie_le`, `orders.paye_le`, `subscriptions.fin_periode`,
+`entitlements.expire_le`, `invoices.conservation_jusqu_au`, `users.anonymise_le`,
+`webhook_events.traite_le`, `promo_codes.expire_le`, `email_outbox.envoye_le`,
+`subscriptions.annule_le`, `subscriptions.impaye_depuis`, et les deux de
+`refresh_token_families` ci-dessous).
+
+**Heure réelle (`now()`) — 3 colonnes, chacune justifiée :**
+
+| Colonne | Ce qu'elle arbitre | Pourquoi l'horloge métier la fausserait |
+|---|---|---|
+| `reading_progress.maj_le` | La concurrence **entre appareils** d'un même lecteur | Un déplacement du temps ferait perdre l'écriture de la tablette au profit d'une écriture antérieure du téléphone |
+| `refresh_token_families.cree_le` | Rien seule, mais elle **date la lignée** pour la purge et le diagnostic | Doit rester alignée sur `remplace_le`, qui arbitre |
+| `dev_clock_activation.active_le` | L'artefact qui **active** l'horloge simulée | Se dater soi-même avec l'horloge qu'on active serait circulaire |
+
+**Deux colonnes sans valeur par défaut, écrites en `now()` par leurs fonctions :**
+`refresh_token_families.remplace_le` et `.revoque_le`. La première arbitre la
+course entre deux onglets — c'est elle qui décide « réutilisation » ou « course
+légitime », et le seuil est de **dix secondes réelles**. Sous horloge déplacée,
+une course de deux millisecondes serait jugée réutilisation, et des comptes sains
+seraient déconnectés à chaque test de fin de période.
+
+### Ce que la règle impose
+
+Toute colonne temporelle nouvelle porte, **dans le commentaire de sa migration**,
+la réponse à la question du critère. Une colonne dont on ne saurait pas dire à
+quelle catégorie elle appartient signale que son rôle n'est pas décidé — pas
+qu'il est indifférent.
+
+---
+
+## 5 duodecies. RÈGLE — CE QU'UN SYSTÈME EXTÉRIEUR APPLIQUE ÉCHAPPE À L'HORLOGE
+
+> **Toute validité appliquée par un système extérieur échappe à l'horloge métier
+> injectable, et doit donc être éprouvée AUTREMENT — jamais en avançant le
+> temps.** Recenser ces validités, et pour chacune écrire par quel moyen elle
+> est vérifiée.
+
+### Le défaut, et pourquoi mille tests l'ont manqué
+
+Le backend livré **ne pouvait pas tenir une session au-delà d'une heure**. La
+connexion rendait un jeton de rafraîchissement et posait un cookie valable trente
+jours, que **rien n'échangeait**. Toute session plus longue retombait en 401 — en
+pleine lecture, ou entre le panier et le paiement.
+
+Ce n'est pas un oubli de route. C'est un angle mort de la **stratégie de test**,
+et il se déduit d'une décision antérieure parfaitement correcte :
+
+| # | Le maillon | Pourquoi il paraissait raisonnable |
+|---|---|---|
+| 1 | L'horloge métier gouverne les règles métier | La décision structurante du projet (§2.5) |
+| 2 | Ce qu'un système extérieur applique utilise l'heure réelle | Corollaire nécessaire — GoTrue ne lit pas notre `dev_clock_activation` |
+| 3 | Les scénarios longs se testent en avançant l'horloge | Le dispositif du projet, éprouvé sur les abonnements |
+| 4 | Donc aucun test ne POUVAIT simuler une session longue | Personne ne l'a formulé |
+
+**Chaque maillon est juste. C'est la chaîne qui produit l'angle mort** — même
+structure que le cas epubcheck de §5 sexies, et découvert de la même façon : par
+accident, en auditant autre chose.
+
+### Recensement des validités appliquées de l'extérieur
+
+| Validité | Appliquée par | Éprouvée comment |
+|---|---|---|
+| **Jeton d'accès** (1 h) | Supabase Auth (GoTrue) | `tests/e2e/session-longue.test.ts` rend le jeton inacceptable sans attendre ; `npm run test:session-longue` abaisse `jwt_expiry` et éprouve l'expiration réelle |
+| **Jeton de rafraîchissement** (30 j) | GoTrue | Rotation et réutilisation éprouvées en base, sur nos propres lignées |
+| **Tolérance de course** (10 s) | GoTrue (`refresh_token_reuse_interval`) | Un test relit `config.toml` et exige l'alignement avec la constante du code |
+| **URL signées** (300 s / 3 600 s) | Supabase Storage | **Nous vérifions la valeur DEMANDÉE, pas la valeur HONORÉE** — S1 de `docs/AVANT-MISE-EN-PRODUCTION.md`, angle mort assumé |
+| **Horodatage de webhook** (300 s) | Nous | Horloge métier, testé normalement |
+
+La dernière ligne est la seule qui ne dépende de personne d'autre — et c'est la
+seule qui se teste comme le reste du projet. Les quatre autres exigent chacune un
+dispositif particulier, et c'est le prix à payer.
+
+### Ce que la règle impose désormais
+
+Toute dépendance nouvelle qui **applique elle-même une durée** — un cache, un
+verrou, une session, une signature — s'ajoute à ce tableau **avec sa colonne de
+droite renseignée**. Une case vide dans cette colonne est un défaut invisible en
+attente.
+
+---
+
+## 5 terdecies. RÈGLE — UNE DONNÉE JAMAIS COMPARÉE PEUT ÊTRE FAUSSE SANS BRUIT
+
+> **Toute valeur de texte libre destinée à être comparée pour égalité doit voir
+> son ensemble FERMÉ en base — énumération, contrainte, ou normalisation.** Une
+> valeur que personne ne compare peut porter deux orthographes pendant des mois
+> sans que rien ne le signale.
+
+### Trois occurrences en une seule journée
+
+| # | La valeur | Les deux écritures |
+|---|---|---|
+| 1 | `origine_culturelle` | `Afrique de l'Ouest` (apostrophe droite, `supabase/seed.sql`) contre `Afrique de l’Ouest` (apostrophe typographique, un test) |
+| 2 | Le même champ, mappé | `Côte d'Ivoire` ne trouvait pas sa région : le repliement des apostrophes ignorait l'accent du `ô` |
+| 3 | Le même repliement | `Éthiopie` : la majuscule accentuée, encore un caractère plus loin |
+
+**Le défaut se déplace d'un caractère à chaque fois qu'on n'en ferme qu'un.**
+D'où `sans_apostrophe()`, qui replie désormais casse, apostrophes des deux sortes
+et accents latins — en une seule fonction, appelée partout.
+
+### Pourquoi le frontend les a révélées, et pas les mille tests
+
+**Le frontend est le premier consommateur à COMPARER ces valeurs.** Le backend
+les stocke, les rend, les recherche en plein texte — aucune de ces opérations
+n'exige que deux écritures soient identiques. L'interface, elle, doit choisir une
+couleur, une traduction, une icône : elle compare, donc elle révèle.
+
+C'est le corollaire de §5 sexies appliqué aux données plutôt qu'aux tests : une
+fixture trop faible ne sollicite pas le code ; **une donnée jamais comparée ne
+sollicite pas sa propre cohérence.**
+
+### Recensement — état au 3 août 2026
+
+| Colonne | Ensemble fermé par | Verdict |
+|---|---|---|
+| `langue` (7 sites) | `check (langue in ('fr','en'))` | **Fermé** |
+| `books.slug` | Expression régulière | **Fermé** |
+| `promo_codes.code` | `check (code = upper(code))` | **Fermé** |
+| `currencies.code` | `check (code ~ '^[A-Z]{3}$')` | **Fermé** |
+| `admin_audit_log.action` | `check (action in (…))` **et** une énumération Zod dans la route | Fermé, mais **à deux niveaux** — un test compare désormais les deux listes |
+| **`books.region`** | Type énuméré `region_conte` | **Fermé** — c'est la correction |
+| `books.origine_culturelle` | Rien, **délibérément** | Ouvert, et **plus comparé par personne** |
+| `books.themes` | Rien | Ouvert, **assumé** — voir ci-dessous |
+
+**`origine_culturelle` reste du texte libre**, et ce n'est pas un renoncement :
+§4.1 F3 la définit comme « pays / peuple / tradition », et le corpus réel écrit
+« Ghana », « Bassin du Congo », « Corne de l'Afrique ». Aucune énumération à cinq
+valeurs ne les porte. La correction n'a donc pas été de la fermer, mais de
+**retirer d'elle la charge qui exigeait qu'elle le soit** — la couleur, passée à
+`books.region`.
+
+**`themes` reste ouvert et le restera** : les pastilles de filtre viennent de
+`catalog_facets()`, donc des valeurs réellement présentes. L'interface n'en
+devine aucune. Deux orthographes y produiraient deux pastilles — visible à l'œil,
+corrigeable par l'éditeur, sans conséquence sur un droit ni sur un prix.
+
+### Ce qui applique la règle
+
+- `tests/integration/double-implementation.test.ts` — compare la liste des
+  actions d'audit entre la contrainte en base et l'énumération de la route ;
+  vérifie qu'aucune colonne de `books` comparée pour égalité n'est restée du
+  texte ouvert.
+- `public.sans_apostrophe()` — la clé de comparaison unique, en base.
+- `public.region_depuis_origine()` — le mappage, **une seule implémentation**,
+  appelée par la migration d'alignement **et** par le jeu de démonstration.
 
 ---
 

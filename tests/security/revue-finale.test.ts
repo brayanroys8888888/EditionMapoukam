@@ -46,12 +46,27 @@ const PUBLIQUES: Readonly<Record<string, string>> = {
   '/api/catalog': 'Le catalogue est public — c’est la vitrine (§4.1).',
   '/api/catalog/[slug]': 'Fiche d’un titre publié, publique.',
   '/api/catalog/[slug]/excerpt': 'L’extrait est offert au visiteur (§4.1 F3).',
+  '/api/catalog/facets':
+    'Décrit le catalogue publié, qui est lui-même public. N’expose que des valeurs ' +
+    'déjà visibles dans la liste des titres, avec leur effectif.',
+  '/api/offers':
+    'La grille tarifaire est une vitrine : §4.1 F1 la met en page d’accueil. La cacher ' +
+    'derrière un compte obligerait à s’inscrire pour connaître un prix.',
+  '/api/time':
+    'Rend l’instant de l’horloge métier, pour que l’interface ne compare jamais une date ' +
+    'de l’API à celle du navigateur. Ne révèle rien qu’un en-tête `Date` HTTP ne révèle déjà.',
   '/api/books/[id]/pages/[page]': 'Sert l’extrait à un visiteur ; les droits sont vérifiés page par page.',
   '/api/auth/login': 'Point d’entrée de l’authentification.',
   '/api/auth/register': 'Création de compte : c’est le point d’entrée d’un nouveau visiteur.',
   '/api/auth/password/reset': 'Demande de réinitialisation.',
   '/api/auth/password/update': 'Réinitialisation par jeton.',
   '/api/webhooks/payments': 'Authentifiée par SIGNATURE, jamais par session (CLAUDE.md règle 5).',
+  '/api/auth/refresh':
+    'Authentifiée par le JETON DE RAFRAÎCHISSEMENT lui-même, jamais par une session : ' +
+    'exiger une session valide pour en obtenir une serait circulaire, puisqu’elle vient ' +
+    'précisément d’expirer. Le secret présenté EST l’authentification — même montage que ' +
+    'le webhook, où c’est la signature. Rotation, détection de réutilisation et quota de ' +
+    'débit y tiennent lieu de garde.',
   '/api/auth/logout':
     'Répond 204 même sans jeton valide : refuser à quelqu’un de partir n’aurait aucun sens, ' +
     'et laisserait le navigateur avec ses cookies. La révocation, elle, exige un jeton lisible.',

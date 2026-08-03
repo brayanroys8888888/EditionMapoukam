@@ -122,6 +122,46 @@ export function refusEnReponse(raison: RefusAdmin): Response {
   }
 }
 
+/**
+ * Enveloppe de pagination des listes d'administration.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE TOTAL VIT DANS CHAQUE LIGNE, ET DISPARAÎT DONC AVEC LA DERNIÈRE.     │
+ * │                                                                          │
+ * │ Les fonctions SQL rendent `total_lignes` sur chaque ligne — pratique     │
+ * │ tant qu'il y en a une. Un filtre sans résultat rend zéro ligne, donc     │
+ * │ aucun total, et la pagination ne peut plus afficher « page 3 sur 12 » ni │
+ * │ « aucun résultat sur 340 comptes ».                                     │
+ * │                                                                          │
+ * │ L'enveloppe est calculée ICI, une fois, plutôt que dans chacune des six  │
+ * │ routes de liste : recopiée six fois, elle finirait par diverger dans     │
+ * │ celle qu'on regarde le moins.                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export interface ListePaginee {
+  page: number;
+  taille: number;
+  total: number;
+  pages: number;
+}
+
+export function pagination(
+  donnees: readonly { total_lignes?: number | string }[],
+  page: number,
+  taille: number,
+): ListePaginee {
+  const brut = donnees[0]?.total_lignes ?? 0;
+  const total = typeof brut === 'string' ? Number(brut) : brut;
+
+  return {
+    page,
+    taille,
+    total,
+    // Au moins une page, même vide : « page 1 sur 0 » n'a pas de sens.
+    pages: Math.max(Math.ceil(total / taille), 1),
+  };
+}
+
 /** Rend les données, ou traduit le refus. */
 export function reponseAdmin<T>(resultat: ResultatAdmin<T>): Response | { donnees: T } {
   if (!resultat.ok) return refusEnReponse(resultat.raison);

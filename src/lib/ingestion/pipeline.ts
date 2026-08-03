@@ -196,6 +196,10 @@ export async function ingerer(
       translationId: cree.translationId,
       nbPages: analyse.nbPages,
       couvertureUrl: publiee.chemins.fiche,
+      // Le JETON, et non trois chemins : c'est lui qui porte l'identité du jeu
+      // de couvertures, et `src/lib/storage/covers.ts` reste seul à connaître
+      // la convention qui en dérive les trois tailles.
+      couvertureJeton: publiee.jeton,
       cheminTelechargement: cheminTelechargement(jeton, 'pdf'),
     });
 
@@ -423,12 +427,16 @@ async function finaliser(
     translationId: string;
     nbPages: number;
     couvertureUrl: string;
+    couvertureJeton: string;
     cheminTelechargement: string;
   },
 ): Promise<void> {
   const livre = await client
     .from('books')
-    .update({ couverture_url: valeurs.couvertureUrl })
+    .update({
+      couverture_url: valeurs.couvertureUrl,
+      couverture_jeton: valeurs.couvertureJeton,
+    })
     .eq('id', valeurs.bookId);
 
   if (livre.error) {

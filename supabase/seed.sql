@@ -305,3 +305,19 @@ update public.books
 set couverture_url = 'covers/' || replace(gen_random_uuid()::text, '-', '') || '/fiche.webp',
     maj_le = public.app_now()
 where statut = 'publie';
+
+-- ---------------------------------------------------------------------------
+-- Region d'affichage, derivee de l'origine editoriale
+--
+-- Le mappage vit dans `region_depuis_origine` (migration 0046), et NULLE PART
+-- ailleurs. Le recopier ici en ferait une seconde implementation — la classe
+-- de defaut que `books.region` corrige precisement.
+--
+-- La publication exige desormais une region : un titre du jeu de demonstration
+-- qui n'en recevrait pas serait refuse par `manques_pour_publication`, et
+-- l'echec se verrait immediatement.
+-- ---------------------------------------------------------------------------
+
+update public.books
+   set region = public.region_depuis_origine(origine_culturelle)
+ where region is null;

@@ -67,6 +67,14 @@ const ECRIVAINS_ADMIS: readonly { fichier: string; role: string }[] = [
     fichier: 'supabase/migrations/20260728000031_reset_copies.sql',
     role: 'CONSOLE /dev — reprise de la remise à zéro, étendue aux copies filigranées',
   },
+  {
+    fichier: 'supabase/migrations/20260802000043_refus_explicite_et_reset.sql',
+    role:
+      'CONSOLE /dev — troisième déclaration de la remise à zéro, étendue aux lignées de ' +
+      'jetons de rafraîchissement. L’écriture sur `entitlements` y est INCHANGÉE : la ' +
+      'fonction est une extraction verbatim de la déclaration précédente, et ' +
+      '`npm run diff:sql` montre zéro ligne retirée.',
+  },
 ];
 
 let editeur: TestUser;

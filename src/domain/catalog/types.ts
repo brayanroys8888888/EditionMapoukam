@@ -1,4 +1,27 @@
 import type { AccessDecision } from '@/domain/access/types';
+import type { UrlsCouverture } from '@/lib/storage/covers';
+
+/**
+ * Régions du conte — l'énumération `region_conte` de la base, à l'identique.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DES CLÉS ASCII, JAMAIS DES LIBELLÉS D'AFFICHAGE.                        │
+ * │                                                                          │
+ * │ Le défaut qui a motivé cette colonne était une APOSTROPHE : le corpus    │
+ * │ écrivait « Afrique de l'Ouest » avec une apostrophe droite, un test avec │
+ * │ une apostrophe typographique. Deux chaînes pour une seule région.        │
+ * │                                                                          │
+ * │ `afrique_ouest` ne contient aucun caractère qui puisse s'écrire de deux  │
+ * │ façons. Les libellés vivent dans les fichiers de traduction — où ils     │
+ * │ diffèrent de toute façon en français et en anglais.                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export type RegionConte =
+  | 'afrique_ouest'
+  | 'sahel'
+  | 'afrique_centrale'
+  | 'afrique_australe'
+  | 'afrique_est';
 
 /**
  * Représentations renvoyées par l'API du catalogue.
@@ -52,10 +75,44 @@ export interface EntreeCatalogue {
   age_max: number | null;
   origine_culturelle: string | null;
   themes: string[];
+  /**
+   * Région du conte — énumération FERMÉE à cinq valeurs, qui pilote la couleur
+   * d'affichage et rien d'autre.
+   *
+   * À ne pas confondre avec `origine_culturelle`, qui reste du texte libre et
+   * porte la finesse éditoriale (« Bassin du Congo », « conte akan — Ghana »).
+   * La couleur se choisit sur `region` ; le texte s'affiche depuis l'autre.
+   */
+  region: RegionConte | null;
+  /** @deprecated Une seule taille, sous forme de chemin. Lire `couverture`. */
   couverture_url: string | null;
+  /**
+   * Les trois tailles, en URL absolues, prêtes pour un `srcset`.
+   *
+   * `null` pour un titre sans couverture — un livre en cours d'ingestion. Une
+   * interface qui afficherait une image cassée aurait pu afficher un substitut.
+   */
+  couverture: UrlsCouverture | null;
   nb_pages: number | null;
   langues: string[];
   publie_le: string | null;
+  /**
+   * Date d'entrée dans l'abonnement, ou `null`.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ CALCULÉE EN BASE, JAMAIS PAR L'INTERFACE.                              │
+   * │                                                                        │
+   * │ Elle dépend de `fenetre_nouveaute_jours`, que l'administration déplace │
+   * │ À LA SECONDE et rétroactivement. Recopier la règle des trois mois dans │
+   * │ le navigateur garantirait qu'un jour le catalogue annonce une date que │
+   * │ le moteur de droits contredit.                                         │
+   * └────────────────────────────────────────────────────────────────────────┘
+   *
+   * `null` couvre trois cas distincts, et l'interface n'a pas à les
+   * distinguer : le titre y est déjà, il n'y entrera jamais, ou il n'est pas
+   * publié.
+   */
+  abonnement_a_partir_du: string | null;
   inclus_abonnement: boolean;
   disponible_achat: boolean;
   gratuit: boolean;

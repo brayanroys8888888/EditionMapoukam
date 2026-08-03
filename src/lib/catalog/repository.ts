@@ -5,6 +5,7 @@ import { ACCES_REFUSE } from '@/domain/access/types';
 import { formatAmount } from '@/domain/money';
 import type { Currency } from '@/domain/money';
 import { getServerEnv } from '@/lib/config/env';
+import { urlsCouverture } from '@/lib/storage/covers';
 import type { CatalogQuery } from '@/domain/catalog/schemas';
 import type {
   AchatHorsZone,
@@ -152,18 +153,22 @@ export async function listerCatalogue(
 
   const lignes = (data ?? []) as unknown as LigneCatalogue[];
   const table = await devises(client);
+  const identifiants = lignes.map((l) => l.book_id);
 
   // UN SEUL appel pour toute la page. Sans cela, une page de 50 titres
   // déclencherait 50 résolutions de droits.
-  const acces = await getAccessForBooks(
-    userId,
-    lignes.map((l) => l.book_id),
-    { client, ...(options.at ? { at: options.at } : {}) },
-  );
+  const acces = await getAccessForBooks(userId, identifiants, {
+    client,
+    ...(options.at ? { at: options.at } : {}),
+  });
+
+  const affichage = await donneesDAffichage(client, identifiants, options.at);
 
   const total = lignes[0]?.total ?? 0;
   return {
-    entrees: lignes.map((ligne) => versEntree(ligne, table, acces.get(ligne.book_id), query.zone)),
+    entrees: lignes.map((ligne) =>
+      versEntree(ligne, table, acces.get(ligne.book_id), query.zone, affichage.get(ligne.book_id)),
+    ),
     page: query.page,
     taille: query.taille,
     total,
@@ -171,11 +176,67 @@ export async function listerCatalogue(
   };
 }
 
+/**
+ * Ce que l'affichage exige et que `catalog_list` ne porte pas.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ EN LOT, COMME LES DROITS — jamais un appel par titre.                   │
+ * │                                                                          │
+ * │ Deux valeurs, toutes deux calculées EN BASE et pour la même raison :     │
+ * │ les recalculer ici les ferait diverger de leur autorité. La date         │
+ * │ d'entrée dans l'abonnement dépend d'un réglage que l'administration      │
+ * │ déplace rétroactivement ; le jeton de couverture désigne un jeu de       │
+ * │ fichiers dont seul `src/lib/storage/covers.ts` connaît la convention.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+interface DonneesAffichage {
+  disponibleLe: string | null;
+  region: EntreeCatalogue['region'];
+  jetonCouverture: string | null;
+}
+
+async function donneesDAffichage(
+  client: AppSupabaseClient,
+  identifiants: readonly string[],
+  at?: Date,
+): Promise<Map<string, DonneesAffichage>> {
+  const resultat = new Map<string, DonneesAffichage>();
+  if (identifiants.length === 0) return resultat;
+
+  const [dates, livres] = await Promise.all([
+    client.rpc('abonnement_a_partir_du', {
+      p_books: [...identifiants],
+      ...(at ? { p_at: at.toISOString() } : {}),
+    } as never),
+    client.from('books').select('id, region, couverture_jeton').in('id', [...identifiants]),
+  ]);
+
+  if (dates.error) throw new Error(`Fenêtre d’abonnement illisible : ${dates.error.message}`);
+  if (livres.error) throw new Error(`Couvertures illisibles : ${livres.error.message}`);
+
+  const parLivre = new Map(
+    ((dates.data ?? []) as unknown as { book_id: string; disponible_le: string | null }[]).map(
+      (d) => [d.book_id, d.disponible_le],
+    ),
+  );
+
+  for (const livre of livres.data ?? []) {
+    resultat.set(livre.id, {
+      disponibleLe: parLivre.get(livre.id) ?? null,
+      region: livre.region,
+      jetonCouverture: livre.couverture_jeton,
+    });
+  }
+
+  return resultat;
+}
+
 function versEntree(
   ligne: LigneCatalogue,
   table: Map<string, Currency>,
   acces: EntreeCatalogue['acces'] | undefined,
   zone: string,
+  affichage: DonneesAffichage | undefined,
 ): EntreeCatalogue {
   const prix = construirePrix(ligne, table);
 
@@ -190,10 +251,13 @@ function versEntree(
     age_max: ligne.age_max,
     origine_culturelle: ligne.origine_culturelle,
     themes: ligne.themes,
+    region: affichage?.region ?? null,
     couverture_url: ligne.couverture_url,
+    couverture: urlsCouverture(affichage?.jetonCouverture ?? null),
     nb_pages: ligne.nb_pages,
     langues: ligne.langues,
     publie_le: ligne.publie_le,
+    abonnement_a_partir_du: affichage?.disponibleLe ?? null,
     inclus_abonnement: ligne.inclus_abonnement,
     disponible_achat: ligne.disponible_achat,
     gratuit: ligne.gratuit,
@@ -225,7 +289,8 @@ export async function lireFiche(
     .from('books')
     .select(
       `id, slug, auteur, illustrateur, age_min, age_max, origine_culturelle, themes,
-       couverture_url, inclus_abonnement, disponible_achat, gratuit, nb_pages_extrait,
+       region, couverture_url, couverture_jeton,
+       inclus_abonnement, disponible_achat, gratuit, nb_pages_extrait,
        publie_le, statut,
        book_translations!inner(langue, titre, resume, nb_pages, statut),
        book_prices(zone, montant, devise)`,
@@ -287,10 +352,16 @@ export async function lireFiche(
     age_max: livre.age_max,
     origine_culturelle: livre.origine_culturelle,
     themes: livre.themes,
+    region: livre.region,
     couverture_url: livre.couverture_url,
+    couverture: urlsCouverture(livre.couverture_jeton),
     nb_pages: traduction.nb_pages,
     langues: (toutesLangues.data ?? []).map((t) => t.langue),
     publie_le: livre.publie_le,
+    // Même appel que pour la liste : la règle des trois mois n'est écrite
+    // qu'une fois, en base, et la fiche ne la recalcule pas davantage.
+    abonnement_a_partir_du:
+      (await donneesDAffichage(client, [livre.id], options.at)).get(livre.id)?.disponibleLe ?? null,
     inclus_abonnement: livre.inclus_abonnement,
     disponible_achat: livre.disponible_achat,
     gratuit: livre.gratuit,

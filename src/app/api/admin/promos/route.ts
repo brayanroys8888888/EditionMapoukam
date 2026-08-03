@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { gardeAdmin, paginationSchema, refusEnReponse } from '@/lib/admin/route-helpers';
+import { gardeAdmin, pagination, paginationSchema, refusEnReponse } from '@/lib/admin/route-helpers';
 import { enregistrerPromo, listerPromos } from '@/lib/admin/service';
 import { created, ok } from '@/lib/http/responses';
 import { parseJsonBody, parseSearchParams } from '@/lib/http/validate';
@@ -41,7 +41,16 @@ export async function GET(request: Request): Promise<Response> {
   const resultat = await listerPromos({ page: query.data.page, taille: query.data.taille });
   if (!resultat.ok) return refusEnReponse(resultat.raison);
 
-  return ok({ codes: resultat.donnees, page: query.data.page });
+  return ok({
+    codes: resultat.donnees,
+    // Le total vient de `total_lignes`, porte par chaque ligne. Une page vide
+    // n'en a aucune : l'enveloppe le ramene a zero plutot que de disparaitre.
+    ...pagination(
+      resultat.donnees as { total_lignes?: number | string }[],
+      query.data.page,
+      query.data.taille,
+    ),
+  });
 }
 
 const promoSchema = z

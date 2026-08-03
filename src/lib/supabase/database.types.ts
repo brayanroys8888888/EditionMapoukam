@@ -251,6 +251,7 @@ export type Database = {
           age_max: number | null
           age_min: number | null
           auteur: string
+          couverture_jeton: string | null
           couverture_url: string | null
           cree_le: string
           disponible_achat: boolean
@@ -263,6 +264,7 @@ export type Database = {
           origine_culturelle: string | null
           publie_le: string | null
           recherche: unknown
+          region: Database["public"]["Enums"]["region_conte"] | null
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
@@ -271,6 +273,7 @@ export type Database = {
           age_max?: number | null
           age_min?: number | null
           auteur: string
+          couverture_jeton?: string | null
           couverture_url?: string | null
           cree_le?: string
           disponible_achat?: boolean
@@ -283,6 +286,7 @@ export type Database = {
           origine_culturelle?: string | null
           publie_le?: string | null
           recherche?: unknown
+          region?: Database["public"]["Enums"]["region_conte"] | null
           slug: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
@@ -291,6 +295,7 @@ export type Database = {
           age_max?: number | null
           age_min?: number | null
           auteur?: string
+          couverture_jeton?: string | null
           couverture_url?: string | null
           cree_le?: string
           disponible_achat?: boolean
@@ -303,6 +308,7 @@ export type Database = {
           origine_culturelle?: string | null
           publie_le?: string | null
           recherche?: unknown
+          region?: Database["public"]["Enums"]["region_conte"] | null
           slug?: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
@@ -311,6 +317,7 @@ export type Database = {
       }
       business_settings: {
         Row: {
+          abonnement_ouvert: boolean
           fenetre_nouveaute_jours: number
           id: number
           jours_essai: number
@@ -321,6 +328,7 @@ export type Database = {
           tolerance_renouvellement_heures: number
         }
         Insert: {
+          abonnement_ouvert?: boolean
           fenetre_nouveaute_jours?: number
           id?: number
           jours_essai?: number
@@ -331,6 +339,7 @@ export type Database = {
           tolerance_renouvellement_heures?: number
         }
         Update: {
+          abonnement_ouvert?: boolean
           fenetre_nouveaute_jours?: number
           id?: number
           jours_essai?: number
@@ -1328,6 +1337,47 @@ export type Database = {
           },
         ]
       }
+      refresh_token_families: {
+        Row: {
+          cree_le: string
+          famille: string
+          id: string
+          jeton_hash: string
+          remplace_le: string | null
+          revoque_le: string | null
+          revoque_pour: string | null
+          user_id: string
+        }
+        Insert: {
+          cree_le?: string
+          famille: string
+          id?: string
+          jeton_hash: string
+          remplace_le?: string | null
+          revoque_le?: string | null
+          revoque_pour?: string | null
+          user_id: string
+        }
+        Update: {
+          cree_le?: string
+          famille?: string
+          id?: string
+          jeton_hash?: string
+          remplace_le?: string | null
+          revoque_le?: string | null
+          revoque_pour?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "refresh_token_families_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           annule_le: string | null
@@ -1479,6 +1529,13 @@ export type Database = {
       }
     }
     Functions: {
+      abonnement_a_partir_du: {
+        Args: { p_at?: string; p_books: string[] }
+        Returns: {
+          book_id: string
+          disponible_le: string
+        }[]
+      }
       abonnements_en_anomalie: {
         Args: { p_at?: string }
         Returns: {
@@ -1763,6 +1820,7 @@ export type Database = {
           age_max: number | null
           age_min: number | null
           auteur: string
+          couverture_jeton: string | null
           couverture_url: string | null
           cree_le: string
           disponible_achat: boolean
@@ -1775,6 +1833,7 @@ export type Database = {
           origine_culturelle: string | null
           publie_le: string | null
           recherche: unknown
+          region: Database["public"]["Enums"]["region_conte"] | null
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
@@ -1788,6 +1847,7 @@ export type Database = {
       }
       admin_modifier_parametres: {
         Args: {
+          p_abonnement_ouvert?: boolean
           p_acteur: string
           p_fenetre_nouveaute_jours?: number
           p_jours_essai?: number
@@ -1796,6 +1856,7 @@ export type Database = {
           p_tolerance_renouvellement_heures?: number
         }
         Returns: {
+          abonnement_ouvert: boolean
           fenetre_nouveaute_jours: number
           id: number
           jours_essai: number
@@ -1872,6 +1933,7 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      catalog_facets: { Args: { p_langue?: string }; Returns: Json }
       catalog_list: {
         Args: {
           p_acces?: string
@@ -1949,6 +2011,15 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      diagnostiquer_jeton_rafraichissement: {
+        Args: { p_hash: string; p_tolerance_secondes?: number }
+        Returns: {
+          etat: string
+          famille: string
+          motif: string
+          user_id: string
+        }[]
       }
       emails_a_envoyer: {
         Args: { p_limite?: number }
@@ -2031,6 +2102,24 @@ export type Database = {
         }
         Returns: string
       }
+      library_for_user: {
+        Args: { p_at?: string; p_langue?: string; p_user: string }
+        Returns: {
+          accorde_le: string
+          book_id: string
+          couverture_jeton: string
+          derniere_lecture_le: string
+          derniere_page: number
+          expire_le: string
+          langue_reprise: string
+          langues: string[]
+          peut_telecharger: boolean
+          region: Database["public"]["Enums"]["region_conte"]
+          slug: string
+          source: string
+          titre: string
+        }[]
+      }
       manques_pour_publication: {
         Args: { p_book_id: string }
         Returns: string[]
@@ -2040,6 +2129,10 @@ export type Database = {
         Returns: undefined
       }
       motif_courant: { Args: never; Returns: string }
+      ouvrir_famille_jetons: {
+        Args: { p_hash: string; p_user_id: string }
+        Returns: string
+      }
       pages_publiees: {
         Args: { p_book_id: string; p_langue: string }
         Returns: number
@@ -2050,6 +2143,10 @@ export type Database = {
           debut: string
           fin: string
         }[]
+      }
+      pivoter_jeton_rafraichissement: {
+        Args: { p_hash: string; p_nouveau_hash: string }
+        Returns: boolean
       }
       prochain_numero_facture: { Args: { p_annee: number }; Returns: string }
       programmer_email: {
@@ -2071,6 +2168,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      purger_jetons_rafraichissement: {
+        Args: { p_jours?: number }
+        Returns: number
+      }
       refund_order: {
         Args: {
           p_book_ids?: string[]
@@ -2082,6 +2183,10 @@ export type Database = {
           droits_retires: number
         }[]
       }
+      region_depuis_origine: {
+        Args: { p_origine: string }
+        Returns: Database["public"]["Enums"]["region_conte"]
+      }
       reprise_lecture: {
         Args: { p_book_id: string; p_langue: string; p_user_id: string }
         Returns: {
@@ -2090,6 +2195,11 @@ export type Database = {
           page: number
         }[]
       }
+      revoquer_familles_jetons: {
+        Args: { p_famille?: string; p_motif?: string; p_user_id: string }
+        Returns: number
+      }
+      sans_apostrophe: { Args: { p_texte: string }; Returns: string }
       seuil_agregation: { Args: never; Returns: number }
       stats_abonnes: {
         Args: { p_at?: string }
@@ -2195,6 +2305,7 @@ export type Database = {
           sortent_de_l_abonnement: number
         }[]
       }
+      titres_publies: { Args: never; Returns: number }
     }
     Enums: {
       access_reason:
@@ -2212,6 +2323,12 @@ export type Database = {
       order_status: "en_attente" | "paye" | "rembourse" | "echoue"
       price_zone: "international" | "afrique"
       promo_type: "montant" | "pourcentage"
+      region_conte:
+        | "afrique_ouest"
+        | "sahel"
+        | "afrique_centrale"
+        | "afrique_australe"
+        | "afrique_est"
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
       subscription_status_effectif:
         | "essai"
@@ -2385,6 +2502,13 @@ export const Constants = {
       order_status: ["en_attente", "paye", "rembourse", "echoue"],
       price_zone: ["international", "afrique"],
       promo_type: ["montant", "pourcentage"],
+      region_conte: [
+        "afrique_ouest",
+        "sahel",
+        "afrique_centrale",
+        "afrique_australe",
+        "afrique_est",
+      ],
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
       subscription_status_effectif: [
         "essai",

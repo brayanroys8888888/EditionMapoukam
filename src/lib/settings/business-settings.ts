@@ -43,6 +43,20 @@ export interface BusinessSettings {
    * bruit — donc inutile.
    */
   toleranceRenouvellementHeures: number;
+  /**
+   * L'abonnement est-il commercialement ouvert ?
+   *
+   * Faux par defaut. §3.3 recommande de n'ouvrir qu'a partir de 30 a 40 titres
+   * publies : « un abonnement a 7,99 EUR adosse a un catalogue de quelques
+   * titres ne soutiendra pas la comparaison et generera surtout des
+   * resiliations ».
+   *
+   * Le code ne connait PAS ce seuil, et n'a pas a le connaitre : c'est une
+   * decision commerciale. Il connait l'interrupteur, et l'ecran
+   * d'administration rappelle le nombre de titres publies au moment ou on le
+   * bascule — il le montre sans l'imposer.
+   */
+  abonnementOuvert: boolean;
   majLe: Date;
 }
 
@@ -73,7 +87,7 @@ export async function getBusinessSettings(
   const client = options.client ?? createServiceClient();
   const { data, error } = await client
     .from('business_settings')
-    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, tolerance_renouvellement_heures, maj_le')
+    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, tolerance_renouvellement_heures, abonnement_ouvert, maj_le')
     .eq('id', 1)
     .maybeSingle();
 
@@ -90,6 +104,7 @@ export async function getBusinessSettings(
     periodeGraceJours: data.periode_grace_jours,
     joursEssai: data.jours_essai,
     toleranceRenouvellementHeures: data.tolerance_renouvellement_heures,
+    abonnementOuvert: data.abonnement_ouvert,
     majLe: new Date(data.maj_le),
   };
   cache = { valeur, expireA: maintenant + DUREE_CACHE_MS };
