@@ -54,7 +54,8 @@
     "connexion": "Se connecter",
     "deconnexion": "Se déconnecter",
     "recherche": "Rechercher un conte",
-    "allerAuContenu": "Aller au contenu"
+    "allerAuContenu": "Aller au contenu",
+    "administration": "Administration"
   },
   "langue": {
     "selecteur": "Langue du site",
@@ -91,5 +92,19 @@
     "precedente": "Page précédente",
     "suivante": "Page suivante",
     "position": "Page {page} sur {pages} — {total} résultats"
+  },
+  "pied": {
+    "libelle": "Liens utiles",
+    "faq": "Questions fréquentes",
+    "cgv": "Conditions générales",
+    "confidentialite": "Confidentialité",
+    "contact": "Nous écrire"
+  },
+  "pages": {
+    "introuvableTitre": "Cette page n’existe pas",
+    "introuvableCorps": "Le lien est peut-être ancien, ou le conte n’est plus au catalogue. Le catalogue, lui, est toujours là.",
+    "introuvableAction": "Parcourir le catalogue",
+    "erreurGlobaleTitre": "Quelque chose n’a pas fonctionné",
+    "erreurGlobaleCorps": "Ce n’est pas de votre fait. Réessayez dans un instant — si cela persiste, écrivez-nous."
   }
 }

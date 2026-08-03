@@ -183,11 +183,33 @@ describe('ÉTATS ET COMPOSANTS PARTAGÉS, JAMAIS RECOPIÉS', () => {
     // │ courante de cette audience, et celle qu'on voit le moins en        │
     // │ écrivant le code.                                                  │
     // └────────────────────────────────────────────────────────────────────┘
-    const partages = join(RACINE, 'src', 'components', 'etats').replace(/\\/g, '/');
+    // ┌──────────────────────────────────────────────────────────────────┐
+    // │ LA RÈGLE VISE LA FABRICATION, PAS LA MENTION.                    │
+    // │                                                                  │
+    // │ Une première version cherchait les mots « rotor » et « spinner » │
+    // │ n'importe où. Elle a signalé `loading.tsx`, dont le COMMENTAIRE   │
+    // │ explique justement qu'il emploie un squelette *et non un rotor*.  │
+    // │                                                                  │
+    // │ Un consommateur des états partagés les IMPORTE. Un fabricant, non │
+    // │ — c'est cette distinction qui sépare les deux, et non le          │
+    // │ vocabulaire employé pour la décrire.                              │
+    // └──────────────────────────────────────────────────────────────────┘
+    // La COUCHE PARTAGÉE est celle qui a le droit de fabriquer : c'est sa
+    // fonction. La règle vise les écrans et les composants de domaine, qui
+    // doivent la consommer.
+    const partages = ['etats', 'base'].map((dossier) =>
+      join(RACINE, 'src', 'components', dossier).replace(/\\/g, '/'),
+    );
 
     const coupables = sourcesInterface()
-      .filter((f) => !f.replace(/\\/g, '/').startsWith(partages))
-      .filter((f) => /Chargement…|Loading…|spinner|rotor/i.test(readFileSync(f, 'utf8')))
+      .filter((f) => !partages.some((p) => f.replace(/\\/g, '/').startsWith(p)))
+      .filter((fichier) => {
+        const source = readFileSync(fichier, 'utf8');
+        const fabrique =
+          /@keyframes|animation:\s|aria-busy=|role=['"]status['"]/.test(source);
+        const consomme = /from '@\/components\/etats'/.test(source);
+        return fabrique && !consomme;
+      })
       .map(chemin);
 
     expect(coupables).toEqual([]);

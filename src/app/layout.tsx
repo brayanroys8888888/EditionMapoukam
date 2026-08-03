@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
 
-import { traduire, LANGUE_PAR_DEFAUT } from '@/i18n';
+import { langueValide } from '@/i18n';
 import '@/design/tokens.css';
 
 /**
@@ -17,18 +18,23 @@ import '@/design/tokens.css';
  * │ valeur hexadécimale écrite hors du fichier de jetons.                    │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
- * `lang` est figé au français jusqu'à l'étape F2, qui introduira les routes
- * préfixées par la langue. Un `lang` faux n'est pas cosmétique : il fait lire
- * un texte français à un lecteur d'écran avec la prosodie anglaise.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `lang` VIENT DU MIDDLEWARE, PAS D'UNE CONSTANTE.                        │
+ * │                                                                          │
+ * │ L'élément `<html>` n'existe que dans l'enveloppe RACINE ; l'enveloppe de │
+ * │ langue, imbriquée, ne peut pas le modifier. Le middleware pose donc      │
+ * │ `x-langue`, et cette page le lit.                                        │
+ * │                                                                          │
+ * │ Un `lang` faux n'est pas cosmétique : il fait lire un texte français à   │
+ * │ un lecteur d'écran avec la prosodie anglaise — c'est-à-dire à peu près   │
+ * │ inintelligible. C'est un critère AA, pas une finition.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
-export const metadata = {
-  title: traduire(LANGUE_PAR_DEFAUT, 'marque.nom'),
-  description: traduire(LANGUE_PAR_DEFAUT, 'marque.baseline'),
-};
+export default async function RootLayout({ children }: { children: ReactNode }) {
+  const langue = langueValide((await headers()).get('x-langue'));
 
-export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang={LANGUE_PAR_DEFAUT}>
+    <html lang={langue}>
       <body>{children}</body>
     </html>
   );

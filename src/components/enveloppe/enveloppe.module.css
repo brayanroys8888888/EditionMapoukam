@@ -1,0 +1,238 @@
+/** Styles de l'enveloppe. Aucune valeur littérale : tout vient des jetons. */
+
+/* ── Lien d'évitement ───────────────────────────────────────────────────── */
+
+/*
+ * Invisible jusqu'au focus, JAMAIS absent.
+ *
+ * `display: none` le retirerait de l'ordre de tabulation — c'est-à-dire qu'il
+ * ne servirait à personne, ce qui est l'inverse du but.
+ */
+.evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: var(--espace-3) var(--espace-4);
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-interface);
+  font-weight: var(--graisse-forte);
+  border-radius: var(--rayon-controle);
+}
+
+.evitement:focus {
+  left: var(--espace-3);
+  top: var(--espace-3);
+}
+
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--fond);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.enteteInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: var(--espace-2) var(--espace-4);
+  display: flex;
+  align-items: center;
+  gap: var(--espace-4);
+  flex-wrap: wrap;
+}
+
+.marque {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.logo {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  display: grid;
+  place-items: center;
+}
+
+.losange {
+  width: 11px;
+  height: 11px;
+  background: var(--encre);
+  transform: rotate(45deg);
+  display: block;
+}
+
+.navigation {
+  display: flex;
+  gap: var(--espace-1);
+  align-items: center;
+  margin-right: auto;
+}
+
+.navigation a {
+  min-height: var(--cible-min);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--espace-2) var(--espace-3);
+  border-radius: var(--rayon-controle);
+  font-family: var(--police-interface);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  text-decoration: none;
+  transition: background var(--transition-couleur);
+}
+
+.navigation a:hover {
+  background: var(--fond-doux);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  flex-wrap: wrap;
+}
+
+.compte {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.actionEntete {
+  min-height: var(--cible-min);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--espace-2) var(--espace-3);
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  text-decoration: none;
+  transition: border-color var(--transition-couleur);
+}
+
+.actionEntete:hover {
+  border-color: var(--encre);
+}
+
+/* ── Sélecteur de langue ────────────────────────────────────────────────── */
+
+.langues {
+  display: flex;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  overflow: hidden;
+}
+
+.langue {
+  min-height: var(--cible-min);
+  display: inline-flex;
+  align-items: center;
+  padding: var(--espace-2) var(--espace-3);
+  font-family: var(--police-interface);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+  text-decoration: none;
+  transition: background var(--transition-couleur);
+}
+
+.langue:hover {
+  background: var(--fond-doux);
+}
+
+/*
+ * La langue courante est aussi marquée par `aria-current`. Cette inversion
+ * la REDIT visuellement ; elle ne la remplace pas.
+ */
+.langueActive {
+  background: var(--encre);
+  color: var(--fond);
+}
+
+.langue:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  /* Décalage négatif : le contour reste visible dans un conteneur qui rogne. */
+  outline-offset: -3px;
+}
+
+/* ── Pied de page ───────────────────────────────────────────────────────── */
+
+.pied {
+  background: var(--fond);
+  border-top: 1px solid var(--bordure);
+  margin-top: var(--espace-7);
+}
+
+.piedInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: var(--espace-6) var(--espace-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-6);
+  align-items: flex-start;
+  justify-content: space-between;
+  font-family: var(--police-interface);
+}
+
+.piedMarque {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+  margin: 0 0 var(--espace-1);
+}
+
+.piedBaseline {
+  font-size: var(--taille-m);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+  max-width: 34ch;
+  margin: 0;
+}
+
+.piedLiens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+.piedLiens a {
+  min-height: var(--cible-min);
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--taille-base);
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.piedLiens a:hover {
+  color: var(--lien-survol);
+}
+
+.piedLiens a:focus-visible,
+.actionEntete:focus-visible,
+.navigation a:focus-visible,
+.marque:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}

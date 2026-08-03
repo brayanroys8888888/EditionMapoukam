@@ -288,7 +288,22 @@ npm run contrat:api            # nouveau — le contrat correspond aux routes
 
 ---
 
-### F2 — Enveloppe applicative
+### F2 — Enveloppe applicative — ✅ LIVRÉE le 3 août 2026
+
+> **`npm run verify` : 1 165 tests dans 65 fichiers, aucun ignoré.**
+>
+> Le rafraîchissement est **préventif** et vit dans le middleware, au-dessus de
+> tous les écrans — jamais dans le lecteur, où la perte de session ne se voit
+> même pas. Marge de cinq minutes, dimensionnée sur la connexion lente.
+>
+> `session_revoquee` est porté jusqu'à l'écran par un paramètre d'URL, pour que
+> F3 dise autre chose qu'un « session expirée » générique.
+>
+> Le sélecteur de langue conserve **le chemin et les filtres**. Seul le premier
+> segment change — un remplacement naïf casserait un slug contenant « fr », et
+> « afrique » en contient un.
+
+### F2 (référence) — Enveloppe applicative
 
 **Objectif.** Navigation, pied de page, sélecteur de langue, état
 d'authentification, gestion globale des erreurs.

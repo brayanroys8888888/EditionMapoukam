@@ -54,7 +54,8 @@
     "connexion": "Sign in",
     "deconnexion": "Sign out",
     "recherche": "Search for a tale",
-    "allerAuContenu": "Skip to content"
+    "allerAuContenu": "Skip to content",
+    "administration": "Administration"
   },
   "langue": {
     "selecteur": "Site language",
@@ -91,5 +92,19 @@
     "precedente": "Previous page",
     "suivante": "Next page",
     "position": "Page {page} of {pages} — {total} results"
+  },
+  "pied": {
+    "libelle": "Useful links",
+    "faq": "Frequently asked questions",
+    "cgv": "Terms and conditions",
+    "confidentialite": "Privacy",
+    "contact": "Contact us"
+  },
+  "pages": {
+    "introuvableTitre": "This page doesn’t exist",
+    "introuvableCorps": "The link may be old, or the tale may have left the catalogue. The catalogue is still there.",
+    "introuvableAction": "Browse the catalogue",
+    "erreurGlobaleTitre": "Something went wrong",
+    "erreurGlobaleCorps": "This isn’t your fault. Try again in a moment — if it persists, write to us."
   }
 }
