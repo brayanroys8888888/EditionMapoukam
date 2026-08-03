@@ -1,0 +1,131 @@
+/**
+ * Styles des états partagés.
+ *
+ * Aucune valeur littérale : tout vient de `src/design/tokens.css`, seule source
+ * de vérité visuelle. Un test d'architecture échoue sur toute couleur
+ * hexadécimale écrite hors de ce fichier de jetons.
+ */
+
+.etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-3);
+  padding: var(--espace-6) var(--espace-4);
+  text-align: center;
+  color: var(--encre);
+  font-family: var(--police-interface);
+}
+
+.titre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-titre);
+  margin: 0;
+}
+
+.message {
+  font-size: var(--taille-l);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+  max-width: 46ch;
+  margin: 0;
+}
+
+.detail {
+  font-size: var(--taille-m);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+  max-width: 46ch;
+  margin: 0;
+}
+
+.action {
+  min-height: var(--cible-min);
+  padding: var(--espace-3) var(--espace-5);
+  background: var(--action);
+  color: var(--action-encre);
+  border: 2px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  font-family: var(--police-interface);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+  transition: background var(--transition-couleur);
+}
+
+.action:hover {
+  background: var(--action-survol);
+}
+
+.action:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/* ── Rotor ──────────────────────────────────────────────────────────────── */
+
+.rotor {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--bordure-forte);
+  border-top-color: var(--action);
+  border-radius: var(--rayon-pastille);
+  animation: rotation 0.8s linear infinite;
+}
+
+@keyframes rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/*
+ * Sous `prefers-reduced-motion`, la règle globale de `tokens.css` ramène déjà
+ * toute animation à une durée négligeable. Le rotor deviendrait alors un arc
+ * immobile, illisible comme indicateur : il devient un disque pulsant en
+ * opacité, qui reste perceptible sans tourner.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .rotor {
+    border-color: var(--action);
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+/* ── Squelette ──────────────────────────────────────────────────────────── */
+
+.squelette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  width: 100%;
+}
+
+.squeletteLigne {
+  display: block;
+  height: 18px;
+  border-radius: var(--rayon-controle);
+  background: var(--fond-doux);
+}
+
+/*
+ * Visible des lecteurs d'écran, invisible à l'œil.
+ *
+ * `display: none` le retirerait de l'arbre d'accessibilité — c'est-à-dire
+ * qu'il ne serait annoncé à personne, ce qui est l'inverse du but.
+ */
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

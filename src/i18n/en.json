@@ -1,0 +1,88 @@
+{
+  "marque": {
+    "_commentaire": "PROVISIONAL. « Sous le Baobab » was invented by the mockup tool, like the prices. The trade name is not settled: it lives here, in a single key, so that changing it touches one file only.",
+    "nom": "Sous le Baobab",
+    "baseline": "African heritage tales, illustrated and retold for today's children."
+  },
+  "etats": {
+    "chargement": "Loading…",
+    "chargementLong": "This is taking a while. Your connection seems slow — we're still trying.",
+    "erreurTitre": "Something went wrong",
+    "erreurAction": "Try again",
+    "horsLigneTitre": "You're offline",
+    "horsLigneCorps": "This page will come back as soon as your connection does.",
+    "videTitre": "Nothing to show here",
+    "videAction": "Clear filters"
+  },
+  "erreurs": {
+    "_commentaire": "Keys match the `code` field of API responses, never their `message`. The API speaks French only; this table is what makes English possible.",
+    "requete_invalide": "Some of the information is incorrect.",
+    "corps_illisible": "The request could not be read.",
+    "non_authentifie": "You need to be signed in.",
+    "identifiants_invalides": "Incorrect email address or password.",
+    "email_non_verifie": "Confirm your email address before signing in.",
+    "compte_suspendu": "This account is suspended.",
+    "interdit": "You don't have access to this page.",
+    "introuvable": "This page doesn't exist, or no longer does.",
+    "trop_de_requetes": "Too many attempts. Try again in a moment.",
+    "erreur_interne": "Something went wrong. Please try again later.",
+    "session_expiree": "Your session has expired. Please sign in again.",
+    "session_revoquee": "Your session was closed as a precaution: a sign-in credential was reused. Please sign in again, and change your password if you don't recognise this activity.",
+    "hors_extrait": "This page is beyond the free preview.",
+    "telechargement_non_inclus": "A subscription gives you online reading. To keep this tale, buy it individually.",
+    "copie_indisponible": "Your copy could not be prepared. Please try again shortly.",
+    "abonnement_deja_actif": "You already have an active subscription.",
+    "aucun_abonnement_actif": "You don’t have an active subscription.",
+    "commande_non_payable": "This order can no longer be paid.",
+    "confirmation_requise": "The country of your payment method changes the applicable price list. Please confirm the new amount.",
+    "panier_vide": "Your basket contains no orderable title.",
+    "hors_zone": "This tale is not yet available for purchase in your region.",
+    "lecture_non_autorisee": "You don’t have access to this title.",
+    "action_impossible": "This action is refused by a business rule.",
+    "publication_refusee": "At least one title is not publishable. Check the list of missing fields in the catalogue.",
+    "periode_invalide": "The requested period is invalid, or longer than three years.",
+    "fichier_trop_volumineux": "The file exceeds the maximum accepted size (100 MB).",
+    "inconnue": "Something went wrong."
+  },
+  "navigation": {
+    "principal": "Main navigation",
+    "catalogue": "Catalogue",
+    "offres": "Plans",
+    "apropos": "About",
+    "compte": "My account",
+    "panier": "My basket",
+    "connexion": "Sign in",
+    "deconnexion": "Sign out",
+    "recherche": "Search for a tale",
+    "allerAuContenu": "Skip to content"
+  },
+  "langue": {
+    "selecteur": "Site language",
+    "fr": "Français",
+    "en": "English",
+    "frCourt": "FR",
+    "enCourt": "EN"
+  },
+  "regions": {
+    "_commentaire": "Keys come from the `region_conte` enum in the database. The labels live here, and only here.",
+    "afrique_ouest": "West Africa",
+    "sahel": "Sahel",
+    "afrique_centrale": "Central Africa",
+    "afrique_australe": "Southern Africa",
+    "afrique_est": "East Africa"
+  },
+  "acces": {
+    "_commentaire": "Driven by `acces.reason`, never inferred from a price or a flag. `purchase` and `granted` take precedence over everything else: neither a price nor « with your subscription » suits someone who already owns the title.",
+    "purchase": "In your library",
+    "granted": "In your library",
+    "subscription": "With your subscription",
+    "free": "Free",
+    "preview": "Read a preview",
+    "none": "Unavailable",
+    "inclusAbonnement": "With your subscription",
+    "lireEnLigne": "Read online",
+    "telecharger": "Download",
+    "acheter": "Buy",
+    "horsZone": "This tale is not yet available for purchase in your region."
+  }
+}

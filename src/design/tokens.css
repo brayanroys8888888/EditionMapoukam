@@ -1,0 +1,206 @@
+/**
+ * JETONS DE DESIGN — source unique.
+ *
+ * Extraits des treize maquettes et vérifiés contre la direction artistique
+ * (docs/maquettes/JETONS.md). Les maquettes n'emploient aucune variable : toutes
+ * leurs valeurs sont écrites en dur et répétées d'un fichier à l'autre. Ce
+ * fichier est ce qui remplace cette répétition.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE COULEUR NE S'ÉCRIT AILLEURS QUE DANS CE FICHIER.                  │
+ * │                                                                          │
+ * │ Un test d'architecture parcourt `src/components` et `src/app` et échoue  │
+ * │ sur toute valeur hexadécimale. Sans lui, la première correction pressée  │
+ * │ créerait une seconde source de vérité visuelle — exactement ce que la    │
+ * │ consigne 2 de la reprise des maquettes interdit.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+:root {
+  /* ── Neutres ─────────────────────────────────────────────────────────── */
+  --fond: #fffdf9;
+  --fond-doux: #f6efe3;
+  --encre: #2a2018;
+  --encre-douce: #6b5d4f;
+  --bordure: #ede4d6;
+  --bordure-forte: #e0d6c6;
+  --souligne: #c9bca9;
+
+  /**
+   * Surface de lecture — écart ASSUMÉ avec `--fond`, et non un accident.
+   *
+   * Plus chaude et moins lumineuse : une surface de lecture prolongée par un
+   * enfant n'est pas une surface de navigation. Seul le lecteur l'emploie.
+   */
+  --fond-lecture: #fbf7f0;
+
+  /* ── Action ──────────────────────────────────────────────────────────── */
+  --action: #f2b134;
+  --action-survol: #e5a526;
+
+  /**
+   * Texte SUR le jaune : l'encre sombre, jamais du blanc.
+   *
+   * MESURÉ, non estimé : `#2a2018` sur `#f2b134` vaut 8,43:1 — largement
+   * au-dessus de AA. Du blanc sur ce même jaune tombe à 1,97:1, donc
+   * illisible. Un test calcule les deux et refuse l'inversion.
+   */
+  --action-encre: var(--encre);
+
+  /* ── Crème d'attention ───────────────────────────────────────────────── */
+  --creme: #fdf4e1;
+  --creme-bordure: #f3e4c4;
+
+  /**
+   * ASSOMBRI par rapport aux maquettes, qui portaient `#b08a2e`.
+   *
+   * Mesuré : `#b08a2e` sur `#fdf4e1` vaut 2,95:1 — sous le seuil AA de 4,5:1.
+   * Les maquettes ne l'emploient que sur des séparateurs `aria-hidden`, donc
+   * décoratifs, où la règle ne s'applique pas. Mais un jeton nommé « accent »
+   * finira par porter du texte : le laisser sous le seuil, c'est préparer une
+   * infraction que personne ne verra venir.
+   */
+  --creme-accent: #7d6115;
+
+  /* ── Lien ────────────────────────────────────────────────────────────── */
+  /* Valeur MAJORITAIRE : onze maquettes sur douze. L'accueil portait `#1e8a5f`,
+     seul de son espèce (docs/maquettes/JETONS.md, écart É1). */
+  --lien-survol: #197a53;
+
+  /* ── Les cinq régions ────────────────────────────────────────────────── */
+  /*
+   * Quatre rôles par région, uniformément — même quand deux valeurs coïncident.
+   * Le Sahel et l'Afrique australe n'ont qu'une teinte dans les maquettes ;
+   * les décliner quand même évite qu'un composant ait à traiter deux cas.
+   *
+   * Les clés suivent l'énumération `region_conte` de la base, à la lettre :
+   * `afrique_ouest`, `sahel`, `afrique_centrale`, `afrique_australe`,
+   * `afrique_est`. Des clés ASCII, jamais des libellés — c'est ce qui rend
+   * impossible la classe de défaut de l'apostrophe (docs/PLAN.md §5 terdecies).
+   */
+  --region-afrique_ouest-accent: #1e8a5f;
+  --region-afrique_ouest-encre: #197a53;
+  --region-afrique_ouest-fond: #e4efe7;
+  --region-afrique_ouest-bordure: #cfe2d6;
+
+  --region-sahel-accent: #2d5ba8;
+  --region-sahel-encre: #2d5ba8;
+  --region-sahel-fond: #e6e9ef;
+  --region-sahel-bordure: #d2d8e4;
+
+  --region-afrique_centrale-accent: #d64545;
+  /* Assombri : `#c13a3a` sur son fond `#fae7e3` mesurait 4,48:1 — vingt
+     millièmes sous le seuil. Invisible à l'œil, réel pour la norme. */
+  --region-afrique_centrale-encre: #b93636;
+  --region-afrique_centrale-fond: #fae7e3;
+  --region-afrique_centrale-bordure: #f0d2cc;
+
+  --region-afrique_australe-accent: #7b4b94;
+  --region-afrique_australe-encre: #7b4b94;
+  --region-afrique_australe-fond: #efe8ed;
+  --region-afrique_australe-bordure: #dfd2e0;
+
+  --region-afrique_est-accent: #2ba8a0;
+  --region-afrique_est-encre: #1b756f;
+  --region-afrique_est-fond: #e6f3ee;
+  --region-afrique_est-bordure: #cfe7e2;
+
+  /* Repli d'un titre sans région — ne doit jamais se produire : la région est
+     exigée à la publication. Neutre, pour ne pas prétendre une origine. */
+  --region-inconnue-accent: var(--encre-douce);
+  --region-inconnue-encre: var(--encre-douce);
+  --region-inconnue-fond: var(--fond-doux);
+  --region-inconnue-bordure: var(--bordure-forte);
+
+  /* ── Typographie ─────────────────────────────────────────────────────── */
+  /*
+   * Embarquées sous `vendors/fonts/`, jamais chargées depuis un CDN : c'est un
+   * service externe, et surtout une feuille bloquante sur la connexion lente
+   * qui est la condition réelle d'une partie du public (§5.1).
+   */
+  --police-titre: 'Fraunces', Georgia, serif;
+  --police-interface: 'Nunito', system-ui, sans-serif;
+  --police-lecture: 'Literata', Georgia, serif;
+
+  /* La variante douce et légèrement fantasque. Sans ces réglages, Fraunces perd
+     le caractère qui motive son choix. */
+  --titre-variations: 'SOFT' 100, 'WONK' 1;
+
+  --taille-xs: 12px;
+  --taille-s: 13px;
+  --taille-m: 14px;
+  --taille-base: 15px;
+  --taille-l: 16px;
+  --taille-xl: 17px;
+  --taille-2xl: 19px;
+  --taille-3xl: 24px;
+  --taille-4xl: 30px;
+
+  --graisse-normale: 400;
+  --graisse-demi: 600;
+  --graisse-forte: 700;
+
+  --interligne-titre: 1.2;
+  --interligne-corps: 1.5;
+  --interligne-lecture: 1.75;
+
+  /* ── Formes ──────────────────────────────────────────────────────────── */
+  --rayon-controle: 8px;
+  --rayon-bouton: 10px;
+  --rayon-image: 9px;
+  --rayon-carte: 16px;
+  --rayon-panneau: 18px;
+  --rayon-pastille: 999px;
+
+  --largeur-page: 1200px;
+  --largeur-texte: 62ch;
+
+  /* ── Espacement ──────────────────────────────────────────────────────── */
+  --espace-1: 4px;
+  --espace-2: 8px;
+  --espace-3: 12px;
+  --espace-4: 16px;
+  --espace-5: 22px;
+  --espace-6: 32px;
+  --espace-7: 48px;
+
+  /* ── Focus ───────────────────────────────────────────────────────────── */
+  /*
+   * 3 px partout, y compris dans l'administration — dont la maquette
+   * descendait à 2 px. L'accessibilité ne se négocie pas contre une maquette
+   * (docs/maquettes/JETONS.md, écart É3).
+   */
+  --focus-epaisseur: 3px;
+  --focus-decalage: 3px;
+  --focus-couleur: var(--encre);
+
+  /* ── Mouvement ───────────────────────────────────────────────────────── */
+  --transition-couleur: 0.15s;
+  --transition-forme: 0.18s;
+
+  /* ── Cible tactile ───────────────────────────────────────────────────── */
+  /* WCAG 2.1 AA, et le lecteur doit s'utiliser à une main sur mobile. */
+  --cible-min: 44px;
+}
+
+/**
+ * Toute animation tombe sous `prefers-reduced-motion`.
+ *
+ * Les treize maquettes le font ; certaines ne coupaient que `transition`,
+ * d'autres aussi `animation`. La forme la plus complète est retenue partout.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-couleur: 0s;
+    --transition-forme: 0s;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

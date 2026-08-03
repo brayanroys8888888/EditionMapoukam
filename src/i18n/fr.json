@@ -1,0 +1,88 @@
+{
+  "marque": {
+    "_commentaire": "PROVISOIRE. « Sous le Baobab » a été inventé par l'outil de maquettage, au même titre que les prix. Le nom commercial n'est pas tranché : il vit ici, en une seule clé, pour qu'un changement ne touche qu'un fichier — en-tête, pied de page, titres de page, emails et métadonnées le lisent tous d'ici.",
+    "nom": "Sous le Baobab",
+    "baseline": "Des contes du patrimoine africain, illustrés et racontés pour les enfants d'aujourd'hui."
+  },
+  "etats": {
+    "chargement": "Chargement…",
+    "chargementLong": "C'est un peu long. La connexion semble lente — nous continuons.",
+    "erreurTitre": "Quelque chose n'a pas fonctionné",
+    "erreurAction": "Réessayer",
+    "horsLigneTitre": "Vous n'êtes plus connecté à Internet",
+    "horsLigneCorps": "Cette page réapparaîtra dès que la connexion reviendra.",
+    "videTitre": "Rien à afficher ici",
+    "videAction": "Retirer les filtres"
+  },
+  "erreurs": {
+    "_commentaire": "Clés alignées sur le champ `code` des réponses d'API, jamais sur leur `message`. L'API ne parle que français ; c'est ce tableau qui rend l'anglais possible.",
+    "requete_invalide": "Certaines informations sont incorrectes.",
+    "corps_illisible": "La demande n'a pas pu être lue.",
+    "non_authentifie": "Vous devez être connecté.",
+    "identifiants_invalides": "Adresse email ou mot de passe incorrect.",
+    "email_non_verifie": "Vérifiez votre adresse email avant de vous connecter.",
+    "compte_suspendu": "Ce compte est suspendu.",
+    "interdit": "Vous n'avez pas accès à cette page.",
+    "introuvable": "Cette page n'existe pas, ou plus.",
+    "trop_de_requetes": "Trop de tentatives. Réessayez dans un instant.",
+    "erreur_interne": "Une erreur est survenue. Réessayez plus tard.",
+    "session_expiree": "Votre session a expiré. Reconnectez-vous.",
+    "session_revoquee": "Votre session a été fermée par sécurité : un identifiant de connexion a été réutilisé. Reconnectez-vous, et changez votre mot de passe si vous ne reconnaissez pas cette activité.",
+    "hors_extrait": "Cette page dépasse l'extrait consultable.",
+    "telechargement_non_inclus": "L'abonnement donne accès à la lecture en ligne. Pour conserver ce titre, achetez-le à l'unité.",
+    "copie_indisponible": "Votre exemplaire n'a pas pu être préparé. Réessayez dans quelques instants.",
+    "abonnement_deja_actif": "Vous avez déjà un abonnement en cours.",
+    "aucun_abonnement_actif": "Vous n’avez pas d’abonnement en cours.",
+    "commande_non_payable": "Cette commande ne peut plus être réglée.",
+    "confirmation_requise": "Le pays de votre moyen de paiement change la grille tarifaire applicable. Confirmez le nouveau montant.",
+    "panier_vide": "Votre panier ne contient aucun titre commandable.",
+    "hors_zone": "Ce conte n’est pas encore proposé à l’achat dans votre région.",
+    "lecture_non_autorisee": "Vous n’avez pas accès à ce titre.",
+    "action_impossible": "Cette action est refusée par une règle métier.",
+    "publication_refusee": "Au moins un titre n’est pas publiable. Consultez la liste des manques dans le catalogue.",
+    "periode_invalide": "La période demandée est invalide ou dépasse trois ans.",
+    "fichier_trop_volumineux": "Le fichier dépasse la taille maximale acceptée (100 Mo).",
+    "inconnue": "Une erreur est survenue."
+  },
+  "navigation": {
+    "principal": "Navigation principale",
+    "catalogue": "Catalogue",
+    "offres": "Offres",
+    "apropos": "À propos",
+    "compte": "Mon compte",
+    "panier": "Mon panier",
+    "connexion": "Se connecter",
+    "deconnexion": "Se déconnecter",
+    "recherche": "Rechercher un conte",
+    "allerAuContenu": "Aller au contenu"
+  },
+  "langue": {
+    "selecteur": "Langue du site",
+    "fr": "Français",
+    "en": "English",
+    "frCourt": "FR",
+    "enCourt": "EN"
+  },
+  "regions": {
+    "_commentaire": "Les clés viennent de l'énumération `region_conte` de la base. Les libellés sont ici, et ici seulement : ils diffèrent en français et en anglais, et la clé ne contient aucun caractère qui puisse s'écrire de deux façons.",
+    "afrique_ouest": "Afrique de l'Ouest",
+    "sahel": "Sahel",
+    "afrique_centrale": "Afrique centrale",
+    "afrique_australe": "Afrique australe",
+    "afrique_est": "Afrique de l'Est"
+  },
+  "acces": {
+    "_commentaire": "Piloté par `acces.reason`, jamais déduit d'un prix ni d'un drapeau. `purchase` et `granted` prennent le pas sur tout le reste : ni un prix ni « avec l'abonnement » ne conviennent à qui détient déjà le titre.",
+    "purchase": "Dans votre bibliothèque",
+    "granted": "Dans votre bibliothèque",
+    "subscription": "Avec l'abonnement",
+    "free": "Gratuit",
+    "preview": "Lire l'extrait",
+    "none": "Indisponible",
+    "inclusAbonnement": "Avec l'abonnement",
+    "lireEnLigne": "Lire en ligne",
+    "telecharger": "Télécharger",
+    "acheter": "Acheter",
+    "horsZone": "Ce conte n'est pas encore proposé à l'achat dans votre région."
+  }
+}
