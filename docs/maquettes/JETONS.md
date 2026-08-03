@@ -1,7 +1,31 @@
 # Jetons de design — extraction et audit
 
-**Extraits des treize maquettes, 2 août 2026.** Source unique de la direction
-artistique. `src/design/tokens.css` sera généré depuis ce document à l'étape F1.
+> ### ⚠ Ce document est l'AUDIT, plus la source
+>
+> **Depuis l'étape F1, la source unique est `src/design/tokens.css`**, et un test
+> échoue sur toute couleur écrite ailleurs. Ce document garde la trace de
+> l'extraction et des arbitrages ; en cas de désaccord entre les deux, **le
+> fichier de jetons fait foi**.
+>
+> **Écarts tranchés depuis** — les sections 7 et 8 les posaient comme ouverts :
+>
+> | # | Décision |
+> |---|---|
+> | É1 | `#197A53` retenu, valeur majoritaire |
+> | É2 | `--fond-lecture` conservé comme jeton nommé |
+> | É3 | Focus réaligné à 3 px, y compris en administration |
+> | É4 | Forme la plus complète de `prefers-reduced-motion`, partout |
+> | É5 | Prix des maquettes écartés — voir `README.md` |
+> | P1 | Polices embarquées sous `vendors/`, jamais de CDN |
+> | P2 | Nom commercial arrêté : **EditionMapoukam** |
+> | §4 | Deux champs, `region` fermée et `origine_culturelle` libre |
+>
+> **Deux corrections de contraste apportées à la palette des maquettes**, mesurées
+> et non estimées : `--creme-accent` valait 2,95:1 et l'encre d'Afrique centrale
+> 4,48:1 — l'une et l'autre sous le seuil AA. Les valeurs de `tokens.css` sont
+> assombries en conséquence.
+
+**Extraits des treize maquettes, 2 août 2026.**
 
 Les maquettes n'emploient **aucune variable CSS** : toutes les valeurs sont
 écrites en dur, en ligne, et répétées d'un fichier à l'autre. C'est la situation
@@ -54,10 +78,10 @@ tous signalés — aucun n'est tranché seul.
 | `--action-survol` | `#E5A526` | Survol du bouton primaire |
 | `--action-encre` | `#2A2018` | Texte **sur** le jaune |
 
-> Le texte sur `#F2B134` est l'encre sombre, jamais du blanc. Le contraste
-> `#2A2018` sur `#F2B134` vaut environ **9,6:1** — largement au-dessus de AA.
-> Du blanc sur ce jaune tomberait à ~1,9:1, donc illisible. **Ne jamais
-> inverser.**
+> Le texte sur `#F2B134` est l'encre sombre, jamais du blanc. **Mesuré à
+> l'étape F1** — cette page annonçait d'abord 9,6:1, estimé et faux —
+> `#2A2018` sur `#F2B134` vaut **8,43:1**, largement au-dessus de AA. Du blanc
+> sur ce jaune tombe à **1,97:1**, donc illisible. **Ne jamais inverser.**
 
 ---
 
@@ -232,16 +256,18 @@ latins, `woff2`, `font-display: swap`, préchargées.
 Bénéfice secondaire, celui de §5 sexies : une police embarquée rend le rendu
 **reproductible**. La version servie par le CDN changera ; celle du dépôt, non.
 
-### P2 — Une marque qui n'est nulle part dans la spécification
+### P2 — Le nom commercial : tranché, et une divergence corrigée au passage
 
-Les maquettes portent **« Sous le Baobab »** et `bonjour@souslebaobab.com`. Le
-dépôt s'appelle `EditionMapoukam`, et `docs/cahier-des-charges.md` ne nomme
-aucune marque.
+Les maquettes portent « Sous le Baobab » et , tous deux
+inventés par l'outil de maquettage — au même titre que les prix.
 
-Je ne tranche pas : un nom commercial est une décision qui vous appartient. Mais
-il doit être fixé **avant F2**, où il entre dans l'en-tête, le pied de page, le
-titre de chaque page, les emails et les métadonnées de référencement. Le changer
-ensuite touche partout.
+**Le nom retenu est « EditionMapoukam »**, arrêté le 3 août 2026.
 
-En attendant, il vivra dans une **clé de traduction unique**, jamais écrit en dur
-dans un composant.
+En l'appliquant, une divergence est apparue : écrivait « Édition Mapoukam » **en dur, à huit endroits**. Le site et les emails
+auraient donc porté deux orthographes de la même marque — et à la différence des
+autres cas de cette classe ( §5 terdecies), **personne ne comparait
+ces deux valeurs**. Rien ne l'aurait signalé ; un client aurait reçu un email
+signé d'un nom absent du site.
+
+Le nom vit désormais dans **une seule clé**, lue par l'interface et par les
+emails. Un test échoue s'il est écrit ailleurs.

@@ -1,7 +1,7 @@
 {
   "marque": {
-    "_commentaire": "PROVISOIRE. « Sous le Baobab » a été inventé par l'outil de maquettage, au même titre que les prix. Le nom commercial n'est pas tranché : il vit ici, en une seule clé, pour qu'un changement ne touche qu'un fichier — en-tête, pied de page, titres de page, emails et métadonnées le lisent tous d'ici.",
-    "nom": "Sous le Baobab",
+    "_commentaire": "TRANCHÉ le 3 août 2026 : le nom commercial est « EditionMapoukam ». Il vit ici, en UNE clé, et nulle part ailleurs — en-tête, pied de page, titres de page, métadonnées ET emails le lisent d'ici. Un test échoue s'il est écrit en dur ailleurs. La valeur est identique dans les deux langues : un nom propre ne se traduit pas.",
+    "nom": "EditionMapoukam",
     "baseline": "Des contes du patrimoine africain, illustrés et racontés pour les enfants d'aujourd'hui."
   },
   "etats": {

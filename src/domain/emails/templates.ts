@@ -1,3 +1,5 @@
+import { NOM_COMMERCIAL } from '@/domain/marque';
+
 /**
  * Modèles d'emails transactionnels — §9.2.
  *
@@ -94,7 +96,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           '',
           'Le téléchargement reste accessible sans limite de durée.',
           '',
-          'L’équipe Édition Mapoukam',
+          `L’équipe ${NOM_COMMERCIAL}`,
         ]
           .filter((ligne, index, tout) => !(ligne === '' && tout[index - 1] === ''))
           .join('\n'),
@@ -114,7 +116,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           '',
           'Downloads remain available with no time limit.',
           '',
-          'The Édition Mapoukam team',
+          `The ${NOM_COMMERCIAL} team`,
         ]
           .filter((ligne, index, tout) => !(ligne === '' && tout[index - 1] === ''))
           .join('\n'),
@@ -134,7 +136,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'ligne depuis votre espace :',
           '  {{lien}}',
           '',
-          'L’équipe Édition Mapoukam',
+          `L’équipe ${NOM_COMMERCIAL}`,
         ].join('\n'),
     },
     en: {
@@ -147,7 +149,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'reading from your account:',
           '  {{lien}}',
           '',
-          'The Édition Mapoukam team',
+          `The ${NOM_COMMERCIAL} team`,
         ].join('\n'),
     },
   },
@@ -172,7 +174,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'informations :',
           '  {{lien}}',
           '',
-          'L’équipe Édition Mapoukam',
+          `L’équipe ${NOM_COMMERCIAL}`,
         ].join('\n'),
     },
     en: {
@@ -185,7 +187,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'a few days while you update your details:',
           '  {{lien}}',
           '',
-          'The Édition Mapoukam team',
+          `The ${NOM_COMMERCIAL} team`,
         ].join('\n'),
     },
   },
@@ -211,7 +213,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'Pour votre sécurité, aucun lien de téléchargement n’est envoyé par',
           'email : il est généré au moment où vous le demandez.',
           '',
-          'L’équipe Édition Mapoukam',
+          `L’équipe ${NOM_COMMERCIAL}`,
         ].join('\n'),
     },
     en: {
@@ -226,7 +228,7 @@ const MODELES: Readonly<Record<string, Modele>> = {
           'For your security, no download link is sent by email: it is generated',
           'at the moment you ask for it.',
           '',
-          'The Édition Mapoukam team',
+          `The ${NOM_COMMERCIAL} team`,
         ].join('\n'),
     },
   },

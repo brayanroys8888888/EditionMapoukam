@@ -166,25 +166,63 @@ describe('langue d’une valeur quelconque', () => {
 });
 
 describe('le nom commercial ne s’écrit qu’à un seul endroit', () => {
-  it('n’apparaît en dur dans aucun composant ni aucune page', () => {
-    // ┌────────────────────────────────────────────────────────────────────┐
-    // │ « Sous le Baobab » a été inventé par l'outil de maquettage, au     │
-    // │ même titre que les prix. Il n'est pas tranché.                     │
-    // │                                                                    │
-    // │ Écrit en dur dans treize écrans, le changer coûterait treize       │
-    // │ modifications et un oubli. Il vit donc dans UNE clé, et ce test    │
-    // │ tient la promesse.                                                  │
-    // └────────────────────────────────────────────────────────────────────┘
-    const coupables: string[] = [];
+  it('les deux dictionnaires portent la MÊME chaîne — un nom propre ne se traduit pas', () => {
+    expect(fr.marque.nom).toBe(en.marque.nom);
+    expect(fr.marque.nom.length).toBeGreaterThan(3);
+  });
 
-    for (const fichier of fichiersSources(join(RACINE, 'src'))) {
-      if (fichier.includes(`i18n${'\\'}`) || fichier.includes('i18n/')) continue;
-      const source = readFileSync(fichier, 'utf8');
-      if (/Sous le Baobab|souslebaobab/i.test(source)) {
-        coupables.push(fichier.replace(RACINE, ''));
-      }
-    }
+  it('n’apparaît en dur nulle part ailleurs dans les sources', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE DÉFAUT QUE CE TEST A RÉELLEMENT ATTRAPÉ.                        │
+    // │                                                                    │
+    // │ Le nom était écrit en dur à HUIT endroits de                       │
+    // │ `src/domain/emails/templates.ts`, sous une orthographe — « Édition │
+    // │ Mapoukam » — pendant que l'interface s'apprêtait à en adopter une   │
+    // │ autre. Deux écritures de la même marque dans le même produit.      │
+    // │                                                                    │
+    // │ Et à la différence des autres cas de cette classe (§5 terdecies),  │
+    // │ PERSONNE ne comparait ces deux valeurs : rien n'aurait signalé la  │
+    // │ divergence. Un client aurait simplement reçu un email signé d'un   │
+    // │ nom absent du site.                                                 │
+    // └────────────────────────────────────────────────────────────────────┘
+    const nom = fr.marque.nom;
+    const autorises = ['src/i18n/fr.json', 'src/i18n/en.json', 'src/domain/marque.ts'];
+
+    const coupables = fichiersSources(join(RACINE, 'src'))
+      .filter((fichier) => readFileSync(fichier, 'utf8').includes(nom))
+      .map((fichier) => fichier.replace(RACINE, '').replace(/\\/g, '/').replace(/^\//, ''))
+      // `marque.ts` NE contient pas le littéral — il le lit. L'autorisation
+      // est conservée par prudence, pas par nécessité.
+      .filter((fichier) => !autorises.includes(fichier));
 
     expect(coupables).toEqual([]);
+  });
+
+  it('aucune écriture ORPHELINE du nom de maquette ne subsiste', () => {
+    // « Sous le Baobab » a été inventé par l'outil de maquettage, au même
+    // titre que les prix. Il ne doit plus figurer nulle part dans le code.
+    const coupables = fichiersSources(join(RACINE, 'src'))
+      .filter((f) => /Sous le Baobab|souslebaobab/i.test(readFileSync(f, 'utf8')))
+      .map((f) => f.replace(RACINE, ''));
+
+    expect(coupables).toEqual([]);
+  });
+
+  it('les emails signent du MÊME nom que l’interface', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Les emails sont le seul artefact du projet qui sorte vers un tiers │
+    // │ en portant la marque. Une signature divergente du site est         │
+    // │ exactement ce qu'un destinataire lit comme une tentative           │
+    // │ d'hameçonnage.                                                      │
+    // └────────────────────────────────────────────────────────────────────┘
+    const modeles = readFileSync(
+      join(RACINE, 'src', 'domain', 'emails', 'templates.ts'),
+      'utf8',
+    );
+
+    expect(modeles).toContain("from '@/domain/marque'");
+    // Garde d'effectif : sans occurrence, l'assertion précédente pourrait
+    // porter sur un import inutilisé.
+    expect([...modeles.matchAll(/NOM_COMMERCIAL/g)].length).toBeGreaterThanOrEqual(6);
   });
 });

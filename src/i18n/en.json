@@ -1,7 +1,7 @@
 {
   "marque": {
-    "_commentaire": "PROVISIONAL. « Sous le Baobab » was invented by the mockup tool, like the prices. The trade name is not settled: it lives here, in a single key, so that changing it touches one file only.",
-    "nom": "Sous le Baobab",
+    "_commentaire": "SETTLED on 3 August 2026: the trade name is « EditionMapoukam ». It lives here, in ONE key, and nowhere else — header, footer, page titles, metadata AND emails all read it from here. A test fails if it is hard-coded anywhere else. The value is identical in both languages: a proper noun is not translated.",
+    "nom": "EditionMapoukam",
     "baseline": "African heritage tales, illustrated and retold for today's children."
   },
   "etats": {
