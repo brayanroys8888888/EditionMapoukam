@@ -86,6 +86,45 @@ un titre `abonnement` voit « Avec l'abonnement ».
 **Les confondre donnerait un catalogue qui ment dans les deux sens** : un prix
 affiché à qui n'a rien à payer, ou « inclus » promis à qui devra acheter.
 
+### ⚠ Un troisième cas MANQUE à la maquette du catalogue
+
+**Le titre déjà possédé.** Aucune carte ne le porte : toutes affichent soit un
+prix, soit « Avec l'abonnement ». Or ni l'un ni l'autre ne convient à quelqu'un
+qui détient déjà le titre — **les deux invitent à obtenir ce qu'on a déjà.**
+
+Le cas est loin d'être marginal : il couvre tout acheteur revenant au catalogue,
+et tout compte à qui un droit a été offert. Sur une plateforme dont le modèle
+repose sur l'achat à l'unité, c'est un état ordinaire.
+
+**La fiche livre, elle, le traite** — et c'est de là que vient le vocabulaire :
+
+| Bloc de la fiche | `acces.reason` | Ce qu'il dit |
+|---|---|---|
+| `data-action-visiteur` | `preview` | « Acheter — 4,99 € » + « ou lisez-le avec l'abonnement » |
+| `data-action-abonne` | `subscription` | « Inclus dans votre abonnement » + « Lire en ligne » + **« Acheter pour télécharger »** |
+| `data-action-achete` | `purchase` \| `granted` | **« Acheté le 3 mars 2026 — il est à vous »** + « Lire en ligne » + sélecteur PDF/EPUB |
+
+La carte de catalogue reçoit donc une **troisième ligne**, construite depuis ce
+bloc : « **Dans votre bibliothèque** », pilotée par `acces.reason` et jamais
+déduite d'un prix ou d'un drapeau. Elle prend le pas sur les deux autres.
+
+> **À noter dans le bloc `abonne` :** il porte à la fois « Lire en ligne » et
+> « Acheter pour télécharger ». La séparation lecture/téléchargement — la règle
+> métier centrale — est donc déjà tenue par la maquette, et il ne faut surtout
+> pas la simplifier en la reconstruisant.
+
+### Les prix se contredisent d'une maquette à l'autre
+
+Relevé en passant, et qui achève de disqualifier ces montants comme autorité :
+
+| Maquette | Conte à l'unité | Abonnement |
+|---|---|---|
+| `Accueil.dc.html`, `Catalogue.dc.html` | 3,90 € | 6,90 € / mois |
+| `Fiche livre.dc.html` | **4,99 €** | 6,90 € / mois |
+
+`4,99 €` est la bonne valeur — c'est `PRICE_UNIT_DEFAULT`. Les maquettes ne
+s'accordent donc même pas entre elles. Voir « Écart connu » ci-dessous.
+
 ### Ce que l'espace personnel impose
 
 Huit combinaisons, et elles ne sont pas décoratives : un abonnement `expire` avec

@@ -371,6 +371,22 @@ npm run verify
 - **Un titre `achat_hors_zone` reste affiché, seul son achat est désactivé**, avec
   le message de l'API. Contre-test : le même titre dans une zone où il a un prix
   montre le bouton.
+- **La carte porte TROIS lignes d'accès, pas deux.** La maquette n'en a que deux
+  — un prix, ou « Avec l'abonnement ». La troisième, **« Dans votre
+  bibliothèque »**, est ajoutée : ni l'un ni l'autre des deux libellés ne
+  convient à quelqu'un qui détient déjà le titre, et **tous deux l'invitent à
+  obtenir ce qu'il a déjà**.
+
+  Elle est pilotée par **`acces.reason`**, jamais déduite d'un prix ni d'un
+  drapeau, et **prend le pas** sur les deux autres. Trois tests, un par ligne,
+  plus un quatrième : un titre `purchase` n'affiche **ni** prix **ni**
+  « Avec l'abonnement ». Sans ce dernier, une implémentation qui empilerait les
+  trois passerait les trois premiers.
+
+  Deux dimensions se croisent ici et ne doivent jamais être confondues :
+  `inclus_abonnement` / `prix` décrivent **le titre**, `acces.reason` décrit
+  **l'utilisateur**. Un test d'architecture échoue si un composant de carte lit
+  `prix` pour décider d'un libellé d'accès.
 - Les couvertures sont servies en `vignette`, avec `width`/`height`, `loading`
   et `sizes`. Un test vérifie qu'aucune image de la grille ne demande la taille
   `fiche` — c'est exactement le gaspillage que §5.1 qualifie de critique.
@@ -522,6 +538,23 @@ npm run verify
   générations. Testé par comptage des appels.
 - **Un 503 ne propose jamais de repli.** Le test vérifie qu'aucun lien alternatif
   n'apparaît. C'est l'échec fermé, et il doit le rester jusqu'au navigateur.
+- **L'état « abonnement expiré + bibliothèque remplie » a son écran, et il doit
+  répondre à trois questions sans ambiguïté** :
+
+  | Question | Ce que l'écran doit dire |
+  |---|---|
+  | **Ce que j'ai perdu** | La lecture en ligne des titres d'abonnement — nommés, pas sous-entendus |
+  | **Ce que je garde** | Mes achats, lecture **et** téléchargement, **sans limite de durée** |
+  | **Pourquoi** | L'abonnement ouvrait la lecture, jamais le fichier (§3.2) |
+
+  C'est **le cas métier central du projet**, et le bug classique du domaine.
+  La maquette de l'espace personnel en fait un état à part entière — huit
+  combinaisons, dont celle-ci — et le backend a déjà son test dédié.
+
+  Le test d'interface vérifie qu'un abonné expiré ayant acheté voit ses achats
+  **téléchargeables**, et qu'aucun message ne suggère une perte les concernant.
+  Contre-test : un abonné expiré **sans** achat voit bien la perte, sans quoi un
+  écran qui ne dirait jamais rien passerait le premier.
 - L'abonnement affiche `statut`, jamais `statut_rapporte`. `anomalie` est nommé
   et invite à contacter le support — pas « erreur ».
 - Après annulation, l'écran dit **jusqu'à quand** l'accès reste ouvert. C'est le
