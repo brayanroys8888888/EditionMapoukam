@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import {
   BarreFiltres,
@@ -305,6 +305,40 @@ describe('couvertures de la grille', () => {
     expect(image?.getAttribute('height')).toBe('480');
     expect(image?.getAttribute('loading')).toBe('lazy');
     expect(image?.getAttribute('sizes')).toBeTruthy();
+  });
+
+  it('une couverture ABSENTE DU STOCKAGE retombe sur le substitut', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ UN JETON EN BASE NE PROUVE PAS QU'UN FICHIER EXISTE.               │
+    // │                                                                    │
+    // │ Le cas s'est produit sur le corpus de démonstration : huit titres   │
+    // │ publiés portaient un `couverture_jeton`, le bucket `covers` était   │
+    // │ vide, et la grille rendait huit images cassées. Le test            │
+    // │ `couverture: null` ci-dessous ne l'aurait PAS vu — le jeton, lui,   │
+    // │ était bien là.                                                     │
+    // │                                                                    │
+    // │ Seul l'échec de chargement dit la vérité, et c'est lui qu'on       │
+    // │ éprouve ici.                                                       │
+    // └────────────────────────────────────────────────────────────────────┘
+    const { container } = render(<GrilleCatalogue langue="fr" entrees={[entree()]} />);
+
+    const image = container.querySelector('img');
+    expect(image).not.toBeNull();
+
+    // jsdom ne charge aucune image : on déclenche l'échec que produirait un
+    // objet manquant, un CDN en défaut ou une purge de stockage.
+    fireEvent.error(image as HTMLImageElement);
+
+    expect(container.querySelector('img')).toBeNull();
+    expect(screen.getByText('Couverture à venir')).toBeDefined();
+  });
+
+  it('une couverture qui se charge n’affiche PAS le substitut — le contre-test', () => {
+    // Sans lui, un composant qui montrerait toujours le substitut passerait
+    // le test précédent, et le catalogue n'aurait plus aucune image.
+    render(<GrilleCatalogue langue="fr" entrees={[entree()]} />);
+
+    expect(screen.queryByText('Couverture à venir')).toBeNull();
   });
 
   it('un titre sans couverture montre un substitut, pas une image cassée', () => {

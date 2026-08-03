@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
 import type { FicheLivre } from '@/domain/catalog/types';
+import { Couverture } from '@/components/catalogue/couverture';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -39,16 +40,17 @@ export function EnteteFiche({
   return (
     <header className="flex flex-col gap-4 md:flex-row md:gap-8">
       {fiche.couverture ? (
-        <img
-          // La taille « fiche » (800 px) est ICI légitime : une seule image par
-          // page, et c'est l'argument de vente principal de l'écran. La grille,
-          // elle, n'a droit qu'à la vignette.
-          src={fiche.couverture.fiche}
-          width={800}
-          height={1200}
-          sizes="(max-width: 768px) 90vw, 320px"
-          alt=""
-          className="w-full max-w-[20rem] rounded-lg border border-border object-cover"
+        // La taille « fiche » (800 px) est ICI légitime : une seule image par
+        // page, et c'est l'argument de vente principal de l'écran. La grille,
+        // elle, n'a droit qu'à la vignette.
+        <Couverture
+          langue={langue}
+          url={fiche.couverture.fiche}
+          largeur={800}
+          hauteur={1200}
+          tailles="(max-width: 768px) 90vw, 320px"
+          classeImage="w-full max-w-[20rem] rounded-lg border border-border object-cover"
+          classeSubstitut="flex aspect-[2/3] w-full max-w-[20rem] items-center justify-center rounded-lg border border-dashed border-border bg-muted p-4 text-center text-sm text-muted-foreground"
         />
       ) : null}
 

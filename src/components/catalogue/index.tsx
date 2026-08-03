@@ -6,6 +6,7 @@ import type { ReponseFacettes } from '@/domain/api/contract';
 import { TRIS } from '@/domain/catalog/schemas';
 import { Pastille } from '@/components/base';
 import { Vide } from '@/components/etats';
+import { Couverture } from './couverture';
 import styles from './catalogue.module.css';
 
 /**
@@ -153,26 +154,25 @@ export function CarteLivre({
     <article className={styles.carte}>
       <a className={styles.carteLien} href={`/${langue}/contes/${entree.slug}`}>
         {entree.couverture ? (
-          <img
-            // ┌──────────────────────────────────────────────────────────┐
-            // │ LA VIGNETTE, JAMAIS LA TAILLE « FICHE ».                 │
-            // │                                                          │
-            // │ 320 px contre 800 px : sur une grille de vingt titres,   │
-            // │ l'écart se compte en mégaoctets, et §5.1 qualifie ce     │
-            // │ gaspillage de critique pour le public visé.              │
-            // └──────────────────────────────────────────────────────────┘
-            src={entree.couverture.vignette}
-            srcSet={`${entree.couverture.vignette} ${String(COUVERTURE_LARGEUR)}w`}
-            sizes="(max-width: 640px) 45vw, 200px"
-            // `width` et `height` réservent la place AVANT le chargement :
-            // sans eux, l'arrivée des images décale la grille, et sur
+          // ┌──────────────────────────────────────────────────────────────┐
+          // │ LA VIGNETTE, JAMAIS LA TAILLE « FICHE ».                     │
+          // │                                                              │
+          // │ 320 px contre 800 px : sur une grille de vingt titres,       │
+          // │ l'écart se compte en mégaoctets, et §5.1 qualifie ce         │
+          // │ gaspillage de critique pour le public visé.                  │
+          // │                                                              │
+          // │ `Couverture` retombe sur le substitut si le fichier manque —  │
+          // │ un jeton en base ne prouve pas qu'un objet existe.           │
+          // └──────────────────────────────────────────────────────────────┘
+          <Couverture
+            langue={langue}
+            url={entree.couverture.vignette}
+            // `largeur` et `hauteur` réservent la place AVANT le chargement :
+            // sans elles, l'arrivée des images décale la grille, et sur
             // connexion lente c'est ce décalage qui fait cliquer à côté.
-            width={COUVERTURE_LARGEUR}
-            height={COUVERTURE_HAUTEUR}
-            loading="lazy"
-            decoding="async"
-            alt=""
-            className={styles.couverture}
+            largeur={COUVERTURE_LARGEUR}
+            hauteur={COUVERTURE_HAUTEUR}
+            tailles="(max-width: 640px) 45vw, 200px"
           />
         ) : (
           <span className={styles.couvertureAbsente}>
