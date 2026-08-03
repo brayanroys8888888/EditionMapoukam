@@ -140,6 +140,27 @@ describe('AUCUNE RÈGLE MÉTIER RECALCULÉE CÔTÉ INTERFACE', () => {
     expect(coupables).toEqual([]);
   });
 
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ UNE SEULE EXCEPTION, NOMMÉE SUR UN CHEMIN EXACT.                     │
+   * │                                                                      │
+   * │ L'échéance d'une URL signée est appliquée par le STOCKAGE, en heure  │
+   * │ RÉELLE. Elle échappe à l'horloge métier — c'est docs/PLAN.md §5      │
+   * │ duodecies, « ce qu'un système extérieur applique échappe à           │
+   * │ l'horloge » — et le middleware bénéficie déjà du même raisonnement   │
+   * │ pour l'échéance des jetons.                                          │
+   * │                                                                      │
+   * │ Le lecteur doit savoir si sa signature vaut encore, sans quoi il     │
+   * │ resignerait à chaque rendu — un aller-retour par pression de touche  │
+   * │ sur la connexion lente que §5.1 décrit.                              │
+   * │                                                                      │
+   * │ L'exception porte sur un fichier PRÉCIS, jamais sur un motif : un    │
+   * │ filtre large finirait par couvrir un écran qui compare, lui, une     │
+   * │ date métier.                                                         │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const HORLOGE_REELLE_ADMISE = 'src/components/lecteur/index.tsx';
+
   it('aucun composant ne compare une date à l’horloge du NAVIGATEUR', () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ Sous horloge simulée, l'horloge du navigateur n'est pas celle du   │
@@ -151,6 +172,7 @@ describe('AUCUNE RÈGLE MÉTIER RECALCULÉE CÔTÉ INTERFACE', () => {
     const coupables: string[] = [];
 
     for (const fichier of sourcesInterface()) {
+      if (chemin(fichier) === HORLOGE_REELLE_ADMISE) continue;
       const source = readFileSync(fichier, 'utf8');
       if (/Date\.now\(\)|new Date\(\s*\)/.test(source)) {
         coupables.push(chemin(fichier));
@@ -158,6 +180,25 @@ describe('AUCUNE RÈGLE MÉTIER RECALCULÉE CÔTÉ INTERFACE', () => {
     }
 
     expect(coupables).toEqual([]);
+  });
+
+  it('l’exception d’horloge réelle porte sur un fichier QUI EXISTE et QUI S’EN SERT', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ SANS CETTE ASSERTION, L'EXCEPTION SURVIVRAIT À SA RAISON D'ÊTRE.   │
+    // │                                                                    │
+    // │ Un fichier renommé, ou qui cesserait de comparer une échéance,     │
+    // │ laisserait derrière lui une dispense silencieuse — c'est-à-dire un │
+    // │ trou dans la règle que personne ne verrait. Elle échoue aussi      │
+    // │ bien si le fichier disparaît que s'il n'en a plus besoin.          │
+    // └────────────────────────────────────────────────────────────────────┘
+    const fichier = sourcesInterface().find((f) => chemin(f) === HORLOGE_REELLE_ADMISE);
+
+    expect(fichier, `exception périmée : ${HORLOGE_REELLE_ADMISE} est introuvable`).toBeDefined();
+
+    const source = readFileSync(fichier ?? '', 'utf8');
+    expect(source).toMatch(/Date\.now\(\)/);
+    // Et elle ne sert QU'À l'échéance d'une signature, jamais à une date métier.
+    expect(source).toContain('expire_le');
   });
 
   it('aucun composant ne recalcule la fenêtre de nouveauté', () => {
