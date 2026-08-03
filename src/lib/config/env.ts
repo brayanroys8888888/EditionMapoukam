@@ -26,7 +26,24 @@ const serverSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  DATABASE_URL: z.string().min(1),
+
+  /**
+   * Connexion PostgreSQL directe — FACULTATIVE, et volontairement.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'APPLICATION NE S'EN SERT JAMAIS.                                     │
+   * │                                                                        │
+   * │ Elle parle à la base par l'API Supabase, avec la clé de service. Seuls  │
+   * │ les SCRIPTS (`db:seed`, `purge:invoices`) et les TESTS ouvrent une      │
+   * │ connexion directe — et tous trois lisent `process.env` en propre, avec  │
+   * │ leur propre message d'erreur.                                          │
+   * │                                                                        │
+   * │ L'exiger au démarrage obligeait à déposer un mot de passe de base de    │
+   * │ données dans l'hébergeur pour une valeur que rien n'y lit. Un secret    │
+   * │ inutile est un secret à faire fuiter : on le retire.                    │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  DATABASE_URL: z.string().min(1).optional(),
 
   // ---- Adaptateurs locaux ----
   PAYMENT_PROVIDER: z.enum(['fake', 'stripe']).default('fake'),
