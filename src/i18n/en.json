@@ -189,6 +189,86 @@
     "trancheAgeBornee": "ages {min} to {max}",
     "nbPages": "{pages} pages"
   },
+  "fiche": {
+    "_commentaire": "Actions are driven by `acces.canRead` and `acces.canDownload`, NEVER inferred from `reason` — see the French dictionary, which carries the reasoning.",
+
+    "lireEnLigne": "Read online",
+    "lireExtrait": "Read the preview",
+    "telecharger": "Download",
+    "ajouterAuPanier": "Add to basket",
+    "voirLesOffres": "Explore the subscription",
+
+    "telechargementParAchat": "A subscription gives you online reading. To keep this tale and download it, buy it individually.",
+    "extraitSeul": "You are reading the preview. The full tale runs to {pages} pages.",
+    "indisponible": "This tale is not currently available.",
+    "bientotAbonnement": "Available with the subscription from {date}",
+    "dansVotreBibliotheque": "This tale is in your library.",
+
+    "details": "About this tale",
+    "auteur": "Text",
+    "illustrateur": "Illustrations",
+    "pages": "Pages",
+    "langues": "Languages",
+    "origine": "Origin",
+    "themes": "Themes",
+    "age": "Suggested age",
+
+    "suggestions": "Also worth discovering",
+    "retourCatalogue": "Back to the catalogue"
+  },
+  "offres": {
+    "_commentaire": "SEPARATING THE TWO MODELS IS WHY THIS SCREEN EXISTS — see the French dictionary, which carries the reasoning.",
+
+    "titre": "Our two plans",
+    "intro": "Read the whole catalogue, or own the tales you love most. Both are possible, and they do not do the same thing.",
+
+    "abonnementTitre": "Subscription",
+    "abonnementResume": "Online reading of the whole catalogue, on all your screens.",
+    "abonnementDonne": "What the subscription gives you",
+    "abonnementDonne1": "Online reading of every included tale",
+    "abonnementDonne2": "New releases as soon as they join the subscription",
+    "abonnementDonne3": "Cancel at any time",
+    "abonnementNeDonnePas": "What the subscription does not give you",
+    "abonnementPasTelechargement": "Downloading the files. A subscription opens the reading, never the file: when it expires, access to subscription tales stops.",
+    "abonnementEssai": "{jours}-day trial",
+    "abonnementParPeriode": "per {periode}",
+    "abonnementSouscrire": "Subscribe",
+
+    "abonnementFermeTitre": "The subscription is not open yet",
+    "abonnementFermeCorps": "The catalogue is still growing. In the meantime, every tale can be bought, and it is yours for good.",
+
+    "achatTitre": "Single purchase",
+    "achatResume": "You buy a tale, it is yours.",
+    "achatDonne": "What buying gives you",
+    "achatDonne1": "Downloads in PDF and EPUB",
+    "achatDonne2": "Online reading with no time limit",
+    "achatDonne3": "Kept even if your subscription expires",
+    "achatAPartirDe": "from {montant}",
+    "achatParcourir": "Browse the catalogue",
+
+    "comparatif": "At a glance",
+    "colonneAbonnement": "Subscription",
+    "colonneAchat": "Single purchase",
+    "ligneLecture": "Online reading",
+    "ligneTelechargement": "File download",
+    "ligneDuree": "How long access lasts",
+    "dureeAbonnement": "While the subscription is active",
+    "dureeAchat": "No time limit",
+    "oui": "Yes",
+    "non": "No"
+  },
+  "accueil": {
+    "titreBanniere": "Tales that once travelled by word of mouth",
+    "corpsBanniere": "The heritage of African storytelling, illustrated and retold for today's children. In French and English.",
+    "actionCatalogue": "Browse the catalogue",
+    "actionOffres": "See the plans",
+    "nouveautes": "Latest releases",
+    "voirTout": "See the whole catalogue",
+    "deuxFormulesTitre": "Two ways to read",
+    "abonnementCourt": "The subscription opens online reading of the whole catalogue.",
+    "achatCourt": "Buying gives you the file, yours to keep with no time limit.",
+    "enSavoirPlus": "Learn more"
+  },
   "pagination": {
     "_commentaire": "The position is a template rather than a concatenation: word order differs between languages, and concatenating freezes the French one.",
     "libelle": "Pagination",

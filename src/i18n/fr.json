@@ -189,6 +189,86 @@
     "trancheAgeBornee": "de {min} à {max} ans",
     "nbPages": "{pages} pages"
   },
+  "fiche": {
+    "_commentaire": "Les actions sont pilotées par `acces.canRead` et `acces.canDownload`, JAMAIS déduites de `reason`. Un conte à la fois gratuit et acheté rend `reason: 'purchase'` ET `canDownload: true` ; un abonné sur le même titre rend `reason: 'subscription'` ET `canDownload: false`. Déduire le droit du motif donne le bon résultat la plupart du temps, et le mauvais exactement là où la règle métier centrale se joue.",
+
+    "lireEnLigne": "Lire en ligne",
+    "lireExtrait": "Lire l'extrait",
+    "telecharger": "Télécharger",
+    "ajouterAuPanier": "Ajouter au panier",
+    "voirLesOffres": "Découvrir l'abonnement",
+
+    "telechargementParAchat": "L'abonnement donne la lecture en ligne. Pour conserver ce conte et le télécharger, achetez-le à l'unité.",
+    "extraitSeul": "Vous lisez l'extrait. Le conte complet compte {pages} pages.",
+    "indisponible": "Ce conte n'est pas disponible actuellement.",
+    "bientotAbonnement": "Disponible avec l'abonnement à partir du {date}",
+    "dansVotreBibliotheque": "Ce conte est dans votre bibliothèque.",
+
+    "details": "À propos de ce conte",
+    "auteur": "Texte",
+    "illustrateur": "Illustrations",
+    "pages": "Pages",
+    "langues": "Langues",
+    "origine": "Origine",
+    "themes": "Thèmes",
+    "age": "Âge conseillé",
+
+    "suggestions": "À découvrir aussi",
+    "retourCatalogue": "Retour au catalogue"
+  },
+  "offres": {
+    "_commentaire": "LA SÉPARATION DES DEUX MODÈLES EST LA RAISON D'ÊTRE DE CET ÉCRAN. L'abonnement donne la lecture en ligne et JAMAIS le téléchargement ; l'achat à l'unité donne le fichier, sans limite de durée. C'est la règle métier centrale du projet, et cette page est le premier endroit où un client la lit — la formuler mollement ici produit des réclamations à chaque expiration d'abonnement.",
+
+    "titre": "Nos deux formules",
+    "intro": "Lire tout le catalogue, ou posséder les contes que vous préférez. Les deux sont possibles, et ne font pas la même chose.",
+
+    "abonnementTitre": "Abonnement",
+    "abonnementResume": "Lecture en ligne de tout le catalogue, sur tous vos écrans.",
+    "abonnementDonne": "Ce que l'abonnement donne",
+    "abonnementDonne1": "La lecture en ligne de tous les contes inclus",
+    "abonnementDonne2": "Les nouveautés dès leur entrée dans l'abonnement",
+    "abonnementDonne3": "Résiliable à tout moment",
+    "abonnementNeDonnePas": "Ce que l'abonnement ne donne pas",
+    "abonnementPasTelechargement": "Le téléchargement des fichiers. Un abonnement ouvre la lecture, jamais le fichier : à son expiration, l'accès aux contes de l'abonnement s'arrête.",
+    "abonnementEssai": "{jours} jours d'essai",
+    "abonnementParPeriode": "par {periode}",
+    "abonnementSouscrire": "S'abonner",
+
+    "abonnementFermeTitre": "L'abonnement n'est pas encore ouvert",
+    "abonnementFermeCorps": "Le catalogue s'étoffe. En attendant, chaque conte est disponible à l'achat, et vous le gardez pour de bon.",
+
+    "achatTitre": "Achat à l'unité",
+    "achatResume": "Vous achetez un conte, il est à vous.",
+    "achatDonne": "Ce que l'achat donne",
+    "achatDonne1": "Le téléchargement en PDF et en EPUB",
+    "achatDonne2": "La lecture en ligne sans limite de durée",
+    "achatDonne3": "Conservé même si votre abonnement expire",
+    "achatAPartirDe": "à partir de {montant}",
+    "achatParcourir": "Parcourir le catalogue",
+
+    "comparatif": "En un coup d'œil",
+    "colonneAbonnement": "Abonnement",
+    "colonneAchat": "Achat à l'unité",
+    "ligneLecture": "Lecture en ligne",
+    "ligneTelechargement": "Téléchargement du fichier",
+    "ligneDuree": "Durée de l'accès",
+    "dureeAbonnement": "Tant que l'abonnement est actif",
+    "dureeAchat": "Sans limite de durée",
+    "oui": "Oui",
+    "non": "Non"
+  },
+  "accueil": {
+    "titreBanniere": "Des contes qui se transmettaient de bouche à oreille",
+    "corpsBanniere": "Le patrimoine du conte africain, illustré et raconté pour les enfants d'aujourd'hui. En français et en anglais.",
+    "actionCatalogue": "Parcourir le catalogue",
+    "actionOffres": "Voir les formules",
+    "nouveautes": "Dernières parutions",
+    "voirTout": "Voir tout le catalogue",
+    "deuxFormulesTitre": "Deux façons de lire",
+    "abonnementCourt": "L'abonnement ouvre la lecture en ligne de tout le catalogue.",
+    "achatCourt": "L'achat vous donne le fichier, à conserver sans limite de durée.",
+    "enSavoirPlus": "En savoir plus"
+  },
   "pagination": {
     "_commentaire": "La position est une phrase à trous plutôt qu’une concaténation : « page 3 sur 12 » et « page 3 of 12 » n’ont pas le même ordre de mots dans toutes les langues, et une concaténation fige celui du français.",
     "libelle": "Pagination",

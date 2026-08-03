@@ -1,0 +1,128 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PONT ENTRE shadcn/ui ET LES JETONS DU PROJET.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX SYNTAXES, UNE SEULE PALETTE.                                       │
+ * │                                                                          │
+ * │ Décision du 3 août 2026 : shadcn/ui est adopté pour les NOUVEAUX écrans, │
+ * │ les écrans déjà livrés restant en CSS Modules. Deux systèmes de style    │
+ * │ coexistent donc — le risque annoncé étant deux hauteurs de bouton, deux  │
+ * │ contours de focus, deux façons de rater WCAG.                            │
+ * │                                                                          │
+ * │ Ce fichier est ce qui empêche ce risque de se réaliser : shadcn se thème │
+ * │ par variables CSS, et TOUTES les siennes pointent ici vers les jetons de │
+ * │ `tokens.css`. Aucune couleur n'est réécrite — un test échoue d'ailleurs  │
+ * │ sur toute valeur hexadécimale écrite hors du fichier de jetons.          │
+ * │                                                                          │
+ * │ Conséquence utile : les dix-neuf tests de contraste continuent de        │
+ * │ protéger les deux systèmes, puisqu'ils mesurent la source commune.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PRÉFLIGHT DE TAILWIND EST VOLONTAIREMENT OMIS.                       │
+ * │                                                                          │
+ * │ Il réinitialise marges, titres et listes sur TOUT le document. Appliqué  │
+ * │ ici, il déferait la mise en page des écrans déjà livrés — enveloppe,     │
+ * │ authentification, catalogue — qui s'appuient sur les styles par défaut.  │
+ * │                                                                          │
+ * │ On importe donc le thème et les utilitaires, sans la base.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/*
+ * La SEULE règle du préflight dont shadcn dépend réellement.
+ *
+ * Les utilitaires `border` de Tailwind ne posent qu'une LARGEUR ; le style,
+ * lui, vaut `none` par défaut en CSS. Sans cette ligne, toutes les bordures
+ * des composants shadcn — champs, cartes, boîtes de dialogue — seraient
+ * invisibles, ce qui se lit comme un bogue d'affichage et non comme un
+ * réglage manquant.
+ */
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-style: solid;
+    border-width: 0;
+  }
+}
+
+/*
+ * Les variables de shadcn, branchées sur les jetons.
+ *
+ * `inline` : les valeurs sont résolues à l'usage, si bien qu'un jeton modifié
+ * dans `tokens.css` se propage sans que ce fichier soit touché.
+ */
+@theme inline {
+  --color-background: var(--fond);
+  --color-foreground: var(--encre);
+
+  --color-card: var(--fond);
+  --color-card-foreground: var(--encre);
+
+  --color-popover: var(--fond);
+  --color-popover-foreground: var(--encre);
+
+  /* L'action principale : le jaune de la charte, et son encre vérifiée à 8,43:1. */
+  --color-primary: var(--action);
+  --color-primary-foreground: var(--action-encre);
+
+  --color-secondary: var(--fond-doux);
+  --color-secondary-foreground: var(--encre);
+
+  --color-muted: var(--fond-doux);
+  --color-muted-foreground: var(--encre-douce);
+
+  --color-accent: var(--creme);
+  --color-accent-foreground: var(--creme-accent);
+
+  /* Le rouge de la charte est celui d'Afrique centrale, mesuré à 4,5:1. */
+  --color-destructive: var(--region-afrique_centrale-encre);
+  --color-destructive-foreground: var(--fond);
+
+  --color-border: var(--bordure);
+  --color-input: var(--bordure-forte);
+  --color-ring: var(--focus-couleur);
+
+  --font-sans: var(--police-interface);
+  --font-serif: var(--police-titre);
+
+  --radius: var(--rayon-controle);
+  --radius-sm: var(--rayon-controle);
+  --radius-md: var(--rayon-bouton);
+  --radius-lg: var(--rayon-carte);
+  --radius-xl: var(--rayon-panneau);
+}
+
+/*
+ * Deux garanties d'accessibilité, imposées aux composants shadcn.
+ *
+ * Elles ne sont pas négociables et ne dépendent donc pas de la vigilance de
+ * celui qui posera la prochaine classe utilitaire :
+ *
+ *   * le contour de focus vaut 3 px, comme partout ailleurs — la maquette
+ *     d'administration descendait à 2 px, et l'accessibilité ne se négocie
+ *     pas contre une maquette ;
+ *   * toute cible interactive fait au moins 44 px de haut, condition du
+ *     lecteur utilisable à une main par un enfant de six ans.
+ */
+@layer components {
+  [data-slot='button'],
+  [data-slot='select-trigger'],
+  [data-slot='input'] {
+    min-height: var(--cible-min);
+  }
+
+  [data-slot]:focus-visible {
+    outline: var(--focus-epaisseur) solid var(--focus-couleur);
+    outline-offset: var(--focus-decalage);
+  }
+}

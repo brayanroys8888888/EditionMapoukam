@@ -3,6 +3,9 @@ import { headers } from 'next/headers';
 
 import { langueValide } from '@/i18n';
 import '@/design/tokens.css';
+// APRÈS les jetons, et non avant : le pont shadcn les LIT (`var(--fond)`, …).
+// Inversé, Tailwind résoudrait des variables encore indéfinies.
+import '@/design/tailwind.css';
 
 /**
  * Enveloppe racine.
