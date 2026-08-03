@@ -48,7 +48,37 @@ export const changementMotDePasseSchema = z.object({
   password: motDePasse,
 });
 
+/**
+ * Code à usage unique reçu par email.
+ *
+ * Les espaces sont retirés avant le contrôle : un code copié depuis un client
+ * de messagerie arrive souvent sous la forme « 565 333 », et refuser une saisie
+ * juste pour cette seule raison est un défaut d'accueil, pas une sécurité.
+ */
+const codeUsageUnique = z
+  .string()
+  .trim()
+  .transform((valeur) => valeur.replace(/\s+/g, ''))
+  .pipe(z.string().regex(/^\d{6}$/, 'Le code doit comporter six chiffres.'));
+
+/**
+ * Les deux usages du code, et il n'y en aura pas d'autre par ce chemin.
+ *
+ * L'énumération est FERMÉE délibérément : `verifyOtp` accepte aussi des types
+ * liés au changement d'adresse email, qu'un client ne doit pas pouvoir
+ * déclencher en choisissant lui-même la valeur.
+ */
+export const TYPES_CODE = ['signup', 'recovery'] as const;
+export type TypeCode = (typeof TYPES_CODE)[number];
+
+export const echangeCodeSchema = z.object({
+  email,
+  code: codeUsageUnique,
+  type: z.enum(TYPES_CODE),
+});
+
 export type Inscription = z.infer<typeof inscriptionSchema>;
 export type Connexion = z.infer<typeof connexionSchema>;
 export type DemandeReinitialisation = z.infer<typeof demandeReinitialisationSchema>;
 export type ChangementMotDePasse = z.infer<typeof changementMotDePasseSchema>;
+export type EchangeCode = z.infer<typeof echangeCodeSchema>;

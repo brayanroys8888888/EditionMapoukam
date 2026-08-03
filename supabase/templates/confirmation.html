@@ -1,0 +1,61 @@
+<!--
+  Vérification d'adresse email — inscription.
+
+  ┌──────────────────────────────────────────────────────────────────────────┐
+  │ CE GABARIT NE PORTE AUCUN LIEN D'ACTIVATION, ET C'EST DÉLIBÉRÉ.         │
+  │                                                                          │
+  │ Le lien de Supabase dépose ses jetons dans le FRAGMENT de l'URL, qui     │
+  │ n'est jamais transmis au serveur : l'exploiter imposerait du JavaScript  │
+  │ de page sur le chemin critique de l'inscription. L'arbitrage Q3 a retenu │
+  │ le code saisi, rendu par un formulaire côté serveur.                     │
+  │                                                                          │
+  │ Laisser le lien EN PLUS ferait vivre deux chemins d'établissement de     │
+  │ session — exactement la double implémentation que ce projet a déjà payée │
+  │ trois fois (docs/PLAN.md §5 quinquies). L'adresse ci-dessous est une     │
+  │ navigation ordinaire, sans jeton.                                        │
+  └──────────────────────────────────────────────────────────────────────────┘
+
+  BILINGUE, faute de mieux : Supabase envoie ces messages lui-même et ne
+  connaît pas la langue choisie dans l'interface. Les deux versions sont donc
+  présentes, le français d'abord — c'est la langue par défaut de la plateforme.
+-->
+<div style="font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.6; color: #1a1614; max-width: 34rem; margin: 0 auto; padding: 1.5rem;">
+
+  <h1 style="font-size: 1.25rem; margin: 0 0 1rem;">Confirmez votre adresse email</h1>
+
+  <p style="margin: 0 0 1rem;">
+    Bienvenue. Saisissez ce code pour activer votre compte&nbsp;:
+  </p>
+
+  <p style="font-size: 2rem; font-weight: 700; letter-spacing: 0.3em; margin: 1.5rem 0; padding: 1rem; background: #f5f0e8; border-radius: 0.5rem; text-align: center;">{{ .Token }}</p>
+
+  <p style="margin: 0 0 1rem;">
+    Rendez-vous sur <a href="{{ .SiteURL }}/fr/confirmation" style="color: #7a3b12;">{{ .SiteURL }}/fr/confirmation</a>
+    et entrez ce code. Il est valable une heure et ne sert qu'une fois.
+  </p>
+
+  <p style="margin: 0 0 2rem; color: #5c5450; font-size: 0.9rem;">
+    Si vous n'êtes pas à l'origine de cette inscription, ignorez ce message&nbsp;:
+    aucun compte ne sera activé.
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #ddd4c8; margin: 2rem 0;" />
+
+  <h2 style="font-size: 1.1rem; margin: 0 0 1rem;" lang="en">Confirm your email address</h2>
+
+  <p style="margin: 0 0 1rem;" lang="en">
+    Welcome. Enter this code to activate your account:
+  </p>
+
+  <p style="font-size: 2rem; font-weight: 700; letter-spacing: 0.3em; margin: 1.5rem 0; padding: 1rem; background: #f5f0e8; border-radius: 0.5rem; text-align: center;">{{ .Token }}</p>
+
+  <p style="margin: 0 0 1rem;" lang="en">
+    Go to <a href="{{ .SiteURL }}/en/confirmation" style="color: #7a3b12;">{{ .SiteURL }}/en/confirmation</a>
+    and enter the code. It is valid for one hour and can only be used once.
+  </p>
+
+  <p style="margin: 0; color: #5c5450; font-size: 0.9rem;" lang="en">
+    If you did not sign up, ignore this message — no account will be activated.
+  </p>
+
+</div>

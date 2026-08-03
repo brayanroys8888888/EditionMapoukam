@@ -31,8 +31,53 @@ function serialise(nom: string, valeur: string, options: CookieOptions): string 
   return parties.join('; ');
 }
 
+export interface DescripteurCookie {
+  nom: string;
+  valeur: string;
+  maxAgeSeconds: number;
+  secure: boolean;
+}
+
 /**
- * Cookies posés à la connexion.
+ * Cookies de session, décrits AVANT toute sérialisation.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX ÉCRITURES, UNE SEULE POLITIQUE.                                    │
+ * │                                                                          │
+ * │ Une route d'API pose ses cookies par un en-tête `Set-Cookie` ; une       │
+ * │ Server Action les pose par le magasin de cookies de Next. Les deux       │
+ * │ doivent porter les MÊMES attributs — `HttpOnly`, `SameSite=Lax`, la      │
+ * │ même durée — sans quoi un jeton déposé par un chemin serait lisible par  │
+ * │ le JavaScript de page déposé par l'autre.                                │
+ * │                                                                          │
+ * │ La politique est donc décrite ici, une fois, et chaque chemin se         │
+ * │ contente de la rendre dans sa propre forme.                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function descripteursDeSession(session: {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}): DescripteurCookie[] {
+  const secure = process.env['NODE_ENV'] === 'production';
+  return [
+    {
+      nom: ACCESS_TOKEN_COOKIE,
+      valeur: session.access_token,
+      maxAgeSeconds: session.expires_in,
+      secure,
+    },
+    {
+      nom: REFRESH_TOKEN_COOKIE,
+      valeur: session.refresh_token,
+      maxAgeSeconds: 30 * 24 * 3600,
+      secure,
+    },
+  ];
+}
+
+/**
+ * Cookies posés à la connexion, sous forme d'en-têtes `Set-Cookie`.
  *
  * `Secure` est absent en développement, faute de quoi le navigateur refuserait
  * le cookie sur `http://localhost`.
@@ -42,17 +87,12 @@ export function cookiesDeSession(session: {
   refresh_token: string;
   expires_in: number;
 }): string[] {
-  const secure = process.env['NODE_ENV'] === 'production';
-  return [
-    serialise(ACCESS_TOKEN_COOKIE, session.access_token, {
-      maxAgeSeconds: session.expires_in,
-      secure,
+  return descripteursDeSession(session).map((descripteur) =>
+    serialise(descripteur.nom, descripteur.valeur, {
+      maxAgeSeconds: descripteur.maxAgeSeconds,
+      secure: descripteur.secure,
     }),
-    serialise(REFRESH_TOKEN_COOKIE, session.refresh_token, {
-      maxAgeSeconds: 30 * 24 * 3600,
-      secure,
-    }),
-  ];
+  );
 }
 
 /** Cookies posés à la déconnexion : mêmes noms, durée nulle. */

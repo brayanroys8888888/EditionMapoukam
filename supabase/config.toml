@@ -264,6 +264,26 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ GABARITS PORTANT LE CODE À USAGE UNIQUE — arbitrage Q3, 3 août 2026.     │
+# │                                                                          │
+# │ Les gabarits par défaut de Supabase ne portent QUE `{{ .ConfirmationURL }}`,
+# │ dont les jetons vivent dans le fragment de l'URL — jamais transmis au     │
+# │ serveur, donc inexploitables sans JavaScript de page. Ceux-ci affichent   │
+# │ `{{ .Token }}`, que l'utilisateur saisit dans un formulaire rendu côté    │
+# │ serveur.                                                                 │
+# │                                                                          │
+# │ Sans ces deux entrées, le code existe côté serveur mais n'atteint jamais  │
+# │ l'utilisateur, et les deux écrans concernés sont inutilisables.           │
+# └──────────────────────────────────────────────────────────────────────────┘
+[auth.email.template.confirmation]
+subject = "Confirmez votre adresse — Édition Mapoukam"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Réinitialiser votre mot de passe — Édition Mapoukam"
+content_path = "./supabase/templates/recovery.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"

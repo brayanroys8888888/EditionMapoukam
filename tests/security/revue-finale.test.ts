@@ -60,6 +60,17 @@ const PUBLIQUES: Readonly<Record<string, string>> = {
   '/api/auth/register': 'Création de compte : c’est le point d’entrée d’un nouveau visiteur.',
   '/api/auth/password/reset': 'Demande de réinitialisation.',
   '/api/auth/password/update': 'Réinitialisation par jeton.',
+  '/api/auth/otp':
+    'Authentifiée par le CODE À USAGE UNIQUE lui-même, jamais par une session : elle sert ' +
+    'précisément à en ouvrir une, pour confirmer une adresse ou reprendre un compte dont le ' +
+    'mot de passe est perdu. Même montage que le rafraîchissement — le secret présenté EST ' +
+    'l’authentification. Deux plafonds de débit y tiennent lieu de garde, dont un par adresse ' +
+    'email seule, parce que six chiffres se forcent brutalement.',
+  '/api/auth/resend':
+    'Renvoi du code de vérification d’adresse : elle s’adresse par construction à quelqu’un ' +
+    'qui ne peut pas encore se connecter. Répond 204 sans condition — adresse inconnue, en ' +
+    'attente ou déjà confirmée sont indistinguables, faute de quoi elle signalerait les ' +
+    'inscriptions récentes.',
   '/api/webhooks/payments': 'Authentifiée par SIGNATURE, jamais par session (CLAUDE.md règle 5).',
   '/api/auth/refresh':
     'Authentifiée par le JETON DE RAFRAÎCHISSEMENT lui-même, jamais par une session : ' +

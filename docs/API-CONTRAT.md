@@ -777,12 +777,27 @@ service externe, que le mode 100 % local exclut. **Je la considère hors
 périmètre** sauf indication contraire ; le point est signalé, pas tranché
 seul.
 
-**Q3 — Vérification d'email et réinitialisation.** Les liens Supabase
-redirigent vers `/auth/confirmation` et `/auth/nouveau-mot-de-passe` avec les
-jetons dans le **fragment** d'URL. Rien ne transforme cette session Supabase en
-cookies `contes_*`. Je propose `POST /api/auth/session` (échange d'un
-`access_token` + `refresh_token` contre nos cookies), à l'étape 2. Confirmez, ou
-dites-moi si vous préférez que ces deux pages appellent directement Supabase.
+**Q3 — Vérification d'email et réinitialisation. ✅ TRANCHÉE le 3 août 2026 :
+code à six chiffres saisi.** La proposition initiale — `POST /api/auth/session`,
+échangeant contre nos cookies les jetons déposés par Supabase dans le
+**fragment** d'URL — a été **écartée**, pour une raison décisive : *un fragment
+n'est jamais transmis au serveur*. L'exploiter imposait donc du JavaScript de
+page pour le lire et le renvoyer, c'est-à-dire **JavaScript sur le chemin
+critique de la réinitialisation d'un mot de passe**, pour un public que §5.1
+décrit en partie sur connexion lente.
+
+La solution retenue est `POST /api/auth/otp` : l'email porte un code à six
+chiffres, saisi dans un formulaire **rendu côté serveur**. Aucun jeton dans
+l'URL, rien dans l'historique du navigateur, et le chemin critique fonctionne
+sans JavaScript.
+
+Ce que ce choix suppose du fournisseur a été **établi contre la pile locale, pas
+déduit de la documentation** (`scripts/sonde-otp.mjs`) : le code existe pour les
+deux usages — `recovery` et `signup` —, il fait six chiffres, il ne sert qu'une
+fois, un code faux n'ouvre rien, et le type à employer pour l'inscription est
+bien `signup` et non `email`. Livré à l'étape F3, avec ses gabarits d'email
+(`supabase/templates/`), sans lesquels le code n'atteindrait jamais
+l'utilisateur.
 
 **Q4 — Suggestions de la fiche.** `suggestions[]` rend 4 titres par thèmes
 partagés, sans décision d'accès ni prix. Suffisant pour une vignette et un lien.

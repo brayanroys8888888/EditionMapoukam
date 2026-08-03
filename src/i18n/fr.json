@@ -20,6 +20,7 @@
     "corps_illisible": "La demande n'a pas pu être lue.",
     "non_authentifie": "Vous devez être connecté.",
     "identifiants_invalides": "Adresse email ou mot de passe incorrect.",
+    "code_invalide": "Ce code est invalide ou a expiré. Demandez-en un nouveau.",
     "email_non_verifie": "Vérifiez votre adresse email avant de vous connecter.",
     "compte_suspendu": "Ce compte est suspendu.",
     "interdit": "Vous n'avez pas accès à cette page.",
@@ -85,6 +86,64 @@
     "telecharger": "Télécharger",
     "acheter": "Acheter",
     "horsZone": "Ce conte n'est pas encore proposé à l'achat dans votre région."
+  },
+  "auth": {
+    "_commentaire": "TROIS MESSAGES SONT DÉLIBÉRÉMENT INDIFFÉRENCIÉS, et c'est le critère principal de l'étape F3 : `inscriptionEnvoyee` est le même que l'adresse soit connue ou non, `oubliEnvoye` est affiché sans condition, et l'échec de connexion ne nomme jamais lequel des deux champs est faux. Les nuancer par bonne intention rendrait la plateforme énumérable, une adresse à la fois.",
+
+    "connexionTitre": "Se connecter",
+    "connexionSoumettre": "Se connecter",
+    "email": "Adresse email",
+    "motDePasse": "Mot de passe",
+    "motDePasseOublie": "Mot de passe oublié ?",
+    "pasDeCompte": "Pas encore de compte ?",
+    "creerUnCompte": "Créer un compte",
+    "dejaUnCompte": "Vous avez déjà un compte ?",
+    "seConnecter": "Se connecter",
+
+    "inscriptionTitre": "Créer un compte",
+    "inscriptionSoumettre": "Créer mon compte",
+    "nomComplet": "Nom",
+    "nomCompletAide": "Facultatif. Il n'apparaît que dans votre espace personnel.",
+    "aucuneDonneeEnfant": "Ce compte est celui d'un adulte. Nous ne demandons aucune information sur les enfants.",
+    "inscriptionEnvoyee": "Inscription enregistrée. Si cette adresse n'était pas déjà utilisée, un code de vérification vient de vous être envoyé.",
+    "inscriptionSuite": "Saisir le code de vérification",
+
+    "forceTitre": "Robustesse du mot de passe",
+    "forceFaible": "Insuffisant",
+    "forceMoyen": "Acceptable",
+    "forceFort": "Solide",
+    "regleLongueur": "Au moins 10 caractères",
+    "regleLettre": "Au moins une lettre",
+    "regleChiffre": "Au moins un chiffre",
+    "regleTenue": "Condition remplie",
+    "regleNonTenue": "Condition non remplie",
+
+    "oubliTitre": "Mot de passe oublié",
+    "oubliIntro": "Indiquez votre adresse email : nous vous enverrons un code à six chiffres pour choisir un nouveau mot de passe.",
+    "oubliSoumettre": "Envoyer le code",
+    "oubliEnvoye": "Si un compte existe pour cette adresse, un code vient d'être envoyé. Vérifiez votre boîte de réception.",
+    "oubliSuite": "Saisir le code reçu",
+
+    "nouveauTitre": "Choisir un nouveau mot de passe",
+    "nouveauIntro": "Saisissez le code reçu par email, puis votre nouveau mot de passe.",
+    "nouveauMotDePasse": "Nouveau mot de passe",
+    "nouveauSoumettre": "Changer mon mot de passe",
+    "nouveauFait": "Votre mot de passe a été changé. Vous êtes connecté.",
+
+    "confirmationTitre": "Confirmer votre adresse",
+    "confirmationIntro": "Saisissez le code à six chiffres reçu par email pour activer votre compte.",
+    "confirmationSoumettre": "Confirmer mon adresse",
+    "confirmationFaite": "Votre adresse est confirmée. Bienvenue.",
+
+    "code": "Code reçu par email",
+    "codeAide": "Six chiffres, valables une heure.",
+
+    "emailNonVerifieAction": "Renvoyer un code de vérification",
+    "emailNonVerifieRenvoye": "Si votre compte existe et n'est pas encore confirmé, un nouveau code vient d'être envoyé.",
+
+    "attendre": "Trop de tentatives. Réessayez dans {secondes} secondes.",
+    "continuer": "Continuer",
+    "allerAuCatalogue": "Parcourir le catalogue"
   },
   "pagination": {
     "_commentaire": "La position est une phrase à trous plutôt qu’une concaténation : « page 3 sur 12 » et « page 3 of 12 » n’ont pas le même ordre de mots dans toutes les langues, et une concaténation fige celui du français.",

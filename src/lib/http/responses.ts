@@ -92,6 +92,15 @@ export const errors = {
       message: 'Adresse email ou mot de passe incorrect.',
     }),
 
+  codeInvalide: (): Response =>
+    // Volontairement identique pour un code faux, un code expiré, un code déjà
+    // consommé et une adresse inconnue : les distinguer dirait à un visiteur
+    // si une adresse possède un compte, et à un attaquant si son code approche.
+    fail(400, {
+      code: 'code_invalide',
+      message: 'Ce code est invalide ou a expiré. Demandez-en un nouveau.',
+    }),
+
   emailNonVerifie: (): Response =>
     fail(403, {
       code: 'email_non_verifie',

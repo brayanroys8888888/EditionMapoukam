@@ -1,0 +1,171 @@
+/*
+ * Écrans d'authentification.
+ *
+ * Une colonne étroite et centrée : ces cinq écrans n'ont qu'une tâche, et
+ * chaque élément qui ne la sert pas est une occasion de se tromper de champ.
+ */
+
+.panneau {
+  max-width: 26rem;
+  margin: var(--espace-7) auto;
+  padding: var(--espace-6);
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+}
+
+.titre {
+  font-family: var(--police-titre);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-titre);
+  margin: 0 0 var(--espace-4);
+}
+
+.intro {
+  font-size: var(--taille-base);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+  margin: 0 0 var(--espace-5);
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+}
+
+.formulaireSecondaire {
+  margin-top: var(--espace-4);
+}
+
+/*
+ * Erreur au niveau du FORMULAIRE, et non du champ.
+ *
+ * C'est une contrainte de sécurité avant d'être une contrainte de mise en
+ * page : marquer le champ « mot de passe » sur un échec de connexion
+ * reviendrait à confirmer que l'adresse, elle, est connue.
+ */
+.erreurFormulaire {
+  margin: 0 0 var(--espace-5);
+  padding: var(--espace-3) var(--espace-4);
+  background: var(--region-afrique_centrale-fond);
+  border: 1px solid var(--region-afrique_centrale-bordure);
+  border-radius: var(--rayon-controle);
+  color: var(--region-afrique_centrale-encre);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  line-height: var(--interligne-corps);
+}
+
+/*
+ * Distinct de l'erreur : une session révoquée n'appelle pas à corriger une
+ * saisie, mais à changer son mot de passe. Le ton le dit avant le texte.
+ */
+.avertissement {
+  margin: 0 0 var(--espace-5);
+  padding: var(--espace-3) var(--espace-4);
+  background: var(--creme);
+  border: 1px solid var(--creme-bordure);
+  border-radius: var(--rayon-controle);
+  color: var(--creme-accent);
+  font-size: var(--taille-base);
+  line-height: var(--interligne-corps);
+}
+
+.message {
+  margin: 0 0 var(--espace-5);
+  padding: var(--espace-4);
+  background: var(--region-afrique_ouest-fond);
+  border: 1px solid var(--region-afrique_ouest-bordure);
+  border-radius: var(--rayon-controle);
+}
+
+.messageTexte {
+  margin: 0;
+  color: var(--region-afrique_ouest-encre);
+  font-size: var(--taille-base);
+  line-height: var(--interligne-corps);
+}
+
+.mention {
+  margin: 0;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  line-height: var(--interligne-corps);
+}
+
+/* ── Robustesse du mot de passe ─────────────────────────────────────────── */
+
+.force {
+  margin: 0;
+}
+
+.forceNiveau {
+  margin: 0 0 var(--espace-2);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+}
+
+.forceListe {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-1);
+  font-size: var(--taille-m);
+}
+
+.conditionTenue {
+  color: var(--region-afrique_ouest-encre);
+}
+
+.conditionAttendue {
+  color: var(--encre-douce);
+}
+
+/* ── Liens de bas de formulaire ─────────────────────────────────────────── */
+
+.liens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  margin-top: var(--espace-6);
+  padding-top: var(--espace-5);
+  border-top: 1px solid var(--bordure);
+  font-size: var(--taille-base);
+}
+
+.liens a {
+  color: var(--lien-survol);
+  /*
+   * Cible tactile : un lien de 15 px sur une ligne serrée est en dessous des
+   * 44 px exigés, et ces liens sont ceux qu'on cherche quand on est bloqué.
+   */
+  display: inline-block;
+  min-height: var(--cible-min);
+  line-height: var(--cible-min);
+}
+
+.lienSecondaire {
+  color: var(--encre-douce);
+}
+
+/*
+ * Visible des lecteurs d'écran, absent de l'écran.
+ *
+ * `clip-path` plutôt que `display: none`, qui retirerait le texte de l'arbre
+ * d'accessibilité — c'est-à-dire l'inverse de ce qu'on cherche.
+ */
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}

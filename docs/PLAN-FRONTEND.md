@@ -338,16 +338,56 @@ npm run verify
 
 ---
 
-### F3 — Authentification
+### F3 — Authentification — ✅ LIVRÉE le 3 août 2026
+
+> **`npm run verify` : 1 209 tests dans 67 fichiers, aucun ignoré.**
+>
+> **Q3 tranchée : code à six chiffres saisi**, et non les jetons du fragment
+> d'URL. Un fragment n'est jamais transmis au serveur — la proposition initiale
+> imposait donc JavaScript sur le chemin critique de la réinitialisation d'un
+> mot de passe, pour un public en partie sur connexion lente. Ce que le
+> fournisseur permet a été **établi par sonde contre la pile locale**, pas
+> déduit de sa documentation : le type à employer pour l'inscription est
+> `signup`, et non `email` — une lecture de types ne l'aurait pas dit.
+>
+> Deux manques trouvés en écrivant les tests :
+>
+> | Manque | Portée |
+> |---|---|
+> | Aucune route de renvoi de code | `email_non_verifie` était un cul-de-sac : l'écran nommait la raison sans offrir d'issue |
+> | L'échec de connexion n'était comparé nulle part | L'indistinguabilité de l'inscription avait son test ; **celle de la connexion, non** |
+>
+> Deux décisions de structure. L'ouverture de session est **extraite**
+> (`src/lib/auth/etablir-session.ts`) : le mot de passe et le code y passent
+> tous deux, faute de quoi « mot de passe oublié » aurait fini par devenir une
+> porte dérobée pour un compte suspendu. Et la politique de cookies est décrite
+> **avant sérialisation**, parce qu'une route pose ses cookies par un en-tête et
+> une Server Action par le magasin de Next — deux écritures, une seule
+> politique.
+>
+> Le second plafond de débit, **par adresse email seule**, est ce que la
+> connexion par mot de passe n'a délibérément pas : six chiffres comptent un
+> million de valeurs, et un attaquant qui change d'IP à chaque essai ne
+> rencontrerait jamais le plafond par couple.
+
+### F3 (référence) — Authentification
 
 **Objectif.** Inscription, connexion, mot de passe oublié, vérification d'email.
 
 **Fichiers produits**
 
 - `src/app/[langue]/(auth)/` — `connexion`, `inscription`, `mot-de-passe-oublie`,
-  `nouveau-mot-de-passe`, `confirmation`
+  `nouveau-mot-de-passe`, `confirmation`, et `actions.ts` (Server Actions, qui
+  **appellent les routes** plutôt que de refaire leur logique — §1.2)
 - `src/components/auth/` — `FormulaireConnexion`, `FormulaireInscription`,
-  `ForceMotDePasse`
+  `ForceMotDePasse`, `FormulaireOubli`, `FormulaireCode`, `MessageAuth`
+- `src/app/api/auth/otp/route.ts` — échange du code contre une session (Q3)
+- `src/app/api/auth/resend/route.ts` — renvoi du code de vérification, sans
+  lequel `email_non_verifie` est un cul-de-sac
+- `src/lib/auth/etablir-session.ts` — ouverture de session, **partagée** entre le
+  mot de passe et le code
+- `supabase/templates/{confirmation,recovery}.html` — portent `{{ .Token }}` et
+  **aucun lien de jeton**, déclarés dans `supabase/config.toml`
 - Tests : `tests/composants/auth.test.tsx`, `tests/integration/parcours-auth.test.ts`
 
 **Dépendances.** F2, et **Q3 de `docs/API-CONTRAT.md`** tranchée.
@@ -907,7 +947,7 @@ achats**.
 | **2** | **Correction de `CLAUDE.md`** — « ne crée pas d'interface » | Tout, dès la prochaine session |
 | **3** | **`axe-core` en MPL-2.0** — accepter en dépendance de développement, ou non | F14 seulement |
 | **4** | **Q2** — connexion Google : je la considère hors périmètre | F3 |
-| **5** | **Q3** — `POST /api/auth/session` pour la vérification d'email | F0 et F3 |
+| **5** | ~~**Q3** — vérification d'email~~ — **tranchée le 3 août 2026** : code à six chiffres saisi, `POST /api/auth/otp`. La proposition `POST /api/auth/session` est écartée | ~~F0 et F3~~ |
 | **6** | **Seuil d'ouverture de l'abonnement** — `business_settings.abonnement_ouvert` | F9 |
 | **7** | **Validation de ce plan** | Tout |
 

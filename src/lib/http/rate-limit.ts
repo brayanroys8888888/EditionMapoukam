@@ -97,6 +97,45 @@ export const LOGIN_RATE_LIMIT: RateLimitOptions = {
 };
 
 /**
+ * Limiteurs de l'échange d'un code à usage unique.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX LIMITEURS, PARCE QUE LE SECRET NE FAIT QUE SIX CHIFFRES.           │
+ * │                                                                          │
+ * │ Un mot de passe est choisi par son porteur et peut être long ; un code   │
+ * │ à usage unique compte un million de valeurs, et se devine. Les deux ne   │
+ * │ se défendent donc pas de la même façon.                                 │
+ * │                                                                          │
+ * │   * Par COUPLE adresse IP / adresse email — même clé combinée que la     │
+ * │     connexion, et pour les mêmes raisons : par IP seule, un réseau       │
+ * │     partagé bloquerait des innocents.                                    │
+ * │                                                                          │
+ * │   * Par ADRESSE EMAIL SEULE, en plus. C'est ce que la connexion ne fait  │
+ * │     délibérément pas, et la différence est voulue : sans ce second       │
+ * │     plafond, un attaquant qui change d'adresse IP à chaque essai         │
+ * │     disposerait du million de tentatives, et le premier limiteur n'y     │
+ * │     verrait rien. Il borne le total par compte, quelle que soit la       │
+ * │     provenance.                                                          │
+ * │                                                                          │
+ * │ Le prix de ce second plafond est admis : quelqu'un peut geler la         │
+ * │ récupération d'autrui pour une heure. C'est une gêne temporaire, et elle │
+ * │ ne touche PAS la connexion par mot de passe, qui reste ouverte.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const codeRateLimiter = new RateLimiter();
+export const codeEmailRateLimiter = new RateLimiter();
+
+export const CODE_RATE_LIMIT: RateLimitOptions = {
+  limite: 5,
+  fenetreMs: 15 * 60 * 1000,
+};
+
+export const CODE_EMAIL_RATE_LIMIT: RateLimitOptions = {
+  limite: 20,
+  fenetreMs: 60 * 60 * 1000,
+};
+
+/**
  * Adresse IP de l'appelant.
  *
  * Derrière un proxy, `x-forwarded-for` porte la chaîne des relais ; la

@@ -20,6 +20,7 @@
     "corps_illisible": "The request could not be read.",
     "non_authentifie": "You need to be signed in.",
     "identifiants_invalides": "Incorrect email address or password.",
+    "code_invalide": "This code is invalid or has expired. Request a new one.",
     "email_non_verifie": "Confirm your email address before signing in.",
     "compte_suspendu": "This account is suspended.",
     "interdit": "You don't have access to this page.",
@@ -85,6 +86,64 @@
     "telecharger": "Download",
     "acheter": "Buy",
     "horsZone": "This tale is not yet available for purchase in your region."
+  },
+  "auth": {
+    "_commentaire": "THREE MESSAGES ARE DELIBERATELY UNDIFFERENTIATED — see the French dictionary, which carries the reasoning. Translating them apart would defeat the point.",
+
+    "connexionTitre": "Sign in",
+    "connexionSoumettre": "Sign in",
+    "email": "Email address",
+    "motDePasse": "Password",
+    "motDePasseOublie": "Forgotten your password?",
+    "pasDeCompte": "No account yet?",
+    "creerUnCompte": "Create an account",
+    "dejaUnCompte": "Already have an account?",
+    "seConnecter": "Sign in",
+
+    "inscriptionTitre": "Create an account",
+    "inscriptionSoumettre": "Create my account",
+    "nomComplet": "Name",
+    "nomCompletAide": "Optional. It only appears in your personal area.",
+    "aucuneDonneeEnfant": "This account belongs to an adult. We never ask for any information about children.",
+    "inscriptionEnvoyee": "Registration recorded. If this address was not already in use, a verification code has just been sent to you.",
+    "inscriptionSuite": "Enter the verification code",
+
+    "forceTitre": "Password strength",
+    "forceFaible": "Not enough",
+    "forceMoyen": "Acceptable",
+    "forceFort": "Strong",
+    "regleLongueur": "At least 10 characters",
+    "regleLettre": "At least one letter",
+    "regleChiffre": "At least one digit",
+    "regleTenue": "Requirement met",
+    "regleNonTenue": "Requirement not met",
+
+    "oubliTitre": "Forgotten password",
+    "oubliIntro": "Enter your email address: we will send you a six-digit code so you can choose a new password.",
+    "oubliSoumettre": "Send the code",
+    "oubliEnvoye": "If an account exists for this address, a code has just been sent. Check your inbox.",
+    "oubliSuite": "Enter the code you received",
+
+    "nouveauTitre": "Choose a new password",
+    "nouveauIntro": "Enter the code you received by email, then your new password.",
+    "nouveauMotDePasse": "New password",
+    "nouveauSoumettre": "Change my password",
+    "nouveauFait": "Your password has been changed. You are now signed in.",
+
+    "confirmationTitre": "Confirm your address",
+    "confirmationIntro": "Enter the six-digit code you received by email to activate your account.",
+    "confirmationSoumettre": "Confirm my address",
+    "confirmationFaite": "Your address is confirmed. Welcome.",
+
+    "code": "Code received by email",
+    "codeAide": "Six digits, valid for one hour.",
+
+    "emailNonVerifieAction": "Send a new verification code",
+    "emailNonVerifieRenvoye": "If your account exists and is not yet confirmed, a new code has just been sent.",
+
+    "attendre": "Too many attempts. Try again in {secondes} seconds.",
+    "continuer": "Continue",
+    "allerAuCatalogue": "Browse the catalogue"
   },
   "pagination": {
     "_commentaire": "The position is a template rather than a concatenation: word order differs between languages, and concatenating freezes the French one.",
