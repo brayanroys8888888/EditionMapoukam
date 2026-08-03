@@ -85,10 +85,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 }
 
 /**
- * Le plan de site est reconstruit à la demande, au plus une fois par heure.
+ * Rendu à la REQUÊTE, pour la même raison que `robots.ts` : l'adresse du site
+ * est une propriété du déploiement, et la figer à la construction rend le
+ * premier déploiement impossible.
  *
- * Le catalogue bouge à l'échelle de la semaine : le recalculer à chaque
- * passage d'un robot ferait payer une lecture complète de la base pour un
- * résultat identique.
+ * Le catalogue bouge à l'échelle de la semaine ; la lecture des slugs est une
+ * seule requête, et un plan de site n'est demandé que par des robots.
  */
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';

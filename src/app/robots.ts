@@ -19,6 +19,26 @@ import { getServerEnv } from '@/lib/config/env';
  * │ exactement où chercher.                                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+/**
+ * Rendu à la REQUÊTE, jamais à la construction.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ADRESSE DU SITE EST UNE PROPRIÉTÉ DU DÉPLOIEMENT, PAS DU BUILD.       │
+ * │                                                                          │
+ * │ Pré-rendu, ce fichier fige `NEXT_PUBLIC_APP_URL` telle qu'elle était au  │
+ * │ moment de la construction. Deux conséquences, toutes deux constatées :   │
+ * │                                                                          │
+ * │   * le premier déploiement échoue, puisqu'on ne peut pas connaître       │
+ * │     l'adresse d'un site avant de l'avoir déployé ;                       │
+ * │   * un domaine ajouté plus tard laisserait un `robots.txt` désignant     │
+ * │     l'ancienne adresse jusqu'à la reconstruction suivante.               │
+ * │                                                                          │
+ * │ Le coût est d'une invocation par requête, sur un fichier qu'un robot lit │
+ * │ quelques fois par jour.                                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const dynamic = 'force-dynamic';
+
 export default function robots(): MetadataRoute.Robots {
   const base = getServerEnv().NEXT_PUBLIC_APP_URL;
 
