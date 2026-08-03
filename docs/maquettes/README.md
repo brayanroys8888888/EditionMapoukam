@@ -44,24 +44,62 @@ divergé.
 
 ## Les treize écrans
 
-| Fichier | Écran | États intégrés | Étape |
-|---|---|---|---|
-| `Accueil.dc.html` | Page d'accueil | `showPrices`, `showReassurance`, `revealOnScroll` | F2, F4 |
-| `Catalogue.dc.html` | Catalogue | **`complet` / `lancement` / `vide`** | F4 |
-| `Fiche livre.dc.html` | Fiche d'un conte | — | F5 |
-| `Lecteur.dc.html` | Lecteur en ligne | `lecture` + autres | F6 |
-| `Espace personnel.dc.html` | Bibliothèque, abonnement, compte | plusieurs | F7 |
-| `Tunnel achat.dc.html` | Panier → paiement → confirmation | plusieurs | F8 |
-| `Offres.dc.html` | Page des offres | `<details>` pour la FAQ | F9 |
-| `Pages de contenu.dc.html` | Pages éditoriales | accordéons, **feuille d'impression** | F10 |
-| `Admin contes.dc.html` | Administration — liste des contes | — | F11 |
-| `Admin ajout conte.dc.html` | Administration — ingestion | — | F11 |
-| `Admin statistiques.dc.html` | Administration — statistiques | — | F13 |
-| `Comptes.dc.html` | Connexion / inscription | plusieurs | F3 |
+> **Plusieurs écrans portent des variantes. Aucune ne doit être manquée : ce
+> sont des cas métier, pas des habillages.** Le relevé ci-dessous est exhaustif,
+> établi en lisant les commutateurs de chaque fichier — jamais de mémoire.
 
-**Les trois états du catalogue sont dans la maquette**, pilotés par
-`data-mode="complet|lancement|vide"`. C'est exactement ce que la mission
-demandait ; il n'y a rien à inventer.
+| Fichier | Écran | Variantes | Étape |
+|---|---|---|---|
+| `Comptes.dc.html` | Authentification | **4 écrans** : `inscription`, `connexion`, `oubli`, `verification` | F3 |
+| `Catalogue.dc.html` | Catalogue | **3 modes** : `complet`, `lancement`, `vide` — plus une variante **par carte**, voir ci-dessous | F4 |
+| `Fiche livre.dc.html` | Fiche d'un conte | **3 blocs d'action** : `visiteur`, `abonne`, `achete` | F5 |
+| `Lecteur.dc.html` | Lecteur en ligne | **4 modes** : `lecture`, `reprise`, `fin`, `mobile` | F6 |
+| `Espace personnel.dc.html` | Espace personnel | **2 axes INDÉPENDANTS** : bibliothèque (`remplie`, `vide`) × abonnement (`actif`, `essai`, `expire`, `annule`) = **8 combinaisons** | F7 |
+| `Tunnel achat.dc.html` | Tunnel d'achat | **4 écrans** (`panier`, `paiement`, `confirmation`, `vide`) × **2 formats** (`desktop`, `mobile`) | F8 |
+| `Offres.dc.html` | Page des offres | **2 modes** : `ouvert`, `lancement` — « abonnement pas encore ouvert » | F9 |
+| `Pages de contenu.dc.html` | Pages éditoriales | **5 pages** : `apropos`, `faq`, `cgv`, `confidentialite`, `contact` — plus une **feuille d'impression** | F10 |
+| `Accueil.dc.html` | Page d'accueil | 3 interrupteurs : `showPrices`, `showReassurance`, `revealOnScroll` | F2, F4 |
+| `Admin contes.dc.html` | Admin — liste des contes | Aucune. **C'est le patron des quatre écrans sans maquette** | F11 |
+| `Admin ajout conte.dc.html` | Admin — ingestion | Aucune | F11 |
+| `Admin statistiques.dc.html` | Admin — statistiques | Aucune | F13 |
+
+### La variante du catalogue qui n'est pas un mode
+
+Les trois modes de page — `complet`, `lancement`, `vide` — sont les trois états
+que la mission demandait. **Mais la distinction abonné/acheteur y vit ailleurs :
+sur chaque carte.**
+
+Chaque `<article>` porte `data-acces="abonnement|achat|gratuit"`, et sa dernière
+ligne change en conséquence :
+
+| `data-acces` | Ce qu'affiche la carte |
+|---|---|
+| `achat` | Le prix — « 3,90 € » |
+| `abonnement` | **« Avec l'abonnement »**, sans montant |
+
+C'est une propriété **du titre**, pas une propriété de l'utilisateur. À
+l'implémentation, elle se lit sur `inclus_abonnement`, `disponible_achat` et
+`prix` — et l'état de l'utilisateur, lui, vient de `acces.reason`. Les deux se
+combinent : un abonné devant un titre `achat` voit un prix, un visiteur devant
+un titre `abonnement` voit « Avec l'abonnement ».
+
+**Les confondre donnerait un catalogue qui ment dans les deux sens** : un prix
+affiché à qui n'a rien à payer, ou « inclus » promis à qui devra acheter.
+
+### Ce que l'espace personnel impose
+
+Huit combinaisons, et elles ne sont pas décoratives : un abonnement `expire` avec
+une bibliothèque `remplie` est **le cas métier central du projet** — l'abonnement
+tombe, les achats restent. C'est le bug classique du domaine, et la maquette en
+fait un état à part entière.
+
+### Le patron de l'administration
+
+La barre latérale de `Admin contes.dc.html` énumère six entrées avec leur
+effectif : Contes, Commandes, Abonnements, Utilisateurs, Codes promo,
+Statistiques. **Quatre d'entre elles n'ont pas de maquette**, et se construisent
+depuis ce patron et depuis l'API, comme convenu — même densité, mêmes pastilles
+de filtre, même tableau, même pagination.
 
 **Les quatre écrans d'administration sans maquette** — comptes, commandes,
 abonnements, codes promo — sont bâtis depuis le patron de `Admin contes.dc.html`
