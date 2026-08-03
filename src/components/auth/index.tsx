@@ -148,17 +148,27 @@ export function FormulaireConnexion({
   attente,
   motif,
   actionRenvoi,
+  inscrit = false,
 }: EtatFormulaire & {
   /** Motif porté par le middleware — `session_revoquee` après un vol de jeton. */
   motif?: string;
   /** Cible du renvoi d'un code de vérification, sur `email_non_verifie`. */
   actionRenvoi?: ActionFormulaire;
+  /** Arrive d'une inscription dont le compte est immédiatement utilisable. */
+  inscrit?: boolean;
 }): ReactNode {
   const bloque = attente !== undefined && attente > 0;
 
   return (
     <div className={styles.panneau}>
       <h1 className={styles.titre}>{traduire(langue, 'auth.connexionTitre')}</h1>
+
+      {/* Compte tout juste créé, et immédiatement utilisable. */}
+      {inscrit ? (
+        <div className={styles.message}>
+          <p className={styles.messageTexte}>{traduire(langue, 'auth.comptePret')}</p>
+        </div>
+      ) : null}
 
       {/* Le motif de révocation est distinct d'une erreur de saisie : il
           n'appelle pas à corriger un champ, mais à changer son mot de passe. */}

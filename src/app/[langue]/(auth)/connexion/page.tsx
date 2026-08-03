@@ -40,6 +40,7 @@ export default async function PageConnexion({ params, searchParams }: Parametres
       erreur={premier(requete['erreur'])}
       attente={Number.isFinite(attente) && attente > 0 ? attente : undefined}
       motif={premier(requete['motif'])}
+      inscrit={premier(requete['inscrit']) === '1'}
     />
   );
 }

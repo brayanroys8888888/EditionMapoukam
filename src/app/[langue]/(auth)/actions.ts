@@ -173,6 +173,13 @@ export async function inscription(langueBrute: string, donnees: FormData): Promi
 
   if (reponse.statut !== 201) repartirEnErreur(langue, 'inscription', reponse);
 
+  // Quand la vérification est court-circuitée, envoyer vers la saisie du code
+  // serait un cul-de-sac : le code n'a jamais été émis, et l'écran demanderait
+  // indéfiniment quelque chose qui n'arrivera pas.
+  if (getServerEnv().AUTH_CONFIRMATION_AUTOMATIQUE) {
+    redirect(`/${langue}/connexion?inscrit=1`);
+  }
+
   redirect(`/${langue}/confirmation?envoye=1`);
 }
 

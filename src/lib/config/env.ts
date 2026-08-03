@@ -83,6 +83,35 @@ const serverSchema = z.object({
   PRICE_UNIT_DEFAULT: positiveInt(499),
   PRICE_SUBSCRIPTION_MONTHLY: positiveInt(799),
   PRICE_SUBSCRIPTION_YEARLY: positiveInt(6900),
+
+  /**
+   * Confirme automatiquement l'adresse email à l'inscription.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ POUR UNE MISE EN LIGNE SANS SERVICE D'EMAIL, ET RIEN D'AUTRE.          │
+   * │                                                                        │
+   * │ Aucun email ne quitte la machine : `FileMailer` écrit dans `.mails/` et │
+   * │ les messages d'authentification vont dans Mailpit. En ligne, le code à  │
+   * │ six chiffres n'atteindrait donc personne, et l'inscription serait une   │
+   * │ impasse — un formulaire qui accepte, puis un compte qui refuse d'ouvrir.│
+   * │                                                                        │
+   * │ CE QUE CET INTERRUPTEUR NE TOUCHE PAS : l'authentification elle-même.  │
+   * │ Mot de passe, session, rotation des jetons, détection de réutilisation  │
+   * │ et révocation restent intégralement réels. Seule l'ÉTAPE DE            │
+   * │ VÉRIFICATION est court-circuitée.                                      │
+   * │                                                                        │
+   * │ Ce qu'on accepte en l'activant, et il faut le dire : quelqu'un peut     │
+   * │ s'inscrire avec une adresse qui n'est pas la sienne. C'est tenable      │
+   * │ tant qu'aucun email ne part et qu'aucun paiement réel n'est encaissé ;  │
+   * │ cela cesse de l'être le jour où un service d'email est branché.        │
+   * │                                                                        │
+   * │ Par défaut FAUX : le comportement local strict est conservé, et la      │
+   * │ suite de tests continue d'éprouver le parcours complet de vérification. │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  AUTH_CONFIRMATION_AUTOMATIQUE: z
+    .stringbool()
+    .default(false),
 });
 
 export type ServerEnv = z.infer<typeof serverSchema>;

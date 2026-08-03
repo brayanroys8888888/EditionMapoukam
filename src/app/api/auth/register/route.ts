@@ -1,4 +1,4 @@
-import { createAnonClient } from '@/lib/supabase/clients';
+import { createAnonClient, createServiceClient } from '@/lib/supabase/clients';
 import { created, errors } from '@/lib/http/responses';
 import { parseJsonBody } from '@/lib/http/validate';
 import { inscriptionSchema } from '@/lib/auth/schemas';
@@ -25,6 +25,50 @@ export async function POST(request: Request): Promise<Response> {
   const { email, password, nom_complet, langue_preferee } = corps.data;
   const env = getServerEnv();
 
+  const metadonnees = {
+    ...(nom_complet ? { nom_complet } : {}),
+    langue_preferee: langue_preferee ?? 'fr',
+  };
+
+  // ┌──────────────────────────────────────────────────────────────────────┐
+  // │ CHEMIN DE MISE EN LIGNE SANS SERVICE D'EMAIL.                        │
+  // │                                                                      │
+  // │ Le compte est créé DÉJÀ CONFIRMÉ, faute de quoi le code à six        │
+  // │ chiffres n'atteindrait personne et l'inscription serait une impasse. │
+  // │ L'indistinguabilité est tenue ici aussi : une adresse déjà connue    │
+  // │ rend la même réponse qu'une adresse neuve, octet pour octet.         │
+  // │                                                                      │
+  // │ Voir `AUTH_CONFIRMATION_AUTOMATIQUE` dans `src/lib/config/env.ts`    │
+  // │ pour ce que cet interrupteur ne touche PAS — c'est-à-dire            │
+  // │ l'authentification elle-même.                                        │
+  // └──────────────────────────────────────────────────────────────────────┘
+  if (env.AUTH_CONFIRMATION_AUTOMATIQUE) {
+    const cree = await createServiceClient().auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: metadonnees,
+    });
+
+    if (cree.error) {
+      if (cree.error.code === 'email_exists') {
+        logger.info('Inscription sur une adresse déjà connue, réponse indifférenciée');
+        return created({ message: MESSAGE_INSCRIPTION });
+      }
+      if (cree.error.status === 422) {
+        return errors.validation({
+          password: ['Ce mot de passe est refusé. Choisissez-en un autre.'],
+        });
+      }
+      return errors.interne(cree.error.message);
+    }
+
+    logger.info('Inscription enregistrée, vérification court-circuitée', {
+      userId: cree.data.user.id,
+    });
+    return created({ message: MESSAGE_INSCRIPTION });
+  }
+
   const { data, error } = await createAnonClient().auth.signUp({
     email,
     password,
@@ -33,10 +77,7 @@ export async function POST(request: Request): Promise<Response> {
       // Ces métadonnées alimentent le déclencheur qui crée le profil métier.
       // Le rôle n'y figure pas et n'y figurera jamais : il est sous le contrôle
       // du client, et serait donc un vecteur d'élévation de privilège.
-      data: {
-        ...(nom_complet ? { nom_complet } : {}),
-        langue_preferee: langue_preferee ?? 'fr',
-      },
+      data: metadonnees,
     },
   });
 

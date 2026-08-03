@@ -90,9 +90,17 @@ export function EnteteFiche({
 export function ActionsFiche({
   langue,
   fiche,
+  actionAjout,
 }: {
   langue: LangueInterface;
   fiche: FicheLivre;
+  /**
+   * Ajout au panier — une Server Action, jamais un lien.
+   *
+   * Un `GET` qui modifie un panier est rejoué par le moindre préchargement de
+   * navigateur, et par tout robot qui suit les liens de la page.
+   */
+  actionAjout?: (donnees: FormData) => void | Promise<void>;
 }): ReactNode {
   const { canRead, canDownload } = fiche.acces;
 
@@ -114,12 +122,12 @@ export function ActionsFiche({
         ) : null}
 
         {/* L'achat : proposé quand le titre est vendu et pas déjà détenu. */}
-        {fiche.prix && !canDownload ? (
-          <Button asChild variant="secondary">
-            <a href={`/${langue}/panier?ajouter=${fiche.id}`}>
+        {fiche.prix && !canDownload && actionAjout ? (
+          <form action={actionAjout}>
+            <Button type="submit" variant="secondary">
               {traduire(langue, 'fiche.ajouterAuPanier')} — {fiche.prix.affichage}
-            </a>
-          </Button>
+            </Button>
+          </form>
         ) : null}
       </div>
 

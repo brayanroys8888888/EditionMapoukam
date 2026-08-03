@@ -14,6 +14,7 @@ import {
   EnteteFiche,
   Suggestions,
 } from '@/components/fiche';
+import { ajouterAuPanier } from '../../panier/actions';
 
 /**
  * Fiche d'un conte — §4.1 F3.
@@ -113,7 +114,11 @@ export default async function PageFiche({ params }: Parametres) {
 
       <EnteteFiche langue={langue} fiche={fiche} />
       <BandeauExtrait langue={langue} fiche={fiche} />
-      <ActionsFiche langue={langue} fiche={fiche} />
+      <ActionsFiche
+        langue={langue}
+        fiche={fiche}
+        actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
+      />
       <DetailsFiche langue={langue} fiche={fiche} />
       <Suggestions langue={langue} fiche={fiche} />
 
