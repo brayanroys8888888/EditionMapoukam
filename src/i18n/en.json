@@ -352,6 +352,26 @@
     "retourFiche": "Back to the tale",
     "pageIndisponible": "This page could not be displayed. Please try again shortly."
   },
+  "abonnement": {
+    "_commentaire": "The screen shows `statut` — the OBSERVED status — never `statut_rapporte`. See the French dictionary.",
+    "titre": "My subscription",
+    "aucun": "You have no active subscription.",
+    "aucunAction": "Explore the subscription",
+    "statut": "Status",
+    "statut_actif": "Active",
+    "statut_essai": "Trial period",
+    "statut_impaye": "Payment pending",
+    "statut_annule": "Cancelled",
+    "statut_expire": "Expired",
+    "statut_anomalie": "Needs checking",
+    "anomalieCorps": "Your subscription is in a state we cannot confirm. Write to us: we will restore it without you having to pay again.",
+    "offre": "Plan",
+    "offre_mensuel": "Monthly",
+    "offre_annuel": "Yearly",
+    "finPeriode": "Access open until {date}",
+    "finPeriodeApresAnnulation": "You have cancelled. Your access stays open until {date}.",
+    "rappelTelechargement": "The subscription gives online reading. It never gave downloads: your purchases remain yours."
+  },
   "pagination": {
     "_commentaire": "The position is a template rather than a concatenation: word order differs between languages, and concatenating freezes the French one.",
     "libelle": "Pagination",

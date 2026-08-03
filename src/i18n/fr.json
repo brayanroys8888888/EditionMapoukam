@@ -352,6 +352,26 @@
     "retourFiche": "Retour à la fiche",
     "pageIndisponible": "Cette page n'a pas pu être affichée. Réessayez dans un instant."
   },
+  "abonnement": {
+    "_commentaire": "L'écran affiche `statut` — le statut OBSERVÉ, dates repliées — jamais `statut_rapporte`. `anomalie` est NOMMÉE et invite à écrire au support : ce n'est pas une « erreur », c'est presque toujours un webhook perdu, et l'utilisateur n'y peut rien.",
+    "titre": "Mon abonnement",
+    "aucun": "Vous n'avez pas d'abonnement en cours.",
+    "aucunAction": "Découvrir l'abonnement",
+    "statut": "Statut",
+    "statut_actif": "Actif",
+    "statut_essai": "Période d'essai",
+    "statut_impaye": "Paiement en attente",
+    "statut_annule": "Annulé",
+    "statut_expire": "Expiré",
+    "statut_anomalie": "Situation à vérifier",
+    "anomalieCorps": "Votre abonnement est dans un état que nous n'arrivons pas à confirmer. Écrivez-nous : nous le rétablirons sans que vous ayez à repayer.",
+    "offre": "Formule",
+    "offre_mensuel": "Mensuelle",
+    "offre_annuel": "Annuelle",
+    "finPeriode": "Accès ouvert jusqu'au {date}",
+    "finPeriodeApresAnnulation": "Vous avez annulé. Votre accès reste ouvert jusqu'au {date}.",
+    "rappelTelechargement": "L'abonnement donne la lecture en ligne. Il n'a jamais donné le téléchargement : vos achats, eux, restent à vous."
+  },
   "pagination": {
     "_commentaire": "La position est une phrase à trous plutôt qu’une concaténation : « page 3 sur 12 » et « page 3 of 12 » n’ont pas le même ordre de mots dans toutes les langues, et une concaténation fige celui du français.",
     "libelle": "Pagination",
