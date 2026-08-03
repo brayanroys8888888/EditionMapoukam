@@ -77,6 +77,35 @@ export default defineConfig({
           hookTimeout: 360_000,
         },
       },
+      {
+        resolve: { alias: { '@': src } },
+        test: {
+          /**
+           * Composants d'interface, rendus dans un DOM simulé.
+           *
+           * ┌────────────────────────────────────────────────────────────────┐
+           * │ MÊME EXÉCUTEUR QUE LE RESTE, ET C'EST DÉLIBÉRÉ.                │
+           * │                                                                │
+           * │ Un second exécuteur serait un second endroit où un test peut   │
+           * │ être ignoré sans que la porte le voie — exactement le défaut   │
+           * │ que `scripts/porte-tests.mjs` existe pour empêcher.            │
+           * │                                                                │
+           * │ Placé APRÈS `integration` : `tests/unit/porte-tests.test.ts`   │
+           * │ lit les délais dans l'ordre des projets, et attend celui de    │
+           * │ l'intégration en deuxième position.                            │
+           * └────────────────────────────────────────────────────────────────┘
+           */
+          name: 'composants',
+          environment: 'jsdom',
+          include: ['tests/composants/**/*.test.tsx'],
+          setupFiles: ['tests/setup/dom.ts'],
+          // Aucune base, aucun réseau : ces tests sont rapides. Les délais
+          // restent explicites — un projet sans réglage hérite du défaut de
+          // Vitest, ce qui est précisément ce qui a fait sauter 26 tests.
+          testTimeout: 15_000,
+          hookTimeout: 30_000,
+        },
+      },
     ],
   },
 });

@@ -84,5 +84,12 @@
     "telecharger": "Télécharger",
     "acheter": "Acheter",
     "horsZone": "Ce conte n'est pas encore proposé à l'achat dans votre région."
+  },
+  "pagination": {
+    "_commentaire": "La position est une phrase à trous plutôt qu’une concaténation : « page 3 sur 12 » et « page 3 of 12 » n’ont pas le même ordre de mots dans toutes les langues, et une concaténation fige celui du français.",
+    "libelle": "Pagination",
+    "precedente": "Page précédente",
+    "suivante": "Page suivante",
+    "position": "Page {page} sur {pages} — {total} résultats"
   }
 }

@@ -224,7 +224,26 @@ npm run diff:sql               # une redéclaration = un diff lisible, aucune li
 
 ---
 
-### F1 — Socle d'interface : types, jetons, langues, états
+### F1 — Socle d'interface — ✅ LIVRÉE le 3 août 2026
+
+> **`npm run verify` : 1 124 tests dans 62 fichiers, aucun ignoré.**
+>
+> Trois défauts trouvés en écrivant les tests avant les composants :
+>
+> | Défaut | Où |
+> |---|---|
+> | `--creme-accent` à 2,95:1, sous le seuil AA | Palette des maquettes |
+> | Région Afrique centrale à 4,48:1 | Palette des maquettes |
+> | Onze codes d'erreur d'API sans traduction | Dictionnaires |
+>
+> Un quatrième, de mon fait : j'avais annoncé 9,6:1 pour l'encre sur le jaune
+> d'action. Mesuré, c'est **8,43:1**.
+>
+> Un troisième projet Vitest — `composants`, en `jsdom` — entre dans **la même
+> porte** que le reste. Un second exécuteur aurait été un second endroit où un
+> test peut être ignoré sans que la porte le voie.
+
+### F1 (référence) — Socle d'interface : types, jetons, langues, états
 
 **Objectif.** Tout ce dont les écrans dépendent, et aucun écran.
 
