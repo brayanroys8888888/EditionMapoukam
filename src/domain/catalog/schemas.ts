@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { REGIONS_CONTE } from '@/domain/catalog/types';
+
 /**
  * Validation des entrées du catalogue.
  *
@@ -40,6 +42,16 @@ export const catalogQuerySchema = z.object({
 
   themes: listeSeparee.optional(),
   origine: z.string().trim().min(1).max(80).optional(),
+
+  /**
+   * Région du conte — énumération fermée, alimentée par `catalog_facets`.
+   *
+   * Elle a manqué jusqu'à l'étape F4 : la facette était rendue avec son
+   * effectif, mais aucun paramètre ne permettait de l'appliquer. Un schéma Zod
+   * retirant les clés inconnues, `?region=sahel` n'était pas refusé — il était
+   * ignoré en silence, ce qui est le pire des deux.
+   */
+  region: z.enum(REGIONS_CONTE).optional(),
 
   acces: z.enum(TYPES_ACCES).optional(),
 

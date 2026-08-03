@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { errors } from '@/lib/http/responses';
 import { parseSearchParams } from '@/lib/http/validate';
-import { createServiceClient } from '@/lib/supabase/clients';
+import { lireFacettes } from '@/lib/catalog/repository';
 import { LANGUES } from '@/domain/catalog/schemas';
 import { logger } from '@/lib/logger';
 
@@ -35,14 +35,9 @@ export async function GET(request: Request): Promise<Response> {
   if (!query.ok) return query.response;
 
   try {
-    const { data, error } = await createServiceClient().rpc('catalog_facets', {
-      p_langue: query.data.langue,
-    });
-
-    if (error) {
-      logger.error('Facettes illisibles', { detail: error.message });
-      return errors.interne(error.message);
-    }
+    // Même module que la page serveur du catalogue (PLAN-FRONTEND §1.2) : la
+    // route ne connaît plus la fonction SQL, elle connaît le catalogue.
+    const data = await lireFacettes(query.data.langue);
 
     return new Response(JSON.stringify(data), {
       status: 200,

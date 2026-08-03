@@ -153,6 +153,58 @@ describe('filtres', () => {
 
     expect(page.entrees.every((e) => e.disponible_achat)).toBe(true);
   });
+
+  it('filtre par région', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ CE FILTRE A MANQUÉ JUSQU'À L'ÉTAPE F4.                             │
+    // │                                                                    │
+    // │ `catalog_facets` rendait les régions avec leur effectif — ce qui    │
+    // │ n'a d'usage que pour des pastilles — mais `catalog_list` n'avait    │
+    // │ aucun paramètre. Zod retirant les clés inconnues, `?region=…`       │
+    // │ n'était pas refusé : il était IGNORÉ, et le catalogue entier        │
+    // │ répondait sous une URL qui promettait une région.                   │
+    // └────────────────────────────────────────────────────────────────────┘
+    const page = await corpsJson<PageCatalogue>(
+      await catalogue(params({ region: 'afrique_centrale' })),
+    );
+
+    expect(page.entrees.length).toBeGreaterThan(0);
+    for (const entree of page.entrees) {
+      expect(entree.region).toBe('afrique_centrale');
+    }
+  });
+
+  it('une autre région rend d’autres titres — le contre-test', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ SANS CETTE ASSERTION, UN FILTRE QUI IGNORERAIT SON PARAMÈTRE       │
+    // │ PASSERAIT LE TEST PRÉCÉDENT dès lors que la région demandée serait  │
+    // │ la plus représentée. C'est exactement le défaut qu'on vient de      │
+    // │ corriger : il faut prouver que la valeur AGIT.                      │
+    // └────────────────────────────────────────────────────────────────────┘
+    const centrale = await corpsJson<PageCatalogue>(
+      await catalogue(params({ region: 'afrique_centrale' })),
+    );
+    const sahel = await corpsJson<PageCatalogue>(await catalogue(params({ region: 'sahel' })));
+
+    expect(centrale.entrees.length).toBeGreaterThan(0);
+    expect(sahel.entrees.length).toBeGreaterThan(0);
+
+    const slugsCentrale = new Set(centrale.entrees.map((e) => e.slug));
+    for (const entree of sahel.entrees) {
+      expect(slugsCentrale.has(entree.slug)).toBe(false);
+    }
+
+    expect(centrale.total).not.toBe(sahel.total);
+  });
+
+  it('refuse une région inconnue plutôt que de l’ignorer', async () => {
+    // L'énumération est fermée côté Zod : une valeur hors liste est une erreur
+    // de validation, et non un filtre silencieusement abandonné.
+    const reponse = await catalogue(params({ region: 'atlantide' }));
+
+    expect(reponse.status).toBe(400);
+    expect((await corpsJson<ReponseErreur>(reponse)).erreur.code).toBe('requete_invalide');
+  });
 });
 
 describe('recherche', () => {

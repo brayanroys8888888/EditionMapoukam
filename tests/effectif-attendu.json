@@ -1,9 +1,10 @@
 {
   "_": "Effectif de la suite, PAR FICHIER. La porte (scripts/porte-tests.mjs) échoue si un fichier disparaît ou perd des tests. Par fichier et non en total : un compteur global ne verrait pas dix tests de sécurité remplacés par dix tests de formatage. Mis à jour automatiquement quand tout est vert ; toute baisse doit être corrigée à la main, dans le même commit.",
-  "total": 1209,
+  "total": 1249,
   "fichiers": {
     "tests/composants/auth.test.tsx": 27,
     "tests/composants/base.test.tsx": 28,
+    "tests/composants/catalogue.test.tsx": 29,
     "tests/composants/enveloppe.test.tsx": 15,
     "tests/e2e/parcours-abonnement.test.ts": 11,
     "tests/e2e/parcours-achat.test.ts": 10,
@@ -15,7 +16,8 @@
     "tests/integration/auth.test.ts": 29,
     "tests/integration/bornes-temporelles.test.ts": 6,
     "tests/integration/business-settings.test.ts": 14,
-    "tests/integration/catalog.test.ts": 46,
+    "tests/integration/catalog.test.ts": 49,
+    "tests/integration/catalogue-ssr.test.ts": 8,
     "tests/integration/dev-guard.test.ts": 13,
     "tests/integration/double-implementation.test.ts": 10,
     "tests/integration/downloads.test.ts": 18,

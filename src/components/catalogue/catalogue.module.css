@@ -1,0 +1,292 @@
+/*
+ * Catalogue — grille, filtres, tri, recherche.
+ *
+ * La grille se règle sur la place disponible plutôt que sur des points de
+ * rupture : `auto-fill` avec un minimum de 150 px donne deux colonnes sur un
+ * téléphone étroit et six sur un grand écran, sans qu'aucune largeur soit
+ * décidée à l'avance.
+ */
+
+.grille {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--espace-6) var(--espace-5);
+}
+
+/* ── Carte ──────────────────────────────────────────────────────────────── */
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-2);
+}
+
+/*
+ * Le lien couvre la couverture ET le titre, et rien d'autre.
+ *
+ * Envelopper la carte entière ferait de la pastille de région un fragment de
+ * lien, et un lecteur d'écran annoncerait le nom du conte suivi de sa région
+ * et de son prix comme un seul libellé interminable.
+ */
+.carteLien {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+  text-decoration: none;
+  color: inherit;
+}
+
+.carteLien:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+.couverture {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--rayon-image);
+  background: var(--fond-doux);
+}
+
+/*
+ * Substitut d'une couverture absente — un titre en cours d'ingestion.
+ *
+ * Il occupe exactement la place de l'image : sans cela, une grille mêlant des
+ * titres avec et sans couverture serait irrégulière, et le manque passerait
+ * pour un défaut d'affichage.
+ */
+.couvertureAbsente {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--espace-4);
+  aspect-ratio: 2 / 3;
+  border: 1px dashed var(--bordure-forte);
+  border-radius: var(--rayon-image);
+  background: var(--fond-doux);
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+}
+
+.titre {
+  font-family: var(--police-titre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  line-height: var(--interligne-titre);
+  margin: 0;
+}
+
+.auteur,
+.age {
+  margin: 0;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+/* ── Les lignes d'accès ─────────────────────────────────────────────────── */
+
+/*
+ * « Dans votre bibliothèque » se distingue des deux autres AUTREMENT QUE PAR
+ * LA COULEUR : elle est en demi-gras. Le libellé lui-même porte déjà
+ * l'information — la mise en forme ne fait que la confirmer.
+ */
+.accesPossede {
+  margin: 0;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--region-afrique_ouest-encre);
+}
+
+.accesGratuit {
+  margin: 0;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--region-afrique_ouest-encre);
+}
+
+.accesAbonnement {
+  margin: 0;
+  font-size: var(--taille-base);
+  color: var(--creme-accent);
+}
+
+.accesPrix {
+  margin: 0;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+}
+
+.accesHorsZone {
+  margin: 0;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+/* ── Filtres ────────────────────────────────────────────────────────────── */
+
+.filtres {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-5);
+  margin-bottom: var(--espace-6);
+}
+
+.groupe {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-3);
+}
+
+.groupeTitre {
+  margin: 0;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.groupePastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+}
+
+.pastilleFiltre {
+  display: inline-flex;
+  align-items: center;
+  /*
+   * 44 px de haut : c'est la cible tactile minimale, et ces pastilles sont
+   * serrées les unes contre les autres — c'est précisément là qu'une cible
+   * trop petite fait poser le mauvais filtre.
+   */
+  min-height: var(--cible-min);
+  padding: var(--espace-2) var(--espace-4);
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  background: var(--fond);
+  color: var(--encre);
+  font-size: var(--taille-m);
+  text-decoration: none;
+}
+
+.pastilleFiltre:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/*
+ * Le filtre actif est marqué par le fond ET par `aria-current`, posé dans le
+ * composant. La couleur seule laisserait un daltonien sans moyen de savoir ce
+ * qui filtre son catalogue.
+ */
+.pastilleActive {
+  background: var(--encre);
+  border-color: var(--encre);
+  color: var(--fond);
+  font-weight: var(--graisse-demi);
+}
+
+/* ── Tri ────────────────────────────────────────────────────────────────── */
+
+.tri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+  margin-bottom: var(--espace-5);
+}
+
+.triLien {
+  min-height: var(--cible-min);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 var(--espace-3);
+  color: var(--lien-survol);
+  font-size: var(--taille-base);
+}
+
+.triActif {
+  color: var(--encre);
+  font-weight: var(--graisse-demi);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+/* ── Recherche ──────────────────────────────────────────────────────────── */
+
+.recherche {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--espace-3);
+  margin-bottom: var(--espace-6);
+}
+
+.rechercheLibelle {
+  flex-basis: 100%;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+}
+
+.rechercheSaisie {
+  flex: 1 1 16rem;
+  min-height: var(--cible-min);
+  padding: var(--espace-2) var(--espace-4);
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  /* 16 px au minimum : en deçà, Safari iOS zoome au focus. */
+  font-size: var(--taille-l);
+  font-family: var(--police-interface);
+}
+
+.rechercheSaisie:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+.rechercheBouton {
+  min-height: var(--cible-min);
+  padding: 0 var(--espace-5);
+  border: 1px solid transparent;
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  cursor: pointer;
+}
+
+.rechercheBouton:hover {
+  background: var(--action-survol);
+}
+
+.rechercheBouton:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/* ── État vide ──────────────────────────────────────────────────────────── */
+
+.videAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 0 var(--espace-5);
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-weight: var(--graisse-demi);
+  text-decoration: none;
+}
+
+.videAction:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}

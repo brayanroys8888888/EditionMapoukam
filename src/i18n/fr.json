@@ -145,6 +145,50 @@
     "continuer": "Continuer",
     "allerAuCatalogue": "Parcourir le catalogue"
   },
+  "catalogue": {
+    "_commentaire": "La carte porte TROIS lignes d'accès, pas deux : la maquette n'en prévoyait qu'un prix ou « Avec l'abonnement », et tous deux invitent à obtenir ce qu'on détient déjà. La troisième vit dans `acces.purchase` / `acces.granted`, et prend le pas sur les autres. Elle est pilotée par `acces.reason` — qui décrit L'UTILISATEUR — jamais par `prix` ni `inclus_abonnement`, qui décrivent LE TITRE.",
+
+    "titre": "Catalogue",
+    "resultats": "{total} contes",
+    "resultatsUn": "1 conte",
+    "chargement": "Chargement du catalogue…",
+
+    "recherche": "Rechercher un conte",
+    "rechercheAide": "Titre, auteur, thème…",
+    "rechercheAction": "Rechercher",
+
+    "filtres": "Filtrer",
+    "filtresActifs": "Filtres actifs",
+    "retirerFiltre": "Retirer ce filtre",
+    "retirerTousFiltres": "Retirer tous les filtres",
+
+    "region": "Région",
+    "themes": "Thèmes",
+    "origine": "Origine",
+    "age": "Âge",
+    "acces": "Accès",
+
+    "accesAbonnement": "Avec l'abonnement",
+    "accesAchat": "À l'unité",
+    "accesGratuit": "Gratuit",
+
+    "tri": "Trier par",
+    "triNouveautes": "Nouveautés",
+    "triPopularite": "Les plus lus",
+    "triAlphabetique": "Ordre alphabétique",
+    "triPrix": "Prix croissant",
+    "triPertinence": "Pertinence",
+
+    "videTitre": "Aucun conte ne correspond",
+    "videCorps": "Essayez d'élargir votre recherche : les filtres se retirent un par un, ou tous à la fois.",
+    "videAction": "Voir tout le catalogue",
+
+    "sansCouverture": "Couverture à venir",
+    "parAuteur": "de {auteur}",
+    "trancheAge": "dès {min} ans",
+    "trancheAgeBornee": "de {min} à {max} ans",
+    "nbPages": "{pages} pages"
+  },
   "pagination": {
     "_commentaire": "La position est une phrase à trous plutôt qu’une concaténation : « page 3 sur 12 » et « page 3 of 12 » n’ont pas le même ordre de mots dans toutes les langues, et une concaténation fige celui du français.",
     "libelle": "Pagination",

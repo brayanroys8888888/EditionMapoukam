@@ -15,6 +15,7 @@ import type {
   PrixAffiche,
   SuggestionLivre,
 } from '@/domain/catalog/types';
+import type { ReponseFacettes } from '@/domain/api/contract';
 import { logger } from '@/lib/logger';
 
 /**
@@ -125,6 +126,72 @@ function construirePrix(
   };
 }
 
+/**
+ * Facettes du catalogue — les valeurs de filtre réellement présentes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ EXTRAIT ICI POUR QUE LA PAGE ET LA ROUTE LISENT LA MÊME CHOSE.          │
+ * │                                                                          │
+ * │ La route `/api/catalog/facets` appelait la fonction SQL directement. Une │
+ * │ page serveur ne peut pas faire de même — un test d'architecture interdit │
+ * │ la clé de service hors de `src/app/api` — et aurait donc dû passer par   │
+ * │ HTTP, ou recopier l'appel. PLAN-FRONTEND §1.2 tranche : les pages        │
+ * │ serveur appellent les MÊMES modules `src/lib/*` que les routes.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export async function lireFacettes(
+  langue: string,
+  options: { client?: AppSupabaseClient } = {},
+): Promise<ReponseFacettes> {
+  const client = options.client ?? createServiceClient();
+  const { data, error } = await client.rpc('catalog_facets', { p_langue: langue });
+
+  if (error) {
+    logger.error('Facettes illisibles', { detail: error.message });
+    throw new Error(error.message);
+  }
+
+  return data as unknown as ReponseFacettes;
+}
+
+/**
+ * Slugs publiés d'une langue, pour le plan de site.
+ *
+ * Volontairement distinct de `listerCatalogue`, dont la taille de page est
+ * bornée à cinquante : un plan de site tronqué priverait d'indexation la
+ * queue du catalogue, sans que rien ne le signale (§5.4).
+ *
+ * Ne rend que ce qu'un plan de site expose — un slug et une date. Aucun prix,
+ * aucune décision d'accès : le plan de site est le même pour tout le monde.
+ */
+export async function slugsPublies(
+  langue: string,
+  options: { client?: AppSupabaseClient } = {},
+): Promise<{ slug: string; publie_le: string | null }[]> {
+  const client = options.client ?? createServiceClient();
+
+  const { data, error } = await client
+    .from('book_translations')
+    .select('statut, langue, books!inner(slug, statut, publie_le)')
+    .eq('langue', langue)
+    .eq('statut', 'publie')
+    .eq('books.statut', 'publie');
+
+  if (error) {
+    logger.error('Plan de site illisible', { detail: error.message });
+    throw new Error(error.message);
+  }
+
+  const lignes = (data ?? []) as unknown as {
+    books: { slug: string; publie_le: string | null };
+  }[];
+
+  return lignes.map((ligne) => ({
+    slug: ligne.books.slug,
+    publie_le: ligne.books.publie_le,
+  }));
+}
+
 export async function listerCatalogue(
   userId: string | null,
   query: CatalogQuery,
@@ -139,6 +206,7 @@ export async function listerCatalogue(
     p_age_max: query.age_max ?? null,
     p_themes: query.themes ?? null,
     p_origine: query.origine ?? null,
+    p_region: query.region ?? null,
     p_acces: query.acces ?? null,
     p_zone: query.zone,
     p_tri: query.tri,

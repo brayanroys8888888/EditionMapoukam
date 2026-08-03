@@ -16,12 +16,20 @@ import type { UrlsCouverture } from '@/lib/storage/covers';
  * │ diffèrent de toute façon en français et en anglais.                      │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-export type RegionConte =
-  | 'afrique_ouest'
-  | 'sahel'
-  | 'afrique_centrale'
-  | 'afrique_australe'
-  | 'afrique_est';
+/**
+ * Les cinq valeurs, à l'exécution — pour valider un paramètre de filtre et
+ * énumérer les pastilles. Le type en DÉRIVE, afin qu'il n'y ait pas deux
+ * listes à tenir d'accord.
+ */
+export const REGIONS_CONTE = [
+  'afrique_ouest',
+  'sahel',
+  'afrique_centrale',
+  'afrique_australe',
+  'afrique_est',
+] as const;
+
+export type RegionConte = (typeof REGIONS_CONTE)[number];
 
 /**
  * Représentations renvoyées par l'API du catalogue.

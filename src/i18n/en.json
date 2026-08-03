@@ -145,6 +145,50 @@
     "continuer": "Continue",
     "allerAuCatalogue": "Browse the catalogue"
   },
+  "catalogue": {
+    "_commentaire": "The card carries THREE access lines, not two — see the French dictionary, which carries the reasoning.",
+
+    "titre": "Catalogue",
+    "resultats": "{total} tales",
+    "resultatsUn": "1 tale",
+    "chargement": "Loading the catalogue…",
+
+    "recherche": "Search for a tale",
+    "rechercheAide": "Title, author, theme…",
+    "rechercheAction": "Search",
+
+    "filtres": "Filter",
+    "filtresActifs": "Active filters",
+    "retirerFiltre": "Remove this filter",
+    "retirerTousFiltres": "Remove all filters",
+
+    "region": "Region",
+    "themes": "Themes",
+    "origine": "Origin",
+    "age": "Age",
+    "acces": "Access",
+
+    "accesAbonnement": "With the subscription",
+    "accesAchat": "Single purchase",
+    "accesGratuit": "Free",
+
+    "tri": "Sort by",
+    "triNouveautes": "New releases",
+    "triPopularite": "Most read",
+    "triAlphabetique": "Alphabetical order",
+    "triPrix": "Price, lowest first",
+    "triPertinence": "Relevance",
+
+    "videTitre": "No tale matches",
+    "videCorps": "Try widening your search: filters can be removed one at a time, or all at once.",
+    "videAction": "See the whole catalogue",
+
+    "sansCouverture": "Cover coming soon",
+    "parAuteur": "by {auteur}",
+    "trancheAge": "ages {min} and up",
+    "trancheAgeBornee": "ages {min} to {max}",
+    "nbPages": "{pages} pages"
+  },
   "pagination": {
     "_commentaire": "The position is a template rather than a concatenation: word order differs between languages, and concatenating freezes the French one.",
     "libelle": "Pagination",
