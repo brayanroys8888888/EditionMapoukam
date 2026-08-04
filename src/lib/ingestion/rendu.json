@@ -1,0 +1,10 @@
+{
+  "resolutions": {
+    "haute": 1600,
+    "allegee": 800
+  },
+  "qualite": {
+    "haute": 80,
+    "allegee": 62
+  }
+}

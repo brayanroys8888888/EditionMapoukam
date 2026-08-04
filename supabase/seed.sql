@@ -301,10 +301,23 @@ where b.id = t.book_id
 -- Jeton aléatoire, jamais le slug : la couverture d'un titre en brouillon ne
 -- doit pas être accessible à qui devine l'URL, sinon les prochaines parutions
 -- fuiteraient avant leur annonce.
-update public.books
-set couverture_url = 'covers/' || replace(gen_random_uuid()::text, '-', '') || '/fiche.webp',
+--
+-- LE JETON ET L'URL SONT POSÉS ENSEMBLE, depuis la même valeur. Le jeu de
+-- données ne renseignait que `couverture_url`, la colonne dépréciée, en
+-- laissant `couverture_jeton` vide — or c'est ce dernier que lit
+-- `urlsCouverture`, seule autorité sur la construction des URL publiques.
+-- La fixture annonçait donc des couvertures qu'aucun écran ne pouvait servir,
+-- et un test du catalogue passait en n'observant rien.
+update public.books b
+set couverture_jeton = j.jeton,
+    couverture_url = 'covers/' || j.jeton || '/fiche.webp',
     maj_le = public.app_now()
-where statut = 'publie';
+from (
+  select id, replace(gen_random_uuid()::text, '-', '') as jeton
+  from public.books
+  where statut = 'publie'
+) j
+where b.id = j.id;
 
 -- ---------------------------------------------------------------------------
 -- Region d'affichage, derivee de l'origine editoriale

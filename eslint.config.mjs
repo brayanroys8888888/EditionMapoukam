@@ -49,6 +49,12 @@ export default tseslint.config(
       '.next/**',
       'coverage/**',
       "conte d'afrique/**",
+      // Maquettes de référence, livrées en HTML autonome par l'outil de
+      // design. Ce n'est pas du code de l'application : leur JavaScript
+      // s'exécute dans un navigateur, hors de tout module, et les soumettre
+      // aux règles du projet ferait échouer la porte sur des fichiers que
+      // personne ne déploie.
+      'update_design/**',
       'next-env.d.ts',
       // Artefacts générés par `supabase start` (fonctions edge de démonstration).
       'supabase/.temp/**',

@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import sharp from 'sharp';
 
+import rendu from './rendu.json';
+
 import { LIMITES, lancerPoppler } from './poppler';
 import { logger } from '@/lib/logger';
 
@@ -17,12 +19,18 @@ import { logger } from '@/lib/logger';
  * illustration floue. Les deux sont produites à l'ingestion, une seule est
  * servie à la lecture.
  */
-export const RESOLUTIONS = {
-  /** Tablette et ordinateur. */
-  haute: 1600,
-  /** Connexions lentes (§5.1). */
-  allegee: 800,
-} as const;
+
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES VALEURS VIVENT EN JSON, POUR N'EXISTER QU'UNE FOIS.                  │
+ * │                                                                          │
+ * │ Elles sont lues par ce module ET par `scripts/remplacer-contenu.mjs`,    │
+ * │ qui ne peut pas importer de TypeScript. Les recopier aurait produit des  │
+ * │ pages à une autre taille ou une autre qualité que celles de la chaîne    │
+ * │ d'ingestion — deux corpus au même endroit, sans que rien ne le signale.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const RESOLUTIONS = rendu.resolutions;
 
 export type Resolution = keyof typeof RESOLUTIONS;
 
@@ -33,10 +41,7 @@ export type Resolution = keyof typeof RESOLUTIONS;
  * pas d'être fidèle. Un conte illustré tolère bien la compression, les aplats
  * de couleur n'ayant pas de détail fin à préserver.
  */
-const QUALITE: Record<Resolution, number> = {
-  haute: 80,
-  allegee: 62,
-};
+const QUALITE: Record<Resolution, number> = rendu.qualite;
 
 export interface PageRendue {
   numero: number;
