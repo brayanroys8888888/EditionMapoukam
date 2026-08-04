@@ -7,13 +7,7 @@ import { ficheQuerySchema } from '@/domain/catalog/schemas';
 import { lireFiche } from '@/lib/catalog/repository';
 import { identifierAppelant } from '@/lib/auth/session';
 import { getServerEnv } from '@/lib/config/env';
-import {
-  ActionsFiche,
-  BandeauExtrait,
-  DetailsFiche,
-  EnteteFiche,
-  Suggestions,
-} from '@/components/fiche';
+import { PageFicheLivre } from '@/components/fiche';
 import { ajouterAuPanier } from '../../panier/actions';
 
 /**
@@ -104,27 +98,17 @@ export default async function PageFiche({ params }: Parametres) {
   };
 
   return (
-    <section className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8">
+    <PageFicheLivre
+      langue={langue}
+      fiche={fiche}
+      actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
+    >
       <script
         type="application/ld+json"
         // Sérialisé par `JSON.stringify` depuis un objet construit ici : aucune
         // chaîne venue du client n'y entre.
         dangerouslySetInnerHTML={{ __html: JSON.stringify(donneesStructurees) }}
       />
-
-      <EnteteFiche langue={langue} fiche={fiche} />
-      <BandeauExtrait langue={langue} fiche={fiche} />
-      <ActionsFiche
-        langue={langue}
-        fiche={fiche}
-        actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
-      />
-      <DetailsFiche langue={langue} fiche={fiche} />
-      <Suggestions langue={langue} fiche={fiche} />
-
-      <a href={`/${langue}/catalogue`} className="text-sm underline">
-        {traduire(langue, 'fiche.retourCatalogue')}
-      </a>
-    </section>
+    </PageFicheLivre>
   );
 }

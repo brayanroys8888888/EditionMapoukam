@@ -11,10 +11,13 @@ import {
   BarreFiltres,
   CatalogueVide,
   ChampRecherche,
+  FiltresActifs,
   GrilleCatalogue,
   SelecteurTri,
+  type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import styles from '@/components/catalogue/catalogue.module.css';
 
 /**
  * Catalogue — §4.1 F2.
@@ -127,28 +130,110 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
     page: parametres.page,
   };
 
-  const total =
-    page.total === 1
-      ? traduire(langue, 'catalogue.resultatsUn')
-      : traduire(langue, 'catalogue.resultats').replace('{total}', String(page.total));
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ LES FILTRES POSÉS, ET LE LIEN QUI RETIRE CHACUN.                      │
+  // │                                                                        │
+  // │ Construits depuis les paramètres BRUTS : ce sont eux que le lecteur a  │
+  // │ écrits, et retirer « région » ne doit pas au passage réécrire un tri   │
+  // │ par défaut dans l'URL.                                                 │
+  // │                                                                        │
+  // │ Les thèmes se retirent UN PAR UN, pas tous ensemble : un lecteur qui a │
+  // │ croisé « ruse » et « animaux » veut le plus souvent en lâcher un seul. │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const poses: FiltrePose[] = [];
+
+  if (filtres.region) {
+    poses.push({
+      cle: `region:${filtres.region}`,
+      libelle: traduire(langue, `regions.${filtres.region}`),
+      region: filtres.region,
+      retrait: lien({ region: undefined, page: undefined }),
+    });
+  }
+
+  for (const theme of filtres.themes ?? []) {
+    const restants = (filtres.themes ?? []).filter((autre) => autre !== theme);
+    poses.push({
+      cle: `theme:${theme}`,
+      libelle: theme,
+      retrait: lien({
+        themes: restants.length > 0 ? restants.join(',') : undefined,
+        page: undefined,
+      }),
+    });
+  }
+
+  if (filtres.acces) {
+    const cle =
+      filtres.acces === 'abonnement'
+        ? 'catalogue.accesAbonnement'
+        : filtres.acces === 'achat'
+          ? 'catalogue.accesAchat'
+          : 'catalogue.accesGratuit';
+    poses.push({
+      cle: `acces:${filtres.acces}`,
+      libelle: traduire(langue, cle),
+      retrait: lien({ acces: undefined, page: undefined }),
+    });
+  }
+
+  if (filtres.q) {
+    poses.push({
+      cle: 'q',
+      libelle: filtres.q,
+      retrait: lien({ q: undefined, page: undefined }),
+    });
+  }
+
+  /**
+   * La ligne de compte, accordée en nombre et sensible aux filtres.
+   *
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ `facettes.total` EST LE CATALOGUE ENTIER, `page.total` CE QUI RESTE. │
+   * │                                                                      │
+   * │ Les confondre donnerait « 3 contes sur 3 correspondent à vos         │
+   * │ filtres » — une phrase vraie et parfaitement inutile, qui cache       │
+   * │ justement ce que le lecteur veut savoir : combien il s'en prive.      │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const compte = ((): string => {
+    if (poses.length === 0) {
+      return page.total === 1
+        ? traduire(langue, 'catalogue.compteTousUn')
+        : traduire(langue, 'catalogue.compteTous').replace('{total}', String(page.total));
+    }
+
+    const cle =
+      page.total === 0
+        ? 'catalogue.compteFiltreAucun'
+        : page.total === 1
+          ? 'catalogue.compteFiltreUn'
+          : 'catalogue.compteFiltre';
+
+    return traduire(langue, cle)
+      .replace('{montres}', String(page.total))
+      .replace('{total}', String(facettes.total));
+  })();
 
   return (
-    <section className="page">
-      <h1>{traduire(langue, 'catalogue.titre')}</h1>
+    <div className={styles.page}>
+      <h1 className={styles.pageTitre}>{traduire(langue, 'catalogue.titre')}</h1>
+      <p className={styles.compte}>{compte}</p>
 
       <ChampRecherche langue={langue} action={base} filtres={filtres} />
 
       <BarreFiltres langue={langue} facettes={facettes} filtres={filtres} lien={lien} />
 
-      <SelecteurTri langue={langue} tri={parametres.tri} lien={lien} />
+      <div className={styles.barreActifs}>
+        <FiltresActifs langue={langue} poses={poses} lienSansFiltres={base} />
+        <SelecteurTri langue={langue} tri={parametres.tri} lien={lien} />
+      </div>
 
       {page.entrees.length === 0 ? (
         <CatalogueVide langue={langue} lienSansFiltres={base} />
       ) : (
         <>
-          <p>{total}</p>
-
-          <GrilleCatalogue langue={langue} entrees={page.entrees} />
+          <GrilleCatalogue langue={langue} entrees={page.entrees} dense />
 
           <Pagination
             langue={langue}
@@ -159,6 +244,6 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
           />
         </>
       )}
-    </section>
+    </div>
   );
 }

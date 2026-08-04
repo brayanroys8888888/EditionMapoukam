@@ -1,0 +1,373 @@
+/*
+ * Espace personnel — §G des maquettes.
+ *
+ * Sobre et utilitaire, même palette que le reste du site. Ton neutre et
+ * factuel : c'est l'écran qu'on ouvre pour vérifier quelque chose, pas pour
+ * se laisser séduire.
+ */
+
+.gabarit {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 26px 20px 56px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  align-items: flex-start;
+}
+
+.colonneNav {
+  flex: 1 1 210px;
+  max-width: 240px;
+  min-width: 210px;
+}
+
+.contenu {
+  flex: 3 1 520px;
+  min-width: 300px;
+}
+
+.navIntitule {
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--encre-douce);
+  padding: 0 var(--espace-1);
+  margin-bottom: var(--espace-2);
+}
+
+.onglets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.onglet {
+  flex: 1 1 150px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  text-align: left;
+  padding: 12px 14px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-bouton);
+  background: var(--fond);
+  color: var(--encre);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  transition: border-color var(--transition-couleur);
+}
+
+.onglet:hover {
+  border-color: var(--encre);
+  color: var(--encre);
+}
+
+/*
+ * L'onglet courant est aussi marqué par `aria-current`. Cette inversion le
+ * REDIT visuellement ; elle ne le remplace pas.
+ */
+.ongletActif {
+  border-color: var(--encre);
+  background: var(--encre);
+  color: var(--fond);
+  font-weight: var(--graisse-forte);
+}
+
+.ongletActif:hover {
+  color: var(--fond);
+}
+
+.navNote {
+  font-size: var(--taille-s);
+  line-height: 1.5;
+  color: var(--encre-douce);
+  margin-top: var(--espace-3);
+  padding: 0 var(--espace-1);
+  /* Une adresse longue ne doit pas élargir la colonne ni déborder. */
+  overflow-wrap: anywhere;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA SEULE MEDIA QUERY DE CET ÉCRAN, ET ELLE PORTE SUR LA PLACE RÉELLE.   │
+ * │                                                                          │
+ * │ Sous 760 px, une barre latérale de 210 px mange les deux tiers de la     │
+ * │ largeur utile. Les trois onglets passent alors sur une ligne, centrés,   │
+ * │ au-dessus du contenu.                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  .colonneNav {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .onglet {
+    flex: 1 1 96px;
+    justify-content: center;
+    text-align: center;
+    padding: 11px 10px;
+    font-size: var(--taille-m);
+  }
+}
+
+/* ── En cours de lecture ────────────────────────────────────────────────── */
+
+.enCours {
+  display: grid;
+  gap: var(--espace-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * Carte HORIZONTALE, dans la couleur de la tradition du conte.
+ *
+ * Les quatre teintes viennent de `--carte-*`, posées par le composant depuis
+ * `region`. Aucune couleur n'est décidée ici.
+ */
+.reprise {
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-bloc);
+  padding: var(--espace-3);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+}
+
+.repriseImage {
+  width: 62px;
+  flex: 0 0 62px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--espace-2);
+  display: block;
+}
+
+.repriseTexte {
+  flex: 1 1 200px;
+  min-width: 170px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.repriseTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 18px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ « PAGE 7 SUR 32 », ET RIEN DE PLUS.                                     │
+ * │                                                                          │
+ * │ La maquette écrit « Page 7 sur 32 · lu par Kadi ». Ce prénom est une     │
+ * │ donnée d'ENFANT : la règle de conformité l'interdit partout, le schéma   │
+ * │ ne le porte nulle part, et la page de confidentialité affirme le         │
+ * │ contraire de ce que la maquette affiche. La mention est supprimée.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.repriseProgres {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.repriseBarre {
+  height: 6px;
+  max-width: 280px;
+  border-radius: var(--rayon-pastille);
+  background: var(--carte-motif);
+  overflow: hidden;
+}
+
+.repriseBarreRemplie {
+  height: 100%;
+  width: calc(var(--part, 0) * 100%);
+  background: var(--carte-accent);
+}
+
+.repriseAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 12px 20px;
+  border: 2px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur);
+}
+
+.repriseAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/* ── Mes contes achetés ─────────────────────────────────────────────────── */
+
+.enteteSection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  margin-bottom: 13px;
+}
+
+.noteSection {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.achats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 224px), 1fr));
+  gap: var(--espace-4);
+}
+
+.achat {
+  height: 100%;
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-bloc);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.achatImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--rayon-image);
+  display: block;
+}
+
+.achatCorps {
+  padding: 0 3px;
+}
+
+.achatOrigine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--carte-encre);
+  margin-bottom: var(--espace-1);
+}
+
+.achatPuce {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--carte-accent);
+  display: block;
+}
+
+.achatTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+  margin-bottom: var(--espace-1);
+}
+
+.achatNote {
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+}
+
+/*
+ * `margin-top: auto` — les actions s'alignent en bas quelle que soit la
+ * longueur du titre. Sans lui, une grille de cartes aux titres inégaux
+ * affiche des boutons en escalier.
+ */
+.achatActions {
+  margin-top: auto;
+  display: flex;
+  gap: var(--espace-2);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/*
+ * Le bouton de téléchargement prend la couleur de TEXTE de la tradition, pas
+ * la couleur pleine — c'est ce qui le garde lisible sur le fond de carte.
+ */
+.achatTelecharger {
+  flex: 1 1 104px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 10px 12px;
+  border: 2px solid var(--carte-encre);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--carte-encre);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  text-align: center;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.achatTelecharger:hover {
+  background: var(--carte-encre);
+  color: var(--fond);
+}
+
+.achatLire {
+  flex: 1 1 104px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 10px 12px;
+  border: 2px solid var(--action);
+  border-radius: 9px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur);
+}
+
+.achatLire:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/*
+ * Un accès perdu se DIT, il ne se cache pas.
+ *
+ * Un ancien abonné garde sa progression sans pouvoir rouvrir le conte.
+ * Retirer silencieusement le bouton laisserait croire à une panne ; le
+ * remplacer par une phrase explique ce qui s'est passé.
+ */
+.achatIndisponible {
+  flex: 1 1 100%;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}

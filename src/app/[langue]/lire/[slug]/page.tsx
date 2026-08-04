@@ -75,22 +75,24 @@ export default async function PageLecture({ params, searchParams }: Parametres) 
     Number.isFinite(demandee) && demandee >= 1 && demandee <= total ? Math.floor(demandee) : 1;
 
   return (
-    <section className="flex flex-col gap-4">
+    <>
+      {/*
+       * Le `h1` est visuellement caché, jamais absent : la barre supérieure
+       * affiche déjà le titre, mais dans un `<p>` tronqué à l'ellipse. Un
+       * écran sans `h1` est un écran sans point d'entrée pour qui l'écoute.
+       */}
       <h1 className="sr-only">{fiche.titre}</h1>
 
       <Lecteur
         langue={langue}
         livreId={fiche.id}
         slug={fiche.slug}
+        titre={fiche.titre}
         langueContenu={langue}
         total={total}
         pageInitiale={pageInitiale}
         possedeAuChargement={fiche.acces.canRead}
       />
-
-      <a href={`/${langue}/contes/${fiche.slug}`} className="mx-auto text-sm underline">
-        {traduire(langue, 'lecteur.retourFiche')}
-      </a>
-    </section>
+    </>
   );
 }

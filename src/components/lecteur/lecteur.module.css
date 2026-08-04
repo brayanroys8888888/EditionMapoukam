@@ -1,0 +1,411 @@
+/*
+ * Lecteur en ligne — §F des maquettes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE SEUL ÉCRAN DONT LE FOND DIFFÈRE.                                     │
+ * │                                                                          │
+ * │ `--fond-lecture` au lieu de `--fond` : un cran plus sourd, pour reposer  │
+ * │ les yeux le soir. Les pages du conte, elles, restent sur `--fond` — et   │
+ * │ c'est ce léger écart qui les détache de la scène.                        │
+ * │                                                                          │
+ * │ L'écart est ASSUMÉ, pas accidentel : une surface de lecture prolongée    │
+ * │ par un enfant n'est pas une surface de navigation.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.cadre {
+  padding: 18px 18px 26px;
+  display: flex;
+  justify-content: center;
+  background: var(--fond-lecture);
+}
+
+/*
+ * La scène : tout ce qui suit y est positionné en absolu.
+ *
+ * `touch-action: pan-y` autorise le défilement vertical de la page et laisse
+ * le balayage HORIZONTAL au lecteur — sans quoi tourner la page au doigt
+ * ferait défiler l'écran.
+ */
+.scene {
+  position: relative;
+  width: 100%;
+  max-width: 1120px;
+  height: min(82vh, 780px);
+  min-height: 560px;
+  background: var(--fond-lecture);
+  border: 1.5px solid var(--bordure);
+  border-radius: 22px;
+  overflow: hidden;
+  touch-action: pan-y;
+}
+
+/* Les cibles y sont plus grandes : le contour de focus s'arrondit d'autant. */
+.scene :focus-visible {
+  border-radius: 6px;
+}
+
+/* ── Barre supérieure ───────────────────────────────────────────────────── */
+
+.barreHaute {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  /* Translucide : la page du conte se devine derrière, ce qui rappelle que la
+     barre flotte au-dessus d'elle et va s'effacer. */
+  background: color-mix(in srgb, var(--fond-lecture) 94%, transparent);
+  border-bottom: 1px solid var(--bordure);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.barreBasse {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 12px 16px 14px;
+  background: color-mix(in srgb, var(--fond-lecture) 94%, transparent);
+  border-top: 1px solid var(--bordure);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EFFACEMENT SE FAIT EN OPACITÉ, JAMAIS EN `display: none`.             │
+ * │                                                                          │
+ * │ `display: none` retire l'élément du flux : au retour, la page du conte   │
+ * │ sauterait de la hauteur des deux barres. `opacity` plus                  │
+ * │ `pointer-events: none` masque et neutralise sans rien déplacer.          │
+ * │                                                                          │
+ * │ `visibility: hidden` en fin de transition, pour que les barres effacées  │
+ * │ sortent aussi de l'ordre de tabulation — un bouton invisible mais        │
+ * │ focalisable est pire qu'un bouton absent.                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.efface {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.barreHaute.efface {
+  transform: translateY(-6px);
+}
+
+.barreBasse.efface {
+  transform: translateY(6px);
+}
+
+.retour {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: var(--cible-min);
+  padding: 9px 13px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-bouton);
+  background: var(--fond);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+  transition: border-color var(--transition-couleur);
+}
+
+.retour:hover {
+  border-color: var(--encre);
+  color: var(--encre);
+}
+
+/*
+ * Le titre en Fraunces — c'est un titre, pas un élément d'interface.
+ *
+ * `min-width: 0` est indispensable : sans lui, un élément en `flex: 1 1 auto`
+ * refuse de rétrécir sous la largeur de son texte, et l'ellipse ne se produit
+ * jamais. La barre déborderait alors sur un titre long.
+ */
+.titreLecteur {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.position {
+  flex: 0 0 auto;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+}
+
+/* ── La page du conte ───────────────────────────────────────────────────── */
+
+.zonePage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Les marges hautes et basses dégagent les deux barres flottantes. */
+  padding: 84px 96px 116px;
+}
+
+.feuille {
+  width: 100%;
+  max-width: 760px;
+  height: 100%;
+  background: var(--fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--rayon-encart);
+  display: block;
+}
+
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+
+/*
+ * Zones cliquables invisibles, sur 16 % de largeur de chaque côté.
+ *
+ * C'est le geste que tout lecteur d'application de lecture connaît : toucher
+ * le bord de l'écran. Elles doublent les flèches sans les remplacer — les
+ * flèches restent pour qui ne connaît pas le geste, et pour le clavier.
+ */
+.zoneTouche {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16%;
+  z-index: 20;
+  background: transparent;
+  border: 0;
+}
+
+.zoneTouchePrecedente {
+  left: 0;
+}
+
+.zoneToucheSuivante {
+  right: 0;
+}
+
+.fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--fond) 94%, transparent);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  transition: opacity 0.3s, border-color var(--transition-couleur),
+    color var(--transition-couleur);
+}
+
+.fleche:hover:not(:disabled) {
+  border-color: var(--region-afrique_ouest-accent);
+  color: var(--region-afrique_ouest-encre);
+}
+
+/*
+ * Une extrémité atteinte DÉSACTIVE la flèche, sans la faire disparaître.
+ *
+ * Elle reste à sa place : un bouton qui s'évapore en première page déplace
+ * l'autre, et l'enfant qui visait « suivante » touche autre chose.
+ */
+.fleche:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.flechePrecedente {
+  left: 14px;
+}
+
+.flecheSuivante {
+  right: 14px;
+}
+
+/* ── Barre de progression et miniatures ─────────────────────────────────── */
+
+.progression {
+  height: 6px;
+  border-radius: var(--rayon-pastille);
+  background: var(--bordure);
+  overflow: hidden;
+  margin-bottom: 11px;
+}
+
+/* `--part` est un rapport sans unité, posé par le composant. */
+.progressionRemplie {
+  height: 100%;
+  width: calc(var(--part, 0) * 100%);
+  background: var(--region-afrique_ouest-accent);
+  transition: width 0.25s;
+}
+
+.miniatures {
+  display: flex;
+  gap: var(--espace-2);
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.miniature {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 34px;
+  border: 2px solid var(--bordure-forte);
+  border-radius: 7px;
+  background: var(--region-afrique_ouest-fond);
+  background-image: var(--motif-afrique_ouest);
+  transition: transform var(--transition-forme), border-color var(--transition-couleur);
+}
+
+.miniatureActive {
+  border-color: var(--region-afrique_ouest-accent);
+  transform: translateY(-2px);
+}
+
+/*
+ * Le numéro sur une pastille opaque — pour rester lisible PAR-DESSUS le motif.
+ * Sans elle, un chiffre sombre sur une bande verte disparaît une fois sur deux.
+ */
+.miniatureNumero {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  padding: 0 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+}
+
+/* ── Messages plein cadre ───────────────────────────────────────────────── */
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-4);
+  max-width: 34rem;
+  padding: var(--espace-6);
+  text-align: center;
+}
+
+.messageTexte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: 1.6;
+}
+
+.messageAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 13px 24px;
+  border: 2px solid var(--action);
+  border-radius: 11px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+}
+
+.messageAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/*
+ * La note d'aide, montrée UNE SEULE FOIS, au premier effacement.
+ *
+ * Sans elle, une interface qui disparaît au bout de quatre secondes se lit
+ * comme une panne — et un parent quitte le lecteur au lieu d'y toucher.
+ */
+.note {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 35;
+  padding: 9px 16px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  background: var(--fond);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+  transition: opacity 0.6s;
+}
+
+.noteEffacee {
+  opacity: 0;
+}
+
+/* ── Format étroit ──────────────────────────────────────────────────────── */
+
+/*
+ * La SEULE media query du produit, et elle porte sur un geste, pas sur une
+ * mode : sous 640 px, les flèches latérales mangeraient la page. Elles
+ * cèdent la place aux zones tactiles et aux miniatures, atteignables au pouce.
+ */
+@media (max-width: 640px) {
+  .cadre {
+    padding: 0;
+  }
+
+  .scene {
+    border: 0;
+    border-radius: 0;
+    height: min(92vh, 900px);
+  }
+
+  .zonePage {
+    padding: 70px 14px 128px;
+  }
+
+  .feuille {
+    padding: 14px 14px 20px;
+  }
+
+  .fleche {
+    display: none;
+  }
+
+  .titreLecteur {
+    font-size: var(--taille-l);
+  }
+}

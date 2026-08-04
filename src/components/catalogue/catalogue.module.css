@@ -1,10 +1,10 @@
 /*
- * Catalogue — grille, filtres, tri, recherche.
+ * Catalogue — carte de conte, grille, filtres, tri, recherche.
  *
  * La grille se règle sur la place disponible plutôt que sur des points de
- * rupture : `auto-fill` avec un minimum de 150 px donne deux colonnes sur un
- * téléphone étroit et six sur un grand écran, sans qu'aucune largeur soit
- * décidée à l'avance.
+ * rupture : `auto-fill` avec un minimum de 220 px — la mesure des maquettes —
+ * donne une carte par ligne sur un téléphone étroit, trois vers 768 px et
+ * quatre à 1200, sans qu'aucune media query soit écrite.
  */
 
 .grille {
@@ -12,36 +12,56 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: var(--espace-6) var(--espace-5);
-}
-
-/* ── Carte ──────────────────────────────────────────────────────────────── */
-
-.carte {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-2);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 22px;
 }
 
 /*
- * Le lien couvre la couverture ET le titre, et rien d'autre.
+ * La grille du catalogue, plus dense — et son `min(46%, 240px)` compte.
  *
- * Envelopper la carte entière ferait de la pastille de région un fragment de
- * lien, et un lecteur d'écran annoncerait le nom du conte suivi de sa région
- * et de son prix comme un seul libellé interminable.
+ * Sans le `46%`, un téléphone étroit n'affiche qu'UNE carte par ligne, et
+ * parcourir seize contes demande seize écrans de défilement. Avec, il en
+ * affiche deux, ce qui est la différence entre feuilleter et scruter.
  */
-.carteLien {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espace-3);
-  text-decoration: none;
-  color: inherit;
+.grilleDense {
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 240px), 1fr));
+  gap: 20px;
 }
 
-.carteLien:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
+/* ── Carte de conte ─────────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TOUTE LA CARTE EST UN LIEN, ET ELLE PORTE LA COULEUR DE SA TRADITION.   │
+ * │                                                                          │
+ * │ Les deux points sont ceux des maquettes, et le second est la raison      │
+ * │ d'être du système : cinq traditions, cinq couleurs, une par carte. Une   │
+ * │ grille de cartes blanches n'est pas une version sobre de cette grille —   │
+ * │ c'est une autre grille, qui a perdu ce qu'elle disait.                   │
+ * │                                                                          │
+ * │ La bordure de SURVOL est la teinte de TEXTE de la tradition, et non sa   │
+ * │ couleur pleine — `--…-encre`, jamais `--…-accent`. C'est ce qui donne    │
+ * │ le pas de contraste au moment où la carte se soulève.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Les quatre teintes viennent de `--carte-*`, posées par le composant depuis
+ * la région du conte. Aucune couleur n'est décidée ici.
+ */
+.carte {
+  display: block;
+  height: 100%;
+  padding: 12px 12px 4px;
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-carte);
+  color: var(--encre);
+  transition: transform var(--transition-forme), border-color var(--transition-forme);
+}
+
+.carte:hover {
+  transform: translateY(-4px);
+  border-color: var(--carte-encre);
+  color: var(--encre);
 }
 
 .couverture {
@@ -50,41 +70,90 @@
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: var(--rayon-image);
-  background: var(--fond-doux);
+  display: block;
 }
 
 /*
  * Substitut d'une couverture absente — un titre en cours d'ingestion.
  *
- * Il occupe exactement la place de l'image : sans cela, une grille mêlant des
- * titres avec et sans couverture serait irrégulière, et le manque passerait
- * pour un défaut d'affichage.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PAS UN RECTANGLE GRIS, ET CE N'EST PAS UN CADRE EN POINTILLÉS. │
+ * │                                                                          │
+ * │ La règle qui prime sur toutes les autres dans la direction artistique :  │
+ * │ jamais de bloc vide, jamais de zone hachurée, jamais d'icône d'image     │
+ * │ cassée. Le manque est tenu par l'aplat de motif de la tradition, qui se  │
+ * │ lit comme une intention et non comme une panne.                          │
+ * │                                                                          │
+ * │ Il occupe exactement la place de l'image : sans cela, une grille mêlant  │
+ * │ des titres avec et sans couverture serait irrégulière.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 .couvertureAbsente {
+  position: relative;
+  display: block;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--rayon-image);
+  overflow: hidden;
+}
+
+.couvertureAbsenteMotif {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.couvertureAbsenteTexte {
+  position: absolute;
+  inset: auto 0 0;
+  padding: var(--espace-3);
+  text-align: center;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-demi);
+  color: var(--carte-encre);
+}
+
+/* ── Le pied de carte ───────────────────────────────────────────────────── */
+
+.carteCorps {
+  padding: 13px 4px 14px;
+}
+
+/*
+ * La pastille d'origine : une puce ronde de la couleur PLEINE, un libellé dans
+ * la couleur de TEXTE. Les deux teintes diffèrent, et c'est délibéré — la
+ * pleine ne passerait pas AA sur ce fond.
+ */
+.origine {
   display: flex;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: var(--espace-4);
-  aspect-ratio: 2 / 3;
-  border: 1px dashed var(--bordure-forte);
-  border-radius: var(--rayon-image);
-  background: var(--fond-doux);
-  color: var(--encre-douce);
-  font-size: var(--taille-m);
+  gap: 7px;
+  margin-bottom: var(--espace-2);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--carte-encre);
+}
+
+.puce {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--carte-accent);
+  display: block;
 }
 
 .titre {
   font-family: var(--police-titre);
-  font-size: var(--taille-l);
-  font-weight: var(--graisse-demi);
-  line-height: var(--interligne-titre);
-  margin: 0;
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+  margin-bottom: 6px;
 }
 
-.auteur,
-.age {
-  margin: 0;
+.meta {
   font-size: var(--taille-m);
   color: var(--encre-douce);
 }
@@ -92,64 +161,132 @@
 /* ── Les lignes d'accès ─────────────────────────────────────────────────── */
 
 /*
- * « Dans votre bibliothèque » se distingue des deux autres AUTREMENT QUE PAR
- * LA COULEUR : elle est en demi-gras. Le libellé lui-même porte déjà
- * l'information — la mise en forme ne fait que la confirmer.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS LIGNES, LÀ OÙ LA MAQUETTE N'EN PRÉVOYAIT QUE DEUX.                │
+ * │                                                                          │
+ * │ La maquette n'affiche qu'un prix ou « ou inclus dans l'abonnement ».     │
+ * │ Aucun des deux ne convient à qui détient déjà le titre — TOUS DEUX       │
+ * │ L'INVITENT À OBTENIR CE QU'IL A DÉJÀ. D'où « Dans votre bibliothèque »,  │
+ * │ qui prend le pas, et qui se distingue AUTREMENT QUE PAR LA COULEUR : en  │
+ * │ demi-gras, avec un libellé qui porte déjà toute l'information.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
+.acces {
+  margin-top: var(--espace-2);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.accesSuite {
+  font-weight: var(--graisse-normale);
+  color: var(--encre-douce);
+}
+
 .accesPossede {
-  margin: 0;
-  font-size: var(--taille-base);
-  font-weight: var(--graisse-demi);
-  color: var(--region-afrique_ouest-encre);
-}
-
-.accesGratuit {
-  margin: 0;
-  font-size: var(--taille-base);
-  font-weight: var(--graisse-demi);
-  color: var(--region-afrique_ouest-encre);
-}
-
-.accesAbonnement {
-  margin: 0;
-  font-size: var(--taille-base);
-  color: var(--creme-accent);
-}
-
-.accesPrix {
-  margin: 0;
-  font-size: var(--taille-l);
-  font-weight: var(--graisse-demi);
+  margin-top: var(--espace-2);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--carte-encre);
 }
 
 .accesHorsZone {
-  margin: 0;
+  margin-top: var(--espace-2);
   font-size: var(--taille-m);
   color: var(--encre-douce);
 }
 
-/* ── Filtres ────────────────────────────────────────────────────────────── */
+/* ── La carte de CATALOGUE : la même, en plus dense ─────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX DENSITÉS, UN SEUL COMPOSANT.                                       │
+ * │                                                                          │
+ * │ Le catalogue montre quatre à six cartes par ligne là où l'accueil en     │
+ * │ montre quatre au plus. La maquette resserre donc la carte — 10 px de     │
+ * │ marge au lieu de 12, titre à 17 px au lieu de 19, âge en pastille — sans │
+ * │ rien changer d'autre.                                                    │
+ * │                                                                          │
+ * │ Deux composants auraient divergé au premier correctif : la carte de      │
+ * │ l'accueil aurait gardé un défaut corrigé sur celle du catalogue, ou      │
+ * │ l'inverse. C'est une VARIANTE, pas un second composant.                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.carteCompacte {
+  padding: 10px;
+}
+
+.carteCompacte .carteCorps {
+  padding: 11px 4px 4px;
+}
+
+.carteCompacte .titre {
+  font-size: var(--taille-xl);
+  margin-bottom: 9px;
+}
+
+.carteCompacte .origine {
+  letter-spacing: 0.05em;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+
+/*
+ * En mode dense, l'âge et l'accès partagent une ligne : l'âge en pastille
+ * neutre, l'accès en toutes lettres. C'est ce qui tient sur une carte de
+ * 240 px sans que le prix passe à la ligne tout seul.
+ */
+.ligneDense {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.pastilleAge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border-radius: var(--rayon-pastille);
+  background: var(--separateur);
+  color: var(--encre-douce);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-demi);
+}
+
+.ligneDense .acces,
+.ligneDense .accesPossede,
+.ligneDense .accesHorsZone {
+  margin-top: 0;
+  font-size: var(--taille-s);
+}
+
+/* ── Panneau de filtres ─────────────────────────────────────────────────── */
 
 .filtres {
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  padding: 14px 16px;
+  margin-bottom: 22px;
   display: flex;
-  flex-direction: column;
-  gap: var(--espace-5);
-  margin-bottom: var(--espace-6);
+  flex-wrap: wrap;
+  gap: 18px 26px;
+  align-items: flex-start;
 }
 
 .groupe {
   display: flex;
   flex-direction: column;
-  gap: var(--espace-3);
 }
 
 .groupeTitre {
-  margin: 0;
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-demi);
-  color: var(--encre-douce);
+  font-family: var(--police-interface);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
+  color: var(--encre-douce);
+  margin-bottom: 9px;
 }
 
 .groupePastilles {
@@ -158,39 +295,129 @@
   gap: var(--espace-2);
 }
 
+/*
+ * La pastille de filtre est un LIEN, jamais un bouton.
+ *
+ * `<button aria-pressed>` est ce que porte la maquette, et c'est ce qu'il
+ * faudrait si le filtre vivait en mémoire. Ici il vit dans l'URL : poser un
+ * filtre est une navigation, elle se partage, elle survit au rechargement et
+ * elle fonctionne sans JavaScript — la condition réelle d'une partie du
+ * public. `aria-current` remplace alors `aria-pressed`.
+ */
 .pastilleFiltre {
   display: inline-flex;
   align-items: center;
+  gap: 7px;
   /*
    * 44 px de haut : c'est la cible tactile minimale, et ces pastilles sont
    * serrées les unes contre les autres — c'est précisément là qu'une cible
-   * trop petite fait poser le mauvais filtre.
+   * trop petite fait poser le mauvais filtre. La maquette descend à 8 px de
+   * marge verticale ; l'accessibilité ne se négocie pas contre une maquette.
    */
   min-height: var(--cible-min);
-  padding: var(--espace-2) var(--espace-4);
-  border: 1px solid var(--bordure-forte);
+  padding: var(--espace-2) 13px;
+  border: 1.5px solid var(--bordure-forte);
   border-radius: var(--rayon-pastille);
   background: var(--fond);
   color: var(--encre);
   font-size: var(--taille-m);
-  text-decoration: none;
+  font-weight: var(--graisse-demi);
+  transition: border-color var(--transition-couleur), background var(--transition-couleur);
 }
 
-.pastilleFiltre:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
+.pastilleFiltre:hover {
+  border-color: var(--encre);
+  color: var(--encre);
 }
 
 /*
  * Le filtre actif est marqué par le fond ET par `aria-current`, posé dans le
  * composant. La couleur seule laisserait un daltonien sans moyen de savoir ce
  * qui filtre son catalogue.
+ *
+ * Trois valeurs changent, prises dans la tradition quand il y en a une :
+ * fond de carte, bordure en couleur pleine, texte en teinte AA. Les groupes
+ * sans couleur — âge, langue, accès — basculent en encre sur fond d'encre.
  */
 .pastilleActive {
   background: var(--encre);
   border-color: var(--encre);
   color: var(--fond);
-  font-weight: var(--graisse-demi);
+  font-weight: var(--graisse-forte);
+}
+
+.pastilleActive:hover {
+  color: var(--fond);
+}
+
+.pastilleRegion.pastilleActive {
+  background: var(--carte-fond);
+  border-color: var(--carte-accent);
+  color: var(--carte-encre);
+}
+
+.pastilleRegion.pastilleActive:hover {
+  color: var(--carte-encre);
+}
+
+/* ── Barre de filtres actifs et tri ─────────────────────────────────────── */
+
+.barreActifs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.actifs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-2);
+}
+
+.actifsTitre {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+}
+
+/*
+ * La pastille retirable porte une croix, et son `aria-label` DIT ce que le
+ * clic fait — « Retirer le filtre Sahel », jamais « × ». Une croix seule est
+ * annoncée « lien » et rien d'autre.
+ */
+.pastilleRetirable {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-2);
+  min-height: var(--cible-min);
+  padding: 7px 12px;
+  border: 1.5px solid var(--carte-accent, var(--encre));
+  border-radius: var(--rayon-pastille);
+  background: var(--carte-fond, var(--fond-doux));
+  color: var(--carte-encre, var(--encre));
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+}
+
+.croix {
+  font-size: var(--taille-l);
+  line-height: 1;
+  font-weight: var(--graisse-forte);
+}
+
+.toutEffacer {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 /* ── Tri ────────────────────────────────────────────────────────────────── */
@@ -198,24 +425,50 @@
 .tri {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--espace-2);
-  margin-bottom: var(--espace-5);
+  margin-left: auto;
 }
 
+.triTitre {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+}
+
+/*
+ * Des LIENS, et non un `<select>`.
+ *
+ * La maquette pose un sélecteur, qui suppose du JavaScript pour naviguer au
+ * changement — et un sélecteur accompagné d'un bouton « appliquer » demande
+ * un geste de plus pour un choix parmi cinq.
+ */
 .triLien {
   min-height: var(--cible-min);
   display: inline-flex;
   align-items: center;
   padding: 0 var(--espace-3);
-  color: var(--lien-survol);
-  font-size: var(--taille-base);
+  border-radius: var(--rayon-controle);
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: background var(--transition-couleur);
+}
+
+.triLien:hover {
+  background: var(--fond-doux);
+  color: var(--encre);
 }
 
 .triActif {
-  color: var(--encre);
-  font-weight: var(--graisse-demi);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  background: var(--encre);
+  color: var(--fond);
+  font-weight: var(--graisse-forte);
+}
+
+.triActif:hover {
+  background: var(--encre);
+  color: var(--fond);
 }
 
 /* ── Recherche ──────────────────────────────────────────────────────────── */
@@ -223,70 +476,138 @@
 .recherche {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--espace-3);
-  margin-bottom: var(--espace-6);
+  align-items: center;
+  gap: var(--espace-2);
+  margin-bottom: 22px;
 }
 
 .rechercheLibelle {
   flex-basis: 100%;
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-demi);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--encre-douce);
+  margin-bottom: 9px;
 }
 
 .rechercheSaisie {
   flex: 1 1 16rem;
+  max-width: 26rem;
   min-height: var(--cible-min);
-  padding: var(--espace-2) var(--espace-4);
-  border: 1px solid var(--bordure-forte);
-  border-radius: var(--rayon-controle);
+  padding: 12px 14px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: 9px;
+  background: var(--fond);
   /* 16 px au minimum : en deçà, Safari iOS zoome au focus. */
   font-size: var(--taille-l);
-  font-family: var(--police-interface);
-}
-
-.rechercheSaisie:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
 }
 
 .rechercheBouton {
   min-height: var(--cible-min);
-  padding: 0 var(--espace-5);
-  border: 1px solid transparent;
+  padding: 12px 22px;
+  border: 2px solid var(--action);
   border-radius: var(--rayon-bouton);
   background: var(--action);
   color: var(--action-encre);
-  font-family: var(--police-interface);
-  font-size: var(--taille-base);
-  font-weight: var(--graisse-demi);
-  cursor: pointer;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur);
 }
 
 .rechercheBouton:hover {
   background: var(--action-survol);
 }
 
-.rechercheBouton:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
+/* ── État « aucun résultat » ────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PAS UN BLOC VIDE, ET CE N'EST PAS UN CUL-DE-SAC.               │
+ * │                                                                          │
+ * │ « Aucun conte ne correspond » laisse le lecteur devant un écran mort,    │
+ * │ alors qu'il vient probablement de croiser deux filtres incompatibles.    │
+ * │ L'issue — retirer tous les filtres — est offerte, pas suggérée. Et le    │
+ * │ carré à motif tient la place d'une illustration, plutôt que de laisser   │
+ * │ une demi-page blanche.                                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.vide {
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  padding: 30px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  align-items: flex-start;
 }
 
-/* ── État vide ──────────────────────────────────────────────────────────── */
+.videMotif {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 auto;
+}
+
+.videTexte {
+  flex: 1 1 340px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espace-2);
+}
+
+.videTitre {
+  font-size: var(--taille-3xl);
+}
+
+.videCorps {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+  color: var(--encre-douce);
+  max-width: 62ch;
+}
 
 .videAction {
   display: inline-flex;
   align-items: center;
   min-height: var(--cible-min);
-  padding: 0 var(--espace-5);
+  margin-top: var(--espace-2);
+  padding: 13px 24px;
+  border: 2px solid var(--action);
   border-radius: var(--rayon-bouton);
   background: var(--action);
   color: var(--action-encre);
-  font-weight: var(--graisse-demi);
-  text-decoration: none;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur);
 }
 
-.videAction:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
+.videAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/* ── En-tête du catalogue ───────────────────────────────────────────────── */
+
+.page {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 30px 20px 56px;
+}
+
+.pageTitre {
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.compte {
+  font-size: var(--taille-xl);
+  color: var(--encre-douce);
+  margin-bottom: 22px;
+}
+
+.compte strong {
+  color: var(--encre);
+  font-weight: var(--graisse-forte);
 }

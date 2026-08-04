@@ -26,6 +26,10 @@
   --bordure-forte: #e0d6c6;
   --souligne: #c9bca9;
 
+  /* Séparateur de ligne de tableau et piste de barre de progression. Plus clair
+     que `--bordure` : il traverse du contenu au lieu de le cerner. */
+  --separateur: #f1ebe1;
+
   /**
    * Surface de lecture — écart ASSUMÉ avec `--fond`, et non un accident.
    *
@@ -78,15 +82,22 @@
    * `afrique_est`. Des clés ASCII, jamais des libellés — c'est ce qui rend
    * impossible la classe de défaut de l'apostrophe (docs/PLAN.md §5 terdecies).
    */
+  /*
+   * CINQ rôles, et non quatre : le cinquième est `motif`, le fond des aplats
+   * géométriques. Il est d'UN CRAN plus soutenu que `fond` — les confondre
+   * ferait disparaître le motif dans la carte qui le porte.
+   */
   --region-afrique_ouest-accent: #1e8a5f;
   --region-afrique_ouest-encre: #197a53;
   --region-afrique_ouest-fond: #e4efe7;
   --region-afrique_ouest-bordure: #cfe2d6;
+  --region-afrique_ouest-motif: #d6e7dc;
 
   --region-sahel-accent: #2d5ba8;
   --region-sahel-encre: #2d5ba8;
   --region-sahel-fond: #e6e9ef;
   --region-sahel-bordure: #d2d8e4;
+  --region-sahel-motif: #dce1eb;
 
   --region-afrique_centrale-accent: #d64545;
   /* Assombri : `#c13a3a` sur son fond `#fae7e3` mesurait 4,48:1 — vingt
@@ -94,16 +105,19 @@
   --region-afrique_centrale-encre: #b93636;
   --region-afrique_centrale-fond: #fae7e3;
   --region-afrique_centrale-bordure: #f0d2cc;
+  --region-afrique_centrale-motif: #f6dcd6;
 
   --region-afrique_australe-accent: #7b4b94;
   --region-afrique_australe-encre: #7b4b94;
   --region-afrique_australe-fond: #efe8ed;
   --region-afrique_australe-bordure: #dfd2e0;
+  --region-afrique_australe-motif: #e8deea;
 
   --region-afrique_est-accent: #2ba8a0;
   --region-afrique_est-encre: #1b756f;
   --region-afrique_est-fond: #e6f3ee;
   --region-afrique_est-bordure: #cfe7e2;
+  --region-afrique_est-motif: #d8ece7;
 
   /* Repli d'un titre sans région — ne doit jamais se produire : la région est
      exigée à la publication. Neutre, pour ne pas prétendre une origine. */
@@ -111,6 +125,96 @@
   --region-inconnue-encre: var(--encre-douce);
   --region-inconnue-fond: var(--fond-doux);
   --region-inconnue-bordure: var(--bordure-forte);
+  --region-inconnue-motif: var(--fond-doux);
+
+  /* ── Motifs géométriques ─────────────────────────────────────────────── */
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ JAMAIS DE RECTANGLE GRIS, DE BLOC VIDE NI D'ICÔNE D'IMAGE CASSÉE.     │
+   * │                                                                        │
+   * │ C'est la règle qui prime sur les autres dans la direction artistique.  │
+   * │ Là où aucune illustration n'existe — aplats de section, vignettes de   │
+   * │ tradition, volets des écrans de compte — la place est tenue par un     │
+   * │ aplat de la couleur de la tradition portant un motif géométrique.      │
+   * │                                                                        │
+   * │ Les six recettes vivent ICI et non dans un module, pour la même raison │
+   * │ que les couleurs : ce sont des valeurs de charte, et elles portent des │
+   * │ teintes. Écrites dans un composant, elles seraient une seconde source. │
+   * │                                                                        │
+   * │ Les `rgb(… / …)` reprennent les accents de région à opacité réduite.   │
+   * │ Elles sont écrites en toutes lettres plutôt qu'en `rgb(from …)` : la   │
+   * │ syntaxe relative n'est pas comprise des navigateurs Android anciens,   │
+   * │ qui sont une part réelle du public (§5.1), et un motif absent se lit   │
+   * │ comme un bloc vide — précisément ce que la règle interdit.             │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+
+  /* Ouest — trame kente : bandes verticales larges, fines horizontales. */
+  --motif-afrique_ouest: repeating-linear-gradient(
+      90deg,
+      rgb(30 138 95 / 30%) 0 8px,
+      transparent 8px 26px
+    ),
+    repeating-linear-gradient(0deg, rgb(30 138 95 / 18%) 0 5px, transparent 5px 30px);
+
+  /* Ouest, variante hero — trame plus douce, plus croisillon léger. */
+  --motif-afrique_ouest-hero: repeating-linear-gradient(
+      90deg,
+      rgb(30 138 95 / 14%) 0 9px,
+      transparent 9px 30px
+    ),
+    repeating-linear-gradient(45deg, rgb(30 138 95 / 10%) 0 2px, transparent 2px 16px),
+    repeating-linear-gradient(-45deg, rgb(30 138 95 / 10%) 0 2px, transparent 2px 16px);
+
+  /* Sahel — croisillon diagonal serré. */
+  --motif-sahel: repeating-linear-gradient(
+      45deg,
+      rgb(45 91 168 / 28%) 0 3px,
+      transparent 3px 18px
+    ),
+    repeating-linear-gradient(-45deg, rgb(45 91 168 / 28%) 0 3px, transparent 3px 18px);
+
+  /* Centrale — pointillé adinkra. */
+  --motif-afrique_centrale: radial-gradient(rgb(214 69 69 / 34%) 2px, transparent 2.2px);
+  --motif-afrique_centrale-taille: 16px 16px;
+
+  /* Australe — treillis oblique simple. */
+  --motif-afrique_australe: repeating-linear-gradient(
+    135deg,
+    rgb(123 75 148 / 30%) 0 4px,
+    transparent 4px 14px
+  );
+
+  /* Est — bandes horizontales, plus pointillé. */
+  --motif-afrique_est: repeating-linear-gradient(
+      0deg,
+      rgb(43 168 160 / 30%) 0 6px,
+      transparent 6px 20px
+    ),
+    radial-gradient(rgb(43 168 160 / 28%) 2px, transparent 2.2px);
+  --motif-afrique_est-taille: auto, 20px 20px;
+
+  /* Repli : la trame neutre du fond doux, sans teinte de tradition. */
+  --motif-inconnue: repeating-linear-gradient(
+    135deg,
+    rgb(107 93 79 / 14%) 0 4px,
+    transparent 4px 14px
+  );
+
+  /*
+   * Le SEUL motif jaune du produit — le carré de l'état « aucun résultat ».
+   *
+   * Il n'appartient à aucune tradition, et c'est le point : un catalogue vide
+   * n'a pas d'origine. Lui donner une couleur de région ferait croire que le
+   * filtre régional est en cause, ce qui est faux une fois sur cinq.
+   */
+  --region-vide-motif: #fdf4e1;
+  --motif-vide: repeating-linear-gradient(
+      45deg,
+      rgb(242 177 52 / 45%) 0 4px,
+      transparent 4px 16px
+    ),
+    repeating-linear-gradient(-45deg, rgb(242 177 52 / 45%) 0 4px, transparent 4px 16px);
 
   /* ── Typographie ─────────────────────────────────────────────────────── */
   /*
@@ -148,9 +252,23 @@
   --rayon-controle: 8px;
   --rayon-bouton: 10px;
   --rayon-image: 9px;
+  --rayon-encart: 12px;
+  --rayon-bloc: 14px;
   --rayon-carte: 16px;
   --rayon-panneau: 18px;
+  --rayon-hero: 20px;
   --rayon-pastille: 999px;
+
+  /* ── Ombres ──────────────────────────────────────────────────────────── */
+  /*
+   * DEUX ombres dans tout le produit, et pas une de plus.
+   *
+   * Les maquettes n'en portent que celles-ci : la couverture de la fiche livre
+   * et l'infobulle du graphique d'administration. Toute troisième ombre serait
+   * un ajout à la direction artistique, pas une finition.
+   */
+  --ombre-couverture: 0 10px 28px rgb(42 32 24 / 10%);
+  --ombre-infobulle: 0 6px 16px rgb(42 32 24 / 10%);
 
   --largeur-page: 1200px;
   --largeur-texte: 62ch;

@@ -1,0 +1,447 @@
+/*
+ * Accueil — §B des maquettes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE MEDIA QUERY DANS TOUT CET ÉCRAN.                                 │
+ * │                                                                          │
+ * │ C'est le parti pris des maquettes, et il n'est pas gratuit : les points  │
+ * │ de rupture sont des tailles d'appareils de 2015, et la moitié du public  │
+ * │ visé n'a aucun de ces appareils. Tout vient des `minmax` — hero à        │
+ * │ 320 px, contes à 220, traditions à 160, étapes à 250, offres à 300 — et  │
+ * │ des `clamp()` pour le titre et la hauteur du hero.                       │
+ * │                                                                          │
+ * │ Conséquence : la mise en page se plie à la place réelle, y compris dans  │
+ * │ un cas qu'aucune media query ne prévoit — un texte agrandi à 200 %, qui  │
+ * │ est un critère AA.                                                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+.section {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────────────── */
+
+.hero {
+  padding: 36px 20px 44px;
+}
+
+.heroGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 36px;
+  align-items: center;
+  min-height: clamp(400px, 62vh, 560px);
+}
+
+.heroTexte {
+  max-width: 660px;
+}
+
+/*
+ * La suréminence porte le vert de l'Ouest — la seule teinte de tradition de
+ * tout le hero. Une couleur par bloc : la règle « une seule couleur de
+ * tradition par carte ou par section » vaut aussi ici.
+ */
+.surtitre {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--region-afrique_ouest-encre);
+  margin-bottom: 14px;
+}
+
+.heroTitre {
+  font-size: clamp(28px, 4.4vw, 54px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  /* `balance` répartit les lignes d'un titre court : sans lui, un titre de
+     deux lignes finit régulièrement par un mot seul sur la seconde. */
+  text-wrap: balance;
+  margin-bottom: 18px;
+}
+
+.heroAccroche {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+  margin-bottom: 26px;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+/*
+ * L'aplat du hero : le motif prend toute la surface, la couverture se pose
+ * dessus avec un liseré de fond.
+ */
+.heroAplat {
+  position: relative;
+  border-radius: var(--rayon-hero);
+  padding: clamp(20px, 4vw, 38px);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.heroAplatMotif {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.heroCouverture {
+  position: relative;
+  width: min(300px, 72%);
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  /* Le liseré est du FOND, pas du blanc pur : sur le blanc chaud de la page,
+     un blanc franc se verrait comme une bavure claire au bord de l'image. */
+  border: 5px solid var(--fond);
+  display: block;
+}
+
+/* ── Boutons de l'accueil ───────────────────────────────────────────────── */
+
+.boutonPrimaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 15px 26px;
+  background: var(--action);
+  border: 2px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  color: var(--action-encre);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-couleur);
+}
+
+.boutonPrimaire:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-2px);
+}
+
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 13px 26px;
+  background: transparent;
+  border: 2px solid var(--encre);
+  border-radius: var(--rayon-bouton);
+  color: var(--encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonSecondaire:hover {
+  background: var(--encre);
+  color: var(--fond);
+}
+
+.lienSouligne {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--souligne);
+  transition: text-decoration-color var(--transition-couleur);
+}
+
+.lienSouligne:hover {
+  color: var(--encre);
+  text-decoration-color: var(--encre);
+}
+
+/* ── Bandeau de réassurance ─────────────────────────────────────────────── */
+
+.reassurance {
+  background: var(--creme);
+  border-top: 1px solid var(--creme-bordure);
+  border-bottom: 1px solid var(--creme-bordure);
+}
+
+.reassuranceTexte {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 13px 20px;
+  text-align: center;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+}
+
+.separateur {
+  color: var(--creme-accent);
+}
+
+/* ── En-tête de section ─────────────────────────────────────────────────── */
+
+.enteteSection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  margin-bottom: 26px;
+}
+
+.titreSection {
+  font-size: clamp(28px, 3.4vw, 38px);
+  letter-spacing: -0.015em;
+}
+
+.titreSectionPetit {
+  font-size: clamp(26px, 3.2vw, 34px);
+  letter-spacing: -0.015em;
+  margin-bottom: var(--espace-2);
+}
+
+.sousTitreSection {
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+}
+
+/* ── Grille de contes ───────────────────────────────────────────────────── */
+
+.contes {
+  padding: 56px 20px 12px;
+}
+
+.contesSuite {
+  display: flex;
+  justify-content: center;
+  padding: 34px 0 0;
+}
+
+/* ── Grille des traditions ──────────────────────────────────────────────── */
+
+.traditions {
+  padding: 56px 20px;
+}
+
+.traditionsGrille {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--espace-4);
+}
+
+.tradition {
+  display: block;
+  height: 100%;
+  padding: var(--espace-4);
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-carte);
+  color: var(--encre);
+  transition: transform var(--transition-forme), border-color var(--transition-forme);
+}
+
+.tradition:hover {
+  transform: translateY(-4px);
+  border-color: var(--carte-encre);
+  color: var(--encre);
+}
+
+.traditionMotif {
+  margin-bottom: 13px;
+}
+
+.traditionNom {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 18px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+  margin-bottom: var(--espace-1);
+}
+
+.traditionCompte {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--carte-encre);
+}
+
+/* ── Comment ça marche ──────────────────────────────────────────────────── */
+
+/*
+ * Section volontairement basse : elle ne s'étire pas.
+ *
+ * « Pas de grandes zones vides » — si une section n'a pas assez de contenu, on
+ * réduit sa hauteur au lieu de l'étirer. Aucun `min-height` décoratif.
+ */
+.comment {
+  border-top: 1px solid var(--bordure);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.commentInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 28px 20px;
+}
+
+.commentTitre {
+  font-size: 22px;
+  margin-bottom: 18px;
+}
+
+.etapes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 22px;
+}
+
+.etape {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+}
+
+.etapeNumero {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  display: grid;
+  place-items: center;
+}
+
+.etapeTitre {
+  font-family: var(--police-interface);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  margin-bottom: 3px;
+}
+
+.etapeCorps {
+  font-size: var(--taille-m);
+  line-height: 1.45;
+  color: var(--encre-douce);
+}
+
+/* ── Les deux offres ────────────────────────────────────────────────────── */
+
+.offres {
+  padding: 52px 20px 56px;
+}
+
+.offresGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+  margin-top: 22px;
+  align-items: stretch;
+}
+
+.offre {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px;
+  border-radius: var(--rayon-panneau);
+  border: 1.5px solid var(--bordure-forte);
+  background: var(--fond);
+}
+
+/*
+ * L'abonnement porte la crème et le jaune ; l'achat reste neutre.
+ *
+ * C'est la seule différence de poids visuel des maquettes, et elle est
+ * délibérée : c'est l'offre récurrente. Elle ne s'accompagne d'AUCUN badge
+ * « recommandé » — la direction artistique n'en a pas.
+ */
+.offreAbonnement {
+  border-color: var(--action);
+  background: var(--creme);
+}
+
+.offreTitre {
+  font-size: var(--taille-3xl);
+  margin-bottom: 6px;
+}
+
+.offreSousTitre {
+  font-size: var(--taille-base);
+  color: var(--encre-douce);
+}
+
+/*
+ * Le prix est en FRAUNCES — un titre déguisé, pas un élément d'interface.
+ * L'unité qui le suit, elle, reste en Nunito : c'est une légende.
+ */
+.offrePrix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-4xl);
+  font-weight: var(--graisse-forte);
+}
+
+.offrePrixUnite {
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+}
+
+.offreListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-2);
+  font-size: var(--taille-base);
+  line-height: 1.45;
+}
+
+.offreListe li {
+  display: flex;
+  gap: 9px;
+}
+
+.coche {
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-forte);
+}
+
+.offreAction {
+  margin-top: auto;
+  padding-top: var(--espace-1);
+  align-self: flex-start;
+}

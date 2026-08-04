@@ -1,0 +1,336 @@
+/*
+ * Les deux formules — §D des maquettes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES DEUX CARTES ONT LE MÊME POIDS VISUEL.                               │
+ * │                                                                          │
+ * │ Mêmes bordure, rayon, marge, disposition. Aucun badge « recommandé »,    │
+ * │ aucune bordure colorée, aucune ombre sur l'une seulement. La SEULE       │
+ * │ différence est le bouton : jaune pour l'abonnement, en contour pour      │
+ * │ l'achat.                                                                 │
+ * │                                                                          │
+ * │ C'est un parti pris, et il tient à la règle métier centrale : cette page │
+ * │ est le premier endroit où un client lit que l'abonnement ne donne pas le │
+ * │ téléchargement. Mettre l'abonnement en avant y ajouterait une pression   │
+ * │ commerciale sur la formule qui déçoit ensuite.                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* Plus étroit que les autres pages — c'est voulu, la page est courte. */
+.page {
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 34px 20px 56px;
+}
+
+.titre {
+  font-size: clamp(30px, 4.2vw, 46px);
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.intro {
+  font-size: 18px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+  max-width: 60ch;
+  margin-bottom: 24px;
+}
+
+/* ── Les deux cartes ────────────────────────────────────────────────────── */
+
+.cartes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 22px;
+  /* C'est CE réglage qui garantit l'égalité de hauteur. */
+  align-items: stretch;
+}
+
+/* Au lancement, l'abonnement disparaît et l'achat prend toute la largeur. */
+.cartesLancement {
+  grid-template-columns: 1fr;
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  padding: 26px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond);
+}
+
+.carteTitre {
+  font-size: 26px;
+  margin-bottom: 5px;
+}
+
+.carteSousTitre {
+  font-size: var(--taille-base);
+  color: var(--encre-douce);
+}
+
+/*
+ * Le prix en FRAUNCES — un titre déguisé, jamais un élément d'interface.
+ * L'unité qui le suit reste en Nunito : c'est une légende.
+ */
+.prix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 38px;
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
+}
+
+.prixUnite {
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+}
+
+.prixNote {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  margin-top: var(--espace-1);
+}
+
+.listeTitre {
+  font-family: var(--police-interface);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--encre-douce);
+  margin-bottom: 10px;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 9px;
+  font-size: var(--taille-base);
+  line-height: 1.5;
+}
+
+.liste li {
+  display: flex;
+  gap: 10px;
+}
+
+.coche {
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-forte);
+}
+
+/*
+ * CE QUE LA FORMULE NE DONNE PAS — énoncé aussi visiblement que le reste.
+ *
+ * Le tiret remplace la coche, et la ligne entière passe en brun doux. La
+ * confusion sur ce point produit une réclamation à chaque expiration
+ * d'abonnement : la formuler mollement ici coûte cher plus tard.
+ */
+.ligneNegative {
+  color: var(--encre-douce);
+}
+
+.tiret {
+  font-weight: var(--graisse-forte);
+}
+
+/*
+ * `margin-top: auto` — c'est ce qui aligne les deux boutons sur la même ligne
+ * de base quelle que soit la longueur des listes. Ne pas l'omettre.
+ */
+.zoneBouton {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.boutonPrimaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 15px 26px;
+  border: 2px solid var(--action);
+  border-radius: 11px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-couleur);
+}
+
+.boutonPrimaire:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-2px);
+}
+
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 15px 26px;
+  border: 2px solid var(--encre);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--encre);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonSecondaire:hover {
+  background: var(--encre);
+  color: var(--fond);
+}
+
+.noteBouton {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+/* ── Encart « Bientôt » — variante de lancement ─────────────────────────── */
+
+.bientot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  padding: 26px;
+  border: 1.5px solid var(--creme-bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--creme);
+}
+
+.bientotEntete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.bientotPastille {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.bientotTitre {
+  font-size: 26px;
+}
+
+.bientotCorps {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+  max-width: var(--largeur-texte);
+}
+
+/* ── Tableau comparatif ─────────────────────────────────────────────────── */
+
+.comparatif {
+  margin-top: 40px;
+}
+
+.comparatifTitre {
+  font-size: var(--taille-3xl);
+  margin-bottom: 6px;
+}
+
+.comparatifIntro {
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+  margin-bottom: 16px;
+}
+
+.comparatifIntro strong {
+  color: var(--encre);
+  font-weight: var(--graisse-forte);
+}
+
+/*
+ * C'est le conteneur qui arrondit le tableau — un `border-radius` posé sur
+ * `<table>` ne rogne pas ses cellules, et laisse quatre coins carrés dépasser.
+ *
+ * `overflow-x: auto` en plus de `hidden` : sous 420 px, trois colonnes ne
+ * tiennent pas, et un tableau qui déborde de la PAGE casse la mise en page
+ * entière. Ici il défile dans son propre cadre.
+ */
+.comparatifCadre {
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  overflow: hidden auto;
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--taille-base);
+}
+
+.tableau thead {
+  background: var(--fond-doux);
+}
+
+.tableau th {
+  text-align: left;
+  padding: 14px 16px;
+  font-weight: var(--graisse-forte);
+}
+
+.tableau thead th {
+  border-bottom: 1.5px solid var(--bordure);
+}
+
+.tableau tbody th {
+  font-weight: var(--graisse-demi);
+}
+
+.tableau td {
+  padding: 14px 16px;
+}
+
+.tableau tbody th,
+.tableau tbody td {
+  border-bottom: 1px solid var(--bordure);
+}
+
+.tableau tbody tr:last-child th,
+.tableau tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.colonneOffre {
+  width: 26%;
+}
+
+/*
+ * Positif et restrictif se distinguent par la GRAISSE autant que par la
+ * couleur : un « Oui » vert et un « Non » brun se ressemblent trop pour qui
+ * ne distingue pas les teintes.
+ */
+.positif {
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-forte);
+}
+
+.restrictif {
+  color: var(--encre-douce);
+}

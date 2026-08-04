@@ -1,10 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
 import { Chargement } from '@/components/etats';
 import type { ReponsePage } from '@/domain/api/contract';
+import styles from './lecteur.module.css';
 
 /**
  * LECTEUR EN LIGNE — §4.1 F5.
@@ -41,6 +49,8 @@ interface ProprietesLecteur {
   langue: LangueInterface;
   livreId: string;
   slug: string;
+  /** Le titre du conte, affiché dans la barre supérieure. */
+  titre: string;
   langueContenu: string;
   /** Nombre total de pages du conte, rendu par l'API. Jamais compté ici. */
   total: number;
@@ -62,10 +72,22 @@ type Etat =
   | { sorte: 'sessionPerdue' }
   | { sorte: 'erreur' };
 
+/**
+ * Délai avant que l'interface s'efface, en millisecondes.
+ *
+ * Quatre secondes : assez pour tourner une page sans que les boutons
+ * clignotent, assez court pour que la lecture reprenne le plein écran.
+ */
+const DELAI_EFFACEMENT = 4000;
+
+/** Déplacement horizontal minimal, en pixels, pour qu'un balayage compte. */
+const SEUIL_BALAYAGE = 45;
+
 export function Lecteur({
   langue,
   livreId,
   slug,
+  titre,
   langueContenu,
   total,
   pageInitiale,
@@ -73,6 +95,10 @@ export function Lecteur({
 }: ProprietesLecteur): ReactNode {
   const [page, setPage] = useState(pageInitiale);
   const [etat, setEtat] = useState<Etat>({ sorte: 'chargement' });
+  const [efface, setEfface] = useState(false);
+  /** La note d'aide n'apparaît qu'AU PREMIER effacement, puis plus jamais. */
+  const [note, setNote] = useState<'jamais' | 'visible' | 'estompee'>('jamais');
+  const noteVue = useRef(false);
 
   /** Pages déjà obtenues, pour ne pas redemander une signature encore valable. */
   const cache = useRef(new Map<number, ReponsePage>());
@@ -187,101 +213,283 @@ export function Lecteur({
     };
   }, [page, aller]);
 
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ L'EFFACEMENT DE L'INTERFACE — le comportement central de cet écran.    │
+  // │                                                                        │
+  // │ Il est SUSPENDU dès qu'un message occupe la scène : fin d'extrait,     │
+  // │ session perdue, erreur. Effacer les boutons d'un écran qui demande une │
+  // │ action laisserait le lecteur devant un message sans issue — et         │
+  // │ précisément dans les trois cas où il en a le plus besoin.              │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const chromeUtile = etat.sorte === 'page' || etat.sorte === 'chargement';
+
+  useEffect(() => {
+    if (!chromeUtile) {
+      setEfface(false);
+      return;
+    }
+
+    let minuterie = window.setTimeout(() => {
+      setEfface(true);
+      if (!noteVue.current) {
+        noteVue.current = true;
+        setNote('visible');
+        window.setTimeout(() => {
+          setNote('estompee');
+        }, 2200);
+        window.setTimeout(() => {
+          setNote('jamais');
+        }, 2800);
+      }
+    }, DELAI_EFFACEMENT);
+
+    function reveiller(): void {
+      setEfface(false);
+      window.clearTimeout(minuterie);
+      minuterie = window.setTimeout(() => {
+        setEfface(true);
+      }, DELAI_EFFACEMENT);
+    }
+
+    // `passive` : ces écouteurs ne préviennent jamais le défilement, et le dire
+    // au navigateur lui évite d'attendre pour savoir.
+    const evenements = ['pointermove', 'pointerdown', 'keydown', 'touchstart'] as const;
+    for (const nom of evenements) {
+      window.addEventListener(nom, reveiller, { passive: true });
+    }
+
+    return () => {
+      window.clearTimeout(minuterie);
+      for (const nom of evenements) {
+        window.removeEventListener(nom, reveiller);
+      }
+    };
+  }, [chromeUtile]);
+
+  /** Point de départ d'un balayage, pour mesurer le déplacement à sa fin. */
+  const departBalayage = useRef<number | null>(null);
+
   const positionCle = possedeAuChargement ? 'lecteur.position' : 'lecteur.positionExtrait';
+  const libellePosition = traduire(langue, positionCle)
+    .replace('{page}', String(page))
+    .replace('{total}', String(total));
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col items-center gap-4 px-4 py-6">
-      {/*
-        Zone d'affichage. Aucun bouton de téléchargement, d'impression ni de
-        partage n'est rendu ici, ni ailleurs dans ce composant.
-      */}
-      <div className="flex min-h-[60vh] w-full items-center justify-center rounded-lg bg-muted">
-        {/*
-          L'état partagé, jamais un indicateur refabriqué ici : treize écrans
-          qui réinventent chacun leur affichage produisent treize
-          comportements sur connexion lente.
-        */}
-        {etat.sorte === 'chargement' ? (
-          <Chargement langue={langue} libelle={traduire(langue, 'lecteur.chargement')} />
-        ) : null}
+    <div className={styles.cadre}>
+      <div
+        className={styles.scene}
+        onTouchStart={(evenement) => {
+          departBalayage.current = evenement.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(evenement) => {
+          const depart = departBalayage.current;
+          departBalayage.current = null;
+          if (depart === null) return;
 
-        {etat.sorte === 'page' ? (
-          <img
-            src={etat.donnees.url}
-            width={etat.donnees.page.largeur}
-            height={etat.donnees.page.hauteur}
-            alt=""
-            className="max-h-[80vh] w-auto max-w-full rounded-lg"
-          />
-        ) : null}
-
-        {etat.sorte === 'sessionPerdue' ? (
-          <div className="flex max-w-md flex-col items-center gap-4 p-6 text-center" role="alert">
-            {/*
-              AUCUNE INVITATION À L'ACHAT ICI. Le conte est déjà payé ; le
-              proposer à la vente serait accuser un client de ne pas l'avoir
-              fait, en pleine lecture.
-            */}
-            <p>{traduire(langue, 'lecteur.sessionPerdue')}</p>
-            <a href={`/${langue}/connexion`} className="font-semibold underline">
-              {traduire(langue, 'lecteur.sessionPerdueAction')}
-            </a>
-          </div>
-        ) : null}
-
-        {etat.sorte === 'finExtrait' ? (
-          <div className="flex max-w-md flex-col items-center gap-4 p-6 text-center">
-            <p>{traduire(langue, 'lecteur.finExtrait')}</p>
-            <a href={`/${langue}/contes/${slug}`} className="font-semibold underline">
-              {traduire(langue, 'lecteur.finExtraitAction')}
-            </a>
-          </div>
-        ) : null}
-
-        {etat.sorte === 'erreur' ? (
-          <p role="alert">{traduire(langue, 'lecteur.pageIndisponible')}</p>
-        ) : null}
-      </div>
-
-      <nav
-        className="flex w-full items-center justify-between gap-4"
-        aria-label={traduire(langue, 'lecteur.titre')}
+          const arrivee = evenement.changedTouches[0]?.clientX ?? depart;
+          const ecart = arrivee - depart;
+          // En deçà du seuil, c'est une pression, pas un balayage : tourner la
+          // page sur un doigt qui tremble rendrait le lecteur inutilisable.
+          if (Math.abs(ecart) < SEUIL_BALAYAGE) return;
+          aller(ecart < 0 ? page + 1 : page - 1);
+        }}
       >
+        {/* ── Barre supérieure ──────────────────────────────────────────── */}
+        <div className={efface ? `${styles.barreHaute} ${styles.efface}` : styles.barreHaute}>
+          {/*
+            LE SEUL LIEN SORTANT DU LECTEUR.
+            Aucun téléchargement, aucune impression, aucun partage, aucune
+            publicité — ni ici ni ailleurs dans ce composant.
+          */}
+          <a className={styles.retour} href={`/${langue}/contes/${slug}`}>
+            <span aria-hidden="true">←</span>
+            {traduire(langue, 'lecteur.retourFiche')}
+          </a>
+
+          <p className={styles.titreLecteur}>{titre}</p>
+
+          {/*
+            La position vient de `total`, rendu par l'API — jamais d'un comptage
+            fait ici. Sur un accès partiel, le libellé dit « de l'extrait », pour
+            qu'on ne croie pas le conte plus court qu'il n'est.
+          */}
+          <p className={styles.position} aria-live="polite">
+            {libellePosition}
+          </p>
+        </div>
+
+        {/* ── La page ───────────────────────────────────────────────────── */}
+        <div className={styles.zonePage}>
+          <article className={styles.feuille}>
+            {/*
+              L'état partagé, jamais un indicateur refabriqué ici : treize écrans
+              qui réinventent chacun leur affichage produisent treize
+              comportements sur connexion lente.
+            */}
+            {etat.sorte === 'chargement' ? (
+              <Chargement langue={langue} libelle={traduire(langue, 'lecteur.chargement')} />
+            ) : null}
+
+            {etat.sorte === 'page' ? (
+              <img
+                src={etat.donnees.url}
+                width={etat.donnees.page.largeur}
+                height={etat.donnees.page.hauteur}
+                alt=""
+                className={styles.image}
+              />
+            ) : null}
+
+            {etat.sorte === 'sessionPerdue' ? (
+              <div className={styles.message} role="alert">
+                {/*
+                  AUCUNE INVITATION À L'ACHAT ICI. Le conte est déjà payé ; le
+                  proposer à la vente serait accuser un client de ne pas l'avoir
+                  fait, en pleine lecture.
+                */}
+                <p className={styles.messageTexte}>{traduire(langue, 'lecteur.sessionPerdue')}</p>
+                <a className={styles.messageAction} href={`/${langue}/connexion`}>
+                  {traduire(langue, 'lecteur.sessionPerdueAction')}
+                </a>
+              </div>
+            ) : null}
+
+            {etat.sorte === 'finExtrait' ? (
+              <div className={styles.message}>
+                <p className={styles.messageTexte}>{traduire(langue, 'lecteur.finExtrait')}</p>
+                <a className={styles.messageAction} href={`/${langue}/contes/${slug}`}>
+                  {traduire(langue, 'lecteur.finExtraitAction')}
+                </a>
+              </div>
+            ) : null}
+
+            {etat.sorte === 'erreur' ? (
+              <p className={styles.messageTexte} role="alert">
+                {traduire(langue, 'lecteur.pageIndisponible')}
+              </p>
+            ) : null}
+          </article>
+        </div>
+
+        {/* ── Navigation ────────────────────────────────────────────────── */}
+        {/*
+          Trois mécanismes superposés, tous fonctionnels : les zones tactiles
+          invisibles au bord de l'écran, les flèches visibles, et le clavier.
+          Aucun ne remplace les autres — le geste du bord est celui que tout
+          lecteur connaît, la flèche est celle qu'on trouve sans le connaître,
+          et le clavier est un critère AA.
+        */}
         <button
           type="button"
+          className={`${styles.zoneTouche} ${styles.zoneTouchePrecedente}`}
+          aria-label={traduire(langue, 'lecteur.pagePrecedente')}
+          disabled={page <= 1}
           onClick={() => {
             aller(page - 1);
           }}
-          disabled={page <= 1}
-          // 44 px : le lecteur doit s'utiliser à une main, sur tablette, par un
-          // enfant de six ans.
-          className="min-h-11 min-w-11 rounded-md px-4 disabled:opacity-40"
-        >
-          {traduire(langue, 'lecteur.pagePrecedente')}
-        </button>
-
-        {/*
-          La position vient de `total`, rendu par l'API — jamais d'un comptage
-          fait ici. Sur un accès partiel, le libellé dit « de l'extrait », pour
-          qu'on ne croie pas le conte plus court qu'il n'est.
-        */}
-        <p aria-live="polite" className="text-sm">
-          {traduire(langue, positionCle)
-            .replace('{page}', String(page))
-            .replace('{total}', String(total))}
-        </p>
-
+        />
         <button
           type="button"
+          className={`${styles.zoneTouche} ${styles.zoneToucheSuivante}`}
+          aria-label={traduire(langue, 'lecteur.pageSuivante')}
+          disabled={page >= total}
           onClick={() => {
             aller(page + 1);
           }}
-          disabled={page >= total}
-          className="min-h-11 min-w-11 rounded-md px-4 disabled:opacity-40"
+        />
+
+        <button
+          type="button"
+          className={
+            efface
+              ? `${styles.fleche} ${styles.flechePrecedente} ${styles.efface}`
+              : `${styles.fleche} ${styles.flechePrecedente}`
+          }
+          aria-label={traduire(langue, 'lecteur.pagePrecedente')}
+          disabled={page <= 1}
+          onClick={() => {
+            aller(page - 1);
+          }}
         >
-          {traduire(langue, 'lecteur.pageSuivante')}
+          <span aria-hidden="true">‹</span>
         </button>
-      </nav>
+
+        <button
+          type="button"
+          className={
+            efface
+              ? `${styles.fleche} ${styles.flecheSuivante} ${styles.efface}`
+              : `${styles.fleche} ${styles.flecheSuivante}`
+          }
+          aria-label={traduire(langue, 'lecteur.pageSuivante')}
+          disabled={page >= total}
+          onClick={() => {
+            aller(page + 1);
+          }}
+        >
+          <span aria-hidden="true">›</span>
+        </button>
+
+        {/* ── Barre inférieure ──────────────────────────────────────────── */}
+        <div className={efface ? `${styles.barreBasse} ${styles.efface}` : styles.barreBasse}>
+          {/*
+            La barre de progression est décorative : la position exacte est déjà
+            écrite en toutes lettres dans la barre du haut, et annoncée à chaque
+            changement. La redire ici ferait entendre deux fois la même chose.
+          */}
+          <div className={styles.progression} aria-hidden="true">
+            {/*
+             * La part est passée SANS UNITÉ, et c'est le CSS qui la convertit
+             * en pourcentage. Une multiplication par cent écrite ici tomberait
+             * sous la règle qui protège les montants — à raison : c'est
+             * exactement la forme qu'un prix mal converti prendrait, et la
+             * règle ne peut pas distinguer les deux.
+             */}
+            <div
+              className={styles.progressionRemplie}
+              style={{ '--part': page / total } as CSSProperties}
+            />
+          </div>
+
+          <div
+            className={styles.miniatures}
+            role="group"
+            aria-label={traduire(langue, 'lecteur.titre')}
+          >
+            {Array.from({ length: total }, (_, index) => index + 1).map((numero) => (
+              <button
+                key={numero}
+                type="button"
+                className={
+                  numero === page
+                    ? `${styles.miniature} ${styles.miniatureActive}`
+                    : styles.miniature
+                }
+                aria-label={traduire(langue, 'lecteur.position')
+                  .replace('{page}', String(numero))
+                  .replace('{total}', String(total))}
+                aria-current={numero === page ? 'true' : undefined}
+                onClick={() => {
+                  aller(numero);
+                }}
+              >
+                <span className={styles.miniatureNumero}>{numero}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── La note d'aide, une seule fois ────────────────────────────── */}
+        {note === 'jamais' ? null : (
+          <p
+            className={note === 'estompee' ? `${styles.note} ${styles.noteEffacee}` : styles.note}
+            // `polite` : elle informe, elle n'interrompt pas une lecture.
+            aria-live="polite"
+          >
+            {traduire(langue, 'lecteur.interfaceEffacee')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }

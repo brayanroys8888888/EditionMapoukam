@@ -8,7 +8,7 @@ import {
   lirePageEditoriale,
 } from '@/content/editorial';
 import { getServerEnv } from '@/lib/config/env';
-import { Separator } from '@/components/ui/separator';
+import ecran from '@/components/ecran/ecran.module.css';
 
 /**
  * Pages éditoriales — §4.1 F8 à F12.
@@ -68,42 +68,45 @@ export default async function PageEditoriale({ params }: Parametres) {
   if (!contenu) notFound();
 
   return (
-    <article className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-10">
-      <header className="flex flex-col gap-3">
-        <h1 className="font-serif text-4xl font-bold leading-tight">{contenu.titre}</h1>
-        {/*
-          Le nom commercial n'est écrit nulle part dans les contenus : il vit
-          en UNE clé de traduction, et un test échoue s'il est recopié ailleurs.
-          Les contenus portent donc un jeton, remplacé ici.
-        */}
-        <p className="text-lg text-muted-foreground">
-          {contenu.chapeau.replace('{marque}', traduire(langue, 'marque.nom'))}
-        </p>
-      </header>
+    <article className={ecran.pageTexte}>
+      <h1 className={ecran.titre}>{contenu.titre}</h1>
 
-      <Separator />
+      {/*
+        Le nom commercial n'est écrit nulle part dans les contenus : il vit
+        en UNE clé de traduction, et un test échoue s'il est recopié ailleurs.
+        Les contenus portent donc un jeton, remplacé ici.
+      */}
+      <p className={ecran.intro}>
+        {contenu.chapeau.replace('{marque}', traduire(langue, 'marque.nom'))}
+      </p>
 
-      {contenu.sections.map((section) => (
-        <section key={section.titre} className="flex flex-col gap-3">
-          <h2 className="font-serif text-2xl font-semibold">{section.titre}</h2>
+      {/*
+        LITERATA, et la mesure de lecture.
 
-          {section.paragraphes?.map((paragraphe) => (
-            <p key={paragraphe} className="leading-relaxed">
-              {paragraphe}
-            </p>
-          ))}
+        Ce sont les seuls textes longs du site hors des contes. Les laisser en
+        police d'interface sur toute la largeur de l'écran, c'est garantir
+        qu'aucun ne sera lu jusqu'au bout — et ce sont précisément les pages
+        qu'on doit pouvoir lire : conditions, confidentialité, contact.
+      */}
+      <div className={ecran.corpsEditorial}>
+        {contenu.sections.map((section) => (
+          <section key={section.titre}>
+            <h2>{section.titre}</h2>
 
-          {section.points ? (
-            <ul className="flex list-disc flex-col gap-2 pl-5">
-              {section.points.map((point) => (
-                <li key={point} className="leading-relaxed">
-                  {point}
-                </li>
-              ))}
-            </ul>
-          ) : null}
-        </section>
-      ))}
+            {section.paragraphes?.map((paragraphe) => (
+              <p key={paragraphe}>{paragraphe}</p>
+            ))}
+
+            {section.points ? (
+              <ul>
+                {section.points.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            ) : null}
+          </section>
+        ))}
+      </div>
 
       {/*
         L'adresse de contact, sur la page de contact uniquement.
@@ -113,8 +116,8 @@ export default async function PageEditoriale({ params }: Parametres) {
         vraie et que personne ne relèverait les messages envoyés dessus.
       */}
       {slug === 'contact' && IDENTITE_EDITEUR.emailContact ? (
-        <p className="text-lg font-semibold">
-          <a href={`mailto:${IDENTITE_EDITEUR.emailContact}`} className="underline">
+        <p className={ecran.panneauTitre}>
+          <a className={ecran.boutonDiscret} href={`mailto:${IDENTITE_EDITEUR.emailContact}`}>
             {IDENTITE_EDITEUR.emailContact}
           </a>
         </p>
@@ -127,7 +130,7 @@ export default async function PageEditoriale({ params }: Parametres) {
         sont obligatoires en droit et ne peuvent venir que de l'éditeur.
       */}
       {slug === 'conditions-generales' ? (
-        <footer className="flex flex-col gap-1 text-sm text-muted-foreground">
+        <footer className={ecran.panneau}>
           {IDENTITE_EDITEUR.raisonSociale ? <p>{IDENTITE_EDITEUR.raisonSociale}</p> : null}
           {IDENTITE_EDITEUR.adresse ? <p>{IDENTITE_EDITEUR.adresse}</p> : null}
           {IDENTITE_EDITEUR.immatriculation ? <p>{IDENTITE_EDITEUR.immatriculation}</p> : null}

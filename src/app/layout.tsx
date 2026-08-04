@@ -3,6 +3,12 @@ import { headers } from 'next/headers';
 
 import { langueValide } from '@/i18n';
 import '@/design/tokens.css';
+// Les `@font-face` : ils ne dépendent d'aucun jeton, mais les jetons les
+// nomment (`--police-titre: 'Fraunces'`). Déclarés ici, jamais dans un écran.
+import '@/design/polices.css';
+// La réinitialisation des maquettes (§A.1) : fond, lien, focus, familles de
+// titre. Après les jetons, dont elle lit les variables.
+import '@/design/global.css';
 // APRÈS les jetons, et non avant : le pont shadcn les LIT (`var(--fond)`, …).
 // Inversé, Tailwind résoudrait des variables encore indéfinies.
 import '@/design/tailwind.css';
@@ -38,6 +44,32 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
 
   return (
     <html lang={langue}>
+      <head>
+        {/*
+         * Les DEUX familles que toute page emploie au-dessus de la ligne de
+         * flottaison — l'interface et les titres. Literata n'est préchargée
+         * nulle part : elle ne sert qu'à la lecture longue, et la précharger
+         * ferait payer 110 Ko à un visiteur qui n'ouvrira jamais un conte.
+         *
+         * `crossOrigin` est OBLIGATOIRE même en même origine : une police est
+         * toujours récupérée en mode CORS, et sans cet attribut le navigateur
+         * télécharge le fichier DEUX FOIS — une pour rien.
+         */}
+        <link
+          rel="preload"
+          href="/fonts/nunito-latin-wght-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/fraunces-latin-full-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

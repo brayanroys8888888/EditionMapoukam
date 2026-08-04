@@ -1,12 +1,11 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { messageErreur, traduire, type LangueInterface } from '@/i18n';
 import type { EntreeCatalogue, RegionConte } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import { TRIS } from '@/domain/catalog/schemas';
-import { Pastille } from '@/components/base';
-import { Vide } from '@/components/etats';
-import { Couverture } from './couverture';
+import { Motif } from '@/components/motif';
+import { Couverture, SubstitutCouverture } from './couverture';
 import styles from './catalogue.module.css';
 
 /**
@@ -99,22 +98,45 @@ export function ligneAcces(entree: EntreeCatalogue): LigneAcces {
 function LibelleAcces({
   langue,
   ligne,
+  inclusAbonnement,
+  bref = false,
 }: {
   langue: LangueInterface;
   ligne: LigneAcces;
+  /**
+   * Un titre peut être À LA FOIS vendu à l'unité et inclus dans l'abonnement.
+   *
+   * La maquette porte alors « 3,90 € ou inclus dans l'abonnement » sur une
+   * seule ligne : c'est ce qui distingue « il faut l'acheter » de « vous
+   * pouvez aussi l'avoir autrement ». Perdre la seconde moitié ferait passer
+   * pour payant un conte que l'abonnement ouvre déjà.
+   */
+  inclusAbonnement: boolean;
+  /** La variante dense du catalogue : le prix seul, sans sa mention de suite. */
+  bref?: boolean;
 }): ReactNode {
   switch (ligne.sorte) {
     case 'possede':
       return <p className={styles.accesPossede}>{traduire(langue, 'acces.purchase')}</p>;
     case 'gratuit':
-      return <p className={styles.accesGratuit}>{traduire(langue, 'acces.free')}</p>;
+      return <p className={styles.accesPossede}>{traduire(langue, 'acces.free')}</p>;
     case 'abonnement':
-      return <p className={styles.accesAbonnement}>{traduire(langue, 'acces.inclusAbonnement')}</p>;
+      return <p className={styles.acces}>{traduire(langue, 'acces.inclusAbonnement')}</p>;
     case 'prix':
       // `prix.affichage` est rendu formaté par le serveur, seule autorité sur
       // le nombre de décimales : le franc CFA n'a pas de sous-unité, et une
       // division par cent écrite ici multiplierait par cent l'erreur.
-      return <p className={styles.accesPrix}>{ligne.affichage}</p>;
+      return (
+        <p className={styles.acces}>
+          {ligne.affichage}
+          {inclusAbonnement && !bref ? (
+            <span className={styles.accesSuite}>
+              {' '}
+              {traduire(langue, 'catalogue.ouInclusAbonnement')}
+            </span>
+          ) : null}
+        </p>
+      );
     case 'horsZone':
       // Le CODE, jamais le `message` de l'API : celui-ci n'est rédigé qu'en
       // français, et l'afficher tel quel rendrait l'anglais impossible.
@@ -132,69 +154,168 @@ function LibelleAcces({
 const COUVERTURE_LARGEUR = 320;
 const COUVERTURE_HAUTEUR = 480;
 
+/**
+ * Les quatre teintes d'une carte, posées depuis la région du conte.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA COULEUR SE CHOISIT SUR `region`, JAMAIS SUR `origine_culturelle`.    │
+ * │                                                                          │
+ * │ `region` est une énumération FERMÉE à cinq valeurs, garantie par la      │
+ * │ base. `origine_culturelle` est du texte libre — « conte akan — Ghana »,  │
+ * │ « Bassin du Congo » — et deux orthographes de la même région y ont déjà  │
+ * │ coexisté dans ce dépôt, à une apostrophe près. Indexer une couleur sur   │
+ * │ du texte libre, c'est accepter qu'un conte s'affiche un jour sans        │
+ * │ couleur, ou pire, dans celle d'une autre tradition.                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function teintesRegion(region: RegionConte | null): CSSProperties {
+  const cle = region ?? 'inconnue';
+  return {
+    '--carte-fond': `var(--region-${cle}-fond)`,
+    '--carte-bordure': `var(--region-${cle}-bordure)`,
+    '--carte-encre': `var(--region-${cle}-encre)`,
+    '--carte-accent': `var(--region-${cle}-accent)`,
+    // La cinquième teinte : le fond des aplats, d'un cran plus soutenu. Elle
+    // sert de piste aux barres de progression, où le fond de carte serait
+    // indiscernable du remplissage.
+    '--carte-motif': `var(--region-${cle}-motif)`,
+  } as CSSProperties;
+}
+
+/** « 5–8 ans » — la tranche d'âge seule, telle que la maquette l'écrit. */
+function ageConte(langue: LangueInterface, entree: EntreeCatalogue): string | null {
+  if (entree.age_min === null) return null;
+
+  return entree.age_max === null
+    ? traduire(langue, 'catalogue.trancheAgeCourteOuverte').replace('{min}', String(entree.age_min))
+    : traduire(langue, 'catalogue.trancheAgeCourte')
+        .replace('{min}', String(entree.age_min))
+        .replace('{max}', String(entree.age_max));
+}
+
+/** « 5–8 ans · 16 pages » — la ligne de métadonnées des maquettes. */
+function metaConte(langue: LangueInterface, entree: EntreeCatalogue): string {
+  const morceaux: string[] = [];
+
+  const age = ageConte(langue, entree);
+  if (age !== null) morceaux.push(age);
+
+  if (entree.nb_pages !== null) {
+    morceaux.push(traduire(langue, 'catalogue.nbPages').replace('{pages}', String(entree.nb_pages)));
+  }
+
+  // Le point médian sépare, il ne s'ajoute jamais en tête ni en queue : une
+  // carte sans pagination afficherait sinon « 5–8 ans · ».
+  return morceaux.join(' · ');
+}
+
+/**
+ * CARTE DE CONTE — le composant le plus réutilisé du produit.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE ENTIÈRE EST LE LIEN, COMME DANS LES MAQUETTES.                 │
+ * │                                                                          │
+ * │ Une version antérieure ne rendait cliquables que la couverture et le     │
+ * │ titre, pour éviter qu'un lecteur d'écran n'annonce un libellé            │
+ * │ interminable. C'était payer trop cher : sur un téléphone, la moitié      │
+ * │ basse de la carte — celle où se trouve le prix, donc celle qu'on         │
+ * │ regarde — ne répondait pas au doigt.                                    │
+ * │                                                                          │
+ * │ Ce qui est annoncé reste court et utile : tradition, titre, âge,         │
+ * │ pagination, accès. C'est exactement ce qu'un voyant lit avant de         │
+ * │ cliquer.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 export function CarteLivre({
   langue,
   entree,
+  dense = false,
 }: {
   langue: LangueInterface;
   entree: EntreeCatalogue;
+  /**
+   * La variante du CATALOGUE : plus resserrée, l'âge en pastille neutre.
+   *
+   * Le catalogue montre jusqu'à six cartes par ligne là où l'accueil en
+   * montre quatre. C'est une variante, jamais un second composant : deux
+   * composants auraient divergé au premier correctif.
+   */
+  dense?: boolean;
 }): ReactNode {
   const ligne = ligneAcces(entree);
-
-  const age =
-    entree.age_min === null
-      ? null
-      : entree.age_max === null
-        ? traduire(langue, 'catalogue.trancheAge').replace('{min}', String(entree.age_min))
-        : traduire(langue, 'catalogue.trancheAgeBornee')
-            .replace('{min}', String(entree.age_min))
-            .replace('{max}', String(entree.age_max));
+  const meta = metaConte(langue, entree);
+  const age = ageConte(langue, entree);
 
   return (
-    <article className={styles.carte}>
-      <a className={styles.carteLien} href={`/${langue}/contes/${entree.slug}`}>
-        {entree.couverture ? (
-          // ┌──────────────────────────────────────────────────────────────┐
-          // │ LA VIGNETTE, JAMAIS LA TAILLE « FICHE ».                     │
-          // │                                                              │
-          // │ 320 px contre 800 px : sur une grille de vingt titres,       │
-          // │ l'écart se compte en mégaoctets, et §5.1 qualifie ce         │
-          // │ gaspillage de critique pour le public visé.                  │
-          // │                                                              │
-          // │ `Couverture` retombe sur le substitut si le fichier manque —  │
-          // │ un jeton en base ne prouve pas qu'un objet existe.           │
-          // └──────────────────────────────────────────────────────────────┘
-          <Couverture
-            langue={langue}
-            url={entree.couverture.vignette}
-            // `largeur` et `hauteur` réservent la place AVANT le chargement :
-            // sans elles, l'arrivée des images décale la grille, et sur
-            // connexion lente c'est ce décalage qui fait cliquer à côté.
-            largeur={COUVERTURE_LARGEUR}
-            hauteur={COUVERTURE_HAUTEUR}
-            tailles="(max-width: 640px) 45vw, 200px"
-          />
+    <a
+      className={dense ? `${styles.carte} ${styles.carteCompacte}` : styles.carte}
+      href={`/${langue}/contes/${entree.slug}`}
+      style={teintesRegion(entree.region)}
+    >
+      {entree.couverture ? (
+        // ┌──────────────────────────────────────────────────────────────┐
+        // │ LA VIGNETTE, JAMAIS LA TAILLE « FICHE ».                     │
+        // │                                                              │
+        // │ 320 px contre 800 px : sur une grille de vingt titres,       │
+        // │ l'écart se compte en mégaoctets, et §5.1 qualifie ce         │
+        // │ gaspillage de critique pour le public visé.                  │
+        // │                                                              │
+        // │ `Couverture` retombe sur le substitut si le fichier manque —  │
+        // │ un jeton en base ne prouve pas qu'un objet existe.           │
+        // └──────────────────────────────────────────────────────────────┘
+        <Couverture
+          langue={langue}
+          url={entree.couverture.vignette}
+          // `largeur` et `hauteur` réservent la place AVANT le chargement :
+          // sans elles, l'arrivée des images décale la grille, et sur
+          // connexion lente c'est ce décalage qui fait cliquer à côté.
+          largeur={COUVERTURE_LARGEUR}
+          hauteur={COUVERTURE_HAUTEUR}
+          tailles="(max-width: 640px) 45vw, 200px"
+          region={entree.region}
+          // Vide, et c'est délibéré : le titre est écrit juste en dessous, et
+          // le décrire à nouveau ferait entendre deux fois la même phrase.
+          alt=""
+        />
+      ) : (
+        <SubstitutCouverture langue={langue} region={entree.region} />
+      )}
+
+      <div className={styles.carteCorps}>
+        {entree.region ? (
+          <p className={styles.origine}>
+            <span className={styles.puce} aria-hidden="true" />
+            {traduire(langue, `regions.${entree.region}`)}
+          </p>
+        ) : null}
+
+        <h3 className={styles.titre}>{entree.titre}</h3>
+
+        {dense ? (
+          <div className={styles.ligneDense}>
+            {age ? <span className={styles.pastilleAge}>{age}</span> : null}
+            <LibelleAcces
+              langue={langue}
+              ligne={ligne}
+              inclusAbonnement={entree.inclus_abonnement}
+              // En dense, la mention « ou inclus dans l'abonnement » ne tient
+              // pas sur la ligne : elle est portée par la fiche, qui a la
+              // place de l'écrire.
+              bref
+            />
+          </div>
         ) : (
-          <span className={styles.couvertureAbsente}>
-            {traduire(langue, 'catalogue.sansCouverture')}
-          </span>
+          <>
+            {meta ? <p className={styles.meta}>{meta}</p> : null}
+            <LibelleAcces
+              langue={langue}
+              ligne={ligne}
+              inclusAbonnement={entree.inclus_abonnement}
+            />
+          </>
         )}
-
-        <h2 className={styles.titre}>{entree.titre}</h2>
-      </a>
-
-      <p className={styles.auteur}>
-        {traduire(langue, 'catalogue.parAuteur').replace('{auteur}', entree.auteur)}
-      </p>
-
-      {entree.region ? (
-        <Pastille region={entree.region}>{traduire(langue, `regions.${entree.region}`)}</Pastille>
-      ) : null}
-
-      {age ? <p className={styles.age}>{age}</p> : null}
-
-      <LibelleAcces langue={langue} ligne={ligne} />
-    </article>
+      </div>
+    </a>
   );
 }
 
@@ -205,15 +326,17 @@ export function CarteLivre({
 export function GrilleCatalogue({
   langue,
   entrees,
+  dense = false,
 }: {
   langue: LangueInterface;
   entrees: readonly EntreeCatalogue[];
+  dense?: boolean;
 }): ReactNode {
   return (
-    <ul className={styles.grille}>
+    <ul className={dense ? `${styles.grille} ${styles.grilleDense}` : styles.grille}>
       {entrees.map((entree) => (
         <li key={entree.id}>
-          <CarteLivre langue={langue} entree={entree} />
+          <CarteLivre langue={langue} entree={entree} dense={dense} />
         </li>
       ))}
     </ul>
@@ -246,14 +369,87 @@ export function PastilleFiltre({
   return (
     <a
       href={href}
-      className={[styles.pastilleFiltre, actif ? styles.pastilleActive : null]
+      className={[
+        styles.pastilleFiltre,
+        region ? styles.pastilleRegion : null,
+        actif ? styles.pastilleActive : null,
+      ]
         .filter(Boolean)
         .join(' ')}
       aria-current={actif ? 'true' : undefined}
-      data-region={region}
+      style={region ? teintesRegion(region) : undefined}
     >
+      {/*
+       * La puce de tradition, dans la couleur PLEINE — la seule place où elle
+       * s'emploie hors des cartes. Elle n'apparaît que pour les groupes qui
+       * ont une couleur : l'âge et l'accès n'en ont pas, et leur en donner une
+       * ferait croire à une origine.
+       */}
+      {region ? <span className={styles.puce} aria-hidden="true" /> : null}
       {children}
     </a>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTRES ACTIFS
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Un filtre posé, avec le lien qui le retire. */
+export interface FiltrePose {
+  cle: string;
+  libelle: string;
+  region?: RegionConte;
+  /** URL du catalogue SANS ce filtre. */
+  retrait: string;
+}
+
+/**
+ * Barre des filtres posés.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CHAQUE PASTILLE DIT CE QUE SON CLIC FAIT.                               │
+ * │                                                                          │
+ * │ Le `aria-label` porte « Retirer le filtre Sahel », jamais « × ». Une     │
+ * │ croix seule est annoncée « lien » et rien d'autre : quelqu'un qui écoute │
+ * │ la page entendrait quatre liens identiques et n'aurait aucun moyen de    │
+ * │ savoir lequel retire quoi.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function FiltresActifs({
+  langue,
+  poses,
+  lienSansFiltres,
+}: {
+  langue: LangueInterface;
+  poses: readonly FiltrePose[];
+  lienSansFiltres: string;
+}): ReactNode {
+  if (poses.length === 0) return null;
+
+  return (
+    <div className={styles.actifs}>
+      <span className={styles.actifsTitre}>{traduire(langue, 'catalogue.filtresActifs')}</span>
+
+      {poses.map((pose) => (
+        <a
+          key={pose.cle}
+          className={styles.pastilleRetirable}
+          href={pose.retrait}
+          style={pose.region ? teintesRegion(pose.region) : undefined}
+          aria-label={`${traduire(langue, 'catalogue.retirerFiltre')} : ${pose.libelle}`}
+        >
+          {pose.libelle}
+          <span className={styles.croix} aria-hidden="true">
+            ×
+          </span>
+        </a>
+      ))}
+
+      <a className={styles.toutEffacer} href={lienSansFiltres}>
+        {traduire(langue, 'catalogue.retirerTousFiltres')}
+      </a>
+    </div>
   );
 }
 
@@ -400,6 +596,7 @@ export function SelecteurTri({
 
   return (
     <nav className={styles.tri} aria-label={traduire(langue, 'catalogue.tri')}>
+      <span className={styles.triTitre}>{traduire(langue, 'catalogue.tri')}</span>
       {TRIS.map((valeur) => (
         <a
           key={valeur}
@@ -490,15 +687,22 @@ export function CatalogueVide({
   lienSansFiltres: string;
 }): ReactNode {
   return (
-    <Vide
-      langue={langue}
-      titre={traduire(langue, 'catalogue.videTitre')}
-      detail={traduire(langue, 'catalogue.videCorps')}
-      action={
+    <section className={styles.vide}>
+      {/*
+       * Le seul motif jaune du produit. Il ne porte AUCUNE couleur de
+       * tradition : un catalogue vide n'a pas d'origine, et en lui en donnant
+       * une on ferait croire que c'est le filtre régional qui est en cause —
+       * ce qui est faux quatre fois sur cinq.
+       */}
+      <Motif region="vide" place="plein" rayon="16px" className={styles.videMotif} />
+
+      <div className={styles.videTexte}>
+        <h2 className={styles.videTitre}>{traduire(langue, 'catalogue.videTitre')}</h2>
+        <p className={styles.videCorps}>{traduire(langue, 'catalogue.videCorps')}</p>
         <a className={styles.videAction} href={lienSansFiltres}>
           {traduire(langue, 'catalogue.videAction')}
         </a>
-      }
-    />
+      </div>
+    </section>
   );
 }

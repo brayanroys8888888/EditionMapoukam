@@ -153,24 +153,57 @@ describe('en-tête', () => {
 
 describe('pied de page', () => {
   it('mène aux cinq pages éditoriales, préfixées', () => {
-    render(<PiedDePage langue="fr" chemin="/fr" />);
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE PIED ENTIER, ET NON UNE SEULE `<nav>`.                          │
+    // │                                                                    │
+    // │ Depuis la reprise des maquettes, le pied long porte quatre         │
+    // │ colonnes plus une barre inférieure : les cinq pages éditoriales    │
+    // │ n'y vivent plus dans un seul groupe. Ce qui doit rester vrai n'a   │
+    // │ pas changé — les cinq sont atteignables, et toutes préfixées.      │
+    // └────────────────────────────────────────────────────────────────────┘
+    const { container } = render(<PiedDePage langue="fr" chemin="/fr" annee={2026} />);
 
-    const navigation = screen.getByRole('navigation', { name: 'Liens utiles' });
-    const liens = [...navigation.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    const liens = new Set(
+      [...container.querySelectorAll('a')].map((a) => a.getAttribute('href')),
+    );
 
-    expect(liens).toEqual([
+    for (const attendu of [
       '/fr/a-propos',
       '/fr/questions-frequentes',
       '/fr/conditions-generales',
       '/fr/confidentialite',
       '/fr/contact',
-    ]);
+    ]) {
+      expect([...liens], `page éditoriale absente du pied : ${attendu}`).toContain(attendu);
+    }
+  });
+
+  it('n’expose AUCUN lien non préfixé par la langue', () => {
+    // Le pendant de la vérification de l'en-tête : le pied porte désormais
+    // une dizaine de liens, et c'est là qu'un « /catalogue » nu se glisse.
+    const { container } = render(<PiedDePage langue="fr" chemin="/fr" annee={2026} />);
+
+    for (const lien of [...container.querySelectorAll('a[href^="/"]')]) {
+      const href = lien.getAttribute('href');
+      expect(href, `lien non préfixé : ${String(href)}`).toMatch(/^\/(fr|en)(\/|\?|$)/);
+    }
+  });
+
+  it('date le bas de page depuis l’HORLOGE, jamais depuis le système', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ La console de simulation avance le temps pour éprouver les fins de │
+    // │ période. Un pied de page qui lirait `new Date()` afficherait alors │
+    // │ une autre année que le reste du site — et personne ne le verrait   │
+    // │ venir, puisque les deux valeurs coïncident en développement.       │
+    // └────────────────────────────────────────────────────────────────────┘
+    render(<PiedDePage langue="fr" chemin="/fr" annee={2031} />);
+    expect(screen.getByText(/2031/)).toBeDefined();
   });
 
   it('porte le sélecteur de langue en toutes lettres', () => {
     // Abrégé dans l'en-tête, où la place manque ; en toutes lettres ici, où
     // il est le plus susceptible d'être cherché.
-    render(<PiedDePage langue="fr" chemin="/fr/catalogue" />);
+    render(<PiedDePage langue="fr" chemin="/fr/catalogue" annee={2026} />);
     expect(screen.getByRole('link', { name: 'English' })).toBeDefined();
   });
 });

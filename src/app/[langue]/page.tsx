@@ -2,14 +2,17 @@ import { headers } from 'next/headers';
 
 import { langueValide, traduire } from '@/i18n';
 import { catalogQuerySchema } from '@/domain/catalog/schemas';
-import { listerCatalogue } from '@/lib/catalog/repository';
+import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
+import { lireOffres } from '@/lib/offers/service';
 import { identifierAppelant } from '@/lib/auth/session';
-import { GrilleCatalogue } from '@/components/catalogue';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import type { RegionConte } from '@/domain/catalog/types';
+import { GrilleCatalogue, teintesRegion } from '@/components/catalogue';
+import { Couverture } from '@/components/catalogue/couverture';
+import { Motif } from '@/components/motif';
+import styles from '@/components/accueil/accueil.module.css';
 
 /**
- * Accueil — §4.1 F1.
+ * Accueil — §4.1 F1, et §B des maquettes.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ LES NOUVEAUTÉS VIENNENT DU CATALOGUE, PAS D'UNE SÉLECTION ÉCRITE ICI.   │
@@ -22,8 +25,30 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
  * │ La grille est celle du catalogue, y compris ses trois lignes d'accès :   │
  * │ un lecteur qui possède déjà un titre le voit ici aussi.                  │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUN CHIFFRE N'EST ÉCRIT DANS CETTE PAGE.                              │
+ * │                                                                          │
+ * │ La maquette annonce « Soixante histoires », « Huit à lire aujourd'hui »  │
+ * │ et « 24 contes » par tradition. Ces nombres étaient faux le jour où la   │
+ * │ maquette a été produite et le resteront : ils viennent des facettes du   │
+ * │ catalogue, calculées en base.                                            │
+ * │                                                                          │
+ * │ Même chose pour les prix — 3,90 € et 6,90 € dans la maquette, contre     │
+ * │ 4,99 € et 7,99 € dans `business_settings`. Ils viennent de `lireOffres`, │
+ * │ le module qu'emploie `/api/offers`.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 const NOMBRE_NOUVEAUTES = 8;
+
+/** Ordre d'affichage des traditions — celui des maquettes, d'ouest en est. */
+const ORDRE_REGIONS: RegionConte[] = [
+  'afrique_ouest',
+  'sahel',
+  'afrique_centrale',
+  'afrique_australe',
+  'afrique_est',
+];
 
 export default async function Accueil({ params }: { params: Promise<{ langue: string }> }) {
   const langue = langueValide((await params).langue);
@@ -32,92 +57,304 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
     new Request('http://interne/', { headers: await headers() }),
   );
 
-  // Une vitrine qui tombe parce que la base tousse est pire qu'une vitrine
-  // sans mise en avant : la bannière et les formules, elles, s'affichent.
-  const nouveautes = await listerCatalogue(
-    appelant?.id ?? null,
-    catalogQuerySchema.parse({ langue, tri: 'nouveautes', taille: NOMBRE_NOUVEAUTES }),
-  ).catch(() => null);
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ TROIS LECTURES INDÉPENDANTES, ET AUCUNE NE PEUT ABATTRE LA PAGE.      │
+  // │                                                                        │
+  // │ Une vitrine qui tombe parce que la base tousse est pire qu'une vitrine │
+  // │ sans mise en avant. Chaque bloc absent se retire tout seul ; le hero,  │
+  // │ lui, s'affiche toujours.                                               │
+  // │                                                                        │
+  // │ `Promise.all` et non trois `await` de suite : les trois requêtes ne se │
+  // │ dépendent pas, et les enchaîner tripleraient le temps d'attente sur la │
+  // │ connexion lente qui est la condition réelle d'une partie du public.    │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const [nouveautes, facettes, offres] = await Promise.all([
+    listerCatalogue(
+      appelant?.id ?? null,
+      catalogQuerySchema.parse({ langue, tri: 'nouveautes', taille: NOMBRE_NOUVEAUTES }),
+    ).catch(() => null),
+    lireFacettes(langue).catch(() => null),
+    // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
+    // paiement, depuis le pays réel du moyen de paiement.
+    lireOffres('international').catch(() => null),
+  ]);
+
+  const vedette = nouveautes?.entrees[0] ?? null;
+  const traditions = ORDRE_REGIONS.map((region) => ({
+    region,
+    nombre: facettes?.regions.find((facette) => facette.valeur === region)?.nombre ?? 0,
+  })).filter((tradition) => tradition.nombre > 0);
+
+  // La première offre d'abonnement est la mensuelle : c'est l'ordre que rend
+  // `/api/offers`, et la vitrine affiche le prix d'entrée, pas la liste.
+  const abonnement = offres?.abonnement.ouvert ? (offres.abonnement.offres[0] ?? null) : null;
 
   return (
-    <div className="flex flex-col gap-14 px-4 py-10">
-      {/* ── Bannière ────────────────────────────────────────────────────── */}
-      <section className="mx-auto flex max-w-3xl flex-col items-start gap-5">
-        <h1 className="font-serif text-4xl font-bold leading-tight md:text-5xl">
-          {traduire(langue, 'accueil.titreBanniere')}
-        </h1>
-        <p className="text-lg text-muted-foreground">
-          {traduire(langue, 'accueil.corpsBanniere')}
-        </p>
+    <div className={styles.page}>
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
+      <section className={`${styles.section} ${styles.hero}`} aria-labelledby="titre-accueil">
+        <div className={styles.heroGrille}>
+          <div className={styles.heroTexte}>
+            <p className={styles.surtitre}>{traduire(langue, 'accueil.surtitre')}</p>
 
-        <div className="flex flex-wrap gap-3">
-          <Button asChild>
-            <a href={`/${langue}/catalogue`}>{traduire(langue, 'accueil.actionCatalogue')}</a>
-          </Button>
-          <Button asChild variant="secondary">
-            <a href={`/${langue}/offres`}>{traduire(langue, 'accueil.actionOffres')}</a>
-          </Button>
+            <h1 id="titre-accueil" className={styles.heroTitre}>
+              {traduire(langue, 'accueil.titreBanniere')}
+            </h1>
+
+            <p className={styles.heroAccroche}>{traduire(langue, 'accueil.corpsBanniere')}</p>
+
+            <div className={styles.heroActions}>
+              <a className={styles.boutonPrimaire} href={`/${langue}/catalogue`}>
+                {traduire(langue, 'accueil.actionCatalogue')}
+              </a>
+              <a className={styles.lienSouligne} href="#comment">
+                {traduire(langue, 'accueil.actionComment')}
+              </a>
+            </div>
+          </div>
+
+          {/*
+           * L'aplat porte la couleur du conte mis en avant, jamais une teinte
+           * choisie une fois pour toutes : le hero change avec le catalogue.
+           */}
+          <div className={styles.heroAplat}>
+            <Motif
+              region={vedette?.region ?? 'afrique_ouest'}
+              place="plein"
+              hero
+              rayon="0"
+              className={styles.heroAplatMotif}
+            />
+
+            {vedette?.couverture ? (
+              <Couverture
+                langue={langue}
+                url={vedette.couverture.mise_en_avant}
+                largeur={600}
+                hauteur={900}
+                tailles="(max-width: 700px) 72vw, 300px"
+                region={vedette.region}
+                alt={vedette.titre}
+                // La SEULE image `eager` du site : elle est au-dessus de la
+                // ligne de flottaison, et la retarder décalerait le hero.
+                eager
+                classeImage={styles.heroCouverture}
+              />
+            ) : null}
+          </div>
         </div>
       </section>
 
-      {/* ── Nouveautés ──────────────────────────────────────────────────── */}
+      {/* ── Bandeau de réassurance ───────────────────────────────────────── */}
+      <div className={styles.reassurance}>
+        <p className={styles.reassuranceTexte}>
+          {traduire(langue, 'accueil.reassurance1')}{' '}
+          <span className={styles.separateur} aria-hidden="true">
+            ·
+          </span>{' '}
+          {traduire(langue, 'accueil.reassurance2')}{' '}
+          <span className={styles.separateur} aria-hidden="true">
+            ·
+          </span>{' '}
+          {traduire(langue, 'accueil.reassurance3')}
+        </p>
+      </div>
+
+      {/* ── Nos contes ───────────────────────────────────────────────────── */}
       {nouveautes && nouveautes.entrees.length > 0 ? (
-        <section className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-          <div className="flex items-baseline justify-between gap-4">
-            <h2 className="font-serif text-2xl font-semibold">
+        <section
+          id="contes"
+          className={`${styles.section} ${styles.contes}`}
+          aria-labelledby="titre-contes"
+        >
+          <div className={styles.enteteSection}>
+            <h2 id="titre-contes" className={styles.titreSection}>
               {traduire(langue, 'accueil.nouveautes')}
             </h2>
-            <a href={`/${langue}/catalogue`} className="text-sm underline">
-              {traduire(langue, 'accueil.voirTout')}
-            </a>
+            <p className={styles.sousTitreSection}>
+              {traduire(langue, 'accueil.nouveautesCompte')
+                .replace('{affiches}', String(nouveautes.entrees.length))
+                .replace('{total}', String(nouveautes.total))}
+            </p>
           </div>
 
           <GrilleCatalogue langue={langue} entrees={nouveautes.entrees} />
+
+          <div className={styles.contesSuite}>
+            <a className={styles.boutonSecondaire} href={`/${langue}/catalogue`}>
+              {traduire(langue, 'accueil.voirTout')}
+            </a>
+          </div>
         </section>
       ) : null}
 
-      {/* ── Les deux formules ───────────────────────────────────────────── */}
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-5">
-        <h2 className="font-serif text-2xl font-semibold">
+      {/* ── D'où viennent ces contes ─────────────────────────────────────── */}
+      {traditions.length > 0 ? (
+        <section
+          id="origines"
+          className={`${styles.section} ${styles.traditions}`}
+          aria-labelledby="titre-origines"
+        >
+          <h2 id="titre-origines" className={styles.titreSectionPetit}>
+            {traduire(langue, 'accueil.traditionsTitre')}
+          </h2>
+          <p className={styles.sousTitreSection}>{traduire(langue, 'accueil.traditionsIntro')}</p>
+
+          <ul className={styles.traditionsGrille}>
+            {traditions.map(({ region, nombre }) => (
+              <li key={region}>
+                {/*
+                 * Chaque carte est un LIEN vers le catalogue filtré, jamais un
+                 * bouton qui poserait un filtre en mémoire : le filtre vit
+                 * dans l'URL, il se partage et il survit au rechargement.
+                 */}
+                <a
+                  className={styles.tradition}
+                  href={`/${langue}/catalogue?region=${region}`}
+                  style={teintesRegion(region)}
+                >
+                  <Motif region={region} place="vignette" className={styles.traditionMotif} />
+                  <p className={styles.traditionNom}>{traduire(langue, `regions.${region}`)}</p>
+                  <p className={styles.traditionCompte}>
+                    {nombre === 1
+                      ? traduire(langue, 'accueil.traditionsCompteUn')
+                      : traduire(langue, 'accueil.traditionsCompte').replace(
+                          '{nombre}',
+                          String(nombre),
+                        )}
+                  </p>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ── Comment ça marche ────────────────────────────────────────────── */}
+      <section id="comment" className={styles.comment} aria-labelledby="titre-comment">
+        <div className={styles.commentInterieur}>
+          <h2 id="titre-comment" className={styles.commentTitre}>
+            {traduire(langue, 'accueil.commentTitre')}
+          </h2>
+
+          <ol className={styles.etapes}>
+            {([1, 2, 3] as const).map((numero) => (
+              <li key={numero} className={styles.etape}>
+                {/*
+                 * Le numéro est décoratif : la liste est ordonnée, et un
+                 * lecteur d'écran annonce déjà « élément 1 sur 3 ». L'énoncer
+                 * une seconde fois ferait entendre « un, un, choisissez un
+                 * conte ».
+                 */}
+                <span className={styles.etapeNumero} aria-hidden="true">
+                  {numero}
+                </span>
+                <div>
+                  <p className={styles.etapeTitre}>
+                    {traduire(langue, `accueil.comment${String(numero)}Titre` as never)}
+                  </p>
+                  <p className={styles.etapeCorps}>
+                    {traduire(langue, `accueil.comment${String(numero)}Corps` as never)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ── Les deux offres ──────────────────────────────────────────────── */}
+      <section
+        id="offres"
+        className={`${styles.section} ${styles.offres}`}
+        aria-labelledby="titre-offres"
+      >
+        <h2 id="titre-offres" className={styles.titreSectionPetit}>
           {traduire(langue, 'accueil.deuxFormulesTitre')}
         </h2>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif">
-                {traduire(langue, 'offres.abonnementTitre')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/*
-                Aucun montant ici. Les prix vivent sur la page des offres, qui
-                les lit du serveur : les recopier sur l'accueil créerait une
-                seconde grille tarifaire, et c'est celle-ci que le visiteur
-                lirait en premier.
-              */}
-              <p className="text-sm text-muted-foreground">
-                {traduire(langue, 'accueil.abonnementCourt')}
+        <div className={styles.offresGrille}>
+          {/* ── Abonnement ─────────────────────────────────────────────── */}
+          <div className={`${styles.offre} ${styles.offreAbonnement}`}>
+            <div>
+              <h3 className={styles.offreTitre}>{traduire(langue, 'offres.abonnementTitre')}</h3>
+              <p className={styles.offreSousTitre}>
+                {traduire(langue, 'accueil.abonnementSousTitre')}
               </p>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-serif">{traduire(langue, 'offres.achatTitre')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                {traduire(langue, 'accueil.achatCourt')}
+            {/*
+             * Le prix ne s'affiche QUE si l'abonnement est ouvert. Au
+             * lancement il ne l'est pas, et annoncer un montant pour une
+             * formule qu'on ne peut pas souscrire est une promesse en l'air.
+             */}
+            {abonnement ? (
+              <p className={styles.offrePrix}>
+                {abonnement.affichage}{' '}
+                <span className={styles.offrePrixUnite}>
+                  {traduire(langue, 'offres.abonnementParPeriode').replace(
+                    '{periode}',
+                    abonnement.periode,
+                  )}
+                </span>
               </p>
-            </CardContent>
-          </Card>
-        </div>
+            ) : (
+              <p className={styles.offreSousTitre}>
+                {traduire(langue, 'offres.abonnementFermeTitre')}
+              </p>
+            )}
 
-        <div>
-          <Button asChild variant="secondary">
-            <a href={`/${langue}/offres`}>{traduire(langue, 'accueil.enSavoirPlus')}</a>
-          </Button>
+            <ul className={styles.offreListe}>
+              {(['1', '2', '3'] as const).map((rang) => (
+                <li key={rang}>
+                  <span className={styles.coche} aria-hidden="true">
+                    ✓
+                  </span>
+                  {traduire(langue, `accueil.abonnementAvantage${rang}` as never)}
+                </li>
+              ))}
+            </ul>
+
+            <div className={styles.offreAction}>
+              <a className={styles.boutonPrimaire} href={`/${langue}/offres`}>
+                {traduire(langue, 'accueil.enSavoirPlus')}
+              </a>
+            </div>
+          </div>
+
+          {/* ── Achat à l'unité ────────────────────────────────────────── */}
+          <div className={styles.offre}>
+            <div>
+              <h3 className={styles.offreTitre}>{traduire(langue, 'offres.achatTitre')}</h3>
+              <p className={styles.offreSousTitre}>{traduire(langue, 'accueil.achatSousTitre')}</p>
+            </div>
+
+            {offres ? (
+              <p className={styles.offrePrix}>
+                {offres.achat_unite.affichage}{' '}
+                <span className={styles.offrePrixUnite}>
+                  {traduire(langue, 'accueil.achatUnite')}
+                </span>
+              </p>
+            ) : null}
+
+            <ul className={styles.offreListe}>
+              {(['1', '2', '3'] as const).map((rang) => (
+                <li key={rang}>
+                  <span className={styles.coche} aria-hidden="true">
+                    ✓
+                  </span>
+                  {traduire(langue, `accueil.achatAvantage${rang}` as never)}
+                </li>
+              ))}
+            </ul>
+
+            <div className={styles.offreAction}>
+              <a className={styles.boutonSecondaire} href={`/${langue}/catalogue`}>
+                {traduire(langue, 'accueil.actionCatalogue')}
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     </div>

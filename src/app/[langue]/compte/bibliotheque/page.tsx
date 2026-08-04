@@ -7,9 +7,11 @@ import { lireBibliotheque } from '@/lib/account/bibliotheque';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { identifierAppelant } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Motif } from '@/components/motif';
+import { teintesRegion } from '@/components/catalogue';
+import { GabaritEspace } from '@/components/espace';
+import espace from '@/components/espace/espace.module.css';
+import ecran from '@/components/ecran/ecran.module.css';
 
 /**
  * Ma bibliothèque — §4.2 F7.
@@ -75,130 +77,217 @@ export default async function PageBibliotheque({ params }: Parametres) {
     abonnement !== null && abonnement.statutEffectif !== 'actif' && abonnement.statutEffectif !== 'essai';
 
   return (
-    <section className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold">
-        {traduire(langue, 'compte.bibliotheque')}
-      </h1>
+    <GabaritEspace langue={langue} onglet="compte/bibliotheque" email={appelant.email}>
+      <h1 className={ecran.titre}>{traduire(langue, 'compte.bibliotheque')}</h1>
+      <p className={ecran.intro}>{traduire(langue, 'compte.bibliothequeIntro')}</p>
 
       {/* ── Abonnement expiré : les trois questions ─────────────────────── */}
       {abonnementPerdu ? (
-        <section className="flex flex-col gap-3 rounded-md border border-border bg-accent p-5">
-          <h2 className="font-semibold text-accent-foreground">
+        <section className={`${ecran.panneau} ${ecran.panneauAttention} ${ecran.section}`}>
+          <h2 className={ecran.panneauTitre}>
             {traduire(langue, 'compte.perteAbonnementTitre')}
           </h2>
 
           {/* Ce que j'ai perdu. */}
-          <p className="text-sm text-accent-foreground">
+          <p className={ecran.panneauTexte}>
             {traduire(langue, 'compte.perteAbonnementPerdu')}
           </p>
 
           {/*
-            Ce que je garde — en gras, parce que c'est la phrase qui évite la
-            réclamation. Elle est affichée MÊME si la bibliothèque est vide :
-            un abonné expiré sans achat doit lire la perte, et c'est le
+            Ce que je garde — en encre pleine, parce que c'est la phrase qui
+            évite la réclamation. Elle est affichée MÊME si la bibliothèque est
+            vide : un abonné expiré sans achat doit lire la perte, et c'est le
             contre-test de ce comportement.
           */}
-          <p className="text-sm font-semibold text-accent-foreground">
+          <p className={ecran.panneauTexteFort}>
             {traduire(langue, 'compte.perteAbonnementGarde')}
           </p>
 
           {/* Pourquoi. */}
-          <p className="text-sm text-accent-foreground">
+          <p className={ecran.panneauTexte}>
             {traduire(langue, 'compte.perteAbonnementPourquoi')}
           </p>
 
-          <div>
-            <Button asChild size="sm">
-              <a href={`/${langue}/offres`}>
-                {traduire(langue, 'compte.perteAbonnementAction')}
-              </a>
-            </Button>
-          </div>
+          <a className={ecran.boutonPrimaire} href={`/${langue}/offres`}>
+            {traduire(langue, 'compte.perteAbonnementAction')}
+          </a>
         </section>
       ) : null}
 
-      {/* ── Mes contes ──────────────────────────────────────────────────── */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-serif text-2xl font-semibold">
-          {traduire(langue, 'compte.achatsTitre')}
-        </h2>
+      {/* ── Reprendre ma lecture ────────────────────────────────────────── */}
+      {bibliotheque.en_cours.length > 0 ? (
+        <section className={ecran.section}>
+          <h2 className={ecran.sousTitre}>{traduire(langue, 'compte.enCoursTitre')}</h2>
 
-        {bibliotheque.achats.length === 0 ? (
-          <div className="flex flex-col items-start gap-3">
-            <p className="text-muted-foreground">{traduire(langue, 'compte.achatsVide')}</p>
-            <Button asChild variant="secondary">
-              <a href={`/${langue}/catalogue`}>
-                {traduire(langue, 'compte.achatsVideAction')}
-              </a>
-            </Button>
-          </div>
-        ) : (
-          <ul className="flex flex-col gap-4">
-            {bibliotheque.achats.map((entree) => (
+          <ul className={espace.enCours}>
+            {bibliotheque.en_cours.map((entree) => (
               <li
                 key={entree.livre_id}
-                className="flex flex-col gap-3 border-b border-border pb-4"
+                className={espace.reprise}
+                style={teintesRegion(entree.region)}
               >
-                <div className="flex flex-wrap items-baseline gap-3">
-                  <a
-                    href={`/${langue}/contes/${entree.slug}`}
-                    className="font-medium hover:underline"
-                  >
+                {entree.couverture ? (
+                  <img
+                    src={entree.couverture.vignette}
+                    width={200}
+                    height={300}
+                    loading="lazy"
+                    decoding="async"
+                    alt=""
+                    className={espace.repriseImage}
+                  />
+                ) : null}
+
+                <div className={espace.repriseTexte}>
+                  <a className={espace.repriseTitre} href={`/${langue}/contes/${entree.slug}`}>
                     {entree.titre}
                   </a>
 
-                  {entree.source === 'offert' ? (
-                    <Badge variant="secondary">{traduire(langue, 'compte.offert')}</Badge>
+                  {/*
+                    « Page 7 sur 32 », et RIEN de plus. La maquette ajoute
+                    « lu par Kadi » — un prénom d'enfant, que la règle de
+                    conformité interdit et que le schéma ne porte nulle part.
+                  */}
+                  {entree.reprise ? (
+                    <p className={espace.repriseProgres}>
+                      {traduire(langue, 'compte.reprisePage').replace(
+                        '{page}',
+                        String(entree.reprise.page),
+                      )}
+                    </p>
                   ) : null}
+                </div>
+
+                {/*
+                  La progression SURVIT à la perte d'accès : un ancien abonné
+                  voit sa page de reprise sans pouvoir rouvrir le conte. On ne
+                  propose donc « Reprendre » que si le moteur de droits le
+                  permet — proposer une porte qui se refermera au nez de qui la
+                  pousse serait pire que ne rien proposer.
+                */}
+                {entree.acces.canRead ? (
+                  <a className={espace.repriseAction} href={`/${langue}/lire/${entree.slug}`}>
+                    {traduire(langue, 'compte.lire')}
+                  </a>
+                ) : (
+                  <p className={espace.repriseProgres}>
+                    {traduire(langue, 'compte.plusAccessible')}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {/* ── Mes contes achetés ──────────────────────────────────────────── */}
+      <section className={ecran.section}>
+        <div className={espace.enteteSection}>
+          <h2 className={ecran.sousTitre}>{traduire(langue, 'compte.achatsTitre')}</h2>
+
+          {bibliotheque.achats.length > 0 ? (
+            <p className={espace.noteSection}>
+              {traduire(langue, 'compte.achatsCompte').replace(
+                '{nombre}',
+                String(bibliotheque.achats.length),
+              )}
+            </p>
+          ) : null}
+        </div>
+
+        {bibliotheque.achats.length === 0 ? (
+          <div className={ecran.vide}>
+            {/*
+              Jamais un bloc vide : le modèle est celui du catalogue — dire ce
+              qui manque, et donner une action.
+            */}
+            <Motif region="vide" place="plein" rayon="14px" className={ecran.videMotif} />
+
+            <div className={ecran.videTexte}>
+              <p className={ecran.videTitre}>{traduire(langue, 'compte.achatsVide')}</p>
+              <p className={ecran.videCorps}>{traduire(langue, 'compte.achatsVideCorps')}</p>
+            </div>
+
+            <a className={ecran.boutonSecondaire} href={`/${langue}/catalogue`}>
+              {traduire(langue, 'compte.achatsVideAction')}
+            </a>
+          </div>
+        ) : (
+          <ul className={espace.achats}>
+            {bibliotheque.achats.map((entree) => (
+              <li
+                key={entree.livre_id}
+                className={espace.achat}
+                style={teintesRegion(entree.region)}
+              >
+                {entree.couverture ? (
+                  <img
+                    src={entree.couverture.vignette}
+                    width={320}
+                    height={480}
+                    loading="lazy"
+                    decoding="async"
+                    alt=""
+                    className={espace.achatImage}
+                  />
+                ) : null}
+
+                <div className={espace.achatCorps}>
+                  {entree.region ? (
+                    <p className={espace.achatOrigine}>
+                      <span className={espace.achatPuce} aria-hidden="true" />
+                      {traduire(langue, `regions.${entree.region}`)}
+                    </p>
+                  ) : null}
+
+                  <a className={espace.achatTitre} href={`/${langue}/contes/${entree.slug}`}>
+                    {entree.titre}
+                  </a>
 
                   {/*
                     Dit explicitement, et pas seulement sous-entendu : c'est la
                     réponse à « qu'est-ce que je garde ? », posée avant même
                     que la question ne se pose.
                   */}
-                  {entree.peut_telecharger ? (
-                    <span className="text-sm text-muted-foreground">
-                      {traduire(langue, 'compte.conserveSansLimite')}
-                    </span>
-                  ) : null}
+                  <p className={espace.achatNote}>
+                    {entree.source === 'offert'
+                      ? traduire(langue, 'compte.offert')
+                      : entree.peut_telecharger
+                        ? traduire(langue, 'compte.conserveSansLimite')
+                        : ''}
+                  </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className={espace.achatActions}>
                   {entree.acces.canRead ? (
-                    <Button asChild size="sm">
-                      <a href={`/${langue}/lire/${entree.slug}`}>
-                        {traduire(langue, 'compte.lire')}
-                      </a>
-                    </Button>
+                    <a className={espace.achatLire} href={`/${langue}/lire/${entree.slug}`}>
+                      {traduire(langue, 'compte.lire')}
+                    </a>
                   ) : (
-                    <span className="text-sm text-muted-foreground">
+                    <p className={espace.achatIndisponible}>
                       {traduire(langue, 'compte.plusAccessible')}
-                    </span>
+                    </p>
                   )}
 
                   {/*
                     TOUTES LES COMBINAISONS LANGUE × FORMAT, énumérées depuis
                     les versions PUBLIÉES du titre : un conte en deux langues
                     offre quatre téléchargements. Le droit vient de
-                    `peut_telecharger`, jamais d'un motif d'accès.
+                    `peut_telecharger`, jamais d'un motif d'accès — c'est ce qui
+                    garantit qu'un abonné expiré retrouve ses achats intacts.
                   */}
                   {entree.peut_telecharger
                     ? entree.langues.flatMap((codeLangue) =>
                         (['pdf', 'epub'] as const).map((format) => (
-                          <Button
+                          <a
                             key={`${codeLangue}-${format}`}
-                            asChild
-                            size="sm"
-                            variant="secondary"
+                            className={espace.achatTelecharger}
+                            href={`/api/downloads/${entree.livre_id}?langue=${codeLangue}&format=${format}`}
                           >
-                            <a
-                              href={`/api/downloads/${entree.livre_id}?langue=${codeLangue}&format=${format}`}
-                            >
-                              {traduire(langue, 'compte.telechargerFormat')
-                                .replace('{format}', format.toUpperCase())}{' '}
-                              ({codeLangue.toUpperCase()})
-                            </a>
-                          </Button>
+                            {traduire(langue, 'compte.telechargerFormat')
+                              .replace('{format}', format.toUpperCase())}{' '}
+                            ({codeLangue.toUpperCase()})
+                          </a>
                         )),
                       )
                     : null}
@@ -208,60 +297,6 @@ export default async function PageBibliotheque({ params }: Parametres) {
           </ul>
         )}
       </section>
-
-      {/* ── Reprendre ma lecture ────────────────────────────────────────── */}
-      {bibliotheque.en_cours.length > 0 ? (
-        <>
-          <Separator />
-
-          <section className="flex flex-col gap-4">
-            <h2 className="font-serif text-2xl font-semibold">
-              {traduire(langue, 'compte.enCoursTitre')}
-            </h2>
-
-            <ul className="flex flex-col gap-3">
-              {bibliotheque.en_cours.map((entree) => (
-                <li key={entree.livre_id} className="flex flex-wrap items-center gap-3">
-                  <a
-                    href={`/${langue}/contes/${entree.slug}`}
-                    className="font-medium hover:underline"
-                  >
-                    {entree.titre}
-                  </a>
-
-                  {entree.reprise ? (
-                    <span className="text-sm text-muted-foreground">
-                      {traduire(langue, 'compte.reprisePage').replace(
-                        '{page}',
-                        String(entree.reprise.page),
-                      )}
-                    </span>
-                  ) : null}
-
-                  {/*
-                    La progression SURVIT à la perte d'accès : un ancien abonné
-                    voit sa page de reprise sans pouvoir rouvrir le conte. On
-                    ne propose donc « Lire » que si le moteur de droits le
-                    permet — proposer une porte qui se refermera serait pire
-                    que ne rien proposer.
-                  */}
-                  {entree.acces.canRead ? (
-                    <Button asChild size="sm" variant="secondary">
-                      <a href={`/${langue}/lire/${entree.slug}`}>
-                        {traduire(langue, 'compte.lire')}
-                      </a>
-                    </Button>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      {traduire(langue, 'compte.plusAccessible')}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
-      ) : null}
-    </section>
+    </GabaritEspace>
   );
 }

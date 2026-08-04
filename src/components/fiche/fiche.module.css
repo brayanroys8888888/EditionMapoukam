@@ -1,0 +1,539 @@
+/*
+ * Fiche d'un conte — §C des maquettes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TOUTE LA PAGE PORTE LA COULEUR DE LA TRADITION DU CONTE.                │
+ * │                                                                          │
+ * │ Pastille d'origine, bordure du bouton d'extrait, fil d'ariane, encart de │
+ * │ provenance, bloc d'action : cinq endroits, une seule teinte, celle de    │
+ * │ `region`. Les quatre variables `--carte-*` sont posées UNE FOIS sur le   │
+ * │ conteneur de page ; aucun bloc ne choisit sa couleur.                    │
+ * │                                                                          │
+ * │ Aucune media query : `flex: 1 1 320px` contre `flex: 3 1 420px` avec     │
+ * │ 48 px de gouttière provoque l'empilement vers 820 px, et la colonne      │
+ * │ gauche perd son `sticky` d'elle-même quand elle est seule sur sa ligne.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.page {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 20px 20px 60px;
+}
+
+/* ── Fil d'ariane ───────────────────────────────────────────────────────── */
+
+.ariane {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-2);
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  margin-bottom: 22px;
+}
+
+.ariane a {
+  color: var(--encre-douce);
+}
+
+.ariane a:hover {
+  color: var(--lien-survol);
+}
+
+/* La tradition est mise en avant : c'est le seul lien coloré du fil. */
+.arianeRegion {
+  color: var(--carte-encre);
+  font-weight: var(--graisse-forte);
+}
+
+.arianeRegion:hover {
+  color: var(--carte-encre);
+}
+
+.arianeCourant {
+  color: var(--encre);
+}
+
+/* ── Les deux colonnes ──────────────────────────────────────────────────── */
+
+.colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 48px;
+  align-items: flex-start;
+}
+
+.colonneGauche {
+  flex: 1 1 320px;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+  /* 78 px = hauteur de l'en-tête collant, plus une marge. */
+  position: sticky;
+  top: 78px;
+}
+
+.colonneDroite {
+  flex: 3 1 420px;
+  min-width: 300px;
+}
+
+/*
+ * La SEULE ombre de la page, et l'une des deux du produit entier.
+ *
+ * Toute ombre supplémentaire serait un ajout à la direction artistique, pas
+ * une finition.
+ */
+.couverture {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--rayon-bloc);
+  box-shadow: var(--ombre-couverture);
+  display: block;
+}
+
+/* ── Boutons de la tradition ────────────────────────────────────────────── */
+
+/*
+ * Le contour de la tradition — jamais le jaune.
+ *
+ * Le jaune est réservé à L'ACTION principale de la page. Deux boutons jaunes
+ * côte à côte, c'est deux actions principales, c'est-à-dire aucune.
+ */
+.boutonTradition {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 14px 20px;
+  border: 2px solid var(--carte-accent);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--carte-encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  text-align: center;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonTradition:hover {
+  background: var(--carte-accent);
+  color: var(--fond);
+}
+
+.boutonPrimaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 15px 26px;
+  border: 2px solid var(--action);
+  border-radius: 11px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-couleur);
+}
+
+.boutonPrimaire:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-2px);
+}
+
+/* ── Colonne droite ─────────────────────────────────────────────────────── */
+
+.pastilleOrigine {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-2);
+  padding: 7px 14px;
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-pastille);
+  background: var(--carte-fond);
+  color: var(--carte-encre);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--espace-4);
+}
+
+.puceOrigine {
+  width: 9px;
+  height: 9px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--carte-accent);
+  display: block;
+}
+
+.titre {
+  font-size: clamp(32px, 4.6vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--espace-3);
+}
+
+/* ── Ligne de métadonnées ───────────────────────────────────────────────── */
+
+.metaLigne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--bordure);
+  margin-bottom: 18px;
+}
+
+.metaLigne strong {
+  color: var(--encre);
+  font-weight: var(--graisse-forte);
+}
+
+/* ── Pastilles d'âge ────────────────────────────────────────────────────── */
+
+/*
+ * DEUX pastilles volontairement différentes — la distinction utile aux
+ * parents : ce qu'un enfant peut ÉCOUTER, et ce qu'il peut LIRE SEUL. La
+ * puce ronde marque l'écoute, la puce carrée la lecture autonome ; la forme
+ * porte l'information autant que le fond, pour qui ne distingue pas les
+ * teintes.
+ */
+.ages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+
+.age {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 15px;
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-encart);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+}
+
+.ageEcoute {
+  background: var(--carte-fond);
+}
+
+.ageSeul {
+  background: var(--fond);
+}
+
+.pastilleRonde,
+.pastilleCarree {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  background: var(--carte-accent);
+  display: block;
+}
+
+.pastilleRonde {
+  border-radius: 50%;
+}
+
+.pastilleCarree {
+  transform: rotate(45deg);
+}
+
+/* ── Résumé ─────────────────────────────────────────────────────────────── */
+
+/*
+ * LITERATA, et une largeur de 62 caractères.
+ *
+ * C'est le seul texte long de la page, et la seule police de lecture du
+ * produit. Une ligne de plus de 75 caractères fait perdre le début de la
+ * suivante — la limite n'est pas décorative.
+ */
+.resume {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: var(--interligne-lecture);
+  max-width: var(--largeur-texte);
+  margin-bottom: 26px;
+}
+
+/* ── Bloc d'action ──────────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA MÊME BOÎTE POUR LES TROIS VARIANTES.                                 │
+ * │                                                                          │
+ * │ Visiteur, abonné, acheteur : mêmes fond, bordure, rayon et marge         │
+ * │ intérieure. La commutation ne doit produire AUCUN saut de mise en page — │
+ * │ le même lecteur voit les trois au fil de son parcours, et un bloc qui    │
+ * │ change de taille se lit comme une page qui recharge.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.action {
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-carte);
+  padding: 22px;
+}
+
+.actionEtiquette {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--carte-encre);
+  margin-bottom: 14px;
+}
+
+.actionLigne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: var(--espace-3);
+}
+
+.actionBoutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-3);
+  margin-bottom: var(--espace-3);
+}
+
+.actionDetail {
+  flex: 1 1 200px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.actionNote {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+/*
+ * L'explication de ce qui MANQUE — la phrase la plus importante de l'écran.
+ *
+ * Elle ne paraît que pour qui lit sans pouvoir conserver. Sans elle, l'absence
+ * du bouton de téléchargement se lit comme une panne, et le client écrit au
+ * support au lieu d'acheter.
+ */
+.actionExplication {
+  font-size: var(--taille-base);
+  line-height: 1.5;
+  color: var(--encre-douce);
+  max-width: var(--largeur-texte);
+}
+
+.lienTradition {
+  color: var(--carte-encre);
+  font-weight: var(--graisse-forte);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.lienTradition:hover {
+  color: var(--carte-encre);
+}
+
+/* ── Bandeau d'extrait ──────────────────────────────────────────────────── */
+
+.bandeauExtrait {
+  background: var(--creme);
+  border: 1px solid var(--creme-bordure);
+  border-radius: var(--rayon-encart);
+  padding: 14px 16px;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  margin-bottom: 18px;
+}
+
+/* ── Encarts de bas de page ─────────────────────────────────────────────── */
+
+.encarts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 22px;
+  margin-top: 52px;
+}
+
+.encart {
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-panneau);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Carte NEUTRE, pas colorée — la distinction est celle de la maquette. */
+.encartNeutre {
+  background: var(--fond);
+  border-color: var(--bordure);
+}
+
+.encartCorps {
+  padding: 24px 26px 26px;
+}
+
+.encartTitre {
+  font-size: 26px;
+  margin-bottom: var(--espace-3);
+}
+
+.encartTexte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-l);
+  line-height: var(--interligne-lecture);
+}
+
+.encartListe {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+
+.encartEntree {
+  display: flex;
+  gap: var(--espace-3);
+  align-items: baseline;
+  border-bottom: 1px solid var(--bordure);
+  padding-bottom: 14px;
+}
+
+.encartEntree:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.encartTerme {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 18px;
+  font-weight: var(--graisse-forte);
+  color: var(--carte-encre);
+  flex: 0 0 108px;
+}
+
+.encartDefinition {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-base);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Dans la même tradition ─────────────────────────────────────────────── */
+
+.suggestions {
+  margin-top: 44px;
+}
+
+.suggestionsEntete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--espace-3);
+  margin-bottom: 18px;
+}
+
+.suggestionsTitre {
+  font-size: 26px;
+}
+
+.suggestionsLien {
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+  color: var(--carte-encre);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.suggestionsLien:hover {
+  color: var(--carte-encre);
+}
+
+.suggestionsGrille {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 18px;
+}
+
+/* La carte réduite est HORIZONTALE, et monte de 3 px et non de 4. */
+.suggestion {
+  display: flex;
+  gap: 14px;
+  height: 100%;
+  padding: var(--espace-3);
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-bloc);
+  color: var(--encre);
+  transition: transform var(--transition-forme), border-color var(--transition-forme);
+}
+
+.suggestion:hover {
+  transform: translateY(-3px);
+  border-color: var(--carte-accent);
+  color: var(--encre);
+}
+
+.suggestionImage {
+  width: 88px;
+  flex: 0 0 88px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--espace-2);
+  display: block;
+}
+
+.suggestionTexte {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+}
+
+.suggestionTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+}
+
+/* ── Retour ─────────────────────────────────────────────────────────────── */
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  margin-top: 44px;
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-forte);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: var(--souligne);
+}
+
+.retour:hover {
+  text-decoration-color: var(--encre);
+}

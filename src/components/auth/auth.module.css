@@ -8,18 +8,27 @@
 .panneau {
   max-width: 26rem;
   margin: var(--espace-7) auto;
-  padding: var(--espace-6);
+  padding: 26px;
   background: var(--fond);
-  border: 1px solid var(--bordure);
+  border: 1.5px solid var(--bordure);
   border-radius: var(--rayon-panneau);
 }
 
+/*
+ * `font-variation-settings` est écrit ICI en plus de la réinitialisation
+ * globale, et ce n'est pas une redite inutile : cette classe se pose sur un
+ * `h1` aujourd'hui, mais rien ne garantit qu'elle ne se posera pas sur un
+ * `<p>` demain — et Fraunces perdrait alors, en silence, le caractère qui
+ * motive son choix.
+ */
 .titre {
   font-family: var(--police-titre);
-  font-size: var(--taille-3xl);
+  font-variation-settings: var(--titre-variations);
+  font-size: 26px;
   font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
   line-height: var(--interligne-titre);
-  margin: 0 0 var(--espace-4);
+  margin: 0 0 var(--espace-2);
 }
 
 .intro {

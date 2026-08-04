@@ -1,0 +1,18 @@
+/*
+ * Aplat de motif géométrique.
+ *
+ * Les recettes elles-mêmes vivent dans `tokens.css` : elles portent des teintes
+ * de tradition, et une couleur ne s'écrit nulle part ailleurs.
+ */
+
+.motif {
+  display: block;
+  width: 100%;
+  /* Réglées par le composant : chaque emplacement a sa hauteur (56, 74, 110 px,
+     ou la hauteur du conteneur pour un hero). */
+  height: var(--motif-hauteur, 74px);
+  border-radius: var(--motif-rayon, 11px);
+  background-color: var(--motif-fond);
+  background-image: var(--motif-dessin);
+  background-size: var(--motif-taille, auto);
+}

@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { langueValide, traduire, type CleTraduction } from '@/i18n';
 import { identifierAppelant } from '@/lib/auth/session';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { GabaritEspace } from '@/components/espace';
+import ecran from '@/components/ecran/ecran.module.css';
 
 /**
  * Espace personnel — le sommaire.
@@ -43,23 +44,49 @@ export default async function PageCompte({ params }: Parametres) {
   if (!appelant) redirect(`/${langue}/connexion`);
 
   return (
-    <section className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold">{traduire(langue, 'compte.titre')}</h1>
+    <GabaritEspace langue={langue} onglet="compte" email={appelant.email}>
+      <h1 className={ecran.titre}>{traduire(langue, 'compte.parametres')}</h1>
+      <p className={ecran.intro}>{traduire(langue, 'compte.parametresIntro')}</p>
 
-      <p className="text-muted-foreground">{appelant.email}</p>
+      <section className={`${ecran.panneau} ${ecran.section}`}>
+        <dl className={ecran.definitions} style={{ width: '100%' }}>
+          <div className={ecran.definition}>
+            <dt className={ecran.terme}>{traduire(langue, 'auth.email')}</dt>
+            <dd className={ecran.valeur}>{appelant.email}</dd>
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {SECTIONS.map((section) => (
-          <a key={section.chemin} href={`/${langue}/compte/${section.chemin}`} className="block">
-            <Card className="h-full transition-colors hover:bg-muted">
-              <CardHeader>
-                <CardTitle className="font-serif">{traduire(langue, section.titre)}</CardTitle>
-                <CardDescription>{traduire(langue, section.corps)}</CardDescription>
-              </CardHeader>
-            </Card>
-          </a>
-        ))}
-      </div>
-    </section>
+          {/*
+            ┌──────────────────────────────────────────────────────────────┐
+            │ CE QUE CET ÉCRAN NE DEMANDE PAS, ET NE DEMANDERA JAMAIS.    │
+            │                                                              │
+            │ Aucun prénom d'enfant, aucun âge, aucune date de naissance,  │
+            │ aucun profil enfant. Le compte appartient à l'adulte. C'est   │
+            │ une exigence de conformité, pas une préférence — et la dire  │
+            │ ici évite qu'on l'ajoute « pour personnaliser l'accueil ».   │
+            └──────────────────────────────────────────────────────────────┘
+          */}
+          <div className={ecran.definition}>
+            <dt className={ecran.terme}>{traduire(langue, 'compte.donneesTerme')}</dt>
+            <dd className={ecran.valeur}>{traduire(langue, 'auth.aucuneDonneeEnfant')}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section className={ecran.section}>
+        <h2 className={ecran.sousTitre}>{traduire(langue, 'compte.titre')}</h2>
+
+        <div className={ecran.actions}>
+          {SECTIONS.map((section) => (
+            <a
+              key={section.chemin}
+              className={ecran.boutonSecondaire}
+              href={`/${langue}/compte/${section.chemin}`}
+            >
+              {traduire(langue, section.titre)}
+            </a>
+          ))}
+        </div>
+      </section>
+    </GabaritEspace>
   );
 }

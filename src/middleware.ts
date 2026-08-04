@@ -23,8 +23,32 @@ import { doitRafraichir } from '@/lib/auth/echeance';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-/** Chemins servis tels quels : pas de préfixe de langue, pas de session. */
-const HORS_PERIMETRE = ['/api', '/dev', '/_next', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
+/**
+ * Chemins servis tels quels : pas de préfixe de langue, pas de session.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `/fonts` EN FAIT PARTIE, ET SON ABSENCE ÉTAIT INVISIBLE.                │
+ * │                                                                          │
+ * │ Sans lui, chaque `@font-face` demandait `/fonts/nunito…woff2`, recevait  │
+ * │ une redirection 307 vers `/fr/fonts/nunito…woff2`, et tombait sur un     │
+ * │ 404. Les trois familles ne se chargeaient JAMAIS : la page rendait en    │
+ * │ Georgia et system-ui, ce qui ressemble à une page mal dessinée et non à  │
+ * │ une panne — personne ne va chercher un défaut de routage derrière une    │
+ * │ police qui n'est pas la bonne.                                          │
+ * │                                                                          │
+ * │ Tout ce qui vit sous `public/` doit figurer ici. Le motif du `matcher`   │
+ * │ ci-dessous porte la même liste ; les deux se corrigent ensemble.         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const HORS_PERIMETRE = [
+  '/api',
+  '/dev',
+  '/_next',
+  '/fonts',
+  '/favicon.ico',
+  '/robots.txt',
+  '/sitemap.xml',
+];
 
 function horsPerimetre(chemin: string): boolean {
   return HORS_PERIMETRE.some((prefixe) => chemin === prefixe || chemin.startsWith(`${prefixe}/`));
@@ -196,5 +220,5 @@ export const config = {
    * du middleware, la fonction épargne un traitement erroné si le motif change.
    * Deux gardes valent mieux qu'une quand l'une est une expression régulière.
    */
-  matcher: ['/((?!api|dev|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!api|dev|_next/static|_next/image|fonts|favicon.ico).*)'],
 };

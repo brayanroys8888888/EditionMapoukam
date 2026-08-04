@@ -1,0 +1,118 @@
+/**
+ * RÉINITIALISATION DE DOCUMENT — §A.1 des spécifications de maquettage.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE FICHIER EST LA RÉINITIALISATION DES MAQUETTES, PAS UNE DE PLUS.      │
+ * │                                                                          │
+ * │ Les treize maquettes portent toutes le même bloc, recopié en tête de     │
+ * │ chacune. Il tient en trente lignes et il n'est pas décoratif : le fond,  │
+ * │ la couleur de lien, le contour de focus et la famille des titres en      │
+ * │ viennent. Sans lui, chaque écran repart des styles du navigateur — et    │
+ * │ c'est très exactement ce qui donnait des écrans fidèles à 20 %.          │
+ * │                                                                          │
+ * │ Le préflight de Tailwind reste écarté (voir `tailwind.css`) : celui-ci   │
+ * │ le remplace, aux valeurs des maquettes.                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-l);
+  line-height: var(--interligne-corps);
+  /*
+   * `pretty` évite les lignes veuves en fin de paragraphe. Sur des libellés
+   * français, souvent 15 à 20 % plus longs qu'en anglais, c'est ce qui empêche
+   * un mot seul de tomber sur sa propre ligne au milieu d'une carte.
+   */
+  text-wrap: pretty;
+}
+
+img {
+  max-width: 100%;
+}
+
+/*
+ * Les liens portent l'encre, pas une couleur de lien.
+ *
+ * C'est le choix des maquettes : dans une page dont presque tout est cliquable
+ * — une carte de conte l'est en entier — un bleu de lien découperait la page
+ * en confettis. La cible se signale par sa forme et par le survol.
+ */
+a {
+  color: var(--encre);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--lien-survol);
+}
+
+a:focus-visible,
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+  border-radius: 4px;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--police-titre);
+  /* Sans ces réglages, Fraunces perd le caractère qui motive son choix. */
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  line-height: var(--interligne-titre);
+}
+
+h4,
+h5,
+h6 {
+  margin: 0;
+}
+
+p {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+}
+
+/*
+ * Les contrôles n'héritent pas de la police du document — c'est un défaut du
+ * navigateur, pas un choix. Sans cette ligne, chaque bouton et chaque champ
+ * retombe sur la police système, ce qui se lit immédiatement comme un écran
+ * mal fini.
+ */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}

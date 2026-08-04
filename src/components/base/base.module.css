@@ -13,13 +13,15 @@
   gap: var(--espace-2);
   /* WCAG 2.1 AA, et le lecteur doit s'utiliser à une main par un enfant. */
   min-height: var(--cible-min);
-  padding: var(--espace-3) var(--espace-5);
-  border-radius: var(--rayon-bouton);
+  /* Les mesures des maquettes : 14 px sur 24, rayon 11. */
+  padding: 14px 24px;
+  border-radius: 11px;
   font-family: var(--police-interface);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   cursor: pointer;
-  transition: background var(--transition-couleur), color var(--transition-couleur);
+  transition: background var(--transition-couleur), color var(--transition-couleur),
+    transform var(--transition-couleur);
 }
 
 .bouton:focus-visible {
@@ -47,8 +49,15 @@
   color: var(--action-encre);
 }
 
+/*
+ * Le bouton primaire se SOULÈVE au survol, de 2 px et pas plus.
+ *
+ * C'est la seule transformation de l'interface hors des cartes, et elle est
+ * neutralisée sous `prefers-reduced-motion` par la règle globale des jetons.
+ */
 .primaire:hover:not(:disabled) {
   background: var(--action-survol);
+  transform: translateY(-2px);
 }
 
 .secondaire {

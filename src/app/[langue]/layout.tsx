@@ -8,6 +8,7 @@ import { Entete, PiedDePage } from '@/components/enveloppe';
 import { identifierAppelant } from '@/lib/auth/session';
 import type { Utilisateur } from '@/domain/api/contract';
 import { getServerEnv } from '@/lib/config/env';
+import { getClock } from '@/lib/clock';
 
 /**
  * Enveloppe d'une langue.
@@ -104,7 +105,19 @@ export default async function EnveloppeLangue({
     <>
       <Entete langue={courante} utilisateur={utilisateur} chemin={chemin} requete={requete} />
       <main id="contenu">{children}</main>
-      <PiedDePage langue={courante} chemin={chemin} requete={requete} />
+      {/*
+       * L'année du bas de page vient de l'HORLOGE INJECTABLE, jamais d'une
+       * lecture directe de l'heure du navigateur. La console de simulation
+       * avance le temps pour éprouver les fins de période et la fenêtre de
+       * trois mois des nouveautés ; un pied de page qui lirait l'heure du
+       * système afficherait alors une année différente du reste du site.
+       */}
+      <PiedDePage
+        langue={courante}
+        chemin={chemin}
+        requete={requete}
+        annee={getClock().now().getFullYear()}
+      />
     </>
   );
 }

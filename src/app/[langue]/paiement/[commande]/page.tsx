@@ -6,8 +6,7 @@ import { langueValide, traduire } from '@/i18n';
 import { identifierAppelant } from '@/lib/auth/session';
 import { lireCommandeDe } from '@/lib/orders/lecture';
 import { formateur, lireDevise } from '@/lib/money/affichage';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import ecran from '@/components/ecran/ecran.module.css';
 import { reglerCommande } from '../../panier/actions';
 
 /**
@@ -64,75 +63,72 @@ export default async function PagePaiement({ params }: Parametres) {
   const enAttente = commande.statut === 'en_attente';
 
   return (
-    <section className="mx-auto flex max-w-xl flex-col gap-6 px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold">{traduire(langue, 'paiement.titre')}</h1>
+    <div className={ecran.pageEtroite}>
+      <h1 className={ecran.titre}>{traduire(langue, 'paiement.titre')}</h1>
+      <p className={ecran.intro}>{traduire(langue, 'paiement.banniereCorps')}</p>
 
       {/*
         LA MENTION DE SIMULATION, EN TÊTE ET SANS AMBIGUÏTÉ.
 
         Elle n'est pas une note de bas de page : c'est la première chose que
-        lit quelqu'un qui croit être en train de payer.
+        lit quelqu'un qui croit être en train de payer. En crème plutôt qu'en
+        rouge — rien n'a échoué, il s'agit de dire ce qui se passe réellement.
       */}
-      <div className="rounded-md border border-border bg-accent p-4">
-        <p className="font-semibold text-accent-foreground">
-          {traduire(langue, 'paiement.banniereTitre')}
-        </p>
-        <p className="mt-1 text-sm text-accent-foreground">
-          {traduire(langue, 'paiement.banniereCorps')}
-        </p>
-      </div>
+      <section className={`${ecran.panneau} ${ecran.panneauAttention} ${ecran.section}`}>
+        <h2 className={ecran.panneauTitre}>{traduire(langue, 'paiement.banniereTitre')}</h2>
 
-      <dl className="flex flex-col gap-2">
-        <div className="flex justify-between">
-          <dt className="text-muted-foreground">{traduire(langue, 'paiement.commande')}</dt>
-          <dd className="font-mono text-sm">{commande.id}</dd>
-        </div>
-        <div className="flex justify-between text-lg font-bold">
-          <dt>{traduire(langue, 'paiement.montant')}</dt>
-          <dd>{afficher(commande.montant_total)}</dd>
-        </div>
-      </dl>
+        <dl className={ecran.totaux} style={{ width: '100%', margin: 0 }}>
+          <div className={ecran.totalLigne}>
+            <dt>{traduire(langue, 'paiement.commande')}</dt>
+            <dd>{commande.id}</dd>
+          </div>
 
-      <Separator />
+          <div className={ecran.totalFinal}>
+            <dt>{traduire(langue, 'paiement.montant')}</dt>
+            <dd>{afficher(commande.montant_total)}</dd>
+          </div>
+        </dl>
+      </section>
 
       {enAttente ? (
-        <div className="flex flex-col gap-3">
+        <div className={ecran.formulaire}>
           {/*
             Trois issues, parce qu'un prestataire réel en produit trois. Ne
             simuler que le succès laisserait l'échec et l'abandon sans écran —
             c'est-à-dire les deux cas où le client a besoin d'être rassuré.
+
+            Chacune émet un VRAI événement signé vers le VRAI gestionnaire de
+            webhooks : seul l'émetteur est simulé.
           */}
           <form action={reglerCommande.bind(null, langue, commande.id, 'reussi')}>
-            <Button type="submit" className="w-full">
+            <button type="submit" className={ecran.boutonPrimaire}>
               {traduire(langue, 'paiement.reussir')}
-            </Button>
+            </button>
           </form>
 
           <form action={reglerCommande.bind(null, langue, commande.id, 'echoue')}>
-            <Button type="submit" variant="secondary" className="w-full">
+            <button type="submit" className={ecran.boutonSecondaire}>
               {traduire(langue, 'paiement.echouer')}
-            </Button>
+            </button>
           </form>
 
           <form action={reglerCommande.bind(null, langue, commande.id, 'abandonne')}>
-            <Button type="submit" variant="ghost" className="w-full">
+            <button type="submit" className={ecran.boutonDiscret}>
               {traduire(langue, 'paiement.abandonner')}
-            </Button>
+            </button>
           </form>
 
-          <p className="text-sm text-muted-foreground">
-            {traduire(langue, 'paiement.enAttente')}
-          </p>
+          <p className={ecran.aide}>{traduire(langue, 'paiement.enAttente')}</p>
         </div>
       ) : (
-        <div className="flex flex-col items-start gap-4">
+        <section className={ecran.panneau}>
           {/*
             Les quatre statuts de `order_status`, et rien d'inventé :
             `en_attente` est traité plus haut, restent `paye`, `echoue` et
             `rembourse`. Un abandon laisse la commande en échec — le
             prestataire ne distingue pas les deux, et l'interface non plus.
           */}
-          <p className="font-medium">
+          <p className={ecran.panneauTexteFort}>
             {traduire(
               langue,
               commande.statut === 'paye'
@@ -144,18 +140,16 @@ export default async function PagePaiement({ params }: Parametres) {
           </p>
 
           {commande.statut === 'paye' ? (
-            <Button asChild>
-              <a href={`/${langue}/compte/bibliotheque`}>
-                {traduire(langue, 'paiement.versBibliotheque')}
-              </a>
-            </Button>
+            <a className={ecran.boutonPrimaire} href={`/${langue}/compte/bibliotheque`}>
+              {traduire(langue, 'paiement.versBibliotheque')}
+            </a>
           ) : (
-            <Button asChild variant="secondary">
-              <a href={`/${langue}/panier`}>{traduire(langue, 'paiement.versPanier')}</a>
-            </Button>
+            <a className={ecran.boutonSecondaire} href={`/${langue}/panier`}>
+              {traduire(langue, 'paiement.versPanier')}
+            </a>
           )}
-        </div>
+        </section>
       )}
-    </section>
+    </div>
   );
 }

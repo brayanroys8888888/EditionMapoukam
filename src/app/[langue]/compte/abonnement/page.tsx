@@ -6,9 +6,9 @@ import { langueValide, traduire, type CleTraduction } from '@/i18n';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { identifierAppelant } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Motif } from '@/components/motif';
+import { GabaritEspace } from '@/components/espace';
+import ecran from '@/components/ecran/ecran.module.css';
 
 /**
  * Mon abonnement — §4.2 F7.
@@ -58,13 +58,23 @@ export default async function PageAbonnement({ params }: Parametres) {
 
   if (!courant) {
     return (
-      <section className="mx-auto flex max-w-2xl flex-col items-start gap-5 px-4 py-10">
-        <h1 className="font-serif text-3xl font-bold">{traduire(langue, 'abonnement.titre')}</h1>
-        <p className="text-muted-foreground">{traduire(langue, 'abonnement.aucun')}</p>
-        <Button asChild>
-          <a href={`/${langue}/offres`}>{traduire(langue, 'abonnement.aucunAction')}</a>
-        </Button>
-      </section>
+      <GabaritEspace langue={langue} onglet="compte/abonnement" email={appelant.email}>
+        <h1 className={ecran.titre}>{traduire(langue, 'abonnement.titre')}</h1>
+        <p className={ecran.intro}>{traduire(langue, 'abonnement.aucun')}</p>
+
+        <div className={ecran.vide}>
+          <Motif region="vide" place="plein" rayon="14px" className={ecran.videMotif} />
+
+          <div className={ecran.videTexte}>
+            <p className={ecran.videTitre}>{traduire(langue, 'offres.abonnementTitre')}</p>
+            <p className={ecran.videCorps}>{traduire(langue, 'offres.abonnementResume')}</p>
+          </div>
+
+          <a className={ecran.boutonPrimaire} href={`/${langue}/offres`}>
+            {traduire(langue, 'abonnement.aucunAction')}
+          </a>
+        </div>
+      </GabaritEspace>
     );
   }
 
@@ -73,60 +83,58 @@ export default async function PageAbonnement({ params }: Parametres) {
   const finPeriode = courant.finPeriode.toLocaleDateString(langue);
 
   return (
-    <section className="mx-auto flex max-w-2xl flex-col gap-6 px-4 py-10">
-      <h1 className="font-serif text-3xl font-bold">{traduire(langue, 'abonnement.titre')}</h1>
+    <GabaritEspace langue={langue} onglet="compte/abonnement" email={appelant.email}>
+      <h1 className={ecran.titre}>{traduire(langue, 'abonnement.titre')}</h1>
+      <p className={ecran.intro}>
+        {/*
+          `anomalie` est NOMMÉE, jamais présentée comme une « erreur ».
+          L'utilisateur n'y peut rien : c'est presque toujours un webhook perdu,
+          et lui dire qu'il n'aura pas à repayer est ce qui évite qu'il
+          s'abonne une seconde fois.
+        */}
+        {statut === 'anomalie'
+          ? traduire(langue, 'abonnement.anomalieCorps')
+          : traduire(
+              langue,
+              annule ? 'abonnement.finPeriodeApresAnnulation' : 'abonnement.finPeriode',
+            ).replace('{date}', finPeriode)}
+      </p>
 
-      <dl className="flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <dt className="text-muted-foreground">{traduire(langue, 'abonnement.statut')}</dt>
-          <dd>
-            <Badge variant={statut === 'actif' || statut === 'essai' ? 'default' : 'secondary'}>
+      <section className={`${ecran.panneau} ${ecran.section}`}>
+        <dl className={ecran.definitions} style={{ width: '100%' }}>
+          <div className={ecran.definition}>
+            <dt className={ecran.terme}>{traduire(langue, 'abonnement.statut')}</dt>
+            <dd className={ecran.valeur}>
               {traduire(langue, `abonnement.statut_${statut}` as CleTraduction)}
-            </Badge>
-          </dd>
-        </div>
+            </dd>
+          </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <dt className="text-muted-foreground">{traduire(langue, 'abonnement.offre')}</dt>
-          <dd>{traduire(langue, `abonnement.offre_${courant.offre}` as CleTraduction)}</dd>
-        </div>
-      </dl>
-
-      {/*
-        `anomalie` est NOMMÉE, jamais présentée comme une « erreur ».
-        L'utilisateur n'y peut rien : c'est presque toujours un webhook perdu,
-        et lui dire qu'il n'aura pas à repayer est ce qui évite qu'il
-        s'abonne une seconde fois.
-      */}
-      {statut === 'anomalie' ? (
-        <p className="rounded-md border border-border bg-accent p-4 text-sm text-accent-foreground">
-          {traduire(langue, 'abonnement.anomalieCorps')}
-        </p>
-      ) : (
-        <p className="text-sm">
-          {traduire(
-            langue,
-            annule ? 'abonnement.finPeriodeApresAnnulation' : 'abonnement.finPeriode',
-          ).replace('{date}', finPeriode)}
-        </p>
-      )}
-
-      <Separator />
+          <div className={ecran.definition}>
+            <dt className={ecran.terme}>{traduire(langue, 'abonnement.offre')}</dt>
+            <dd className={ecran.valeur}>
+              {traduire(langue, `abonnement.offre_${courant.offre}` as CleTraduction)}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {/*
         LE RAPPEL QUI ÉVITE LA RÉCLAMATION. Il paraît ici, sur l'écran de
         l'abonnement, et non seulement sur la page des offres : c'est au moment
         d'annuler qu'on se demande ce qu'on va perdre.
-      */}
-      <p className="text-sm text-muted-foreground">
-        {traduire(langue, 'abonnement.rappelTelechargement')}
-      </p>
 
-      <div>
-        <Button asChild variant="secondary">
-          <a href={`/${langue}/compte/bibliotheque`}>{traduire(langue, 'compte.bibliotheque')}</a>
-        </Button>
-      </div>
-    </section>
+        En crème, jamais en rouge : ce n'est pas une erreur du lecteur, c'est
+        une règle qu'il vaut mieux avoir lue avant qu'après.
+      */}
+      <section className={`${ecran.panneau} ${ecran.panneauAttention} ${ecran.section}`}>
+        <p className={ecran.panneauTexte}>
+          {traduire(langue, 'abonnement.rappelTelechargement')}
+        </p>
+
+        <a className={ecran.boutonSecondaire} href={`/${langue}/compte/bibliotheque`}>
+          {traduire(langue, 'compte.bibliotheque')}
+        </a>
+      </section>
+    </GabaritEspace>
   );
 }

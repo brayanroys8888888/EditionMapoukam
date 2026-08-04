@@ -2,11 +2,42 @@ import type { ReactNode } from 'react';
 
 import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
 import type { Utilisateur } from '@/domain/api/contract';
+import { IconeCompte, IconeLoupe, IconePanier } from '@/components/icones';
 import styles from './enveloppe.module.css';
 
 /**
- * ENVELOPPE APPLICATIVE — en-tête, pied de page, langue, état de connexion.
+ * ENVELOPPE APPLICATIVE — §A.5, §A.6 et §A.7 des maquettes.
+ *
+ * En-tête collant, pied de page long, mot-symbole, langue, état de connexion.
  */
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOT-SYMBOLE
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Le logo : deux formes, aucune image.
+ *
+ * Un disque jaune, un carré d'encre tourné de 45°. C'est tout. Une image
+ * demanderait une requête de plus au chargement de CHAQUE page, pour dessiner
+ * ce que deux `<span>` dessinent sans un octet de réseau.
+ */
+function Marque({
+  langue,
+  petit = false,
+}: {
+  langue: LangueInterface;
+  petit?: boolean;
+}): ReactNode {
+  return (
+    <a className={petit ? styles.piedMarque : styles.marque} href={`/${langue}`}>
+      <span className={petit ? styles.piedLogo : styles.logo} aria-hidden="true">
+        <span className={petit ? styles.piedLosange : styles.losange} />
+      </span>
+      {traduire(langue, 'marque.nom')}
+    </a>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SÉLECTEUR DE LANGUE
@@ -36,6 +67,10 @@ interface ProprietesSelecteur {
  * │ Seul le PREMIER segment change. Le reste du chemin et la chaîne de       │
  * │ requête sont recopiés tels quels.                                       │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * La maquette emploie deux `<button aria-pressed>`. Ce sont ici des LIENS :
+ * changer de langue est une navigation, elle doit fonctionner sans JavaScript
+ * et s'ouvrir dans un nouvel onglet comme n'importe quel lien.
  */
 export function SelecteurLangue({
   langue,
@@ -51,7 +86,11 @@ export function SelecteurLangue({
   }
 
   return (
-    <div className={styles.langues} role="group" aria-label={traduire(langue, 'langue.selecteur')}>
+    <div
+      className={abrege ? styles.langues : `${styles.langues} ${styles.languesLongues}`}
+      role="group"
+      aria-label={traduire(langue, 'langue.selecteur')}
+    >
       {LANGUES_INTERFACE.map((code) => {
         const courante = code === langue;
         const libelle = traduire(langue, abrege ? `langue.${code}Court` : `langue.${code}`);
@@ -82,7 +121,7 @@ export function SelecteurLangue({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ÉTAT DE CONNEXION
+// ACTIONS D'EN-TÊTE
 // ═══════════════════════════════════════════════════════════════════════════
 
 interface ProprietesMenuCompte {
@@ -103,27 +142,35 @@ interface ProprietesMenuCompte {
  * │ connecté — et c'est très bien : la seule autorité est le profil relu en  │
  * │ base à chaque requête.                                                   │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Le carré à icône est réservé au compte EXISTANT. Un visiteur reçoit un
+ * libellé écrit : « Se connecter » derrière un buste stylisé se devine, et se
+ * devine mal — c'est la première chose qu'un parent cherche.
  */
 export function MenuCompte({ langue, utilisateur }: ProprietesMenuCompte): ReactNode {
   if (!utilisateur) {
     return (
-      <a className={styles.actionEntete} href={`/${langue}/connexion`}>
+      <a className={styles.rechercheAction} href={`/${langue}/connexion`}>
         {traduire(langue, 'navigation.connexion')}
       </a>
     );
   }
 
   return (
-    <div className={styles.compte}>
-      <a className={styles.actionEntete} href={`/${langue}/compte`}>
-        {traduire(langue, 'navigation.compte')}
+    <>
+      <a
+        className={styles.carreAction}
+        href={`/${langue}/compte`}
+        aria-label={traduire(langue, 'navigation.compte')}
+      >
+        <IconeCompte />
       </a>
       {utilisateur.role === 'admin' ? (
-        <a className={styles.actionEntete} href={`/${langue}/admin`}>
+        <a className={styles.rechercheAction} href={`/${langue}/admin`}>
           {traduire(langue, 'navigation.administration')}
         </a>
       ) : null}
-    </div>
+    </>
   );
 }
 
@@ -136,12 +183,7 @@ interface ProprietesEntete extends ProprietesMenuCompte {
   requete?: string;
 }
 
-export function Entete({
-  langue,
-  utilisateur,
-  chemin,
-  requete,
-}: ProprietesEntete): ReactNode {
+export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntete): ReactNode {
   return (
     <header className={styles.entete}>
       {/*
@@ -154,12 +196,7 @@ export function Entete({
       </a>
 
       <div className={styles.enteteInterieur}>
-        <a className={styles.marque} href={`/${langue}`}>
-          <span className={styles.logo} aria-hidden="true">
-            <span className={styles.losange} />
-          </span>
-          {traduire(langue, 'marque.nom')}
-        </a>
+        <Marque langue={langue} />
 
         <nav className={styles.navigation} aria-label={traduire(langue, 'navigation.principal')}>
           <a href={`/${langue}/catalogue`}>{traduire(langue, 'navigation.catalogue')}</a>
@@ -169,9 +206,27 @@ export function Entete({
 
         <div className={styles.actions}>
           <SelecteurLangue langue={langue} chemin={chemin} requete={requete} abrege />
+
+          {/*
+           * La recherche est un LIEN vers le catalogue, non un bouton qui
+           * ouvrirait un panneau : la maquette montre un bouton, mais tout
+           * l'état de recherche de ce produit vit dans l'URL du catalogue.
+           * Un panneau flottant serait un second chemin vers la même chose,
+           * et le seul à ne pas fonctionner sans JavaScript.
+           */}
+          <a className={styles.rechercheAction} href={`/${langue}/catalogue`}>
+            <IconeLoupe />
+            {traduire(langue, 'navigation.recherche')}
+          </a>
+
           <MenuCompte langue={langue} utilisateur={utilisateur} />
-          <a className={styles.actionEntete} href={`/${langue}/panier`}>
-            {traduire(langue, 'navigation.panier')}
+
+          <a
+            className={styles.carreAction}
+            href={`/${langue}/panier`}
+            aria-label={traduire(langue, 'navigation.panier')}
+          >
+            <IconePanier />
           </a>
         </div>
       </div>
@@ -183,40 +238,112 @@ export function Entete({
 // PIED DE PAGE
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * Pied de page long — quatre colonnes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES LIBELLÉS SONT CEUX DE LA MAQUETTE ; LES DESTINATIONS SONT RÉELLES.  │
+ * │                                                                          │
+ * │ La maquette porte sept liens dont trois pointent sur « # » et désignent  │
+ * │ des pages qui n'existent pas : « Offrir un abonnement », « Écoles et     │
+ * │ bibliothèques », « Nos conteurs et illustrateurs ». Les reproduire       │
+ * │ donnerait un pied de page qui promet quatre pages sur dix et en sert     │
+ * │ zéro — c'est-à-dire pire que de ne pas les afficher.                     │
+ * │                                                                          │
+ * │ La structure, elle, est reprise exactement : identité plus trois listes. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+function ColonnePied({ titre, children }: { titre: string; children: ReactNode }): ReactNode {
+  return (
+    <div>
+      <p className={styles.piedTitre}>{titre}</p>
+      <ul className={styles.piedListe}>{children}</ul>
+    </div>
+  );
+}
+
 export function PiedDePage({
   langue,
   chemin,
   requete,
+  annee,
 }: {
   langue: LangueInterface;
   chemin: string;
   requete?: string;
+  /**
+   * L'année du bas de page, POSÉE PAR L'APPELANT.
+   *
+   * Elle vient de l'horloge injectable, jamais d'une lecture directe de
+   * l'heure du navigateur : la console de simulation avance le temps, et un
+   * pied de page qui lirait l'heure du système afficherait une autre année
+   * que le reste du site.
+   */
+  annee: number;
 }): ReactNode {
-  const editorial: { cle: string; chemin: string }[] = [
-    { cle: 'navigation.apropos', chemin: 'a-propos' },
-    { cle: 'pied.faq', chemin: 'questions-frequentes' },
-    { cle: 'pied.cgv', chemin: 'conditions-generales' },
-    { cle: 'pied.confidentialite', chemin: 'confidentialite' },
-    { cle: 'pied.contact', chemin: 'contact' },
-  ];
-
   return (
     <footer className={styles.pied}>
-      <div className={styles.piedInterieur}>
+      <div className={styles.piedColonnes}>
         <div>
-          <p className={styles.piedMarque}>{traduire(langue, 'marque.nom')}</p>
+          <Marque langue={langue} petit />
           <p className={styles.piedBaseline}>{traduire(langue, 'marque.baseline')}</p>
         </div>
 
-        <nav className={styles.piedLiens} aria-label={traduire(langue, 'pied.libelle')}>
-          {editorial.map((entree) => (
-            <a key={entree.chemin} href={`/${langue}/${entree.chemin}`}>
-              {traduire(langue, entree.cle as never)}
+        <ColonnePied titre={traduire(langue, 'pied.colonneCatalogue')}>
+          <li>
+            <a href={`/${langue}/catalogue`}>{traduire(langue, 'pied.tousLesContes')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/catalogue?tri=nouveautes`}>{traduire(langue, 'pied.nouveautes')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/catalogue?acces=gratuit`}>
+              {traduire(langue, 'catalogue.accesGratuit')}
             </a>
-          ))}
-        </nav>
+          </li>
+        </ColonnePied>
 
-        <SelecteurLangue langue={langue} chemin={chemin} requete={requete} />
+        <ColonnePied titre={traduire(langue, 'pied.colonneOffres')}>
+          <li>
+            <a href={`/${langue}/offres`}>{traduire(langue, 'offres.abonnementTitre')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/offres`}>{traduire(langue, 'offres.achatTitre')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/conditions-generales`}>{traduire(langue, 'pied.cgv')}</a>
+          </li>
+        </ColonnePied>
+
+        <ColonnePied titre={traduire(langue, 'pied.colonneEcrire')}>
+          <li>
+            <a href={`/${langue}/a-propos`}>{traduire(langue, 'pied.aproposStudio')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/questions-frequentes`}>
+              {traduire(langue, 'pied.aideEtQuestions')}
+            </a>
+          </li>
+          <li>
+            <a href={`/${langue}/contact`}>{traduire(langue, 'pied.contact')}</a>
+          </li>
+        </ColonnePied>
+      </div>
+
+      <div className={styles.piedBarre}>
+        <div className={styles.piedBarreInterieur}>
+          <nav className={styles.piedBarreLiens} aria-label={traduire(langue, 'pied.libelle')}>
+            <a href={`/${langue}/conditions-generales`}>{traduire(langue, 'pied.cgv')}</a>
+            <a href={`/${langue}/confidentialite`}>{traduire(langue, 'pied.confidentialite')}</a>
+            <span>
+              {traduire(langue, 'pied.droits')
+                .replace('{annee}', String(annee))
+                .replace('{marque}', traduire(langue, 'marque.nom'))}
+            </span>
+          </nav>
+
+          <SelecteurLangue langue={langue} chemin={chemin} requete={requete} />
+        </div>
       </div>
     </footer>
   );

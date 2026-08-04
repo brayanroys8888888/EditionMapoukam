@@ -368,13 +368,17 @@ describe('les trois états du catalogue', () => {
       />,
     );
 
-    expect(screen.getAllByRole('article').length).toBe(3);
+    // `listitem`, et non `article` : depuis la reprise des maquettes, la carte
+    // EST le lien, posé dans le `<li>` de la grille. Ce qu'on compte n'a pas
+    // changé — une unité par titre, annoncée « 1 sur 3 » par un lecteur
+    // d'écran, ce que `article` ne faisait pas.
+    expect(screen.getAllByRole('listitem').length).toBe(3);
   });
 
   it('réduit — un seul résultat reste une grille valide', () => {
     render(<GrilleCatalogue langue="fr" entrees={[entree()]} />);
 
-    expect(screen.getAllByRole('article').length).toBe(1);
+    expect(screen.getAllByRole('listitem').length).toBe(1);
   });
 
   it('vide — l’écran propose une ISSUE, jamais un cul-de-sac', () => {
@@ -578,12 +582,24 @@ describe('tri et recherche', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('accessibilité de la carte', () => {
-  it('le lien couvre le titre, et mène à la fiche préfixée par la langue', () => {
+  it('le lien couvre TOUTE la carte, et mène à la fiche préfixée par la langue', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Une version antérieure ne rendait cliquables que la couverture et   │
+    // │ le titre. C'était payer trop cher : sur un téléphone, la moitié     │
+    // │ basse de la carte — celle qui porte le prix, donc celle qu'on       │
+    // │ regarde — ne répondait pas au doigt.                                │
+    // │                                                                    │
+    // │ Le titre est en `h3` : la carte vit sous le `h2` d'une section, et  │
+    // │ un `h2` ici sauterait un niveau de la hiérarchie.                   │
+    // └────────────────────────────────────────────────────────────────────┘
     render(<CarteLivre langue="en" entree={entree()} />);
 
     const lien = screen.getByRole('link');
     expect(lien.getAttribute('href')).toBe('/en/contes/anansi-l-araignee');
-    expect(within(lien).getByRole('heading', { level: 2 }).textContent).toBe('Anansi l’araignée');
+    expect(within(lien).getByRole('heading', { level: 3 }).textContent).toBe('Anansi l’araignée');
+
+    // Le prix est DANS le lien : c'est ce qui rend la carte entière cliquable.
+    expect(within(lien).getByText('4,99 €')).toBeDefined();
   });
 
   it('la couverture est décorative — le titre porte le nom', () => {

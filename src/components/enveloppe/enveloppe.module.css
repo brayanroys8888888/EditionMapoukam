@@ -1,4 +1,11 @@
-/** Styles de l'enveloppe. Aucune valeur littérale : tout vient des jetons. */
+/**
+ * Styles de l'enveloppe — §A.5, §A.6 et §A.7 des maquettes.
+ *
+ * Aucune valeur littérale de COULEUR : tout vient des jetons. Les mesures, en
+ * revanche, sont celles relevées dans les maquettes — 30 px pour le disque du
+ * logo, 36 px pour les carrés d'action, 10 px de gouttière de mot-symbole — et
+ * elles n'ont pas de jeton parce qu'elles n'appartiennent qu'à l'en-tête.
+ */
 
 /* ── Lien d'évitement ───────────────────────────────────────────────────── */
 
@@ -16,7 +23,6 @@
   padding: var(--espace-3) var(--espace-4);
   background: var(--action);
   color: var(--action-encre);
-  font-family: var(--police-interface);
   font-weight: var(--graisse-forte);
   border-radius: var(--rayon-controle);
 }
@@ -39,29 +45,37 @@
 .enteteInterieur {
   max-width: var(--largeur-page);
   margin: 0 auto;
-  padding: var(--espace-2) var(--espace-4);
+  padding: 10px 20px;
   display: flex;
   align-items: center;
-  gap: var(--espace-4);
+  gap: 20px;
   flex-wrap: wrap;
 }
 
+/* ── Mot-symbole ────────────────────────────────────────────────────────── */
+
 .marque {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: var(--espace-2);
+  gap: 10px;
   font-family: var(--police-titre);
   font-variation-settings: var(--titre-variations);
   font-size: var(--taille-2xl);
   font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
   color: var(--encre);
-  text-decoration: none;
+}
+
+.marque:hover {
+  color: var(--encre);
 }
 
 .logo {
   width: 30px;
   height: 30px;
-  border-radius: var(--rayon-pastille);
+  flex: 0 0 auto;
+  border-radius: 50%;
   background: var(--action);
   display: grid;
   place-items: center;
@@ -75,61 +89,103 @@
   display: block;
 }
 
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+
+/*
+ * `margin: 0 auto` — c'est CE réglage qui centre la navigation, et non un
+ * `justify-content` sur le conteneur : le logo et les actions gardent leur
+ * largeur propre, et la navigation prend l'espace restant des deux côtés.
+ */
 .navigation {
   display: flex;
-  gap: var(--espace-1);
+  gap: 6px;
   align-items: center;
-  margin-right: auto;
+  margin: 0 auto;
+  flex-wrap: wrap;
 }
 
 .navigation a {
-  min-height: var(--cible-min);
   display: inline-flex;
   align-items: center;
-  padding: var(--espace-2) var(--espace-3);
+  min-height: var(--cible-min);
+  padding: 8px 12px;
   border-radius: var(--rayon-controle);
-  font-family: var(--police-interface);
   font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
   color: var(--encre);
-  text-decoration: none;
   transition: background var(--transition-couleur);
 }
 
 .navigation a:hover {
   background: var(--fond-doux);
+  color: var(--encre);
 }
 
+/* ── Actions d'en-tête ──────────────────────────────────────────────────── */
+
 .actions {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--espace-2);
   flex-wrap: wrap;
 }
 
-.compte {
-  display: flex;
-  align-items: center;
-  gap: var(--espace-2);
-}
-
-.actionEntete {
-  min-height: var(--cible-min);
-  display: inline-flex;
-  align-items: center;
-  padding: var(--espace-2) var(--espace-3);
+/*
+ * Carrés de 36 px pour les icônes seules.
+ *
+ * `min-height: 44px` n'est PAS posé ici, contrairement aux autres contrôles :
+ * la maquette veut un carré, et l'étirer en 36×44 le déformerait. La cible
+ * tactile est rétablie sous le point de rupture tactile, plus bas.
+ */
+.carreAction {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
   border: 1px solid var(--bordure-forte);
   border-radius: var(--rayon-controle);
-  font-family: var(--police-interface);
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-demi);
-  color: var(--encre);
-  text-decoration: none;
-  transition: border-color var(--transition-couleur);
+  color: var(--encre-douce);
+  background: var(--fond);
+  transition: border-color var(--transition-couleur), color var(--transition-couleur);
 }
 
-.actionEntete:hover {
+.carreAction:hover {
   border-color: var(--encre);
+  color: var(--encre);
+}
+
+.rechercheAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-2);
+  padding: 7px 10px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+  transition: border-color var(--transition-couleur), color var(--transition-couleur);
+}
+
+.rechercheAction:hover {
+  border-color: var(--encre);
+  color: var(--encre);
+}
+
+/*
+ * Sur un appareil tactile, les 36 px deviennent 44.
+ *
+ * `pointer: coarse` désigne le doigt, pas la petite fenêtre : un écran étroit
+ * piloté à la souris n'a pas besoin de cibles agrandies, et un grand écran
+ * tactile, si.
+ */
+@media (pointer: coarse) {
+  .carreAction,
+  .rechercheAction {
+    min-width: var(--cible-min);
+    min-height: var(--cible-min);
+  }
 }
 
 /* ── Sélecteur de langue ────────────────────────────────────────────────── */
@@ -142,20 +198,19 @@
 }
 
 .langue {
-  min-height: var(--cible-min);
   display: inline-flex;
   align-items: center;
-  padding: var(--espace-2) var(--espace-3);
-  font-family: var(--police-interface);
+  padding: 6px 10px;
   font-size: var(--taille-s);
   font-weight: var(--graisse-forte);
   color: var(--encre-douce);
-  text-decoration: none;
+  background: transparent;
   transition: background var(--transition-couleur);
 }
 
 .langue:hover {
   background: var(--fond-doux);
+  color: var(--encre-douce);
 }
 
 /*
@@ -167,10 +222,26 @@
   color: var(--fond);
 }
 
+.langueActive:hover {
+  background: var(--encre);
+  color: var(--fond);
+}
+
 .langue:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
   /* Décalage négatif : le contour reste visible dans un conteneur qui rogne. */
   outline-offset: -3px;
+}
+
+/* Version longue, en pied de page — « Français » / « English ». */
+.languesLongues .langue {
+  padding: 6px 12px;
+  font-size: var(--taille-m);
+}
+
+@media (pointer: coarse) {
+  .langue {
+    min-height: var(--cible-min);
+  }
 }
 
 /* ── Pied de page ───────────────────────────────────────────────────────── */
@@ -181,58 +252,125 @@
   margin-top: var(--espace-7);
 }
 
-.piedInterieur {
+/*
+ * Quatre colonnes qui se replient d'elles-mêmes.
+ *
+ * `auto-fit` avec un minimum de 190 px : quatre colonnes au-delà de 900 px,
+ * deux vers 500, une sur un téléphone étroit — sans aucune media query, comme
+ * tout le reste des maquettes.
+ */
+.piedColonnes {
   max-width: var(--largeur-page);
   margin: 0 auto;
-  padding: var(--espace-6) var(--espace-4);
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espace-6);
-  align-items: flex-start;
-  justify-content: space-between;
-  font-family: var(--police-interface);
+  padding: 38px 20px 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 28px;
 }
 
 .piedMarque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   font-family: var(--police-titre);
   font-variation-settings: var(--titre-variations);
   font-size: var(--taille-xl);
   font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
   color: var(--encre);
-  margin: 0 0 var(--espace-1);
+  margin-bottom: var(--espace-3);
+}
+
+.piedLogo {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--action);
+  display: grid;
+  place-items: center;
+}
+
+.piedLosange {
+  width: 9px;
+  height: 9px;
+  background: var(--encre);
+  transform: rotate(45deg);
+  display: block;
 }
 
 .piedBaseline {
-  font-size: var(--taille-m);
-  line-height: var(--interligne-corps);
+  font-size: var(--taille-base);
+  line-height: 1.55;
   color: var(--encre-douce);
   max-width: 34ch;
-  margin: 0;
 }
 
-.piedLiens {
-  display: flex;
-  flex-direction: column;
+.piedTitre {
+  font-family: var(--police-interface);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--encre-douce);
+  margin-bottom: 11px;
+}
+
+.piedListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
   gap: var(--espace-2);
 }
 
-.piedLiens a {
-  min-height: var(--cible-min);
-  display: inline-flex;
-  align-items: center;
+.piedListe a {
   font-size: var(--taille-base);
   color: var(--encre);
-  text-decoration: none;
 }
 
-.piedLiens a:hover {
+.piedListe a:hover {
   color: var(--lien-survol);
 }
 
-.piedLiens a:focus-visible,
-.actionEntete:focus-visible,
-.navigation a:focus-visible,
-.marque:focus-visible {
-  outline: var(--focus-epaisseur) solid var(--focus-couleur);
-  outline-offset: var(--focus-decalage);
+.piedBarre {
+  border-top: 1px solid var(--bordure);
+}
+
+.piedBarreInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-4);
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.piedBarreLiens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-4);
+}
+
+.piedBarre a {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.piedBarre a:hover {
+  color: var(--lien-survol);
+}
+
+@media (pointer: coarse) {
+  .piedListe a,
+  .piedBarre a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--cible-min);
+  }
 }
