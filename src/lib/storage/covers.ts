@@ -4,6 +4,7 @@ import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { createServiceClient } from '@/lib/supabase/clients';
 import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
+import taillesCouverture from './tailles-couverture.json';
 
 /**
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -40,14 +41,24 @@ export const BUCKET_PUBLIC = 'covers';
  * Bornées volontairement : au-delà, on servirait une image exploitable pour
  * autre chose que l'affichage.
  */
-export const TAILLES_COUVERTURE = {
-  /** Grille du catalogue. */
-  vignette: 320,
-  /** Fiche d'un titre. */
-  fiche: 800,
-  /** Bandeau de mise en avant sur la page d'accueil. */
-  'mise-en-avant': 1600,
-} as const;
+/**
+ * Trois tailles, en pixels de largeur :
+ *
+ *   `vignette`      — grille du catalogue, 320 px ;
+ *   `fiche`         — page d'un titre, 800 px ;
+ *   `mise-en-avant` — bandeau d'accueil, 1600 px.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES VALEURS VIVENT EN JSON, ET C'EST DÉLIBÉRÉ.                          │
+ * │                                                                          │
+ * │ Elles sont lues par ce module ET par `scripts/produire-couvertures.mjs`, │
+ * │ qui ne peut pas importer de TypeScript. Les recopier dans le script      │
+ * │ aurait fait deux sources de vérité sur des dimensions d'image — et la    │
+ * │ divergence ne se serait vue que sur des couvertures floues ou inutilement│
+ * │ lourdes, c'est-à-dire trop tard.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const TAILLES_COUVERTURE = taillesCouverture;
 
 export type TailleCouverture = keyof typeof TAILLES_COUVERTURE;
 
