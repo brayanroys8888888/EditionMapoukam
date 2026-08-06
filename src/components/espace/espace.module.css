@@ -20,6 +20,9 @@
   flex: 1 1 210px;
   max-width: 240px;
   min-width: 210px;
+  position: sticky;
+  top: 90px;
+  align-self: start;
 }
 
 .contenu {
@@ -50,18 +53,19 @@
   min-height: var(--cible-min);
   text-align: left;
   padding: 12px 14px;
-  border: 1.5px solid var(--bordure-forte);
+  border: 1.5px solid var(--v2-vert, #1a5c2a);
   border-radius: var(--rayon-bouton);
   background: var(--fond);
-  color: var(--encre);
+  color: var(--v2-vert, #1a5c2a);
   font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
-  transition: border-color var(--transition-couleur);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
 }
 
 .onglet:hover {
-  border-color: var(--encre);
-  color: var(--encre);
+  background: var(--v2-vert, #1a5c2a);
+  color: var(--fond);
+  border-color: var(--v2-vert, #1a5c2a);
 }
 
 /*
@@ -69,8 +73,8 @@
  * REDIT visuellement ; elle ne le remplace pas.
  */
 .ongletActif {
-  border-color: var(--encre);
-  background: var(--encre);
+  border-color: var(--v2-vert, #1a5c2a);
+  background: var(--v2-vert, #1a5c2a);
   color: var(--fond);
   font-weight: var(--graisse-forte);
 }
@@ -103,6 +107,9 @@
     flex: 1 1 100%;
     max-width: none;
     min-width: 0;
+    /* Sur mobile la colonne est en pleine largeur et en flux normal */
+    position: relative;
+    top: auto;
   }
 
   .onglet {

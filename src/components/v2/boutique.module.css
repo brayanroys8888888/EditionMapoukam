@@ -628,16 +628,33 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: clamp(32px, 5vw, 60px);
   align-items: start;
+  /* Le parent DOIT avoir align-items: start pour que le sticky
+   * de ficheVisuel fonctionne. Avec stretch (défaut), l'enfant
+   * grandit à la hauteur de la grille et le sticky n'a plus d'effet. */
 }
 
 .ficheVisuel {
   position: sticky;
   top: 90px;
+  /* `align-self: start` ici aussi : sur certains navigateurs, la valeur
+   * héritée de la grille l'emporte sur align-items du parent. */
+  align-self: start;
   display: grid;
   place-items: center;
   padding: clamp(20px, 3vw, 40px);
   border-radius: var(--rayon-panneau);
   background: var(--v2-fond-doux);
+  z-index: 1;
+}
+
+/* Sur mobile, la fiche s'empile verticalement :
+ * la couverture vient en premier, puis les infos en dessous.
+ * Le sticky n'a pas de sens et doit être désactivé. */
+@media (max-width: 680px) {
+  .ficheVisuel {
+    position: relative;
+    top: auto;
+  }
 }
 
 .ficheCouverture {

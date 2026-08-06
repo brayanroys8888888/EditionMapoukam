@@ -10,9 +10,11 @@ import { Erreur } from '@/components/etats';
 import { Motif } from '@/components/motif';
 import { teintesRegion } from '@/components/catalogue';
 import { GabaritEspace } from '@/components/espace';
+import { BoutonTelechargement } from '@/components/espace/BoutonTelechargement';
 import espace from '@/components/espace/espace.module.css';
 import ecran from '@/components/ecran/ecran.module.css';
 import { telechargerConte } from '../actions';
+
 
 /**
  * Ma bibliothèque — §4.2 F7.
@@ -358,9 +360,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                         </select>
                       </span>
 
-                      <button type="submit" className={espace.achatTelecharger}>
-                        {traduire(langue, 'compte.telecharger')}
-                      </button>
+                      <BoutonTelechargement libelle={traduire(langue, 'compte.telecharger')} />
                     </form>
                   ) : null}
                 </div>
