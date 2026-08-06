@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 
 import { langueValide } from '@/i18n';
 import { getServerEnv } from '@/lib/config/env';
+import { POST as ingererRoute } from '@/app/api/admin/books/ingest/route';
 
 /**
  * ACTIONS D'ÉDITION DU CATALOGUE — les seules de l'administration qui MUTENT.
@@ -136,13 +137,25 @@ export async function deposerConte(langueBrute: string, donnees: FormData): Prom
   const langue = langueValide(langueBrute);
   const base = `/${langue}/admin/contes`;
 
-  const reponse = await fetch(`${getServerEnv().NEXT_PUBLIC_APP_URL}/api/admin/books/ingest`, {
+  const file = donnees.get('fichier');
+  if (!(file instanceof File)) {
+    redirect(`${base}/nouveau?erreur=validation`);
+  }
+
+  const propreData = new FormData();
+  propreData.append('fichier', new Blob([await file.arrayBuffer()]), file.name);
+  for (const champ of ['langue', 'titre', 'auteur', 'livre_id']) {
+    const val = donnees.get(champ);
+    if (typeof val === 'string') propreData.append(champ, val);
+  }
+
+  const req = new Request(`${getServerEnv().NEXT_PUBLIC_APP_URL}/api/admin/books/ingest`, {
     method: 'POST',
     headers: { cookie: await enteteCookie() },
-    body: donnees,
-    cache: 'no-store',
+    body: propreData,
   });
 
+  const reponse = await ingererRoute(req);
   const corps = (await reponse.json().catch(() => null)) as Record<string, unknown> | null;
 
   if (reponse.status !== 201) {
@@ -345,17 +358,26 @@ export async function ajouterVersionConte(
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/contes/${livreId}`;
 
-  // Posé ici et non dans un champ caché de l'écran : le rattachement ne se
-  // discute pas, et un champ caché est un champ qu'un client peut changer.
-  donnees.set('livre_id', livreId);
+  const file = donnees.get('fichier');
+  if (!(file instanceof File)) {
+    redirect(`${ecran}?erreur=validation`);
+  }
 
-  const reponse = await fetch(`${getServerEnv().NEXT_PUBLIC_APP_URL}/api/admin/books/ingest`, {
+  const propreData = new FormData();
+  propreData.append('fichier', new Blob([await file.arrayBuffer()]), file.name);
+  propreData.append('livre_id', livreId);
+  for (const champ of ['langue', 'titre', 'auteur']) {
+    const val = donnees.get(champ);
+    if (typeof val === 'string') propreData.append(champ, val);
+  }
+
+  const req = new Request(`${getServerEnv().NEXT_PUBLIC_APP_URL}/api/admin/books/ingest`, {
     method: 'POST',
     headers: { cookie: await enteteCookie() },
-    body: donnees,
-    cache: 'no-store',
+    body: propreData,
   });
 
+  const reponse = await ingererRoute(req);
   const corps = (await reponse.json().catch(() => null)) as Record<string, unknown> | null;
 
   if (reponse.status !== 201) redirect(`${ecran}?erreur=${codeErreur(corps)}`);
