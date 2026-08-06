@@ -75,6 +75,7 @@ export function Couverture({
       width={largeur}
       height={hauteur}
       loading={eager ? 'eager' : 'lazy'}
+      fetchPriority={eager ? 'high' : undefined}
       decoding="async"
       alt={alt}
       className={classeImage ?? styles.couverture}

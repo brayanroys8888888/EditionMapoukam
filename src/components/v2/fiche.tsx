@@ -116,6 +116,7 @@ export function FicheV2({
                 hauteur={1200}
                 tailles="(max-width: 820px) 88vw, 360px"
                 region={fiche.region}
+                eager={true}
                 // Le titre est en `h1` juste à côté : le répéter ferait
                 // entendre deux fois la même phrase.
                 alt=""
