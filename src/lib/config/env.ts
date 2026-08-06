@@ -48,11 +48,34 @@ const serverSchema = z.object({
   // ---- Adaptateurs locaux ----
   PAYMENT_PROVIDER: z.enum(['fake', 'stripe']).default('fake'),
   MAILER: z.enum(['file', 'resend']).default('file'),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM_EMAIL: z.string().optional(),
   MAIL_OUTPUT_DIR: z.string().min(1).default('.mails'),
   FAKE_WEBHOOK_SECRET: z.string().min(8),
 
   // ---- Application ----
   NEXT_PUBLIC_APP_URL: z.url(),
+
+  /**
+   * Direction visuelle servie par l'application.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ UN RÉGLAGE, PAS UNE SECONDE APPLICATION.                              │
+   * │                                                                        │
+   * │ La V2 ne duplique aucune route : elle pose `data-design="v2"` sur      │
+   * │ l'élément racine, et les jetons se réaffectent. Les URL, le backend,   │
+   * │ les droits et les 1254 tests sont partagés — ce qui change est la      │
+   * │ palette, la typographie et la mise en page de quelques écrans.         │
+   * │                                                                        │
+   * │ Conséquence utile : revenir en arrière ne demande pas un déploiement   │
+   * │ de code, seulement de reposer la variable. Une refonte qu'on ne peut   │
+   * │ pas annuler est une refonte qu'on n'ose pas montrer.                   │
+   * │                                                                        │
+   * │ La valeur par défaut reste `v1` : tant que la V2 n'est pas validée,    │
+   * │ un environnement qui ne dit rien sert ce qui est validé.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  NEXT_PUBLIC_DESIGN_VERSION: z.enum(['v1', 'v2']).default('v2'),
 
   /**
    * Durée des URL signées d'un contenu payant. CLAUDE.md règle 3 : 300

@@ -860,7 +860,30 @@ describe('routes', () => {
       ),
     );
 
-    expect(new Date(corps.acces_maintenu_jusqu_au).getTime()).toBeGreaterThan(Date.now());
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ COMPARÉ À `DEPART`, ET NON À L'HEURE RÉELLE.                       │
+    // │                                                                    │
+    // │ Ce test a échoué le 5 août 2026 à midi UTC, sans qu'une ligne de   │
+    // │ code ait bougé. L'abonnement de la fixture est créé sous           │
+    // │ `FixedClock(DEPART)` — le 29 juillet — avec sept jours d'essai ;   │
+    // │ sa période s'achevait donc le 5 août à midi. L'assertion, elle,    │
+    // │ lisait l'horloge RÉELLE, si bien qu'elle passait tant que le monde │
+    // │ n'avait pas rattrapé la fixture, et jamais après.                  │
+    // │                                                                    │
+    // │ C'est exactement ce que CLAUDE.md interdit dans la logique métier  │
+    // │ — « le temps ne se lit jamais avec l'heure du système » — et la    │
+    // │ raison vaut pour les tests : une suite qui dépend de la date du    │
+    // │ jour cesse d'être reproductible, et son échec ne dit rien du code. │
+    // │                                                                    │
+    // │ Ce qu'il fallait vérifier : l'accès est maintenu APRÈS le moment   │
+    // │ de l'annulation, et jusqu'au terme de l'essai. Les deux bornes     │
+    // │ viennent de la fixture, donc l'assertion tient quel que soit le    │
+    // │ jour où on la joue.                                                │
+    // └────────────────────────────────────────────────────────────────────┘
+    const maintenu = new Date(corps.acces_maintenu_jusqu_au).getTime();
+
+    expect(maintenu).toBeGreaterThan(DEPART.getTime());
+    expect(maintenu).toBe(jours(7).getTime());
   });
 
   it('refusent d’annuler sans abonnement', async () => {

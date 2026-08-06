@@ -421,6 +421,42 @@ describe('fiche détaillée', () => {
     expect(detail.suggestions.map((s) => s.slug)).not.toContain('le-lion-et-la-souris');
   });
 
+  it('les couvertures des suggestions sont des URL ABSOLUES, jamais des chemins', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE DÉFAUT QUE CE TEST FIGE, ET POURQUOI IL AVAIT SURVÉCU.          │
+    // │                                                                    │
+    // │ `suggestions()` rendait le CHEMIN de stockage brut —                │
+    // │ `covers/<jeton>/fiche.webp` — et la fiche le posait tel quel dans   │
+    // │ un `src`. Un navigateur le résout RELATIVEMENT à la page, donc      │
+    // │ `/fr/contes/covers/<jeton>/fiche.webp`, donc 404.                  │
+    // │                                                                    │
+    // │ Rien ne le signalait : la mise en page tenait, et une section de    │
+    // │ suggestions sans images ressemble à un choix éditorial plutôt qu'à  │
+    // │ une panne. C'est la pire forme de défaut — celle qu'on ne va pas    │
+    // │ chercher parce que l'écran a l'air normal.                          │
+    // │                                                                    │
+    // │ Les suggestions étaient la SEULE lecture du catalogue à ne pas      │
+    // │ passer par `urlsCouverture`. Ce test interdit d'y revenir.          │
+    // └────────────────────────────────────────────────────────────────────┘
+    const detail = await corpsJson<FicheLivre>(
+      await fiche(get('/api/catalog/le-lion-et-la-souris'), contexteSlug('le-lion-et-la-souris')),
+    );
+
+    const avecCouverture = detail.suggestions.filter((s) => s.couverture !== null);
+    expect(
+      avecCouverture.length,
+      'aucune suggestion ne porte de couverture : le test ne vérifierait rien',
+    ).toBeGreaterThan(0);
+
+    for (const suggestion of avecCouverture) {
+      for (const url of Object.values(suggestion.couverture ?? {})) {
+        expect(url, `${suggestion.slug} : « ${url} » n’est pas une URL absolue`).toMatch(
+          /^https?:\/\//,
+        );
+      }
+    }
+  });
+
   it('liste les deux langues d’un titre bilingue', async () => {
     const detail = await corpsJson<FicheLivre>(
       await fiche(get('/api/catalog/kouassi-et-le-tam-tam'), contexteSlug('kouassi-et-le-tam-tam')),

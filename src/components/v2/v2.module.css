@@ -1,0 +1,529 @@
+/*
+ * DIRECTION V2 — mise en page, mouvement, mise en valeur des couvertures.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE REPROCHE CENTRAL : « LES COUVERTURES SONT MAL MISES EN VALEUR ».     │
+ * │                                                                          │
+ * │ Sur le site actuel, chaque couverture est posée à plat, sans relief,     │
+ * │ dans une grille régulière — et le regard glisse dessus. Ce sont pourtant │
+ * │ les seules images du produit, et l'argument de vente entier.             │
+ * │                                                                          │
+ * │ Trois moyens, tous ici : une ombre portée qui décolle la couverture du   │
+ * │ fond, un survol qui la soulève et l'agrandit légèrement, et un fond de   │
+ * │ carte neutre qui ne se bat plus avec l'illustration — c'est la raison    │
+ * │ pour laquelle les cinq couleurs de tradition sortent de l'affichage.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Apparition au défilement ───────────────────────────────────────────── */
+
+.revele {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/*
+ * L'état MASQUÉ n'est appliqué que lorsque le composant a pu installer son
+ * observateur. Sans JavaScript, cette classe n'apparaît jamais et le contenu
+ * reste visible — c'est la garde qui empêche une vitrine invisible.
+ */
+.releveEnAttente {
+  opacity: 0;
+  transform: translateY(18px);
+  /* Cascade : quatre rangs de 70 ms, puis on recommence. Au-delà, l'attente
+     du dernier élément devient perceptible comme une lenteur. */
+  transition-delay: calc(var(--rang, 0) * 70ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revele,
+  .releveEnAttente {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ── Carte de conte ─────────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE N'EST PLUS UN `<a>`, ET IL LE FALLAIT.                        │
+ * │                                                                          │
+ * │ Elle porte désormais un bouton « ajouter au panier », donc un `<form>`.  │
+ * │ Or un formulaire dans un lien est du HTML invalide : les navigateurs le  │
+ * │ réparent en le SORTANT du lien, et le bouton se retrouve ailleurs dans   │
+ * │ l'arbre — parfois hors de la carte.                                     │
+ * │                                                                          │
+ * │ La carte est donc un conteneur `position: relative`. Le lien du titre    │
+ * │ s'ÉTIRE dessus par un pseudo-élément, ce qui garde toute la surface      │
+ * │ cliquable, et le bouton repasse au-dessus par `z-index`. Un seul lien,   │
+ * │ un seul libellé annoncé, et un vrai bouton.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.carte {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  padding: 14px 14px 18px;
+  color: var(--encre);
+  box-shadow: var(--ombre-carte);
+  transition: transform var(--transition-forme), box-shadow var(--transition-forme),
+    border-color var(--transition-forme);
+}
+
+.carte:hover {
+  transform: translateY(-6px);
+  border-color: var(--v2-vert);
+  box-shadow: var(--ombre-carte-survol);
+  color: var(--encre);
+}
+
+/*
+ * Le contour de focus se porte sur la CARTE quand le lien étiré la reçoit :
+ * un contour dessiné autour d'un pseudo-élément invisible ne se verrait pas.
+ */
+.carte:focus-within {
+  border-color: var(--v2-vert);
+}
+
+.carte:has(.lienEtire:focus-visible) {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/* Le lien qui couvre toute la carte. Il ne porte que le titre en libellé. */
+.lienEtire {
+  color: inherit;
+}
+
+.lienEtire::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--rayon-carte);
+}
+
+.lienEtire:hover {
+  color: inherit;
+}
+
+/*
+ * La couverture est ROGNÉE par son cadre, et c'est elle qui grandit au survol
+ * — pas la carte. L'effet se lit comme « on se rapproche du livre » plutôt que
+ * comme « la carte gonfle ».
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 3 / 4 PLUTÔT QUE 2 / 3 — LA CARTE RACCOURCIT D'UN SIXIÈME.              │
+ * │                                                                          │
+ * │ Le rapport 2/3 est celui du livre imprimé, et il donnait des cartes si    │
+ * │ hautes qu'une grille de six demandait deux écrans. 3/4 reste un portrait, │
+ * │ garde la couverture reconnaissable, et rend une ligne entière.            │
+ * │                                                                          │
+ * │ Le cadre porte le rapport, pas l'image : le SUBSTITUT de couverture       │
+ * │ vient d'un autre module CSS, dont les classes sont hachées et donc        │
+ * │ inatteignables d'ici. En le posant sur le cadre et en faisant remplir     │
+ * │ ses enfants, les deux suivent — celui d'aujourd'hui et celui qu'on        │
+ * │ ajoutera.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.cadreCouverture {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--rayon-image);
+  background: var(--fond-doux);
+  margin-bottom: 16px;
+}
+
+/* Tout ce qui n'est pas le voile remplit le cadre — image comme substitut. */
+.cadreCouverture > *:not(.voile) {
+  width: 100%;
+  height: 100%;
+}
+
+.couverture {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.45s ease;
+}
+
+.carte:hover .couverture {
+  transform: scale(1.05);
+}
+
+/*
+ * Le voile de survol : un dégradé vert depuis le bas, qui porte l'invitation
+ * à lire l'extrait. Il n'apparaît QU'AU SURVOL ET AU FOCUS — la seconde
+ * condition est ce qui le rend atteignable au clavier.
+ */
+.voile {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 40px 12px 12px;
+  display: flex;
+  justify-content: center;
+  background: linear-gradient(to top, rgb(31 77 46 / 92%), rgb(31 77 46 / 0%));
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ `z-index` SUR LE VOILE, ET PAS SEULEMENT SUR LE BOUTON QU'IL PORTE.   │
+   * │                                                                        │
+   * │ `opacity` inférieure à 1 crée un CONTEXTE D'EMPILEMENT. Le `z-index`   │
+   * │ du formulaire est donc résolu À L'INTÉRIEUR du voile, où il n'a aucun  │
+   * │ rival — et le voile, lui, restait au niveau zéro, donc sous le pseudo- │
+   * │ élément du lien étiré, qui vient plus loin dans le document.           │
+   * │                                                                        │
+   * │ Résultat : le bouton se voyait mais ne se cliquait pas — chaque clic   │
+   * │ ouvrait la fiche. C'est très exactement le défaut que le test          │
+   * │ `le lien étiré recouvre le bouton d'ajout` surveille, et il l'a vu.    │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  z-index: 2;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity var(--transition-forme), transform var(--transition-forme);
+}
+
+/*
+ * `:focus-within` — ET C'EST CE QUI REND LE BOUTON ATTEIGNABLE AU CLAVIER.
+ *
+ * Le voile porte désormais l'action, pas seulement une phrase décorative.
+ * `:focus-visible` ne s'applique qu'à la CARTE elle-même : le bouton qui
+ * reçoit le focus à l'intérieur ne l'aurait jamais déclenché, et l'on
+ * tabulerait vers un bouton invisible qu'on ne peut pas viser.
+ */
+.carte:hover .voile,
+.carte:focus-within .voile {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AU DOIGT, IL N'Y A PAS DE SURVOL — DONC LE VOILE RESTE OUVERT.          │
+ * │                                                                          │
+ * │ Sur un téléphone, une action révélée au survol n'est jamais révélée :    │
+ * │ elle est simplement absente. Et c'est l'appareil d'une grande part du    │
+ * │ public visé (§5.1) — celui-là même qui doit pouvoir acheter.             │
+ * │                                                                          │
+ * │ Le partage se fait sur `hover: none`, c'est-à-dire sur la CAPACITÉ de    │
+ * │ l'appareil, jamais sur une largeur d'écran : un portable à écran étroit  │
+ * │ a une souris, une tablette large n'en a pas.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (hover: none) {
+  .voile {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.voileTexte {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-fond);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carte:hover {
+    transform: none;
+  }
+
+  .carte:hover .couverture {
+    transform: none;
+  }
+}
+
+/* La pastille d'origine — en vert, une seule teinte pour tout le site. */
+.origine {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v2-vert);
+}
+
+.puce {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--action);
+  display: block;
+}
+
+.carteTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.22;
+  margin-bottom: 6px;
+}
+
+.carteMeta {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  margin-bottom: 12px;
+}
+
+/*
+ * `margin-top: auto` — le prix s'aligne en bas quelle que soit la longueur du
+ * titre. Sans lui, une grille de titres inégaux affiche des prix en escalier,
+ * et c'est immédiatement lu comme un défaut de fabrication.
+ */
+.cartePied {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--espace-2);
+}
+
+/* Le prix en Fraunces : c'est un chiffre qu'on veut voir, pas une légende. */
+.prix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-ocre-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.prixSuite {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.accesPossede {
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-vert);
+}
+
+/* ── Ajouter au panier ──────────────────────────────────────────────────── */
+
+/*
+ * Le bouton passe AU-DESSUS du lien étiré.
+ *
+ * `position: relative` plus `z-index` : sans les deux, le pseudo-élément du
+ * lien le recouvrirait et chaque clic sur « ajouter » ouvrirait la fiche —
+ * un défaut qui ne se voit qu'à l'usage, jamais à la relecture.
+ */
+/*
+ * Le bouton passe AU-DESSUS du lien étiré — et il est maintenant DANS le
+ * voile, donc large de toute la couverture.
+ */
+.formAjout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+}
+
+.ajouter {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--cible-min);
+  padding: 11px 18px;
+  border: 2px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-forme);
+}
+
+.ajouter:hover {
+  background: var(--action-survol);
+  border-color: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-2px);
+}
+
+/*
+ * La variante DÉJÀ ACQUIS : « Lire », en contour vert.
+ *
+ * Proposer « ajouter au panier » sur un titre qu'on possède déjà est le
+ * contresens que la troisième ligne d'accès existe pour éviter. Le bouton
+ * change donc d'action, pas seulement d'apparence.
+ */
+.lireCarte {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 11px 18px;
+  border: 2px solid var(--v2-vert);
+  border-radius: var(--rayon-bouton);
+  background: transparent;
+  color: var(--v2-vert);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.lireCarte:hover {
+  background: var(--v2-vert);
+  color: var(--fond);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ajouter:hover {
+    transform: none;
+  }
+}
+
+/* ── Carrousel ──────────────────────────────────────────────────────────── */
+
+.carrousel {
+  position: relative;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX GESTES, UN SEUL COMPOSANT — ET C'EST L'APPAREIL QUI TRANCHE.       │
+ * │                                                                          │
+ * │ Sur téléphone et tablette, on fait GLISSER : `scroll-snap-type: x        │
+ * │ mandatory` rend le défilement magnétique, chaque carte s'aligne d'elle-  │
+ * │ même, et le navigateur s'occupe de l'inertie. C'est le geste que tout    │
+ * │ le monde connaît, et il ne coûte pas une ligne de JavaScript.            │
+ * │                                                                          │
+ * │ Sur ordinateur, on CLIQUE : les flèches gauche et droite avancent et     │
+ * │ reculent d'un écran. Un défilement horizontal à la souris n'existe pas   │
+ * │ sur la plupart des machines — sans les flèches, la moitié droite du      │
+ * │ carrousel serait inatteignable.                                         │
+ * │                                                                          │
+ * │ Le partage se fait sur `pointer: coarse` — le DOIGT — et non sur une     │
+ * │ largeur d'écran : une tablette de 1024 px se pilote au doigt, un petit   │
+ * │ portable à la souris. La largeur ne dit rien du geste.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.carrouselPiste {
+  list-style: none;
+  margin: 0;
+  padding: 6px 4px 22px;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(230px, 1fr);
+  gap: 22px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /*
+   * La barre de défilement est MASQUÉE, et ce n'est pas gratuit.
+   *
+   * Le carrousel a déjà deux affordances : les flèches à la souris, le
+   * magnétisme au doigt. La barre en ajoutait une troisième, la seule à
+   * dessiner un trait gris en travers de la section — et la seule dont
+   * personne ne se sert, puisqu'on ne fait pas glisser une barre de six
+   * pixels quand deux flèches attendent au-dessus.
+   */
+  scrollbar-width: none;
+  /* Le glissement horizontal appartient au carrousel ; le vertical à la page. */
+  touch-action: pan-x pan-y;
+  /* Le magnétisme s'arrête aux extrémités au lieu d'entraîner la page. */
+  overscroll-behavior-x: contain;
+}
+
+.carrouselPiste::-webkit-scrollbar {
+  display: none;
+}
+
+.carrouselPiste > li {
+  scroll-snap-align: start;
+  /* `always` : on ne peut pas s'arrêter entre deux cartes, même en lançant le
+     défilement d'un geste ample. C'est ce qui rend le magnétisme franc. */
+  scroll-snap-stop: always;
+}
+
+/* Trois cartes visibles au-delà de 900 px, deux vers 640, une sur téléphone. */
+@media (min-width: 640px) {
+  .carrouselPiste {
+    grid-auto-columns: minmax(240px, calc((100% - 22px) / 2));
+  }
+}
+
+@media (min-width: 900px) {
+  .carrouselPiste {
+    grid-auto-columns: minmax(240px, calc((100% - 44px) / 3));
+  }
+}
+
+@media (min-width: 1160px) {
+  .carrouselPiste {
+    grid-auto-columns: minmax(240px, calc((100% - 66px) / 4));
+  }
+}
+
+/*
+ * Au DOIGT, les flèches disparaissent.
+ *
+ * Elles ne servent à rien là où le geste existe, et elles mangeraient de la
+ * place sur l'écran le plus étroit. Le magnétisme, lui, reste. La barre de
+ * défilement, elle, est déjà masquée partout — voir `.carrouselPiste`.
+ */
+@media (pointer: coarse) {
+  .carrouselPiste {
+    /* Un peu de marge à droite : la carte suivante se devine, ce qui indique
+       qu'il y a une suite sans qu'aucun texte ne le dise. */
+    padding-right: 32px;
+  }
+
+  .carrouselCommandes {
+    display: none;
+  }
+}
+
+.carrouselCommandes {
+  display: flex;
+  gap: var(--espace-2);
+  justify-content: flex-end;
+}
+
+.carrouselFleche {
+  width: var(--cible-min);
+  height: var(--cible-min);
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: 50%;
+  background: var(--fond);
+  color: var(--v2-vert);
+  font-size: var(--taille-3xl);
+  line-height: 1;
+  transition: background var(--transition-couleur), color var(--transition-couleur),
+    border-color var(--transition-couleur), transform var(--transition-forme);
+}
+
+.carrouselFleche:hover:not(:disabled) {
+  background: var(--v2-vert);
+  border-color: var(--v2-vert);
+  color: var(--fond);
+  transform: translateY(-2px);
+}
+
+/*
+ * Une extrémité atteinte désactive la flèche SANS la faire disparaître : un
+ * bouton qui s'évapore déplace l'autre, et le clic suivant rate sa cible.
+ */
+.carrouselFleche:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

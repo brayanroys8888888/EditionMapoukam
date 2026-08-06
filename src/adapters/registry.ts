@@ -2,6 +2,7 @@ import { getServerEnv } from '@/lib/config/env';
 import { FakePaymentProvider } from './payment/fake/fake-payment-provider';
 import type { PaymentProvider } from './payment/types';
 import { FileMailer } from './mail/file-mailer';
+import { ResendMailer } from './mail/resend-mailer';
 import type { Mailer } from './mail/types';
 
 /**
@@ -37,14 +38,21 @@ export function getMailer(): Mailer {
   if (mailer) return mailer;
 
   const choix = getServerEnv().MAILER;
+  if (choix === 'resend' || (Boolean(process.env.RESEND_API_KEY) && process.env.MAILER !== 'file')) {
+    mailer = new ResendMailer();
+    return mailer;
+  }
+
   if (choix === 'file') {
     mailer = new FileMailer();
     return mailer;
   }
 
+
   throw new Error(
-    `MAILER=${choix} : aucun adaptateur réel n'est implémenté à ce stade. Aucun SDK de prestataire n'est installé (CLAUDE.md).`,
+    `MAILER=${String(choix)} : aucun adaptateur réel n'est implémenté à ce stade.`,
   );
+
 }
 
 /** Réservé aux tests : oublie les adaptateurs mémorisés. */

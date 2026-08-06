@@ -236,3 +236,54 @@ describe('le journal d’audit ne s’écrit ni ne s’efface depuis le code', (
     expect(coupables).toEqual([]);
   });
 });
+
+describe('CHAQUE ÉCRAN D’ADMINISTRATION PASSE PAR LA GARDE', () => {
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ UN ÉCRAN OUBLIÉ NE SE VOIT PAS — IL S'AFFICHE.                          │
+   * │                                                                          │
+   * │ `exigerAdministrateur` rend un 404 à qui n'est pas administrateur, et    │
+   * │ renvoie se connecter qui ne l'est pas encore. Un écran qui l'oublie ne   │
+   * │ lève aucune erreur : il rend simplement la page, et son auteur la voit   │
+   * │ fonctionner parfaitement — parce qu'il est administrateur.               │
+   * │                                                                          │
+   * │ Les routes d'API et les fonctions SQL refont le contrôle, donc les       │
+   * │ DONNÉES restent protégées. Mais l'écran révélerait la structure de       │
+   * │ l'administration, et c'est justement ce que le 404 refuse de dire.       │
+   * │                                                                          │
+   * │ Ce test lit le dossier plutôt qu'une liste : un écran ajouté demain y    │
+   * │ tombe sans que personne ait à penser à l'inscrire.                       │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  const ECRANS = join(RACINE, 'src', 'app', '[langue]', 'admin');
+
+  it('aucun écran ne rend sa page sans appeler `exigerAdministrateur`', () => {
+    const pages = fichiersSources(ECRANS).filter((f) => f.endsWith('page.tsx'));
+
+    expect(pages.length, 'aucun écran trouvé : ce test ne prouverait rien').toBeGreaterThan(2);
+
+    const coupables = pages
+      .filter((f) => !/exigerAdministrateur\s*\(/.test(readFileSync(f, 'utf8')))
+      .map(chemin);
+
+    expect(coupables).toEqual([]);
+  });
+
+  it('la garde CACHE l’écran à un lecteur, et RENVOIE un visiteur se connecter', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Deux réponses, et elles ne sont pas interchangeables.               │
+    // │                                                                    │
+    // │ Un lecteur CONNECTÉ qui n'est pas administrateur reçoit un 404 : un │
+    // │ « vous n'avez pas accès » lui confirmerait qu'il y a bien une       │
+    // │ administration à cette adresse. Un visiteur NON connecté, lui, est  │
+    // │ envoyé se connecter — il n'y a rien à cacher à qui n'a pas encore   │
+    // │ dit qui il est, et un 404 lui ferait croire son marque-page mort.   │
+    // └────────────────────────────────────────────────────────────────────┘
+    const source = readFileSync(join(ECRANS, 'garde.ts'), 'utf8');
+
+    expect(source, 'le refus doit être un 404').toMatch(/notFound\s*\(/);
+    expect(source, 'un visiteur anonyme doit être redirigé, pas caché').toMatch(
+      /redirect\s*\([^)]*connexion/,
+    );
+  });
+});

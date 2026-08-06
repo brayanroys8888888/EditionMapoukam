@@ -1,0 +1,254 @@
+/*
+ * MENU PLEIN ÉCRAN — d'après `maquette_response/`.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CINQ LIENS NE TIENNENT PAS DANS UNE BARRE DE TÉLÉPHONE.                 │
+ * │                                                                          │
+ * │ Sur 390 px, la navigation repliée par `flex-wrap` prenait trois lignes   │
+ * │ et poussait tout le contenu vers le bas. La maquette tranche : un bouton │
+ * │ rond, et un panneau vert plein écran.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* Le bouton d'ouverture — visible seulement en écran étroit. */
+.bouton {
+  display: none;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--v2-vert);
+  color: var(--v2-fond);
+  transition: background var(--transition-couleur);
+}
+
+.bouton:hover {
+  background: var(--v2-vert-clair);
+  color: var(--v2-fond);
+}
+
+@media (max-width: 900px) {
+  .bouton {
+    display: grid;
+  }
+}
+
+/* ── Le panneau ─────────────────────────────────────────────────────────── */
+
+.panneau {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  background: var(--v2-vert);
+  color: var(--v2-fond);
+  padding: 18px 20px 26px;
+  animation: entree 0.24s ease;
+}
+
+@keyframes entree {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panneau {
+    animation: none;
+  }
+}
+
+.entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.fermer {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid rgb(251 247 239 / 40%);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--v2-fond);
+  font-size: var(--taille-2xl);
+  line-height: 1;
+}
+
+.fermer:hover {
+  border-color: var(--v2-fond);
+  color: var(--v2-fond);
+}
+
+/* ── Les liens ──────────────────────────────────────────────────────────── */
+
+/*
+ * De grands liens en Fraunces, séparés par un filet.
+ *
+ * C'est le seul endroit du produit où la navigation est composée comme un
+ * sommaire : on l'ouvre pour choisir, pas pour se repérer du coin de l'œil.
+ */
+.liens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+
+.liens li + li {
+  border-top: 1px solid rgb(251 247 239 / 16%);
+}
+
+.lien {
+  display: flex;
+  align-items: center;
+  min-height: 62px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 26px;
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.015em;
+  color: var(--v2-fond);
+}
+
+.lien:hover {
+  color: var(--action);
+}
+
+/* La page courante prend l'ocre, et porte `aria-current`. */
+.lienActif {
+  color: var(--action);
+}
+
+/* ── Le pied du panneau ─────────────────────────────────────────────────── */
+
+.pied {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.recherche {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--cible-min);
+  padding: 12px 18px;
+  border: 1.5px solid rgb(251 247 239 / 30%);
+  border-radius: var(--rayon-bouton);
+  color: var(--v2-fond);
+  font-size: var(--taille-l);
+}
+
+.recherche:hover {
+  border-color: var(--v2-fond);
+  color: var(--v2-fond);
+}
+
+.connexion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 14px 22px;
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+}
+
+.connexion:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/*
+ * Le raccourci d'administration — CREUX là où « Mon compte » est PLEIN.
+ *
+ * Deux boutons pleins côte à côte se disputeraient le regard, et le second
+ * serait celui qu'on presse par erreur. Le contour ocre suffit à le nommer
+ * comme un ailleurs, sans le mettre en avant : on ne vient pas ici pour
+ * administrer, on y passe.
+ *
+ * Le texte est en crème, jamais en ocre : `--v2-ocre` sur le vert profond du
+ * panneau ne mesure que 2,9:1, sous le seuil AA. Le contour, lui, n'a pas à
+ * satisfaire ce seuil — il n'est pas du texte.
+ */
+.administration {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 12px 22px;
+  border: 1.5px solid var(--v2-ocre);
+  border-radius: var(--rayon-bouton);
+  color: var(--v2-fond);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+}
+
+.administration:hover {
+  background: var(--v2-ocre);
+  color: var(--v2-fond);
+}
+
+/*
+ * Au-delà de 900 px, le panneau n'existe pas.
+ *
+ * Une garde de sécurité : si le composant restait ouvert pendant qu'on
+ * élargit la fenêtre, il masquerait tout le site derrière un vert plein.
+ */
+@media (min-width: 901px) {
+  .panneau {
+    display: none;
+  }
+}
+
+/*
+ * ── Sélecteur de langue ────────────────────────────────────────────────────
+ *
+ * Repris de l'en-tête, qui ne le porte plus en écran étroit. Deux pastilles
+ * pleine largeur plutôt que le commutateur compact de l'en-tête : ici la place
+ * ne manque pas, et « Français » se lit mieux que « FR ».
+ */
+.langues {
+  display: flex;
+  gap: 10px;
+}
+
+.langue {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 10px 16px;
+  border: 1.5px solid rgb(251 247 239 / 30%);
+  border-radius: var(--rayon-bouton);
+  color: var(--v2-fond);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+}
+
+.langue:hover {
+  border-color: var(--v2-fond);
+  color: var(--v2-fond);
+}
+
+.langueActive {
+  background: var(--v2-fond);
+  border-color: var(--v2-fond);
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+}

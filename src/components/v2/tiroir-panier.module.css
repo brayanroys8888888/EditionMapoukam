@@ -1,0 +1,374 @@
+/*
+ * TIROIR DE PANIER — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ IL VÉRIFIE, IL NE VEND PAS.                                             │
+ * │                                                                          │
+ * │ Son titre le dit — « Vérifiez votre panier ». C'est un point de contrôle │
+ * │ avant paiement : on y relit ce qu'on a mis, on retire ce qu'on ne veut   │
+ * │ plus, on voit le total. Rien d'autre n'y a sa place, et surtout aucune   │
+ * │ suggestion d'achat supplémentaire.                                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Voile ──────────────────────────────────────────────────────────────── */
+
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgb(22 55 31 / 55%);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  animation: apparition 0.2s ease;
+}
+
+@keyframes apparition {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ── Panneau ────────────────────────────────────────────────────────────── */
+
+.tiroir {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 91;
+  width: min(440px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--fond);
+  box-shadow: -12px 0 40px rgb(22 55 31 / 26%);
+  animation: glissement 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes glissement {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Sous `prefers-reduced-motion`, le tiroir APPARAÎT au lieu de glisser.
+ *
+ * Il ne disparaît pas : un mouvement réduit n'est pas un contenu supprimé.
+ * C'est la nuance que la plupart des implémentations ratent.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .voile,
+  .tiroir {
+    animation: none;
+  }
+}
+
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1.5px solid var(--bordure);
+  background: var(--fond);
+}
+
+.fermer {
+  width: var(--cible-min);
+  height: var(--cible-min);
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre);
+  font-size: var(--taille-3xl);
+  line-height: 1;
+  transition: border-color var(--transition-couleur), color var(--transition-couleur);
+}
+
+.fermer:hover {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+}
+
+.titre {
+  flex: 1 1 auto;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.compte {
+  flex: 0 0 auto;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 9px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--rayon-pastille);
+  background: var(--v2-fond-doux);
+  color: var(--v2-vert);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Lignes ─────────────────────────────────────────────────────────────── */
+
+/*
+ * `overflow-y: auto` sur cette zone SEULEMENT.
+ *
+ * L'en-tête et le pied restent visibles quel que soit le nombre de titres :
+ * un total qui sort de l'écran est un total qu'on ne vérifie pas, et le bouton
+ * de paiement doit rester sous le pouce.
+ */
+.corps {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 20px;
+}
+
+.lignes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ligne {
+  display: flex;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--separateur);
+}
+
+.lignes li:last-child .ligne {
+  border-bottom: 0;
+}
+
+.vignette {
+  width: 62px;
+  flex: 0 0 62px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--espace-2);
+  display: block;
+  box-shadow: var(--ombre-carte);
+}
+
+.ligneTexte {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ligneTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  line-height: 1.25;
+  color: var(--v2-vert);
+}
+
+a.ligneTitre:hover {
+  color: var(--v2-vert-clair);
+}
+
+.lignePrix {
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * « Retirer » est un BOUTON de formulaire, pas un lien.
+ *
+ * Un `GET` qui vide une ligne de panier est rejoué par le moindre
+ * préchargement de navigateur, et par tout robot qui suit les liens.
+ */
+.retirer {
+  align-self: flex-start;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition-couleur);
+}
+
+.retirer:hover:not(:disabled) {
+  color: var(--region-afrique_centrale-encre);
+}
+
+.retirer:disabled {
+  opacity: 0.5;
+  cursor: progress;
+}
+
+/* ── Pied ───────────────────────────────────────────────────────────────── */
+
+.pied {
+  flex: 0 0 auto;
+  padding: 18px 20px 22px;
+  border-top: 1.5px solid var(--bordure);
+  background: var(--v2-fond-doux);
+}
+
+.totalLigne {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+  margin-bottom: 8px;
+}
+
+.totalLigne span:last-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.totalFinal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding-top: 12px;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--bordure-forte);
+}
+
+.totalFinalIntitule {
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+}
+
+.totalFinalMontant {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-4xl);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-ocre-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.payer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: 16px 24px;
+  border: 2px solid var(--v2-vert);
+  border-radius: var(--rayon-bouton);
+  background: var(--v2-vert);
+  color: var(--fond);
+  font-size: var(--taille-xl);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-forme);
+}
+
+.payer:hover {
+  background: var(--v2-vert-clair);
+  color: var(--fond);
+  transform: translateY(-2px);
+}
+
+.mention {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+  text-align: center;
+}
+
+/* ── États ──────────────────────────────────────────────────────────────── */
+
+.etat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 56px 20px;
+  text-align: center;
+}
+
+.etatTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+}
+
+.etatCorps {
+  font-size: var(--taille-l);
+  line-height: 1.55;
+  color: var(--encre-douce);
+  max-width: 34ch;
+}
+
+.etatAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 14px 26px;
+  border: 2px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+}
+
+.etatAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/*
+ * Les lignes REFUSÉES, nommées une par une.
+ *
+ * Quatre motifs, quatre messages. Un titre écarté en silence est perçu comme
+ * une panne, et le client conclut que le site a perdu sa commande.
+ */
+.refus {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--creme-bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--creme);
+}
+
+.refusTitre {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  margin-bottom: 8px;
+}
+
+.refusListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}

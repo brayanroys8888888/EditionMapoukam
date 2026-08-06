@@ -66,14 +66,32 @@ export interface IdentiteEditeur {
   immatriculation: string;
   directeurPublication: string;
   emailContact: string;
+  /** Numéro affiché sur la page de contact. Vide = la ligne disparaît. */
+  telephone: string;
 }
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ RELEVÉES SUR LE SITE ACTUEL, PAS INVENTÉES.                            │
+ * │                                                                          │
+ * │ L'adresse, le téléphone et l'email viennent de la page « Contact » du    │
+ * │ site en ligne, où ils sont déjà publics. Les recopier ici ne divulgue    │
+ * │ rien et évite qu'un formulaire de contact renvoie dans le vide.          │
+ * │                                                                          │
+ * │ Les trois valeurs restées VIDES le sont délibérément : raison sociale,   │
+ * │ immatriculation et directeur de publication sont des mentions légales    │
+ * │ obligatoires, et l'éditeur seul les connaît. Les inventer produirait des │
+ * │ mentions fausses — pires que des mentions manquantes, puisqu'elles       │
+ * │ auraient l'air d'être vraies. Elles ne s'affichent donc pas.             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 export const IDENTITE_EDITEUR: IdentiteEditeur = {
   raisonSociale: '',
-  adresse: '',
+  adresse: 'Yassa, Douala, Cameroun — lieu-dit Total Kolbong',
   immatriculation: '',
   directeurPublication: '',
-  emailContact: '',
+  emailContact: 'leseditionsmapoukam@gmail.com',
+  telephone: '+237 676 46 67 25',
 };
 
 const FR: Record<SlugEditorial, PageEditoriale> = {

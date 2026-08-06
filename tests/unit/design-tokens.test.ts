@@ -98,6 +98,77 @@ describe('contrastes — WCAG 2.1 AA', () => {
     });
   }
 
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LA V2 EST MESURÉE COMME LA V1, ET SUR SES PROPRES NOMS.              │
+   * │                                                                      │
+   * │ Le bloc `[data-design='v2']` des jetons ne fait que RÉAFFECTER les    │
+   * │ noms sémantiques à des valeurs `--v2-*`, par `var()`. Les assertions  │
+   * │ ci-dessus lisent donc les hexadécimaux de la V1 et ne prouvent rien   │
+   * │ sur la V2 : c'est exactement le genre d'angle mort qui laisse une     │
+   * │ direction entière passer sous le seuil sans qu'un test rougisse.      │
+   * │                                                                      │
+   * │ Deux paires portent tout le risque de cette palette :                 │
+   * │                                                                      │
+   * │   * l'ocre est une SURFACE — sur la crème il vaut 2,90:1, donc il ne  │
+   * │     doit jamais porter de texte. `--v2-ocre-encre` existe pour ça ;   │
+   * │   * sur l'ocre, le texte est l'ENCRE et jamais du blanc, qui tombe    │
+   * │     à 3,10:1. C'est la même inversion que le jaune de la V1.          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const PAIRES_V2: readonly [string, string, string, number][] = [
+    ['V2 — texte courant', 'v2-encre', 'v2-fond', 4.5],
+    ['V2 — texte secondaire', 'v2-encre-douce', 'v2-fond', 4.5],
+    ['V2 — texte sur fond doux', 'v2-encre', 'v2-fond-doux', 4.5],
+    ['V2 — texte secondaire sur fond doux', 'v2-encre-douce', 'v2-fond-doux', 4.5],
+    ['V2 — le vert en texte', 'v2-vert', 'v2-fond', 4.5],
+    ['V2 — texte sur l’ocre d’action', 'v2-encre', 'v2-ocre', 4.5],
+    ['V2 — texte sur l’ocre survolé', 'v2-encre', 'v2-ocre-survol', 4.5],
+    ['V2 — l’ocre EN TEXTE, assombri', 'v2-ocre-encre', 'v2-fond', 4.5],
+    ['V2 — crème sur le vert de l’en-tête', 'v2-fond', 'v2-vert', 4.5],
+    ['V2 — crème sur le vert du pied', 'v2-fond', 'v2-vert-nuit', 4.5],
+    ['V2 — crème sur le vert clair', 'v2-fond', 'v2-vert-clair', 4.5],
+  ];
+
+  it('couvre les paires V2 réellement employées', () => {
+    expect(PAIRES_V2.length).toBeGreaterThanOrEqual(11);
+  });
+
+  for (const [nom, avant, arriere, seuil] of PAIRES_V2) {
+    it(`${nom} : au moins ${String(seuil)}:1`, () => {
+      const mesure = contraste(jeton(avant), jeton(arriere));
+      expect(mesure, `--${avant} sur --${arriere} = ${mesure.toFixed(2)}:1`).toBeGreaterThanOrEqual(
+        seuil,
+      );
+    });
+  }
+
+  it('l’ocre de SURFACE ne passe PAS en texte — c’est pourquoi l’autre existe', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Un contre-test, et il compte autant que les autres.                │
+    // │                                                                    │
+    // │ Il fige la RAISON d'être de `--v2-ocre-encre`. Si quelqu'un         │
+    // │ éclaircissait un jour `--v2-ocre` jusqu'à le rendre lisible, les    │
+    // │ deux jetons feraient double emploi et l'un serait supprimé au       │
+    // │ hasard. Si on l'assombrissait pour fusionner les deux, les boutons  │
+    // │ perdraient leur chaleur. Ce test dit que la séparation est voulue.  │
+    // └────────────────────────────────────────────────────────────────────┘
+    const surface = contraste(jeton('v2-ocre'), jeton('v2-fond'));
+    expect(surface, `--v2-ocre sur --v2-fond = ${surface.toFixed(2)}:1`).toBeLessThan(4.5);
+  });
+
+  it('le blanc sur l’ocre est REFUSÉ — l’encre, et jamais l’inverse', () => {
+    const blancSurOcre = contraste('#ffffff', jeton('v2-ocre'));
+    const encreSurOcre = contraste(jeton('v2-encre'), jeton('v2-ocre'));
+
+    expect(blancSurOcre).toBeLessThan(4.5);
+    expect(encreSurOcre).toBeGreaterThanOrEqual(4.5);
+    expect(
+      encreSurOcre,
+      `l’encre (${encreSurOcre.toFixed(2)}:1) doit rester meilleure que le blanc (${blancSurOcre.toFixed(2)}:1)`,
+    ).toBeGreaterThan(blancSurOcre);
+  });
+
   it('les cinq régions restent lisibles sur leur propre fond', () => {
     const regions = ['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'];
     expect(regions.length).toBe(5);

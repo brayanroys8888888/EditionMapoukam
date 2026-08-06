@@ -409,6 +409,129 @@ describe('idempotence', () => {
   });
 });
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA VERSION ANGLAISE EST UNE VERSION, PAS UN SECOND CONTE.                │
+ * │                                                                          │
+ * │ §5.5 : un livre est une entité parente avec N déclinaisons linguistiques, │
+ * │ et un droit d'accès porte sur le LIVRE. Sans `bookId`, déposer la         │
+ * │ traduction créait un second `books` au slug suffixé — donc un second prix │
+ * │ à saisir, une seconde publication à faire, et un acheteur du français     │
+ * │ sans aucun droit sur l'anglais qu'il croyait avoir acheté.                │
+ * │                                                                          │
+ * │ Le défaut ne se voyait nulle part : les deux titres existaient, tous deux │
+ * │ corrects, et rien ne disait qu'ils auraient dû n'en faire qu'un.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+describe('rattachement d’une version à un titre existant', () => {
+  const SECOND = join(CORPUS, 'Zakou et le tambour.pdf');
+  /*
+   * Un TROISIÈME fichier pour le contre-test, et ce n'est pas un détail.
+   *
+   * Rejouer `SECOND` ne lèverait rien : `ingerer` reconnaît son empreinte et
+   * rend l'ingestion déjà faite sans jamais atteindre le rattachement. Le test
+   * passerait en ne prouvant rien — le pire des deux mondes.
+   */
+  const TROISIEME = join(CORPUS, 'La rivière qui parlait.pdf');
+
+  let ajoutee: ResultatIngestion | null = null;
+  let parentAvant: { slug: string; auteur: string } | null = null;
+
+  afterAll(async () => {
+    // Les fichiers de CETTE ingestion-ci : le livre parent, lui, est effacé par
+    // le nettoyage général, et sa cascade emportera la version ajoutée.
+    if (ajoutee) {
+      for (const bucket of Object.values(BUCKETS)) {
+        const noms = await objets(bucket, ajoutee.jeton).catch(() => []);
+        if (noms.length > 0) {
+          await serviceClient()
+            .storage.from(bucket)
+            .remove(noms.map((nom) => `${ajoutee!.jeton}/${nom}`));
+        }
+      }
+      await query(`delete from public.ingestion_jobs where translation_id = $1`, [
+        ajoutee.translationId,
+      ]);
+    }
+  }, 120_000);
+
+  it('ajoute une VERSION, sans créer de second livre', async () => {
+    if (!existsSync(SECOND)) {
+      throw new Error(`Corpus introuvable : ${SECOND}.`);
+    }
+
+    const avant = await queryOne<{ n: string }>(`select count(*)::text as n from public.books`);
+    parentAvant =
+      (await queryOne<{ slug: string; auteur: string }>(
+        `select slug, auteur from public.books where id = $1`,
+        [resultat.bookId],
+      )) ?? null;
+
+    ajoutee = await ingerer({ cheminPdf: SECOND, langue: 'en', bookId: resultat.bookId });
+
+    // Le MÊME livre, et une AUTRE version.
+    expect(ajoutee.bookId).toBe(resultat.bookId);
+    expect(ajoutee.translationId).not.toBe(resultat.translationId);
+
+    const apres = await queryOne<{ n: string }>(`select count(*)::text as n from public.books`);
+    expect(Number(apres?.n)).toBe(Number(avant?.n));
+
+    const versions = await query<{ langue: string }>(
+      `select langue from public.book_translations where book_id = $1 order by langue`,
+      [resultat.bookId],
+    );
+    expect(versions.map((v) => v.langue)).toEqual(['en', 'fr']);
+  }, 300_000);
+
+  it('ne touche NI le slug NI l’auteur du titre parent', async () => {
+    // Ils appartiennent au livre, pas à la version qu'on ajoute. Le slug est
+    // dans l'adresse publique du conte : le voir changer parce qu'on a déposé
+    // une traduction casserait tous les liens partagés.
+    expect(parentAvant).not.toBeNull();
+
+    const parent = await queryOne<{ slug: string; auteur: string }>(
+      `select slug, auteur from public.books where id = $1`,
+      [resultat.bookId],
+    );
+
+    expect(parent?.slug).toBe(resultat.slug);
+    expect(parent?.slug).toBe(parentAvant?.slug);
+    expect(parent?.auteur).toBe(parentAvant?.auteur);
+  });
+
+  it('LÈVE sur un identifiant introuvable, plutôt que de créer un doublon', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Un identifiant fourni et introuvable est une erreur d'APPEL. Y       │
+    // │ répondre en créant un nouveau titre serait exactement le défaut       │
+    // │ qu'on corrige, et il passerait inaperçu : l'appelant recevrait un     │
+    // │ succès, avec un identifiant de livre qui n'est pas celui demandé.     │
+    // └────────────────────────────────────────────────────────────────────┘
+    if (!existsSync(TROISIEME)) {
+      throw new Error(`Corpus introuvable : ${TROISIEME}.`);
+    }
+
+    const avant = await queryOne<{ n: string }>(`select count(*)::text as n from public.books`);
+
+    try {
+      await expect(
+        ingerer({
+          cheminPdf: TROISIEME,
+          langue: 'fr',
+          bookId: '11111111-1111-1111-1111-111111111111',
+        }),
+      ).rejects.toThrow(/introuvable/i);
+
+      const apres = await queryOne<{ n: string }>(`select count(*)::text as n from public.books`);
+      expect(Number(apres?.n)).toBe(Number(avant?.n));
+    } finally {
+      // L'échec laisse sa trace en `ingestion_jobs`, ce qui est voulu — elle
+      // sert au diagnostic. Elle n'a rien à faire dans le jeu de démonstration
+      // que relisent les autres suites, d'où ce ménage.
+      await query(`delete from public.ingestion_jobs where statut = 'echoue' and book_id is null`);
+    }
+  }, 120_000);
+});
+
 describe('route de dépôt', () => {
   function requete(fichier: Buffer | null, options: { jeton?: string; nom?: string } = {}): Request {
     const formulaire = new FormData();
@@ -495,6 +618,69 @@ describe('route de dépôt', () => {
     );
 
     expect(reponse.status).toBe(400);
+  });
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ UN CHAMP FACULTATIF LAISSÉ VIDE — LE CAS QU'AUCUN TEST N'EXERÇAIT.    │
+   * │                                                                        │
+   * │ `titre` et `auteur` sont facultatifs, et l'écran de dépôt invite en     │
+   * │ toutes lettres à les laisser vides : la chaîne d'ingestion les lit      │
+   * │ dans le PDF.                                                            │
+   * │                                                                        │
+   * │ Mais un `<input>` vide n'est pas ABSENT du corps multipart — il y       │
+   * │ figure avec la valeur `''`, que `z.string().min(1)` rejetait. Le dépôt  │
+   * │ échouait donc pour tout éditeur qui suivait le conseil de l'écran.      │
+   * │                                                                        │
+   * │ Les tests ci-dessus construisent leur `FormData` à la main et n'y       │
+   * │ posent que `fichier` et `langue` : ils ne pouvaient pas le voir. Seul   │
+   * │ un vrai navigateur envoie des champs vides — c'est ce qui l'a révélé.   │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  function requeteAvecChamps(fichier: Buffer, champs: Record<string, string>): Request {
+    const formulaire = new FormData();
+    formulaire.set(
+      'fichier',
+      new File([new Uint8Array(fichier)], 'conte.pdf', { type: 'application/pdf' }),
+    );
+    formulaire.set('langue', 'fr');
+    for (const [nom, valeur] of Object.entries(champs)) formulaire.set(nom, valeur);
+
+    return new Request('http://localhost:3000/api/admin/books/ingest', {
+      method: 'POST',
+      headers: new Headers({ authorization: `Bearer ${admin.accessToken}` }),
+      body: formulaire,
+    });
+  }
+
+  it('ACCEPTE un titre et un auteur laissés vides, comme le fait un navigateur', async () => {
+    // Le fichier est délibérément illisible : ce test porte sur la VALIDATION
+    // des champs, pas sur l'ingestion, et un conte entier prendrait des
+    // minutes. Un refus dû aux champs rend 400 avec `champs.titre` renseigné ;
+    // c'est précisément ce qui ne doit plus arriver.
+    const reponse = await ingestionRoute(
+      requeteAvecChamps(Buffer.from('%PDF-1.4 tronqué'), { titre: '', auteur: '' }),
+    );
+
+    const corps = await corpsJson<ReponseErreur>(reponse.clone());
+
+    expect(corps.erreur?.champs?.['titre']).toBeUndefined();
+    expect(corps.erreur?.champs?.['auteur']).toBeUndefined();
+  }, 60_000);
+
+  it('refuse toujours un titre RENSEIGNÉ mais trop long', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LE CONTRE-TEST. Traiter le vide comme absent ne doit pas relâcher le  │
+    // │ contrôle sur ce qui est réellement saisi — sans cette assertion, on   │
+    // │ pourrait satisfaire le test précédent en retirant la validation.      │
+    // └──────────────────────────────────────────────────────────────────────┘
+    const reponse = await ingestionRoute(
+      requeteAvecChamps(Buffer.from('%PDF-1.4 tronqué'), { titre: 'x'.repeat(301) }),
+    );
+
+    expect(reponse.status).toBe(400);
+    const corps = await corpsJson<ReponseErreur>(reponse);
+    expect(corps.erreur.champs?.['titre']).toBeDefined();
   });
 
   it('ne divulgue jamais de chemin serveur dans une erreur', async () => {

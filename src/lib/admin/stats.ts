@@ -94,6 +94,23 @@ export async function chiffreAffaires(periode: Periode = {}, options: Options = 
 }
 
 /**
+ * Chiffre d'affaires consolidé PAR DEVISE — brut, remboursé, net.
+ *
+ * La consolidation s'arrête à la devise, et c'est tout l'objet de cette
+ * fonction : elle additionne des euros avec des euros, jamais avec des francs
+ * CFA. Le `group by devise` de la fonction SQL rend la faute impossible à
+ * commettre, là où une addition écrite dans un écran aurait fini par franchir
+ * la frontière.
+ */
+export async function chiffreAffairesResume(periode: Periode = {}, options: Options = {}) {
+  const { client, clock } = contexte(options);
+  return await agreger<unknown[]>(client, clock, 'stats_chiffre_affaires_resume', {
+    p_debut: periode.debut ?? null,
+    p_fin: periode.fin ?? null,
+  });
+}
+
+/**
  * Abonnés par statut OBSERVÉ.
  *
  * Le statut stocké dit ce que le prestataire a rapporté en dernier ; le statut

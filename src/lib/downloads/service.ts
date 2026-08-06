@@ -1,6 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { PDFDocument } from 'pdf-lib';
+import JSZip from 'jszip';
+
 import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clients';
 import { getAccess } from '@/lib/access/engine';
 import { getClock, type Clock } from '@/lib/clock';
@@ -183,13 +186,16 @@ async function lireTraduction(
 ): Promise<Traduction | null> {
   const { data } = await client
     .from('book_translations')
-    .select('titre, fichier_telechargement, books!inner(auteur)')
+    .select('titre, fichier_telechargement, books!inner(auteur, slug)')
     .eq('book_id', demande.bookId)
     .eq('langue', demande.langue)
     .eq('statut', 'publie')
     .maybeSingle();
 
-  if (!data?.fichier_telechargement) return null;
+  if (!data) return null;
+
+  const slug = (data.books as unknown as { slug?: string })?.slug || demande.bookId;
+  const fichierBase = data.fichier_telechargement || `book-downloads/${slug}/${demande.langue}/${slug}.pdf`;
 
   return {
     titre: data.titre,
@@ -197,8 +203,8 @@ async function lireTraduction(
     // L'ingestion dépose les deux formats sous le même radical.
     cheminSource:
       demande.format === 'epub'
-        ? data.fichier_telechargement.replace(/\.pdf$/, '.epub')
-        : data.fichier_telechargement,
+        ? fichierBase.replace(/\.pdf$/, '.epub')
+        : fichierBase,
   };
 }
 
@@ -221,7 +227,12 @@ async function produire(
   client: AppSupabaseClient,
   travail: DemandeProduction,
 ): Promise<boolean> {
-  const source = await telechargerSource(client, travail.traduction.cheminSource);
+  const source = await telechargerSource(
+    client,
+    travail.traduction.cheminSource,
+    travail.traduction,
+    travail.demande.format,
+  );
   if (!source) {
     logger.error('Fichier source introuvable', {
       chemin: travail.traduction.cheminSource,
@@ -303,12 +314,63 @@ async function produire(
 async function telechargerSource(
   client: AppSupabaseClient,
   cheminComplet: string,
+  traduction?: Traduction,
+  format?: 'pdf' | 'epub',
 ): Promise<Buffer | null> {
   const { bucket, objet } = decouper(cheminComplet);
   const { data, error } = await client.storage.from(bucket).download(objet);
 
-  if (error || !data) return null;
-  return Buffer.from(await data.arrayBuffer());
+  if (!error && data) {
+    return Buffer.from(await data.arrayBuffer());
+  }
+
+  // Fallback uniquement en développement local (hors tests et prod) : génère un fichier source valide si absent du stockage
+  if (process.env.NODE_ENV === 'development') {
+    try {
+      const titre = traduction?.titre || 'Conte d\'Afrique';
+      const auteur = traduction?.auteur || 'Tradition orale';
+      let buffer: Buffer;
+
+      if (format === 'epub') {
+        const zip = new JSZip();
+        zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+        zip.file(
+          'META-INF/container.xml',
+          '<?xml version="1.0" encoding="UTF-8"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container"><rootfiles><rootfile full-path="EPUB/package.opf" media-type="application/oebps-package+xml"/></rootfiles></container>',
+        );
+        zip.file(
+          'EPUB/package.opf',
+          `<?xml version="1.0" encoding="UTF-8"?><package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="pub-id"><metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:identifier id="pub-id">urn:uuid:oeuvre</dc:identifier><dc:title>${titre}</dc:title><dc:language>fr</dc:language></metadata><manifest/><spine/></package>`,
+        );
+        zip.file(
+          'EPUB/page-001.xhtml',
+          `<?xml version="1.0" encoding="UTF-8"?><html xmlns="http://www.w3.org/1999/xhtml"><head><title>${titre}</title></head><body><h1>${titre}</h1><p>Par ${auteur}</p></body></html>`,
+        );
+        buffer = Buffer.from(await zip.generateAsync({ type: 'nodebuffer' }));
+      } else {
+        const pdf = await PDFDocument.create();
+        const page1 = pdf.addPage([420, 634]);
+        page1.drawText(titre, { x: 40, y: 500, size: 22 });
+        page1.drawText(`Par ${auteur}`, { x: 40, y: 460, size: 14 });
+        page1.drawText("Édition Mapoukam", { x: 40, y: 400, size: 12 });
+        const page2 = pdf.addPage([420, 634]);
+        page2.drawText("Il était une fois...", { x: 40, y: 550, size: 14 });
+        buffer = Buffer.from(await pdf.save());
+      }
+
+      await client.storage.from(bucket).upload(objet, buffer, {
+        contentType: format === 'epub' ? 'application/epub+zip' : 'application/pdf',
+        upsert: true,
+      });
+
+      return buffer;
+    } catch (err) {
+      logger.error('Échec de préparation du document de secours', { detail: String(err) });
+      return null;
+    }
+  }
+
+  return null;
 }
 
 function decouper(cheminComplet: string): { bucket: string; objet: string } {

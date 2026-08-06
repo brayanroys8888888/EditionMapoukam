@@ -96,6 +96,32 @@
   }
 }
 
+/*
+ * Variante INLINE du rotor — 16 px, pour un bouton de soumission.
+ *
+ * Même animation que le rotor pleine taille, mais la couleur suit
+ * `currentColor` plutôt que le jeton `--action` : posé dans un bouton
+ * vert, le trait doit être blanc ; posé dans un bouton discret, il doit
+ * être gris. Un seul composant, aucun doublon.
+ */
+.rotorInline {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: rotation 0.8s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotorInline {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
 /* ── Squelette ──────────────────────────────────────────────────────────── */
 
 .squelette {

@@ -6,6 +6,7 @@ import { parseJsonBody } from '@/lib/http/validate';
 import { createServiceClient } from '@/lib/supabase/clients';
 import { apercu, creerCommande, type ApercuCommande } from '@/lib/orders/orders';
 import { ZONES } from '@/domain/orders/types';
+import { formateur, lireDevise } from '@/lib/money/affichage';
 
 /**
  * Commandes — §4.2 F9, docs/PLAN.md D4.
@@ -72,14 +73,31 @@ async function titresParLivreEtLangue(
   return resultat;
 }
 
-/** Mise en forme commune, pour que l'aperçu et le refus disent la même chose. */
-function corpsApercu(vue: ApercuCommande): Record<string, unknown> {
+/**
+ * Mise en forme commune, pour que l'aperçu et le refus disent la même chose.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CHAQUE MONTANT SORT DEUX FOIS : EN ENTIER, ET FORMATÉ.                  │
+ * │                                                                          │
+ * │ L'entier reste l'autorité — il sert à comparer et à confirmer un total. │
+ * │ La chaîne est pour un CLIENT, qui ne peut pas formater : le nombre de    │
+ * │ décimales dépend de la devise, et `lireDevise` est un module serveur.   │
+ * │                                                                          │
+ * │ Sans elle, le tiroir de panier diviserait par cent dans le navigateur —  │
+ * │ juste en euro, faux d'un facteur cent en franc CFA, qui n'a pas de       │
+ * │ sous-unité. C'est la raison d'être de ces trois champs.                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+async function corpsApercu(vue: ApercuCommande): Promise<Record<string, unknown>> {
+  const afficher = formateur(await lireDevise(vue.total.devise));
+
   return {
     lignes: vue.total.lignes.map((ligne) => ({
       livre_id: ligne.bookId,
       titre: ligne.titre,
       langue: ligne.langue,
       prix_unitaire: ligne.prixUnitaire,
+      prix_affichage: afficher(ligne.prixUnitaire),
     })),
     refusees: vue.refusees.map((refus) => ({
       livre_id: refus.bookId,
@@ -89,8 +107,11 @@ function corpsApercu(vue: ApercuCommande): Record<string, unknown> {
     zone: vue.total.zone,
     devise: vue.total.devise,
     sous_total: vue.total.sousTotal,
+    sous_total_affichage: afficher(vue.total.sousTotal),
     remise: vue.total.remise,
+    remise_affichage: afficher(vue.total.remise),
     total: vue.total.total,
+    total_affichage: afficher(vue.total.total),
     // Un code écarté est signalé, jamais silencieux : l'utilisateur doit
     // comprendre pourquoi la remise attendue n'apparaît pas.
     refus_promo: vue.refusPromo,
@@ -138,7 +159,7 @@ export async function POST(request: Request): Promise<Response> {
     // Une commande naît TOUJOURS en attente : le paiement est confirmé par
     // webhook signé, jamais par cette route (CLAUDE.md règle 5).
     statut: 'en_attente',
-    ...corpsApercu(resultat.apercu),
+    ...(await corpsApercu(resultat.apercu)),
   });
 }
 
@@ -218,5 +239,5 @@ export async function PUT(request: Request): Promise<Response> {
     });
   }
 
-  return ok(corpsApercu(vue));
+  return ok(await corpsApercu(vue));
 }

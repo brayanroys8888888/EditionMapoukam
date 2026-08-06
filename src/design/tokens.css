@@ -270,6 +270,19 @@
   --ombre-couverture: 0 10px 28px rgb(42 32 24 / 10%);
   --ombre-infobulle: 0 6px 16px rgb(42 32 24 / 10%);
 
+  /*
+   * Les trois ombres que la V2 ajoute — DÉCLARÉES ICI À `none`.
+   *
+   * Un composant partagé peut alors les demander sans savoir quel thème est
+   * actif : sous la V1 il n'obtient rien, ce qui est la règle des deux ombres,
+   * et sous la V2 il obtient le relief. Sans ces valeurs par défaut, `var()`
+   * rendrait la déclaration invalide et le navigateur l'ignorerait — un
+   * silence qu'on ne verrait qu'à l'écran.
+   */
+  --ombre-carte: none;
+  --ombre-carte-survol: none;
+  --ombre-flottante: none;
+
   --largeur-page: 1200px;
   --largeur-texte: 62ch;
 
@@ -307,6 +320,180 @@
  * Les treize maquettes le font ; certaines ne coupaient que `transition`,
  * d'autres aussi `animation`. La forme la plus complète est retenue partout.
  */
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DIRECTION V2 — « le vert du site actuel, enrichi »
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX THÈMES, UN SEUL FICHIER DE PALETTE.                                │
+ * │                                                                          │
+ * │ Les valeurs V2 vivent ICI, avec les V1, et pour la même raison : une     │
+ * │ couleur ne s'écrit nulle part ailleurs. Un second fichier de jetons      │
+ * │ serait une seconde source de vérité visuelle — exactement ce que la      │
+ * │ règle interdit — et le test d'architecture le refuserait, à raison.      │
+ * │                                                                          │
+ * │ Le mécanisme : les valeurs V2 portent des noms `--v2-*` et n'existent    │
+ * │ qu'ici ; le bloc `[data-design='v2']` RÉAFFECTE ensuite les noms         │
+ * │ sémantiques — `--fond`, `--encre`, `--action` — à ces valeurs.          │
+ * │                                                                          │
+ * │ Conséquence : AUCUN composant ne connaît le thème. Les treize écrans     │
+ * │ déjà livrés changent de palette sans qu'une ligne de leur code bouge,    │
+ * │ et la V1 reste intacte quand l'attribut est absent.                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TOUS CES CONTRASTES SONT MESURÉS, AUCUN N'EST ESTIMÉ.                   │
+ * │                                                                          │
+ * │ Deux résultats ont directement changé la palette :                       │
+ * │                                                                          │
+ * │   * l'ocre `#d97a34` sur la crème vaut 2,90:1 — SOUS le seuil AA. Il    │
+ * │     est donc une SURFACE (fond de bouton), jamais une couleur de texte. │
+ * │     Le texte ocre existe, mais c'est `--v2-ocre-encre`, assombri à      │
+ * │     5,10:1 ;                                                            │
+ * │                                                                          │
+ * │   * sur cet ocre, le texte est l'ENCRE (5,23:1) et jamais du blanc, qui │
+ * │     tombe à 3,10:1. C'est la même règle que le jaune de la V1, et elle  │
+ * │     se rate de la même façon.                                           │
+ * │                                                                          │
+ * │ `tests/unit/design-tokens.test.ts` recalcule les deux à chaque exécution.│
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:root {
+  /* ── Ancrage : le vert de la marque ──────────────────────────────────── */
+  /* 9,10:1 sur la crème — lisible en texte autant qu'en aplat. */
+  --v2-vert: #1f4d2e;
+  --v2-vert-clair: #2e6b41;
+  /* Le pied de page, plus sourd que l'en-tête : il ferme la page. */
+  --v2-vert-nuit: #16371f;
+
+  /* ── Fonds ───────────────────────────────────────────────────────────── */
+  --v2-fond: #fbf7ef;
+  /* Un cran plus soutenu : c'est lui qui découpe les sections en bandes,
+     là où la V1 séparait par des filets. */
+  --v2-fond-doux: #f3ede0;
+
+  /* ── Encres ──────────────────────────────────────────────────────────── */
+  --v2-encre: #24201b;
+  --v2-encre-douce: #5e5347;
+
+  /* ── Accent chaud ────────────────────────────────────────────────────── */
+  /* SURFACE uniquement — 2,90:1 sur la crème, donc jamais du texte. */
+  --v2-ocre: #d97a34;
+  /* Survol : assombri jusqu'où l'encre tient encore AA (4,57:1). */
+  --v2-ocre-survol: #cb7126;
+  /* L'ocre POUR LE TEXTE — prix, liens d'accent. 5,10:1. */
+  --v2-ocre-encre: #a8511a;
+
+  /* ── Lignes ──────────────────────────────────────────────────────────── */
+  --v2-bordure: #e5dcc9;
+  --v2-bordure-forte: #d6cab2;
+  --v2-separateur: #efe8d9;
+}
+
+:root[data-design='v2'] {
+  --fond: var(--v2-fond);
+  --fond-doux: var(--v2-fond-doux);
+  --fond-lecture: var(--v2-fond-doux);
+  --encre: var(--v2-encre);
+  --encre-douce: var(--v2-encre-douce);
+  --bordure: var(--v2-bordure);
+  --bordure-forte: var(--v2-bordure-forte);
+  --separateur: var(--v2-separateur);
+  --souligne: var(--v2-bordure-forte);
+
+  /* L'action passe du jaune à l'ocre. L'encre dessus reste l'encre. */
+  --action: var(--v2-ocre);
+  --action-survol: var(--v2-ocre-survol);
+  --action-encre: var(--v2-encre);
+
+  /* La crème d'attention se réaligne sur le fond doux de la V2. */
+  --creme: var(--v2-fond-doux);
+  --creme-bordure: var(--v2-bordure-forte);
+  --creme-accent: var(--v2-ocre-encre);
+
+  --lien-survol: var(--v2-vert);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LES CINQ COULEURS DE TRADITION SORTENT DE L'AFFICHAGE.                │
+   * │                                                                        │
+   * │ C'est la décision de direction : une seule couleur porte le site, et   │
+   * │ ce sont les COUVERTURES qui apportent la couleur. Cinq teintes de      │
+   * │ carte se battaient avec des illustrations déjà très colorées — c'est   │
+   * │ la raison pour laquelle « les couvertures sont mal mises en valeur ».  │
+   * │                                                                        │
+   * │ Les cinq noms de région SURVIVENT, tous, et pointent vers la même      │
+   * │ neutre. Les supprimer casserait `teintesRegion` et les composants qui  │
+   * │ les lisent ; les réaffecter les rend simplement invisibles. La région  │
+   * │ reste dite — en toutes lettres, sur la pastille.                       │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --region-afrique_ouest-accent: var(--v2-vert);
+  --region-afrique_ouest-encre: var(--v2-vert);
+  --region-afrique_ouest-fond: var(--v2-fond);
+  --region-afrique_ouest-bordure: var(--v2-bordure);
+  --region-afrique_ouest-motif: var(--v2-fond-doux);
+
+  --region-sahel-accent: var(--v2-vert);
+  --region-sahel-encre: var(--v2-vert);
+  --region-sahel-fond: var(--v2-fond);
+  --region-sahel-bordure: var(--v2-bordure);
+  --region-sahel-motif: var(--v2-fond-doux);
+
+  --region-afrique_centrale-accent: var(--v2-vert);
+  --region-afrique_centrale-encre: var(--v2-vert);
+  --region-afrique_centrale-fond: var(--v2-fond);
+  --region-afrique_centrale-bordure: var(--v2-bordure);
+  --region-afrique_centrale-motif: var(--v2-fond-doux);
+
+  --region-afrique_australe-accent: var(--v2-vert);
+  --region-afrique_australe-encre: var(--v2-vert);
+  --region-afrique_australe-fond: var(--v2-fond);
+  --region-afrique_australe-bordure: var(--v2-bordure);
+  --region-afrique_australe-motif: var(--v2-fond-doux);
+
+  --region-afrique_est-accent: var(--v2-vert);
+  --region-afrique_est-encre: var(--v2-vert);
+  --region-afrique_est-fond: var(--v2-fond);
+  --region-afrique_est-bordure: var(--v2-bordure);
+  --region-afrique_est-motif: var(--v2-fond-doux);
+
+  --region-inconnue-accent: var(--v2-vert);
+  --region-inconnue-encre: var(--v2-vert);
+  --region-inconnue-fond: var(--v2-fond);
+  --region-inconnue-bordure: var(--v2-bordure);
+  --region-inconnue-motif: var(--v2-fond-doux);
+
+  /*
+   * Typographie : les mêmes trois familles, employées PLUS FRANCHEMENT.
+   *
+   * « Typographie fade » ne venait pas des polices — Fraunces est tout sauf
+   * fade — mais de leur emploi timide : des titres à peine plus gros que le
+   * corps, et un `WONK` presque éteint. La V2 pousse les deux.
+   */
+  --titre-variations: 'SOFT' 100, 'WONK' 1;
+
+  /* Des formes plus douces : c'est ce qui rend un site « chaleureux ». */
+  --rayon-controle: 10px;
+  --rayon-bouton: 999px;
+  --rayon-image: 12px;
+  --rayon-encart: 16px;
+  --rayon-bloc: 18px;
+  --rayon-carte: 20px;
+  --rayon-panneau: 24px;
+  --rayon-hero: 28px;
+
+  /*
+   * Les ombres, elles, se multiplient — la V1 s'en interdisait deux, la V2
+   * les assume : c'est une part de ce qui manquait pour paraître « pro ».
+   */
+  --ombre-couverture: 0 18px 40px rgb(31 77 46 / 18%);
+  --ombre-carte: 0 2px 6px rgb(36 32 27 / 6%), 0 12px 28px rgb(36 32 27 / 8%);
+  --ombre-carte-survol: 0 4px 10px rgb(36 32 27 / 8%), 0 22px 44px rgb(31 77 46 / 16%);
+  --ombre-flottante: 0 8px 30px rgb(36 32 27 / 14%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --transition-couleur: 0s;

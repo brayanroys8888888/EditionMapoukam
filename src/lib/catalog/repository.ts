@@ -457,7 +457,9 @@ async function suggestions(
 
   const { data } = await client
     .from('books')
-    .select('id, slug, couverture_url, book_translations!inner(titre, langue, statut)')
+    .select(
+      'id, slug, couverture_url, couverture_jeton, book_translations!inner(titre, langue, statut)',
+    )
     .eq('statut', 'publie')
     .neq('id', bookId)
     .overlaps('themes', themes)
@@ -470,5 +472,15 @@ async function suggestions(
     slug: livre.slug,
     titre: livre.book_translations[0]?.titre ?? livre.slug,
     couverture_url: livre.couverture_url,
+    // ┌──────────────────────────────────────────────────────────────────┐
+    // │ LE JETON, PAS LE CHEMIN BRUT.                                    │
+    // │                                                                  │
+    // │ `couverture_url` est un chemin de stockage — `covers/<jeton>/…` — │
+    // │ sans schéma ni hôte. Posé tel quel dans un `src`, il se résout    │
+    // │ relativement à la page et rend 404. Les suggestions étaient la    │
+    // │ seule lecture du catalogue à ne pas passer par `urlsCouverture`,  │
+    // │ et c'est très exactement là que les images manquaient.            │
+    // └──────────────────────────────────────────────────────────────────┘
+    couverture: urlsCouverture(livre.couverture_jeton),
   }));
 }

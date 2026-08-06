@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { readdirSync } from 'node:fs';
+import { join } from 'node:path';
 import { NextRequest } from 'next/server';
 
 import { middleware } from '@/middleware';
@@ -121,6 +123,34 @@ describe('chemins hors périmètre', () => {
     ]) {
       const reponse = await middleware(requete(chemin));
       expect(reponse.headers.get('location'), `${chemin} redirigé à tort`).toBeNull();
+    }
+  });
+
+  it('laisse passer TOUT ce que `public/` contient — la liste est vérifiée, pas récitée', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ DEUX FOIS LE MÊME DÉFAUT, DEUX FOIS INVISIBLE.                      │
+    // │                                                                    │
+    // │ `/fonts` d'abord : les trois familles ne se chargeaient jamais, et  │
+    // │ la page rendait en Georgia — ce qui ressemble à un mauvais dessin,   │
+    // │ pas à une panne. `/images` ensuite : le logo est posé en MASQUE     │
+    // │ CSS, et un masque introuvable laisse le disque vert entier, donc    │
+    // │ une pastille qui a l'air délibérée.                                 │
+    // │                                                                    │
+    // │ Réciter une liste n'a pas suffi deux fois de suite. Ce test la LIT  │
+    // │ sur le disque : tout dossier ajouté à `public/` échoue ici tant     │
+    // │ qu'il n'est pas exempté.                                            │
+    // └────────────────────────────────────────────────────────────────────┘
+    const racine = join(process.cwd(), 'public');
+    const entrees = readdirSync(racine, { withFileTypes: true });
+    expect(entrees.length, 'public/ vide : ce test ne prouverait rien').toBeGreaterThan(0);
+
+    for (const entree of entrees) {
+      const chemin = entree.isDirectory() ? `/${entree.name}/fichier.bin` : `/${entree.name}`;
+      const reponse = await middleware(requete(chemin));
+      expect(
+        reponse.headers.get('location'),
+        `${chemin} vit sous public/ et se fait rediriger — ajoute-le à HORS_PERIMETRE et au matcher`,
+      ).toBeNull();
     }
   });
 });

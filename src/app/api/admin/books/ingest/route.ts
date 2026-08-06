@@ -38,8 +38,18 @@ import { logger } from '@/lib/logger';
  * Alignée sur la limite du bucket `book-sources` (migration 0020) : accepter
  * ici un fichier que le stockage refusera ensuite ferait échouer l'ingestion
  * après plusieurs minutes de travail, au lieu de la refuser tout de suite.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ EXPORTÉE PARCE QU'UN TROISIÈME PLAFOND EXISTE, AILLEURS.                │
+ * │                                                                          │
+ * │ L'écran de dépôt passe par une Server Action, dont Next borne le corps —  │
+ * │ à 1 Mo par défaut, ce qui faisait échouer CHAQUE conte du corpus, tous    │
+ * │ au-dessus de 1,1 Mo. `next.config.ts` relève donc ce plafond, et un test  │
+ * │ unitaire vérifie qu'il vaut bien celui-ci : un plafond plus bas là-bas    │
+ * │ refuserait en silence ce que cette route accepte.                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
-const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
+export const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
 
 /**
  * Limitation de concurrence de l'ingestion.
@@ -76,7 +86,48 @@ const champsSchema = z.object({
   langue: z.enum(['fr', 'en']).default('fr'),
   titre: z.string().trim().min(1).max(300).optional(),
   auteur: z.string().trim().min(1).max(200).optional(),
+  /**
+   * Titre AUQUEL RATTACHER cette version, au lieu d'en créer un nouveau.
+   *
+   * §5.5 : un livre est une entité parente avec N déclinaisons linguistiques,
+   * et un droit d'accès porte sur le LIVRE. Sans ce champ, déposer la version
+   * anglaise créait un SECOND titre au slug suffixé — donc un second prix, une
+   * seconde publication, et un acheteur du français sans aucun droit sur
+   * l'anglais.
+   */
+  livre_id: z.uuid().optional(),
 });
+
+/**
+ * Lit un champ de formulaire — UN CHAMP LAISSÉ VIDE VAUT ABSENT.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE DÉFAUT QUE CETTE FONCTION CORRIGE.                                   │
+ * │                                                                          │
+ * │ `titre` et `auteur` sont FACULTATIFS : la chaîne d'ingestion les lit dans │
+ * │ le PDF, et l'écran de dépôt invite en toutes lettres à les laisser vides. │
+ * │                                                                          │
+ * │ Mais un `<input>` vide n'est pas absent du corps multipart : il y figure  │
+ * │ avec la valeur `''`. L'ancien `?? undefined` ne rattrapait que `null` —   │
+ * │ le cas du champ jamais envoyé — si bien que la chaîne vide atteignait     │
+ * │ `z.string().min(1)` et faisait échouer TOUT le dépôt sur un champ         │
+ * │ facultatif que l'écran conseillait de ne pas remplir.                     │
+ * │                                                                          │
+ * │ Aucun test ne l'avait vu : ils construisent leur `FormData` à la main et  │
+ * │ n'y posent que `fichier` et `langue`. Seul un vrai navigateur envoie des  │
+ * │ champs vides.                                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * La validation n'est pas assouplie pour autant : un titre RENSEIGNÉ reste
+ * soumis aux mêmes bornes. C'est la lecture qui est corrigée, pas le contrôle.
+ */
+function renseigne(formulaire: FormData, nom: string): string | undefined {
+  const valeur = formulaire.get(nom);
+  if (typeof valeur !== 'string') return undefined;
+
+  const propre = valeur.trim();
+  return propre === '' ? undefined : propre;
+}
 
 export async function POST(request: Request): Promise<Response> {
   // `gardeAdmin` et non `requireAdmin` : elle apporte le QUOTA DE DEBIT en plus
@@ -112,9 +163,10 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const champs = champsSchema.safeParse({
-    langue: formulaire.get('langue') ?? undefined,
-    titre: formulaire.get('titre') ?? undefined,
-    auteur: formulaire.get('auteur') ?? undefined,
+    langue: renseigne(formulaire, 'langue'),
+    titre: renseigne(formulaire, 'titre'),
+    auteur: renseigne(formulaire, 'auteur'),
+    livre_id: renseigne(formulaire, 'livre_id'),
   });
   if (!champs.success) {
     return errors.validation(
@@ -150,6 +202,7 @@ export async function POST(request: Request): Promise<Response> {
             langue: champs.data.langue,
             ...(champs.data.titre ? { titre: champs.data.titre } : {}),
             ...(champs.data.auteur ? { auteur: champs.data.auteur } : {}),
+            ...(champs.data.livre_id ? { bookId: champs.data.livre_id } : {}),
           }),
         ),
       DELAI_ATTENTE_MS,

@@ -17,6 +17,9 @@ import {
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import { BoutiqueV2 } from '@/components/v2/boutique';
+import { versionDesign } from '@/design/version';
+import { ajouterAuPanier } from '../panier/actions';
 import styles from '@/components/catalogue/catalogue.module.css';
 
 /**
@@ -214,6 +217,22 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
       .replace('{montres}', String(page.total))
       .replace('{total}', String(facettes.total));
   })();
+
+  if (versionDesign() === 'v2') {
+    return (
+      <BoutiqueV2
+        langue={langue}
+        page={page}
+        facettes={facettes}
+        filtres={filtres}
+        poses={poses}
+        lien={lien}
+        base={base}
+        compte={compte}
+        actionAjout={(livreId) => ajouterAuPanier.bind(null, langue, livreId, langue)}
+      />
+    );
+  }
 
   return (
     <div className={styles.page}>

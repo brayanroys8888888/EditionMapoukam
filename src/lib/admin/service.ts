@@ -150,6 +150,33 @@ export async function listerLivres(
   });
 }
 
+/**
+ * Un titre, et tout ce que l'écran d'édition en modifie.
+ *
+ * Rend `introuvable` sur un identifiant inconnu — la fonction SQL ne rend
+ * aucune ligne, et `maybeSingle` n'est pas disponible sur un appel RPC qui
+ * déclare `returns table`. Le tableau vide est donc traduit ici, une fois,
+ * plutôt que dans chaque appelant.
+ */
+export async function lireLivre(
+  bookId: string,
+  options: { client?: AppSupabaseClient } = {},
+): Promise<ResultatAdmin<Record<string, unknown>>> {
+  const client = options.client ?? createServiceClient();
+
+  const resultat = await appeler<Record<string, unknown>[]>(client, 'admin_lire_livre', {
+    p_book_id: bookId,
+  });
+  if (!resultat.ok) return resultat;
+
+  const ligne = resultat.donnees[0];
+  if (!ligne) {
+    return { ok: false, raison: 'introuvable', detail: 'Aucun titre pour cet identifiant.' };
+  }
+
+  return { ok: true, donnees: ligne };
+}
+
 export async function listerAbonnements(
   filtres: { statut?: string | null } & Pagination,
   options: { client?: AppSupabaseClient } = {},
@@ -233,6 +260,20 @@ export async function retirerDroit(
   });
 }
 
+/**
+ * Les cinq régions du catalogue.
+ *
+ * La région n'est PAS l'origine culturelle : celle-ci est un texte libre
+ * — « Peul », « Cameroun » — quand celle-là est l'une de ces cinq valeurs, sur
+ * laquelle le catalogue filtre et que la publication exige.
+ */
+export type RegionConte =
+  | 'afrique_ouest'
+  | 'sahel'
+  | 'afrique_centrale'
+  | 'afrique_australe'
+  | 'afrique_est';
+
 export async function modifierLivre(
   acteur: ActeurId,
   bookId: string,
@@ -241,7 +282,9 @@ export async function modifierLivre(
     inclusAbonnement?: boolean;
     disponibleAchat?: boolean;
     auteur?: string;
+    illustrateur?: string;
     origineCulturelle?: string;
+    region?: RegionConte;
     ageMin?: number;
     ageMax?: number;
     nbPagesExtrait?: number;
@@ -260,6 +303,63 @@ export async function modifierLivre(
     p_age_min: champs.ageMin ?? null,
     p_age_max: champs.ageMax ?? null,
     p_nb_pages_extrait: champs.nbPagesExtrait ?? null,
+    // Exigée à la publication depuis la migration 0044, et impossible à poser
+    // jusqu'au 5 août 2026 : un conte déposé restait impubliable.
+    p_region: champs.region ?? null,
+    p_illustrateur: champs.illustrateur ?? null,
+  });
+}
+
+/**
+ * Corrige le titre et le résumé d'une version linguistique.
+ *
+ * La chaîne d'ingestion lit le titre dans le PDF — elle a donc raison la
+ * plupart du temps, et tort exactement là où on ne peut rien y faire : un PDF
+ * exporté d'un traitement de texte porte souvent « Document1 ». Le résumé, lui,
+ * n'est jamais extrait, et c'est le texte que lit un client avant d'acheter.
+ */
+export async function modifierTraduction(
+  acteur: ActeurId,
+  bookId: string,
+  translationId: string,
+  champs: { titre?: string; resume?: string | null },
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_modifier_traduction', {
+    p_acteur: acteur,
+    // Le titre parent EST une garde : la fonction refuse une version qui ne lui
+    // appartient pas, et répond « introuvable » — la même chose qu'un
+    // identifiant inventé, qui ne dit donc rien de plus.
+    p_book_id: bookId,
+    p_translation_id: translationId,
+    p_titre: champs.titre ?? null,
+    // `null` laisse le résumé intact ; la chaîne VIDE le retire. La distinction
+    // est portée jusqu'ici parce qu'un éditeur doit pouvoir effacer un texte
+    // qu'il a écrit.
+    p_resume: champs.resume ?? null,
+  });
+}
+
+/**
+ * Supprime un BROUILLON, et lui seul.
+ *
+ * Un dépôt raté doit pouvoir disparaître. Un titre publié ou archivé, non :
+ * `entitlements` et `order_items` le référencent en cascade, si bien qu'une
+ * suppression effacerait en silence des droits payés et des pièces comptables.
+ * La garde est en base — celle-ci ne fait que transporter.
+ */
+export async function supprimerLivre(
+  acteur: ActeurId,
+  bookId: string,
+  motif: string,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<null>(client, 'admin_supprimer_livre', {
+    p_acteur: acteur,
+    p_book_id: bookId,
+    p_motif: motif,
   });
 }
 

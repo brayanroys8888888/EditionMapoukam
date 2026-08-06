@@ -209,7 +209,16 @@ export default async function PageOffres({ params }: Parametres) {
             </div>
 
             <div className={styles.zoneBouton}>
-              <a className={styles.boutonPrimaire} href={`/${langue}/compte/abonnement`}>
+              {/*
+                LE BOUTON MÈNE AU TUNNEL, ET NON À « MON ABONNEMENT ».
+
+                Il menait à `/compte/abonnement`, qui répondait « vous n'avez
+                pas d'abonnement » et renvoyait ici : une boucle fermée sur
+                elle-même, où le bouton le plus visible de la page ne menait
+                nulle part. Le tunnel, lui, sait quoi faire de quelqu'un qui est
+                déjà abonné — il le lui dit et l'envoie à son compte.
+              */}
+              <a className={styles.boutonPrimaire} href={`/${langue}/abonnement/souscrire`}>
                 {abonnement.jours_essai > 0
                   ? traduire(langue, 'offres.abonnementCommencerEssai').replace(
                       '{jours}',

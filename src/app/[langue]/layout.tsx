@@ -5,6 +5,13 @@ import type { Metadata } from 'next';
 
 import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
 import { Entete, PiedDePage } from '@/components/enveloppe';
+import { EnteteV2, PiedDePageV2 } from '@/components/enveloppe/v2';
+import { versionDesign } from '@/design/version';
+import { sorteEnveloppe } from '@/design/enveloppe';
+import { Bulles } from '@/components/v2/bulles';
+import { DefilementSousHero } from '@/components/v2/defilement-sous-hero';
+import { apercu } from '@/lib/orders/orders';
+import { formateur, lireDevise } from '@/lib/money/affichage';
 import { identifierAppelant } from '@/lib/auth/session';
 import type { Utilisateur } from '@/domain/api/contract';
 import { getServerEnv } from '@/lib/config/env';
@@ -100,6 +107,87 @@ export default async function EnveloppeLangue({
         langue_preferee: appelant.langue_preferee,
       }
     : null;
+
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ L'ÉTAT DU PANIER EST RÉSOLU ICI, ET LE MONTANT VIENT DU SERVEUR.      │
+  // │                                                                        │
+  // │ La V2 écrit le montant dans l'en-tête, sur toutes les pages. Il vient  │
+  // │ d'`apercu` — le module qu'emploie `PUT /api/orders` — et JAMAIS d'une  │
+  // │ addition des lignes : le total dépend de la zone d'encaissement et     │
+  // │ d'un éventuel code promo, que seule la commande connaît.               │
+  // │                                                                        │
+  // │ L'échec est silencieux et rend un panier vide : un en-tête qui tombe   │
+  // │ emporterait toutes les pages du site avec lui.                         │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const panier = await (async () => {
+    if (!appelant || versionDesign() !== 'v2') return { nombre: 0, affichage: null };
+
+    const vue = await apercu(appelant, { zoneAffichee: 'international' }).catch(() => null);
+    if (!vue || vue.total.lignes.length === 0) return { nombre: 0, affichage: null };
+
+    const formater = formateur(await lireDevise(vue.total.devise));
+    return { nombre: vue.total.lignes.length, affichage: formater(vue.total.total) };
+  })().catch(() => ({ nombre: 0, affichage: null }));
+
+  if (versionDesign() === 'v2') {
+    const sorte = sorteEnveloppe(chemin);
+
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ NI BARRE NI PIED SUR L'AUTHENTIFICATION ET L'ADMINISTRATION.        │
+     * │                                                                      │
+     * │ Deux raisons distinctes, décidées dans `sorteEnveloppe` :            │
+     * │                                                                      │
+     * │   * les cinq écrans d'authentification n'ont qu'une tâche, et chaque │
+     * │     élément qui ne la sert pas est une occasion de partir ailleurs   │
+     * │     au moment précis où l'on demande un mot de passe ;               │
+     * │                                                                      │
+     * │   * l'administration a son propre rail : superposer l'en-tête public │
+     * │     donnerait deux navigations concurrentes, et un pied commercial   │
+     * │     sous un tableau de commandes.                                    │
+     * │                                                                      │
+     * │ Les bulles restent : elles ne gênent rien et tiennent la charte.     │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    if (sorte === 'nue') {
+      return (
+        <>
+          <Bulles />
+          <main id="contenu">{children}</main>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <Bulles />
+
+        <EnteteV2
+          langue={courante}
+          utilisateur={utilisateur}
+          chemin={chemin}
+          requete={requete}
+          panier={panier}
+          pose={sorte === 'transparente'}
+        />
+
+        {/*
+         * Sur les pages INTÉRIEURES, la vue se place sous le bandeau de tête.
+         * Jamais sur l'accueil : son hero est ce qu'on vient voir.
+         */}
+        {sorte === 'complete' ? <DefilementSousHero cible="[data-banniere]" /> : null}
+
+        <main id="contenu">{children}</main>
+
+        <PiedDePageV2
+          langue={courante}
+          chemin={chemin}
+          requete={requete}
+          annee={getClock().now().getFullYear()}
+        />
+      </>
+    );
+  }
 
   return (
     <>

@@ -495,11 +495,16 @@ export function Suggestions({
              * posées sur le conteneur de page.
              */}
             <a className={styles.suggestion} href={`/${langue}/contes/${suggestion.slug}`}>
-              {suggestion.couverture_url ? (
+              {/*
+                `couverture.vignette` — une URL ABSOLUE. Le champ
+                `couverture_url` voisin est un chemin de stockage brut, et le
+                poser ici se résoudrait relativement à la page : 404 silencieux.
+              */}
+              {suggestion.couverture ? (
                 <img
-                  src={suggestion.couverture_url}
-                  width={200}
-                  height={300}
+                  src={suggestion.couverture.vignette}
+                  width={320}
+                  height={480}
                   loading="lazy"
                   decoding="async"
                   alt=""

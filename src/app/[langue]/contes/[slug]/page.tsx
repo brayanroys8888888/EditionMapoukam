@@ -8,6 +8,8 @@ import { lireFiche } from '@/lib/catalog/repository';
 import { identifierAppelant } from '@/lib/auth/session';
 import { getServerEnv } from '@/lib/config/env';
 import { PageFicheLivre } from '@/components/fiche';
+import { FicheV2 } from '@/components/v2/fiche';
+import { versionDesign } from '@/design/version';
 import { ajouterAuPanier } from '../../panier/actions';
 
 /**
@@ -97,18 +99,35 @@ export default async function PageFiche({ params }: Parametres) {
     ...(fiche.couverture ? { image: fiche.couverture.fiche } : {}),
   };
 
+  const structurees = (
+    <script
+      type="application/ld+json"
+      // Sérialisé par `JSON.stringify` depuis un objet construit ici : aucune
+      // chaîne venue du client n'y entre.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(donneesStructurees) }}
+    />
+  );
+
+  if (versionDesign() === 'v2') {
+    return (
+      <>
+        {structurees}
+        <FicheV2
+          langue={langue}
+          fiche={fiche}
+          actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
+        />
+      </>
+    );
+  }
+
   return (
     <PageFicheLivre
       langue={langue}
       fiche={fiche}
       actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
     >
-      <script
-        type="application/ld+json"
-        // Sérialisé par `JSON.stringify` depuis un objet construit ici : aucune
-        // chaîne venue du client n'y entre.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(donneesStructurees) }}
-      />
+      {structurees}
     </PageFicheLivre>
   );
 }

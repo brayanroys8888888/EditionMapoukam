@@ -160,3 +160,15 @@ export function Vide({
     </div>
   );
 }
+
+/**
+ * Rotor INLINE — 16 px, pour un bouton de soumission.
+ *
+ * Le rotor pleine taille (`<Chargement>`) est fait pour un état d'écran entier.
+ * Celui-ci est fait pour vivre DANS un bouton, à côté de son libellé. Sa couleur
+ * suit `currentColor` : blanc dans un bouton vert, gris dans un bouton discret.
+ */
+export function RotorInline(): ReactNode {
+  return <span className={styles.rotorInline} aria-hidden="true" />;
+}
+

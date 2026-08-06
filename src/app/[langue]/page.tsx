@@ -9,6 +9,9 @@ import type { RegionConte } from '@/domain/catalog/types';
 import { GrilleCatalogue, teintesRegion } from '@/components/catalogue';
 import { Couverture } from '@/components/catalogue/couverture';
 import { Motif } from '@/components/motif';
+import { AccueilV2 } from '@/components/v2/accueil';
+import { versionDesign } from '@/design/version';
+import { ajouterAuPanier } from './panier/actions';
 import styles from '@/components/accueil/accueil.module.css';
 
 /**
@@ -78,6 +81,27 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
     // paiement, depuis le pays réel du moyen de paiement.
     lireOffres('international').catch(() => null),
   ]);
+
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ LES DEUX DIRECTIONS PARTAGENT LES MÊMES DONNÉES.                      │
+  // │                                                                        │
+  // │ Le chargement ci-dessus — nouveautés, facettes, offres — est fait UNE   │
+  // │ fois, avant de choisir la mise en page. C'est ce qui garantit que la   │
+  // │ V2 ne dérive pas : elle ne peut afficher que ce que la V1 affiche,     │
+  // │ puisqu'elle reçoit exactement le même objet.                           │
+  // └────────────────────────────────────────────────────────────────────────┘
+  if (versionDesign() === 'v2') {
+    return (
+      <AccueilV2
+        langue={langue}
+        nouveautes={nouveautes}
+        facettes={facettes}
+        // L'ajout au panier est une Server Action LIÉE au titre : un `GET` qui
+        // modifie un panier serait rejoué par le moindre préchargement.
+        actionAjout={(livreId) => ajouterAuPanier.bind(null, langue, livreId, langue)}
+      />
+    );
+  }
 
   const vedette = nouveautes?.entrees[0] ?? null;
   const traditions = ORDRE_REGIONS.map((region) => ({

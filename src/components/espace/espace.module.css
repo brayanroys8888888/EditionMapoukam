@@ -312,32 +312,6 @@
   flex-wrap: wrap;
 }
 
-/*
- * Le bouton de téléchargement prend la couleur de TEXTE de la tradition, pas
- * la couleur pleine — c'est ce qui le garde lisible sur le fond de carte.
- */
-.achatTelecharger {
-  flex: 1 1 104px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: var(--cible-min);
-  padding: 10px 12px;
-  border: 2px solid var(--carte-encre);
-  border-radius: 9px;
-  background: transparent;
-  color: var(--carte-encre);
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
-  text-align: center;
-  transition: background var(--transition-couleur), color var(--transition-couleur);
-}
-
-.achatTelecharger:hover {
-  background: var(--carte-encre);
-  color: var(--fond);
-}
-
 .achatLire {
   flex: 1 1 104px;
   display: inline-flex;
@@ -370,4 +344,89 @@
   flex: 1 1 100%;
   font-size: var(--taille-m);
   color: var(--encre-douce);
+}
+
+/*
+ * ── Téléchargement : DEUX CHOIX ET UN BOUTON ───────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QUE CE BLOC REMPLACE, ET POURQUOI.                                   │
+ * │                                                                          │
+ * │ La carte énumérait toutes les combinaisons langue × format : un conte    │
+ * │ en deux langues donnait QUATRE boutons de téléchargement, plus           │
+ * │ « Lire » — cinq commandes dans une carte de 224 px, où il faut lire      │
+ * │ chaque libellé pour distinguer « PDF (FR) » de « PDF (EN) ».             │
+ * │                                                                          │
+ * │ Deux listes déroulantes et un bouton disent la même chose en trois       │
+ * │ commandes, quel que soit le nombre de langues — et le jour où un conte   │
+ * │ existera en quatre langues, la carte ne bougera pas.                     │
+ * │                                                                          │
+ * │ Le sélecteur de langue ne paraît QUE s'il y a un choix à faire : un      │
+ * │ menu à une seule entrée est une décision qu'on impose de prendre sans    │
+ * │ en offrir aucune.                                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.achatTelechargement {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-2);
+  align-items: flex-end;
+}
+
+.achatChoix {
+  flex: 1 1 92px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.achatChoixLibelle {
+  font-size: 11px;
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--encre-douce);
+}
+
+.achatChoixListe {
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: 8px 10px;
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: 9px;
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+}
+
+/*
+ * Le bouton prend la couleur de TEXTE de la tradition, pas la couleur pleine
+ * — c'est ce qui le garde lisible sur le fond de carte, et distinct du bouton
+ * « Lire » qui est plein.
+ */
+.achatTelecharger {
+  flex: 1 1 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 10px 12px;
+  border: 2px solid var(--carte-encre);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--carte-encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.achatTelecharger:hover {
+  background: var(--carte-encre);
+  color: var(--fond);
 }

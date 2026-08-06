@@ -1,0 +1,854 @@
+/*
+ * BOUTIQUE ET FICHE — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ « PAS ASSEZ PRO / RASSURANT POUR L'ACHAT » SE CORRIGE ICI.              │
+ * │                                                                          │
+ * │ Sur le site actuel, la fiche produit tient en trois lignes — un prix, un │
+ * │ champ de quantité, un bouton — puis bascule dans un texte de vente sans  │
+ * │ rapport avec un livre pour enfants. Rien n'y dit à un parent CE QU'IL    │
+ * │ ACHÈTE : ni l'âge, ni le nombre de pages, ni le format du fichier, ni    │
+ * │ qu'un extrait est lisible avant de payer.                                │
+ * │                                                                          │
+ * │ La fiche V2 met ces quatre réponses au-dessus du bouton, et le bouton    │
+ * │ après elles.                                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Bandeau de tête ────────────────────────────────────────────────────── */
+
+/*
+ * Un bandeau vert ouvre chaque page intérieure.
+ *
+ * Le site actuel les ouvre toutes sur du blanc, avec un titre perdu en haut à
+ * gauche : rien ne distingue la boutique du panier ni du blog. Le bandeau
+ * donne à chaque page une entrée, et au site un rythme.
+ */
+.banniere {
+  position: relative;
+  background: var(--v2-vert);
+  color: var(--v2-fond);
+  overflow: hidden;
+}
+
+.banniere::after {
+  content: '';
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  top: -320px;
+  right: -140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(217 122 52 / 24%), transparent 68%);
+  pointer-events: none;
+}
+
+.banniereInterieur {
+  position: relative;
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: clamp(38px, 5vw, 64px) 20px clamp(38px, 5vw, 58px);
+}
+
+.oeil {
+  display: block;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--action);
+  margin-bottom: 12px;
+}
+
+.banniereTitre {
+  font-size: clamp(32px, 4.6vw, 54px);
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--v2-fond);
+  margin-bottom: 12px;
+}
+
+.banniereTexte {
+  font-size: var(--taille-xl);
+  line-height: 1.6;
+  color: var(--v2-fond);
+  opacity: 0.88;
+  max-width: 60ch;
+}
+
+/* ── Corps de page ──────────────────────────────────────────────────────── */
+
+.page {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: clamp(32px, 4vw, 52px) 20px clamp(56px, 7vw, 80px);
+}
+
+/* ── Barre d'outils de la boutique ──────────────────────────────────────── */
+
+.outils {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 28px;
+  border-bottom: 1.5px solid var(--bordure);
+}
+
+.compte {
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+}
+
+.compte strong {
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+}
+
+.tri {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.triTitre {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+  margin-right: 4px;
+}
+
+.triLien {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: var(--rayon-bouton);
+  border: 1.5px solid transparent;
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: border-color var(--transition-couleur), color var(--transition-couleur);
+}
+
+.triLien:hover {
+  border-color: var(--bordure-forte);
+  color: var(--encre);
+}
+
+.triActif {
+  background: var(--v2-vert);
+  border-color: var(--v2-vert);
+  color: var(--v2-fond);
+  font-weight: var(--graisse-forte);
+}
+
+.triActif:hover {
+  color: var(--v2-fond);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AU TÉLÉPHONE, LE TRI GLISSE AU LIEU DE SE REPLIER SUR TROIS LIGNES.     │
+ * │                                                                          │
+ * │ Cinq tris et leur intitulé n'entrent pas dans 412 px : en `wrap`, ils    │
+ * │ prenaient trois lignes, soit près de 200 px gagnés sur la feuille de     │
+ * │ filtres et aussitôt repris ici. La première couverture repartait sous    │
+ * │ la ligne de flottaison.                                                  │
+ * │                                                                          │
+ * │ En rang glissant, ils tiennent sur une ligne. Le dernier tri déborde     │
+ * │ volontairement du bord : c'est CE débordement qui dit qu'on peut faire   │
+ * │ glisser — une barre de défilement, au doigt, ne dit rien.                │
+ * │                                                                          │
+ * │ Les marges négatives ramènent le rang aux bords de l'écran, et son       │
+ * │ propre `overflow` le rogne : la page, elle, ne déborde pas.              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 860px) {
+  .outils {
+    display: block;
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+  }
+
+  .compte {
+    display: block;
+    margin-bottom: 14px;
+  }
+
+  .tri {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    margin-inline: -20px;
+    padding-inline: 20px;
+    /*
+     * Sans cette ligne, le magnétisme rogne la marge qu'on vient de poser :
+     * il aligne le premier élément sur le bord de la BOÎTE, pas sur celui du
+     * contenu, et « Trier par » se retrouve coupé à l'ouverture.
+     */
+    scroll-padding-inline: 20px;
+  }
+
+  .tri::-webkit-scrollbar {
+    display: none;
+  }
+
+  .triTitre,
+  .triLien {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+}
+
+/* ── Deux colonnes : filtres à gauche, grille à droite ──────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES FILTRES DESCENDENT SUR LE CÔTÉ, ET LA GRILLE REMONTE.               │
+ * │                                                                          │
+ * │ En bandeau horizontal, quatre groupes de pastilles occupaient jusqu'à    │
+ * │ trois lignes : sur un portable, la première couverture n'apparaissait    │
+ * │ qu'après un défilement. Or c'est la marchandise, et elle doit être       │
+ * │ visible dès l'ouverture.                                                 │
+ * │                                                                          │
+ * │ En colonne, les filtres tiennent sur toute la hauteur sans rien pousser, │
+ * │ et la grille commence en haut de page.                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 34px;
+}
+
+.colonneFiltres {
+  flex: 1 1 220px;
+  max-width: 260px;
+  min-width: 210px;
+  position: sticky;
+  /* Sous l'en-tête collant : les filtres restent atteignables tout du long. */
+  top: 90px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PANNEAU EST BORNÉ À LA FENÊTRE — ET C'EST CE QUI FAIT TENIR LE       │
+ * │ `position: sticky`.                                                      │
+ * │                                                                          │
+ * │ Un élément collant ne se déplace JAMAIS au-delà de son bloc conteneur.   │
+ * │ Vingt pastilles font une colonne de mille pixels ; dès qu'un filtre est  │
+ * │ posé, la grille se réduit à trois cartes et c'est la colonne de filtres  │
+ * │ qui devient l'élément le plus haut. Le conteneur prend alors EXACTEMENT  │
+ * │ sa hauteur — mesuré : 1069 px de conteneur pour 1069 px de colonne — et  │
+ * │ il ne reste pas un pixel de course. Le panneau part avec la page, ce     │
+ * │ qui se lit comme « le collant s'est désactivé en filtrant ».             │
+ * │                                                                          │
+ * │ Le borner règle les deux choses d'un coup : la course revient, et les    │
+ * │ derniers filtres cessent d'être hors de l'écran quand on est en bas de   │
+ * │ la liste. Ce qui dépasse défile DANS le panneau.                         │
+ * │                                                                          │
+ * │ La borne est écrite ici et pas plus haut : sous 860 px le panneau est    │
+ * │ une feuille modale, qui a sa propre hauteur et son propre défilement.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (min-width: 861px) {
+  .filtres {
+    /*
+     * Nettement SOUS la hauteur d'écran, et pas seulement dedans.
+     *
+     * La course du panneau vaut « hauteur de la rangée moins hauteur du
+     * panneau ». Un panneau qui remplit l'écran ne se déplace donc que de
+     * quelques dizaines de pixels avant que la rangée ne s'achève — il colle,
+     * mais si peu qu'on ne le voit pas. En lui laissant trois cents pixels de
+     * marge, la course couvre un écran entier de défilement.
+     */
+    max-height: calc(100vh - 320px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ET LA GRILLE GARANTIT LA COURSE, PARCE QUE BORNER NE SUFFIT PAS.      │
+   * │                                                                        │
+   * │ Mesuré après le seul plafonnement : filtré sur une région, panneau     │
+   * │ 768 px, rangée 768 px. Toujours pas un pixel de course — trois cartes  │
+   * │ font une grille plus COURTE que le panneau, et c'est donc encore le    │
+   * │ panneau qui fixe la hauteur de la rangée.                              │
+   * │                                                                        │
+   * │ Le plancher de la grille renverse le rapport : la rangée dépasse       │
+   * │ désormais le panneau d'environ deux cents pixels, quel que soit le     │
+   * │ nombre de résultats.                                                   │
+   * │                                                                        │
+   * │ Ce qu'il coûte, et pourquoi c'est acceptable : du blanc sous une       │
+   * │ grille courte. Il ne se paie QUE dans ce cas — dès que la grille       │
+   * │ dépasse une hauteur d'écran, la règle ne fait plus rien.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  .colonneGrille {
+    min-height: 100vh;
+  }
+}
+
+.colonneGrille {
+  flex: 3 1 480px;
+  min-width: 280px;
+  /* Cible de `#resultats` : sous l'en-tête collant, jamais dessous. */
+  scroll-margin-top: 90px;
+}
+
+.filtres {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 30px 26px;
+  min-height: 300px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+}
+
+
+.groupe {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── En-tête du panneau de filtres ──────────────────────────────────────── */
+
+.panneauEntete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.panneauTitre {
+  font-size: var(--taille-2xl);
+  letter-spacing: -0.02em;
+}
+
+/*
+ * « Tout effacer » n'existe que s'il y a quelque chose à effacer.
+ *
+ * Le composant ne le rend pas autrement : un lien inerte apprend au lecteur
+ * que les liens de cette page peuvent ne rien faire, ce qui coûte plus cher
+ * que le vide qu'il comble.
+ */
+.effacer {
+  flex: 0 0 auto;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  color: var(--v2-vert);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.effacer:hover {
+  color: var(--v2-ocre-encre);
+}
+
+/* ── L'ancre, le voile et le bouton : téléphone seulement ───────────────── */
+
+/*
+ * L'ancre ne se dessine JAMAIS — c'est tout son intérêt.
+ *
+ * `:target` se moque du rendu : il compare le fragment de l'URL à un `id`.
+ * Un élément `display: none` est donc ciblable sans qu'aucun navigateur ne
+ * défile vers lui. C'est ce qui permet aux pastilles d'ordinateur de porter
+ * `#filtres` sans faire sauter la page à chaque clic.
+ */
+.ancre {
+  display: none;
+}
+
+/* Hors du téléphone, la feuille n'est qu'un conteneur transparent. */
+.declencheur,
+.voile,
+.valider {
+  display: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 860 PX, LES FILTRES DEVIENNENT UNE FEUILLE MODALE.                  │
+ * │                                                                          │
+ * │ Playwright avait mesuré 821 px de filtres sur un écran de 915 : la       │
+ * │ première couverture n'apparaissait qu'après un défilement, c'est-à-dire  │
+ * │ le défaut qu'on venait de corriger sur ordinateur, réapparu au           │
+ * │ téléphone. Une hauteur bornée l'avait CONTENU ; elle ne l'avait pas      │
+ * │ résolu, puisque les filtres mangeaient encore un quart de l'écran avant  │
+ * │ même qu'on ait demandé à filtrer.                                        │
+ * │                                                                          │
+ * │ La feuille les sort du flux : il ne reste qu'un bouton d'une ligne, et   │
+ * │ la grille commence juste après.                                          │
+ * │                                                                          │
+ * │ POURQUOI PAS `<details>` : l'attribut `open` est du BALISAGE, et le      │
+ * │ serveur ne connaît pas la largeur de l'écran. Ouvert, les filtres        │
+ * │ remplissent le téléphone ; fermé, ils disparaissent de la colonne        │
+ * │ d'ordinateur où ils doivent rester visibles. Aucune media query ne sait  │
+ * │ ouvrir un `<details>` fermé.                                             │
+ * │                                                                          │
+ * │ `:target`, lui, est du CSS — donc soumis aux media queries. Ci-dessous   │
+ * │ il ouvre la feuille ; au-dessus de 860 px, aucune de ces règles ne       │
+ * │ s'applique et la colonne reste une colonne. Sans une ligne de            │
+ * │ JavaScript, comme le reste de cette page.                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 860px) {
+  .colonneFiltres {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+    position: static;
+  }
+
+  /* ── Le bouton qui appelle la feuille ───────────────────────────────────── */
+
+  .declencheur {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: var(--cible-min);
+    padding: 12px 18px;
+    border: 1.5px solid var(--bordure-forte);
+    border-radius: var(--rayon-bouton);
+    background: var(--fond);
+    font-size: var(--taille-l);
+    font-weight: var(--graisse-forte);
+    color: var(--v2-vert);
+  }
+
+  /* Le nombre de filtres posés — `aria-label` le redit en toutes lettres. */
+  .declencheurCompte {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 7px;
+    border-radius: var(--rayon-pastille);
+    background: var(--v2-vert);
+    color: var(--v2-fond);
+    font-size: var(--taille-s);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── La feuille ─────────────────────────────────────────────────────────── */
+
+  .feuille {
+    position: fixed;
+    inset: 0;
+    /* Sous le tiroir de panier (90 / 91), au-dessus de tout le reste. */
+    z-index: 80;
+    visibility: hidden;
+    /*
+     * La visibilité ne se dégrade pas : elle bascule. On RETARDE seulement sa
+     * bascule vers `hidden`, le temps que le panneau ait fini de descendre —
+     * sans quoi la feuille disparaîtrait d'un coup au lieu de sortir.
+     */
+    transition: visibility 0s linear 0.28s;
+  }
+
+  .ancre:target ~ .feuille {
+    visibility: visible;
+    transition: visibility 0s;
+  }
+
+  .voile {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgb(22 55 31 / 55%);
+    opacity: 0;
+    transition: opacity 0.24s ease;
+  }
+
+  .ancre:target ~ .feuille .voile {
+    opacity: 1;
+  }
+
+  .panneau {
+    position: absolute;
+    inset: auto 0 0 0;
+    display: flex;
+    flex-direction: column;
+    /* Le haut de l'écran reste visible : on n'a pas quitté le catalogue. */
+    max-height: 86vh;
+    padding: 20px 18px calc(18px + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--rayon-panneau) var(--rayon-panneau) 0 0;
+    background: var(--fond);
+    box-shadow: 0 -12px 40px rgb(22 55 31 / 26%);
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    /* Rien ne dépasse de la feuille : le débordement est CELUI des filtres. */
+    overflow: hidden;
+  }
+
+  .ancre:target ~ .feuille .panneau {
+    transform: none;
+  }
+
+  /*
+   * Dans la feuille, le cadre du panneau n'a plus lieu d'être : c'est la
+   * feuille qui est le cadre. Seul le défilement reste.
+   */
+  .filtres {
+    gap: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    /* Le défilement s'arrête à la feuille au lieu d'entraîner la page. */
+    overscroll-behavior-y: contain;
+    /*
+     * `min-height: 0` N'EST PAS DÉCORATIF.
+     *
+     * Un enfant de boîte flexible vaut `min-height: auto` par défaut : il
+     * refuse de descendre sous la hauteur de son contenu, et fait donc
+     * DÉBORDER la feuille au lieu de défiler dedans. C'est exactement ce que
+     * Playwright a mesuré — 995 px de filtres dans une feuille de 839.
+     */
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .panneauEntete {
+    margin-bottom: 18px;
+  }
+
+  /* ── La confirmation, jamais emportée par le défilement ─────────────────── */
+
+  .valider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: var(--cible-min);
+    margin-top: 18px;
+    padding: 14px 20px;
+    border-radius: var(--rayon-bouton);
+    background: var(--v2-vert);
+    color: var(--v2-fond);
+    font-size: var(--taille-l);
+    font-weight: var(--graisse-forte);
+    text-align: center;
+  }
+}
+
+/*
+ * Mouvement réduit : la feuille APPARAÎT au lieu de glisser.
+ *
+ * Elle ne disparaît pas — un mouvement réduit n'est pas un contenu supprimé.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .feuille,
+  .voile,
+  .panneau {
+    transition: none;
+  }
+}
+
+.groupeTitre {
+  font-family: var(--police-interface);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--v2-ocre-encre);
+  margin-bottom: 10px;
+}
+
+.pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  background: var(--fond);
+  color: var(--encre);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: border-color var(--transition-couleur), background var(--transition-couleur),
+    color var(--transition-couleur);
+}
+
+
+.pastille:hover {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+}
+
+/* L'état actif est aussi porté par `aria-current` — la couleur le REDIT. */
+.pastilleActive {
+  background: var(--v2-vert);
+  border-color: var(--v2-vert);
+  color: var(--v2-fond);
+  font-weight: var(--graisse-forte);
+}
+
+.pastilleActive:hover {
+  color: var(--v2-fond);
+}
+
+/* ── Grille ─────────────────────────────────────────────────────────────── */
+
+.grille {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /* `min(46%, 250px)` garantit DEUX cartes par ligne sur téléphone : une
+     seule obligerait à seize écrans de défilement pour seize contes. */
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 250px), 1fr));
+  gap: 26px;
+}
+
+/* ── Fiche ──────────────────────────────────────────────────────────────── */
+
+.fiche {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(32px, 5vw, 60px);
+  align-items: start;
+}
+
+.ficheVisuel {
+  position: sticky;
+  top: 90px;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 3vw, 40px);
+  border-radius: var(--rayon-panneau);
+  background: var(--v2-fond-doux);
+}
+
+.ficheCouverture {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: var(--rayon-encart);
+  box-shadow: var(--ombre-couverture);
+  display: block;
+}
+
+.ficheOrigine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 15px;
+  border-radius: var(--rayon-pastille);
+  background: var(--v2-fond-doux);
+  border: 1.5px solid var(--bordure-forte);
+  color: var(--v2-vert);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 16px;
+}
+
+.fichePuce {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--action);
+  display: block;
+}
+
+.ficheTitre {
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.025em;
+  line-height: 1.06;
+  margin-bottom: 14px;
+}
+
+.ficheResume {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: var(--interligne-lecture);
+  color: var(--encre-douce);
+  max-width: var(--largeur-texte);
+  margin-bottom: 26px;
+}
+
+/* ── Les quatre réponses ────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QU'UN PARENT VEUT SAVOIR AVANT DE PAYER, EN QUATRE CASES.            │
+ * │                                                                          │
+ * │ Âge conseillé, nombre de pages, formats du fichier, langues. Elles       │
+ * │ passent AVANT le bouton d'achat, pas après : un doute non levé au moment │
+ * │ du clic ne se lève plus jamais.                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.reponses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.reponse {
+  padding: 16px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--fond);
+}
+
+.reponseIntitule {
+  display: block;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--encre-douce);
+  margin-bottom: 6px;
+}
+
+.reponseValeur {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.15;
+  color: var(--v2-vert);
+}
+
+/* ── Bloc d'achat ───────────────────────────────────────────────────────── */
+
+.achat {
+  padding: 26px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-panneau);
+  background: var(--v2-fond-doux);
+  box-shadow: var(--ombre-carte);
+}
+
+.achatPrix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.prixMontant {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: clamp(34px, 3.6vw, 46px);
+  font-weight: var(--graisse-forte);
+  line-height: 1;
+  color: var(--v2-ocre-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.prixMention {
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+}
+
+.achatActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.etiquette {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--v2-vert);
+  margin-bottom: 14px;
+}
+
+.achatNote {
+  font-size: var(--taille-m);
+  line-height: 1.55;
+  color: var(--encre-douce);
+}
+
+/*
+ * La ligne de confiance, sous le bouton.
+ *
+ * Elle ne promet rien qu'on ne tienne : paiement vérifié côté serveur, fichier
+ * conservé sans limite de durée, extrait lisible sans compte. Trois faits, pas
+ * trois slogans.
+ */
+.confiance {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--bordure-forte);
+}
+
+.confianceLigne {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: var(--taille-m);
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+.confianceCoche {
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+  flex: 0 0 auto;
+}
+
+/* ── Sections de bas de fiche ───────────────────────────────────────────── */
+
+.bloc {
+  margin-top: clamp(48px, 6vw, 72px);
+}
+
+.blocTitre {
+  font-size: clamp(24px, 2.6vw, 32px);
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.blocTexte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: var(--interligne-lecture);
+  max-width: var(--largeur-texte);
+}
+
+.similaires {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 230px), 1fr));
+  gap: 22px;
+}

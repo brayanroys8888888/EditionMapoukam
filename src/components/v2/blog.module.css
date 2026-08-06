@@ -1,0 +1,267 @@
+/*
+ * BLOG — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ « LE BLOG NE VA PAS AVEC LE RESTE DU SITE. »                            │
+ * │                                                                          │
+ * │ C'est le reproche le plus facile à vérifier, et le plus facile à         │
+ * │ corriger : le blog actuel est bleu nuit et orange vif, quand le reste du │
+ * │ site est vert et crème. Deux chartes, deux typographies, deux formes de  │
+ * │ bouton — un visiteur croit changer de site.                              │
+ * │                                                                          │
+ * │ Ce fichier n'écrit AUCUNE couleur. Il lit les mêmes jetons que la        │
+ * │ boutique et l'accueil, donc il ne PEUT PAS diverger. C'était le vrai     │
+ * │ défaut : un blog stylé à part finit toujours par partir ailleurs.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 26px;
+}
+
+/* ── Article en vedette ─────────────────────────────────────────────────── */
+
+/*
+ * Le premier article occupe DEUX colonnes et se lit à l'horizontale.
+ *
+ * Une grille parfaitement régulière donne une liste, pas une page. Le
+ * déséquilibre du premier élément est ce qui fait qu'on sait par où commencer.
+ */
+.vedette {
+  grid-column: 1 / -1;
+}
+
+.carteVedette {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond);
+  box-shadow: var(--ombre-carte);
+  transition: transform var(--transition-forme), box-shadow var(--transition-forme),
+    border-color var(--transition-forme);
+}
+
+.carteVedette:hover {
+  transform: translateY(-5px);
+  border-color: var(--v2-vert);
+  box-shadow: var(--ombre-carte-survol);
+  color: var(--encre);
+}
+
+.vedetteVisuel {
+  position: relative;
+  min-height: 260px;
+  background: var(--v2-vert);
+  overflow: hidden;
+}
+
+.vedetteMotif {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.vedetteCorps {
+  padding: clamp(26px, 3vw, 40px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Carte ordinaire ────────────────────────────────────────────────────── */
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+  box-shadow: var(--ombre-carte);
+  color: var(--encre);
+  transition: transform var(--transition-forme), box-shadow var(--transition-forme),
+    border-color var(--transition-forme);
+}
+
+.carte:hover {
+  transform: translateY(-5px);
+  border-color: var(--v2-vert);
+  box-shadow: var(--ombre-carte-survol);
+  color: var(--encre);
+}
+
+.carteVisuel {
+  position: relative;
+  height: 150px;
+  background: var(--v2-vert);
+  overflow: hidden;
+}
+
+.carteMotif {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.carteCorps {
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+}
+
+/* ── Éléments communs ───────────────────────────────────────────────────── */
+
+.categorie {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: var(--rayon-pastille);
+  background: var(--v2-fond-doux);
+  border: 1.5px solid var(--bordure-forte);
+  color: var(--v2-ocre-encre);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 14px;
+}
+
+.titre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin-bottom: 10px;
+}
+
+.titreVedette {
+  font-size: clamp(26px, 2.8vw, 36px);
+  line-height: 1.12;
+}
+
+.chapeau {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin-bottom: 18px;
+}
+
+.meta {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.lire {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-vert);
+}
+
+/* La flèche avance au survol — le mouvement dit « ça continue par là ». */
+.fleche {
+  display: inline-block;
+  transition: transform var(--transition-forme);
+}
+
+.carte:hover .fleche,
+.carteVedette:hover .fleche {
+  transform: translateX(5px);
+}
+
+/* ── Article ────────────────────────────────────────────────────────────── */
+
+.article {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(36px, 5vw, 60px) 20px clamp(56px, 7vw, 84px);
+}
+
+/*
+ * LITERATA, et la mesure de lecture.
+ *
+ * Un article de blog est le texte le plus long du site après les contes.
+ * Le laisser en police d'interface sur toute la largeur de l'écran, c'est
+ * garantir qu'il ne sera pas lu — et un blog qu'on ne lit pas n'est pas un
+ * pilier de marque, c'est une rubrique.
+ */
+.corps {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: var(--interligne-lecture);
+}
+
+.corps h2 {
+  font-size: clamp(24px, 2.6vw, 30px);
+  letter-spacing: -0.02em;
+  margin-top: 44px;
+  margin-bottom: 14px;
+}
+
+.corps p {
+  margin-bottom: 22px;
+}
+
+.corps ul {
+  margin: 0 0 22px;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+/* La puce est ocre et dessinée à la main : une puce de navigateur ne se
+   colore pas, et l'ocre est ce qui relie le blog au reste du site. */
+.corps li {
+  position: relative;
+  padding-left: 26px;
+}
+
+.corps li::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 0.62em;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--action);
+}
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 48px;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-vert);
+}
+
+.retour:hover {
+  color: var(--v2-vert-clair);
+}

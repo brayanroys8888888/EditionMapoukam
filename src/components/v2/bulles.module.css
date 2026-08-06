@@ -1,0 +1,174 @@
+/*
+ * BULLES D'ARRIÈRE-PLAN.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLES DOIVENT ÊTRE INVISIBLES QUAND ON LIT, ET SENSIBLES QUAND ON NE    │
+ * │ LIT PAS.                                                                 │
+ * │                                                                          │
+ * │ Un décor animé derrière du texte est le moyen le plus sûr de rendre une  │
+ * │ page fatigante. Trois précautions, et les trois comptent :               │
+ * │                                                                          │
+ * │   * elles sont TRÈS diluées et fortement floutées — ce sont des halos,   │
+ * │     pas des formes ;                                                     │
+ * │   * elles bougent LENTEMENT — vingt à trente-cinq secondes par cycle,    │
+ * │     soit au-dessous du seuil où l'œil suit un mouvement ;                │
+ * │   * elles s'arrêtent net sous `prefers-reduced-motion`, où elles         │
+ * │     deviennent un simple dégradé fixe.                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `position: fixed` ET `z-index` NÉGATIF — pas un fond de section.        │
+ * │                                                                          │
+ * │ Fixées, elles ne défilent pas avec la page : le décor reste calme        │
+ * │ pendant qu'on lit, au lieu de glisser sous le texte. En `z-index: -1`    │
+ * │ elles passent derrière TOUT, y compris les sections qui ont leur propre  │
+ * │ fond — ces dernières les masquent, ce qui les concentre naturellement    │
+ * │ sur les zones crème.                                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.champ {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bulle {
+  position: absolute;
+  border-radius: 50%;
+  /* Le flou est ce qui transforme un ovale coloré en halo : sans lui, on
+     verrait des ballons derrière le texte. */
+  filter: blur(64px);
+  opacity: 0.5;
+  will-change: transform;
+}
+
+/*
+ * Cinq teintes CLAIRES, comme demandé — aucune sombre.
+ *
+ * Elles ne sortent pas des jetons de tradition : celles-ci ont été retirées de
+ * l'affichage en V2, et les faire revenir en fond rétablirait l'arc-en-ciel
+ * qu'on venait d'enlever. Ce sont des dérivés très dilués de l'ocre et du vert
+ * de la marque, plus deux teintes chaudes voisines.
+ */
+.une {
+  width: 46vw;
+  height: 34vw;
+  top: -8vh;
+  left: -10vw;
+  background: rgb(217 122 52 / 34%);
+  animation: onduleA 26s ease-in-out infinite;
+}
+
+.deux {
+  width: 38vw;
+  height: 30vw;
+  top: 28vh;
+  right: -12vw;
+  background: rgb(46 107 65 / 30%);
+  animation: onduleB 32s ease-in-out infinite;
+}
+
+.trois {
+  width: 30vw;
+  height: 26vw;
+  bottom: -10vh;
+  left: 18vw;
+  background: rgb(240 187 92 / 34%);
+  animation: onduleC 22s ease-in-out infinite;
+}
+
+.quatre {
+  width: 26vw;
+  height: 22vw;
+  top: 8vh;
+  left: 46vw;
+  background: rgb(126 178 138 / 28%);
+  animation: onduleB 35s ease-in-out infinite reverse;
+}
+
+.cinq {
+  width: 24vw;
+  height: 20vw;
+  bottom: 18vh;
+  right: 16vw;
+  background: rgb(226 150 106 / 26%);
+  animation: onduleA 29s ease-in-out infinite reverse;
+}
+
+/*
+ * Trois trajectoires seulement, réemployées avec des durées et des sens
+ * différents. Cinq trajectoires distinctes ne se distingueraient pas à l'œil
+ * et pèseraient trois fois plus en feuille de style.
+ *
+ * `translate` et `scale` uniquement : ces deux propriétés sont composées par
+ * le processeur graphique, et n'entraînent ni recalcul de mise en page ni
+ * redessin. Animer `top` ou `width` ferait ramer la page entière.
+ */
+@keyframes onduleA {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(6vw, 5vh) scale(1.12);
+  }
+  66% {
+    transform: translate(-4vw, 8vh) scale(0.94);
+  }
+}
+
+@keyframes onduleB {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-7vw, -6vh) scale(1.16);
+  }
+}
+
+@keyframes onduleC {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(8vw, -4vh) scale(1.08);
+  }
+  75% {
+    transform: translate(3vw, -9vh) scale(0.9);
+  }
+}
+
+/*
+ * Mouvement réduit : les bulles RESTENT, elles cessent de bouger.
+ *
+ * Les supprimer changerait la page ; les figer respecte la demande sans rien
+ * retirer. C'est la nuance que la plupart des implémentations ratent.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .bulle {
+    animation: none;
+  }
+}
+
+/*
+ * Sur un écran étroit, moins de bulles et moins de flou.
+ *
+ * Le flou est l'effet le plus coûteux d'une page, et un téléphone d'entrée de
+ * gamme est exactement l'appareil du public visé (§5.1). Deux halos y suffisent
+ * à donner de la couleur.
+ */
+@media (max-width: 720px) {
+  .bulle {
+    filter: blur(48px);
+  }
+
+  .quatre,
+  .cinq {
+    display: none;
+  }
+}

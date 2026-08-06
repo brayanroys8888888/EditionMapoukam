@@ -38,6 +38,18 @@ import { doitRafraichir } from '@/lib/auth/echeance';
  * │                                                                          │
  * │ Tout ce qui vit sous `public/` doit figurer ici. Le motif du `matcher`   │
  * │ ci-dessous porte la même liste ; les deux se corrigent ensemble.         │
+ * │                                                                          │
+ * │ `/images` A RÉPÉTÉ L'HISTOIRE, ET DE LA MÊME FAÇON MUETTE.              │
+ * │                                                                          │
+ * │ Le logo de la V2 est posé en masque CSS depuis `/images/logo-mapoukam`.  │
+ * │ Redirigé puis introuvable, le masque échoue — et un masque qui échoue ne │
+ * │ laisse pas un trou : il laisse le disque VERT ENTIER, c'est-à-dire une   │
+ * │ pastille qui a tout l'air d'être le dessin voulu. Deux jours de captures │
+ * │ d'écran n'y ont rien vu.                                                 │
+ * │                                                                          │
+ * │ D'où le test qui suit cette liste : il lit `public/` et exige que chaque │
+ * │ dossier de premier niveau y soit inscrit. La prochaine fois, ce sera la  │
+ * │ porte de validation qui le dira, pas une capture d'écran.                │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 const HORS_PERIMETRE = [
@@ -45,7 +57,9 @@ const HORS_PERIMETRE = [
   '/dev',
   '/_next',
   '/fonts',
+  '/images',
   '/favicon.ico',
+  '/favicon.png',
   '/robots.txt',
   '/sitemap.xml',
 ];
@@ -220,5 +234,5 @@ export const config = {
    * du middleware, la fonction épargne un traitement erroné si le motif change.
    * Deux gardes valent mieux qu'une quand l'une est une expression régulière.
    */
-  matcher: ['/((?!api|dev|_next/static|_next/image|fonts|favicon.ico).*)'],
+  matcher: ['/((?!api|dev|_next/static|_next/image|fonts|images|favicon).*)'],
 };

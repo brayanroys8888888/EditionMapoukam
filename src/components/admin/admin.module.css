@@ -1,0 +1,1052 @@
+/*
+ * ADMINISTRATION — même charte, autre densité.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE FRAUNCES DANS LE BACK-OFFICE.                                    │
+ * │                                                                          │
+ * │ C'est la seule règle typographique que la charte pose explicitement pour │
+ * │ l'administration, et elle est juste : Fraunces est faite pour être       │
+ * │ regardée, pas pour être parcourue trente lignes de tableau d'affilée.    │
+ * │ Nunito partout, y compris dans les titres.                               │
+ * │                                                                          │
+ * │ Le vert et l'ocre restent : c'est le MÊME produit, et un back-office     │
+ * │ gris trahirait qu'on ne l'a pas dessiné.                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE FOCUS RESTE À 3 PX, ICI COMME AILLEURS.                             │
+ * │                                                                          │
+ * │ La maquette d'administration descendait à 2 px. L'accessibilité ne se    │
+ * │ négocie pas contre une densité : ceux qui passent leurs journées dans    │
+ * │ ces écrans sont précisément ceux qui naviguent au clavier.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.gabarit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0;
+  min-height: 100vh;
+  background: var(--v2-fond-doux);
+}
+
+/* ── Colonne de navigation ──────────────────────────────────────────────── */
+
+.rail {
+  flex: 0 0 236px;
+  align-self: stretch;
+  background: var(--v2-vert-nuit);
+  color: var(--v2-fond);
+  padding: 24px 16px;
+  position: sticky;
+  top: 0;
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.marque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-fond);
+}
+
+.marque:hover {
+  color: var(--v2-fond);
+}
+
+/*
+ * LE SCEAU DU RAIL — le vrai logo, et non plus un losange dessiné en CSS.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE FICHIER FOURNI EST BLANC SUR TRANSPARENT.                            │
+ * │                                                                          │
+ * │ Posé tel quel dans un `<img>`, il disparaîtrait sur toute surface claire. │
+ * │ Il est donc employé comme MASQUE : la forme vient du fichier, la couleur  │
+ * │ du fond posé dessous. C'est déjà la technique de                          │
+ * │ `src/components/v2/marque.tsx`, reprise ici telle quelle plutôt que       │
+ * │ réinventée — un même logo posé de deux façons finit par diverger.         │
+ * │                                                                          │
+ * │ Disque OCRE et encre VERT NUIT, comme le ton `sombre` du mot-symbole : un │
+ * │ disque vert sur le vert nuit du rail disparaîtrait.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN MASQUE QUI ÉCHOUE NE LAISSE PAS UN TROU — IL LAISSE LE DISQUE ENTIER. │
+ * │                                                                          │
+ * │ C'est ce qui a déjà trompé une fois : le middleware avait mangé           │
+ * │ `/images/*`, le fichier répondait 404, et la pastille pleine avait tout   │
+ * │ l'air d'être le dessin voulu. Personne ne l'a vu pendant des jours.       │
+ * │ `tests/unit/middleware.test.ts` lit désormais `public/` sur le disque et  │
+ * │ exige que chaque entrée traverse le middleware sans redirection.          │
+ * │                                                                          │
+ * │ Et le nom de la marque reste écrit à CÔTÉ, en texte : le logo ne porte    │
+ * │ jamais l'information seul.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.logo {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--action);
+  position: relative;
+}
+
+.logo::after {
+  content: '';
+  position: absolute;
+  /* Le logo occupe 72 % du disque : au-delà il touche les bords, en deçà il
+     flotte. La même proportion que le mot-symbole du site public. */
+  inset: 14%;
+  background: var(--v2-vert-nuit);
+  mask-image: url('/images/logo-mapoukam.png');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+.mention {
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+  color: var(--action);
+  margin-bottom: 26px;
+  padding-left: 42px;
+}
+
+.liens {
+  list-style: none;
+  margin: 0 0 26px;
+  padding: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.lien {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--cible-min);
+  padding: 10px 14px;
+  border-radius: var(--rayon-controle);
+  color: var(--v2-fond);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  opacity: 0.82;
+  transition: background var(--transition-couleur), opacity var(--transition-couleur);
+}
+
+.lien:hover {
+  background: rgb(251 247 239 / 12%);
+  color: var(--v2-fond);
+  opacity: 1;
+}
+
+/* L'onglet courant porte aussi `aria-current` — la couleur le REDIT. */
+.lienActif {
+  background: var(--action);
+  color: var(--action-encre);
+  opacity: 1;
+  font-weight: var(--graisse-forte);
+}
+
+.lienActif:hover {
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.retourSite {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--cible-min);
+  padding: 0 14px;
+  font-size: var(--taille-m);
+  color: var(--v2-fond);
+  opacity: 0.7;
+}
+
+.retourSite:hover {
+  color: var(--action);
+  opacity: 1;
+}
+
+/* ── Contenu ────────────────────────────────────────────────────────────── */
+
+.contenu {
+  flex: 1 1 560px;
+  min-width: 300px;
+  padding: clamp(24px, 3vw, 40px);
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+/*
+ * Nunito, pas Fraunces — y compris pour un `h1`. La réinitialisation globale
+ * pose la police de titre sur `h1`/`h2`/`h3` ; il faut donc la reprendre ici.
+ */
+.titre {
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: clamp(24px, 2.6vw, 32px);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.015em;
+  line-height: 1.15;
+}
+
+.sousTitre {
+  font-size: var(--taille-l);
+  color: var(--encre-douce);
+  margin-top: 6px;
+}
+
+/*
+ * La note qui suit un tableau — d'où vient un chiffre, ce qu'une colonne tait.
+ *
+ * Elle existe comme classe plutôt qu'en `style` posé à la main : la première
+ * marge écrite en dur dans le JSX était déjà la seconde définition de ce
+ * paragraphe, et la troisième aurait divergé.
+ */
+.note {
+  font-size: var(--taille-m);
+  line-height: 1.55;
+  color: var(--encre-douce);
+  margin-top: 18px;
+  max-width: var(--largeur-texte);
+}
+
+.section {
+  margin-bottom: 30px;
+}
+
+.sectionTitre {
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  margin-bottom: 14px;
+}
+
+/* ── Cartes de chiffres ─────────────────────────────────────────────────── */
+
+.chiffres {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.chiffre {
+  padding: 20px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--fond);
+}
+
+.chiffreIntitule {
+  display: block;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--encre-douce);
+  margin-bottom: 10px;
+}
+
+.chiffreValeur {
+  display: block;
+  font-size: 34px;
+  font-weight: var(--graisse-forte);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Un compteur à ZÉRO est une BONNE nouvelle, et il le montre.
+ *
+ * Ces trois chiffres comptent des ennuis : anomalies d'abonnement, brouillons
+ * qui ne passeront pas la publication, copies à purger. Les afficher toujours
+ * en rouge apprendrait à les ignorer ; les colorer seulement quand ils sont
+ * non nuls fait que le rouge veut encore dire quelque chose.
+ */
+.chiffreCalme {
+  color: var(--region-afrique_ouest-encre);
+}
+
+.chiffreAlerte {
+  color: var(--region-afrique_centrale-encre);
+}
+
+.chiffreAlerte + .chiffreNote {
+  color: var(--region-afrique_centrale-encre);
+}
+
+.chiffreNote {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+/* ── Tableau ────────────────────────────────────────────────────────────── */
+
+/*
+ * Le débordement défile DANS ce cadre, jamais dans la page.
+ *
+ * `tabindex` le rend atteignable au clavier : une zone qui défile sans être
+ * focalisable est inaccessible à qui n'a pas de souris.
+ */
+.cadre {
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--fond);
+  overflow-x: auto;
+}
+
+.tableau {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--taille-m);
+}
+
+.tableau thead {
+  background: var(--v2-fond-doux);
+}
+
+.tableau th {
+  text-align: left;
+  padding: 13px 16px;
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+  border-bottom: 1.5px solid var(--bordure);
+}
+
+.tableau td {
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--separateur);
+  vertical-align: top;
+}
+
+.tableau tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tableau tbody tr:hover {
+  background: var(--v2-fond-doux);
+}
+
+.cellulePrincipale {
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+}
+
+/* Montants alignés à droite : c'est ce qui rend deux nombres comparables. */
+.numerique {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Pastilles d'état ───────────────────────────────────────────────────── */
+
+.etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: var(--rayon-pastille);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/*
+ * L'état se lit à la FORME autant qu'à la couleur : chaque pastille porte une
+ * bordure, et son libellé est écrit. Un daltonien distingue « publié » de
+ * « brouillon » par le texte, pas par le vert.
+ */
+.etatPublie {
+  background: var(--region-afrique_ouest-fond);
+  border: 1.5px solid var(--region-afrique_ouest-encre);
+  color: var(--region-afrique_ouest-encre);
+}
+
+.etatBrouillon {
+  background: var(--v2-fond-doux);
+  border: 1.5px solid var(--bordure-forte);
+  color: var(--encre-douce);
+}
+
+.etatAlerte {
+  background: var(--region-afrique_centrale-fond);
+  border: 1.5px solid var(--region-afrique_centrale-encre);
+  color: var(--region-afrique_centrale-encre);
+}
+
+/*
+ * LES MANQUES, ÉNUMÉRÉS.
+ *
+ * La base rend `manques` — la liste exacte des champs qui empêchent la
+ * publication, calculée par LA MÊME fonction que le déclencheur. L'écran
+ * affiche donc précisément ce que la base refusera, jamais une approximation
+ * qui laisserait découvrir le refus au moment de publier.
+ */
+.manques {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.manque {
+  padding: 3px 9px;
+  border-radius: var(--rayon-pastille);
+  background: var(--region-afrique_centrale-fond);
+  color: var(--region-afrique_centrale-encre);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-demi);
+}
+
+/* ── États vides ────────────────────────────────────────────────────────── */
+
+.vide {
+  padding: 34px 24px;
+  text-align: center;
+  color: var(--encre-douce);
+  font-size: var(--taille-l);
+}
+
+.videCalme {
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-demi);
+}
+
+/* ── Filtres ────────────────────────────────────────────────────────────── */
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.filtre {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  background: var(--fond);
+  color: var(--encre);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: border-color var(--transition-couleur), background var(--transition-couleur);
+}
+
+.filtre:hover {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+}
+
+.filtreActif {
+  background: var(--v2-vert);
+  border-color: var(--v2-vert);
+  color: var(--v2-fond);
+  font-weight: var(--graisse-forte);
+}
+
+.filtreActif:hover {
+  color: var(--v2-fond);
+}
+
+@media (pointer: coarse) {
+  .filtre {
+    min-height: var(--cible-min);
+  }
+}
+
+/* ── Rail replié en écran étroit ────────────────────────────────────────── */
+
+/*
+ * ── Formulaires ────────────────────────────────────────────────────────────
+ *
+ * Les écrans d'administration ne mutaient rien jusqu'à l'ajout et l'édition
+ * d'un conte : ils listaient et filtraient. D'où l'absence de ces classes, et
+ * leur arrivée d'un bloc plutôt que champ par champ.
+ *
+ * Elles ne reprennent PAS celles de `ecran.module.css` : le back-office est en
+ * Nunito seule et sur des lignes plus denses. Deux jeux, mais une seule
+ * définition de chaque — jamais un style posé à la main dans le JSX.
+ */
+
+.formulaire {
+  padding: clamp(16px, 2vw, 24px);
+}
+
+/*
+ * Un formulaire posé DANS un conteneur qui rembourre déjà — une carte de
+ * version, la zone de suppression. Le double rembourrage est ce qui décalait
+ * les textes du bloc de publication : ici, un seul les commande.
+ */
+.formulaireNu {
+  padding: 0;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+  max-width: var(--largeur-texte);
+}
+
+.libelle {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.saisie {
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: 9px 13px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+}
+
+.aide {
+  font-size: var(--taille-s);
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+/*
+ * Une ligne d'interrupteur : la case, son libellé, et ce qu'elle fait.
+ *
+ * L'explication est SOUS le libellé et non dans une infobulle : « inclus dans
+ * l'abonnement » et « vendu à l'unité » sont deux leviers indépendants dont la
+ * confusion est le bug central de cette plateforme. Ce n'est pas une précision
+ * qu'on va chercher, c'est une phrase qu'on doit lire.
+ */
+.interrupteurs {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  list-style: none;
+  padding: 0;
+}
+
+.interrupteur {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 4px 12px;
+}
+
+.interrupteurCase {
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--v2-vert);
+}
+
+.interrupteurNom {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.interrupteurNote {
+  font-size: var(--taille-s);
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+/* Une rangée de champs courts — montant et devise, âge minimum et maximum. */
+.rangee {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.rangee .champ {
+  margin-bottom: 0;
+  flex: 1 1 150px;
+}
+
+/* ── Boutons ───────────────────────────────────────────────────────────────
+ *
+ * Trois poids, et la distinction compte plus ici qu'ailleurs : « Publier » et
+ * « Archiver » vivent côte à côte, et le second est irréversible pour le
+ * catalogue public.
+ */
+
+.boutonPrimaire,
+.boutonSecondaire,
+.boutonDiscret {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 0 18px;
+  border-radius: var(--rayon-bouton);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+.boutonPrimaire {
+  border: 1.5px solid var(--v2-vert);
+  background: var(--v2-vert);
+  color: var(--v2-fond);
+}
+
+.boutonPrimaire:hover {
+  background: var(--v2-vert-clair);
+  border-color: var(--v2-vert-clair);
+  color: var(--v2-fond);
+}
+
+.boutonSecondaire {
+  border: 1.5px solid var(--bordure-forte);
+  background: var(--fond);
+  color: var(--encre);
+}
+
+.boutonSecondaire:hover {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+}
+
+.boutonDiscret {
+  border: 0;
+  background: transparent;
+  color: var(--encre-douce);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.boutonDiscret:hover {
+  color: var(--v2-vert);
+}
+
+/*
+ * Une rangée de boutons, SANS marge propre.
+ *
+ * Elle en portait une — `padding: 0 clamp(…) clamp(…)` — pour rattraper le fait
+ * qu'elle vivait à côté d'un `.formulaire` déjà rembourré, dans le même
+ * `.cadre`. Deux rembourrages voisins calculés séparément ne s'alignaient pas :
+ * c'est ce qui décalait les textes du bloc « Publication ». L'espacement est
+ * désormais celui du bloc qui la contient, et un seul.
+ */
+.boutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* ── Le bloc de publication ────────────────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS CHOSES QUI SE LISENT DANS L'ORDRE, ET NON TROIS BLOCS FLOTTANTS.  │
+ * │                                                                          │
+ * │ L'état où en est le titre, ce qui lui manque, ce qu'on peut en faire.    │
+ * │ Chacune était auparavant posée dans un conteneur à son propre            │
+ * │ rembourrage, si bien que la pastille de statut, la liste des manques et  │
+ * │ les trois boutons partaient de trois gauches différentes.                │
+ * │                                                                          │
+ * │ Une seule grille, un seul rembourrage, un seul écart vertical — et les   │
+ * │ intitulés au-dessus de ce qu'ils nomment, parce qu'une pastille          │
+ * │ « Brouillon » seule ne dit pas de quoi elle est le statut.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.publication {
+  display: grid;
+  gap: 18px;
+  padding: clamp(16px, 2vw, 24px);
+  justify-items: start;
+}
+
+.blocIntitule {
+  display: block;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--encre-douce);
+  margin-bottom: 8px;
+}
+
+.publicationBloc {
+  max-width: var(--largeur-texte);
+}
+
+/* La phrase qui explique le refus respire sous la liste qu'elle commente. */
+.publicationBloc .manques + .aide {
+  margin-top: 10px;
+}
+
+/* ── Versions linguistiques ────────────────────────────────────────────────
+ *
+ * Une carte par version, et non un tableau : chacune porte un FORMULAIRE, et
+ * un champ de saisie dans une cellule de tableau se retrouve à la largeur de sa
+ * colonne — c'est-à-dire quelques centimètres pour un résumé de deux mille
+ * caractères.
+ */
+
+.versions {
+  display: grid;
+  gap: 0;
+}
+
+.version {
+  padding: clamp(16px, 2vw, 24px);
+  border-bottom: 1px solid var(--separateur);
+}
+
+.version:last-child {
+  border-bottom: 0;
+}
+
+.versionEntete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.versionLangue {
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.versionFichiers {
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+}
+
+/* Le résumé est un texte long : il lui faut la hauteur d'un paragraphe. */
+.zoneTexte {
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+/* ── Suppression ───────────────────────────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLE EST À PART, ET ELLE EN A L'AIR.                                    │
+ * │                                                                          │
+ * │ C'est le seul geste irréversible de l'écran. Le poser au milieu des      │
+ * │ formulaires d'enregistrement l'aurait rendu voisin de gestes anodins,    │
+ * │ tous rendus par le même bouton vert. Le cadre le sépare, le bouton le    │
+ * │ dit, et le champ de motif oblige à s'arrêter une seconde.                │
+ * │                                                                          │
+ * │ L'ocre est ici une SURFACE ET UNE BORDURE, jamais du texte : 2,90:1 sur  │
+ * │ la crème. Le texte du bouton est `--action-encre`, mesuré pour ça.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.zoneDanger {
+  border: 1.5px solid var(--action);
+  border-radius: var(--rayon-encart);
+  background: var(--fond);
+  padding: clamp(16px, 2vw, 24px);
+}
+
+.boutonDanger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 0 18px;
+  border: 1.5px solid var(--action);
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  cursor: pointer;
+  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+.boutonDanger:hover {
+  background: var(--fond);
+  color: var(--action-encre);
+}
+
+/* ── Bandeaux de retour ────────────────────────────────────────────────────
+ *
+ * Un enregistrement qui ne dit rien laisse croire qu'il n'a rien fait, et
+ * l'éditeur presse une seconde fois. Un refus muet est pire encore.
+ */
+
+.alerte,
+.succes {
+  padding: 13px 16px;
+  border-radius: var(--rayon-encart);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  margin-bottom: 18px;
+  max-width: var(--largeur-texte);
+}
+
+.alerte {
+  border: 1.5px solid var(--action);
+  background: var(--creme);
+  color: var(--creme-accent);
+}
+
+.succes {
+  border: 1.5px solid var(--souligne);
+  background: var(--fond-doux);
+  color: var(--encre);
+}
+
+/* ── Graphiques ────────────────────────────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DES BARRES EN CSS, ET NON UNE BIBLIOTHÈQUE DE GRAPHIQUES.               │
+ * │                                                                          │
+ * │ Une barre est une largeur en pourcentage. Une bibliothèque apporterait   │
+ * │ des infobulles et des animations, au prix d'un paquet de JavaScript      │
+ * │ client dans un back-office qui n'en a aujourd'hui aucun — et le chiffre  │
+ * │ exact est écrit à côté de chaque barre, ce qui rend l'infobulle inutile. │
+ * │                                                                          │
+ * │ Le tableau sous-jacent reste un vrai tableau : la barre est une aide à   │
+ * │ la lecture posée SUR la donnée, jamais à sa place. Un lecteur d'écran    │
+ * │ entend les nombres, pas des largeurs.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.barre {
+  display: block;
+  height: 8px;
+  min-width: 2px;
+  margin-top: 5px;
+  border-radius: var(--rayon-pastille);
+  background: var(--v2-vert);
+}
+
+.barreDouce {
+  background: var(--action);
+}
+
+.cellulePart {
+  min-width: 130px;
+}
+
+/* ── Cartes de montant ─────────────────────────────────────────────────────
+ *
+ * Une par devise. La devise est écrite EN TÊTE et non collée au montant : c'est
+ * la première chose à savoir devant un chiffre d'affaires, et c'est ce qui
+ * empêche de lire deux cartes comme une seule somme.
+ */
+
+.montants {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  list-style: none;
+  margin: 0 0 30px;
+  padding: 0;
+}
+
+.carteMontant {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--fond);
+}
+
+.carteMontantDevise {
+  align-self: flex-start;
+  padding: 2px 9px;
+  border-radius: var(--rayon-pastille);
+  background: var(--v2-fond-doux);
+  color: var(--encre-douce);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.04em;
+}
+
+.carteMontantIntitule {
+  margin-top: 6px;
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+.carteMontantValeur {
+  font-size: clamp(24px, 2.4vw, 30px);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+.carteMontantDetails {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--separateur);
+}
+
+.carteMontantDetail {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+}
+
+.carteMontantDetail dd {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+}
+
+/* ── Graphique en barres ───────────────────────────────────────────────────
+ *
+ * Le SVG occupe toute la largeur disponible et garde sa hauteur intrinsèque :
+ * `height: auto` avec un `viewBox` proportionné fait grandir les barres avec le
+ * conteneur, sans qu'aucune valeur de hauteur n'ait à être calculée en CSS.
+ */
+
+.graphique {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 620px;
+  margin: 4px 0 8px;
+}
+
+.graphiqueLibelle,
+.graphiqueValeur {
+  font-family: var(--police-interface);
+  font-size: 11px;
+  fill: var(--encre-douce);
+}
+
+.graphiqueValeur {
+  font-weight: var(--graisse-forte);
+  fill: var(--encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.graphiqueBarre {
+  fill: var(--v2-vert);
+}
+
+.graphiqueBarreAccent {
+  fill: var(--action);
+}
+
+.graphiqueLegende {
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+  margin-bottom: 18px;
+}
+
+/* Deux séries côte à côte sur large écran, empilées en dessous. */
+.colonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+@media (max-width: 820px) {
+  .rail {
+    flex: 1 1 100%;
+    position: static;
+    max-height: none;
+    padding: 16px;
+  }
+
+  .liens {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    gap: 6px;
+  }
+
+  .mention {
+    padding-left: 0;
+    margin-bottom: 14px;
+  }
+}
+
+/* ── Bouton avec Loader ──────────────────────────────────────────────────── */
+
+.contenuBoutonEnCharge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* ── Recherche Admin ─────────────────────────────────────────────────────── */
+
+.recherche {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.rechercheSaisie {
+  flex: 1 1 220px;
+  max-width: 400px;
+  min-height: 38px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+}
+
+.rechercheSaisie:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+

@@ -1,0 +1,362 @@
+/*
+ * TUNNEL — achat et abonnement.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE COULEUR LITTÉRALE. QUE DES JETONS.                               │
+ * │                                                                          │
+ * │ Ces écrans doivent suivre la bascule de thème comme les autres : ils     │
+ * │ lisent des noms sémantiques dont la valeur change sous eux quand         │
+ * │ `data-design='v2'` est posé sur `<html>`. Un test échoue sur toute       │
+ * │ couleur écrite en dur hors du fichier de jetons.                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Fil d'étapes ─────────────────────────────────────────────────────────── */
+
+.fil {
+  margin: 0 0 var(--espace-5);
+}
+
+/*
+ * Le compte d'étapes en toutes lettres — « Étape 2 sur 4 ».
+ *
+ * Il est VISIBLE et non réservé aux lecteurs d'écran : sur un téléphone, la
+ * liste ci-dessous se réduit à des pastilles numérotées, et « où en suis-je,
+ * combien en reste-t-il » est justement la question qu'on se pose en payant.
+ */
+.filCompte {
+  margin: 0 0 var(--espace-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.filListe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-2) var(--espace-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.filEtape {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espace-2);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-demi);
+}
+
+.filPastille {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: var(--rayon-pastille);
+  border: 1.5px solid var(--bordure-forte);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.filFranchie .filPastille {
+  border-color: var(--souligne);
+  background: var(--souligne);
+  color: var(--fond);
+}
+
+.filCourante .filPastille {
+  border-color: var(--action);
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.filFranchie .filNom {
+  color: var(--encre-douce);
+}
+
+.filCourante .filNom {
+  color: var(--encre);
+  font-weight: var(--graisse-forte);
+}
+
+.filAVenir .filNom,
+.filAVenir .filPastille {
+  color: var(--encre-douce);
+}
+
+/*
+ * Sous 560 px, les noms d'étapes disparaissent et les pastilles restent.
+ *
+ * Quatre libellés sur une ligne de 360 px passent à trois étages et poussent le
+ * contenu sous le pli. Le compte « Étape 2 sur 4 » au-dessus dit déjà tout ce
+ * qu'il faut, et il reste, lui — c'est ce qui rend ce retrait acceptable.
+ */
+@media (max-width: 560px) {
+  .filNom {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .filListe {
+    gap: var(--espace-2);
+  }
+}
+
+/* ── Bandeau de simulation ────────────────────────────────────────────────── */
+
+.bandeau {
+  margin: 0 0 var(--espace-5);
+  padding: var(--espace-4);
+  border: 1.5px solid var(--creme-bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--creme);
+}
+
+.bandeauTitre {
+  margin: 0 0 var(--espace-2);
+  font-family: var(--police-interface);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--creme-accent);
+}
+
+.bandeauCorps {
+  margin: 0;
+  font-size: var(--taille-s);
+  line-height: var(--interligne-corps);
+  color: var(--encre);
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+
+.section {
+  margin: 0 0 var(--espace-5);
+}
+
+.sectionTitre {
+  margin: 0 0 var(--espace-2);
+  font-family: var(--police-interface);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.sectionIntro {
+  margin: 0 0 var(--espace-4);
+  font-size: var(--taille-s);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+}
+
+/* ── Moyens de paiement ───────────────────────────────────────────────────── */
+
+.moyens {
+  display: grid;
+  gap: var(--espace-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.moyen {
+  margin: 0;
+}
+
+/*
+ * Une carte entière cliquable, et un seul lien dedans.
+ *
+ * Trois liens par carte — le nom, la note, le mot « Choisir » — donneraient
+ * trois arrêts de tabulation pour une seule décision, et un lecteur d'écran
+ * annoncerait trois fois la même destination.
+ */
+.moyenLien {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--espace-1) var(--espace-4);
+  min-height: var(--cible-min);
+  padding: var(--espace-4);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+  color: var(--encre);
+  transition: border-color var(--transition-couleur), box-shadow var(--transition-couleur),
+    transform var(--transition-forme);
+}
+
+.moyenLien:hover {
+  border-color: var(--souligne);
+  box-shadow: var(--ombre-carte-survol);
+  color: var(--encre);
+  transform: translateY(-2px);
+}
+
+.moyenNom {
+  grid-column: 1;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+}
+
+.moyenNote {
+  grid-column: 1;
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+}
+
+.moyenChoisir {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--souligne);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .moyenLien {
+    grid-template-columns: 1fr;
+  }
+
+  .moyenChoisir {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* ── Encart explicatif ────────────────────────────────────────────────────── */
+
+.encart {
+  margin: 0 0 var(--espace-4);
+  padding: var(--espace-4);
+  border: 1.5px solid var(--creme-bordure);
+  border-radius: var(--rayon-encart);
+  background: var(--creme);
+}
+
+.encartTitre {
+  margin: 0 0 var(--espace-2);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--creme-accent);
+}
+
+.encartCorps {
+  margin: 0;
+  font-size: var(--taille-s);
+  line-height: var(--interligne-corps);
+  color: var(--encre);
+}
+
+/* ── Champs ───────────────────────────────────────────────────────────────── */
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 var(--espace-4);
+}
+
+.libelle {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+.saisie {
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: 10px 14px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-base);
+}
+
+/*
+ * L'invalide se signale par la COULEUR ET par le texte d'erreur en dessous.
+ *
+ * Une bordure rouge seule est un message adressé aux seules personnes qui
+ * distinguent le rouge — c'est le critère 1.4.1 de WCAG, « l'usage de la
+ * couleur ». Le message sous le champ porte la même information.
+ */
+.saisieInvalide {
+  border-color: var(--action);
+}
+
+.aide {
+  margin: 0;
+  font-size: var(--taille-xs);
+  color: var(--encre-douce);
+}
+
+.erreur {
+  margin: 0;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-demi);
+  color: var(--action);
+}
+
+.mention {
+  margin: var(--espace-2) 0 0;
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────────── */
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-3);
+  margin: var(--espace-5) 0 0;
+}
+
+/*
+ * Le panneau de simulation est SÉPARÉ du bouton de paiement, et plus bas.
+ *
+ * Mêlés, « Payer » et « Simuler un échec » se ressembleraient assez pour être
+ * pressés l'un pour l'autre. Le trait au-dessus dit qu'on change de registre :
+ * ce qui suit ne s'adresse plus au client, mais à qui éprouve le tunnel.
+ */
+.simulation {
+  margin: var(--espace-6) 0 0;
+  padding: var(--espace-4) 0 0;
+  border-top: 1px solid var(--separateur);
+}
+
+.simulationTitre {
+  margin: 0 0 var(--espace-2);
+  font-family: var(--police-interface);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.simulationCorps {
+  margin: 0 0 var(--espace-3);
+  font-size: var(--taille-xs);
+  line-height: var(--interligne-corps);
+  color: var(--encre-douce);
+}
+
+.simulationBoutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espace-3);
+}

@@ -6,9 +6,7 @@ import { parseJsonBody } from '@/lib/http/validate';
 import { createServiceClient } from '@/lib/supabase/clients';
 import { getPaymentProvider } from '@/adapters/registry';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
-import { getBusinessSettings } from '@/lib/settings/business-settings';
-import { zonePourPays } from '@/domain/orders/zones';
-import { getServerEnv } from '@/lib/config/env';
+import { preparerSouscription } from '@/lib/subscriptions/souscription';
 import { getClock } from '@/lib/clock';
 import { logger } from '@/lib/logger';
 
@@ -100,48 +98,40 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  // §3.4 — essai gratuit, moyen de paiement requis. La durée vient du réglage
-  // métier, jamais d'une constante : elle sera figée sur l'abonnement à sa
-  // création, si bien qu'un changement de réglage ne raccourcit aucun essai en
-  // cours.
-  const reglages = await getBusinessSettings({ client });
-
-  const provider = getPaymentProvider();
-  const zone = zonePourPays(
-    await provider.paysDuMoyenDePaiement({
-      userId: garde.appelant.id,
-      email: garde.appelant.email,
-    }),
+  // §3.4 — essai gratuit, moyen de paiement requis. Montant, devise, zone et
+  // durée d'essai viennent tous de `preparerSouscription`, écrit UNE fois : la
+  // route qui simule l'événement du prestataire lit exactement les mêmes
+  // valeurs, sans quoi un abonnement serait ouvert à un prix et créé à un autre.
+  const preparation = await preparerSouscription(
+    { userId: garde.appelant.id, email: garde.appelant.email },
+    { client },
   );
 
-  const env = getServerEnv();
-  const montant =
-    corps.data.offre === 'mensuel'
-      ? env.PRICE_SUBSCRIPTION_MONTHLY
-      : env.PRICE_SUBSCRIPTION_YEARLY;
-
-  const session = await provider.souscrireAbonnement({
+  const session = await getPaymentProvider().souscrireAbonnement({
     // Aucune ligne n'existe encore en base : c'est le webhook `abonnement.souscrit`
     // qui la créera. L'identifiant transmis est celui de l'utilisateur, que
     // l'événement rapportera.
     subscriptionId: garde.appelant.id,
     offre: corps.data.offre,
-    montant: { montant, devise: zone === 'afrique' ? 'XAF' : 'EUR' },
-    zone,
+    montant: {
+      montant: preparation.montants[corps.data.offre],
+      devise: preparation.devise,
+    },
+    zone: preparation.zone,
     client: { userId: garde.appelant.id, email: garde.appelant.email },
-    joursEssai: reglages.joursEssai,
+    joursEssai: preparation.joursEssai,
   });
 
   logger.info('Souscription ouverte', {
     userId: garde.appelant.id,
     offre: corps.data.offre,
-    zone,
+    zone: preparation.zone,
   });
 
   return ok({
     url: session.url,
     expire_le: session.expireLe.toISOString(),
-    jours_essai: reglages.joursEssai,
+    jours_essai: preparation.joursEssai,
     // Explicite : rien n'est actif tant que l'événement signé n'est pas arrivé.
     statut: 'en_attente_paiement',
   });

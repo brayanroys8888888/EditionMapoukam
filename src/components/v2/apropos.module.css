@@ -1,0 +1,217 @@
+/*
+ * À PROPOS — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ C'EST LA PAGE QUI RASSURE, ET ELLE EN A LES MOYENS.                     │
+ * │                                                                          │
+ * │ Un parent qui hésite à payer va chercher qui publie. Sur le site actuel  │
+ * │ il trouve un texte au fil de l'eau, avec « [Année de création] » resté   │
+ * │ entre crochets — le genre de détail qui coûte une vente.                 │
+ * │                                                                          │
+ * │ La V2 en fait une page composée : bandeau, récit tenu à la mesure de     │
+ * │ lecture, quatre principes, une citation, et le catalogue en preuve.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.recit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: clamp(32px, 5vw, 60px);
+  align-items: start;
+}
+
+/*
+ * L'aplat à motif tient la place d'un portrait.
+ *
+ * Le site actuel montre une photographie de banque d'images. Nous n'en avons
+ * aucune dont les droits soient établis, et une photographie générique dessert
+ * une maison d'édition qui vend de l'authenticité.
+ */
+.visuel {
+  position: relative;
+  border-radius: var(--rayon-panneau);
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--v2-vert);
+  box-shadow: var(--ombre-carte-survol);
+}
+
+.visuelMotif {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border-radius: 0;
+}
+
+.texte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: var(--interligne-lecture);
+  max-width: var(--largeur-texte);
+}
+
+.texte p {
+  margin-bottom: 22px;
+}
+
+/* ── Citation de la fondatrice ──────────────────────────────────────────── */
+
+.citation {
+  margin: clamp(40px, 5vw, 64px) 0 0;
+  padding: clamp(28px, 4vw, 44px);
+  border: 1.5px solid var(--bordure);
+  border-left: 5px solid var(--action);
+  border-radius: var(--rayon-panneau);
+  background: var(--v2-fond-doux);
+}
+
+.citationTexte {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: clamp(21px, 2.4vw, 28px);
+  font-weight: var(--graisse-forte);
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  margin-bottom: 20px;
+}
+
+.citationAuteur {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+/*
+ * Les initiales, pas un portrait manquant.
+ *
+ * Un rond gris vide se lit comme une image qui n'a pas chargé. Deux lettres
+ * sur un aplat vert se lisent comme un choix.
+ */
+.initiales {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--v2-vert);
+  color: var(--v2-fond);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+}
+
+.citationNom {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--v2-vert);
+}
+
+.citationRole {
+  display: block;
+  margin-top: 3px;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-normale);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--encre-douce);
+}
+
+/* ── Les quatre principes ───────────────────────────────────────────────── */
+
+.valeurs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.valeur {
+  height: 100%;
+  padding: 26px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+  box-shadow: var(--ombre-carte);
+}
+
+/*
+ * Le numéro est un ORNEMENT, pas une information : la liste est déjà ordonnée
+ * et un lecteur d'écran annonce « élément 2 sur 4 ». L'énoncer une seconde
+ * fois ferait entendre « deux, deux, des cultures nommées ».
+ */
+.valeurNumero {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-4xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1;
+  color: var(--action);
+  margin-bottom: 14px;
+}
+
+.valeurTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.valeurCorps {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+/* ── Mur de couvertures ─────────────────────────────────────────────────── */
+
+/*
+ * Le catalogue EN PREUVE.
+ *
+ * La page se termine sur les livres eux-mêmes, pris du catalogue réel : c'est
+ * ce qui distingue une maison d'édition qui publie d'une maison qui annonce.
+ * Les couvertures viennent de la base, jamais d'une liste écrite ici.
+ */
+.mur {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr));
+  gap: 20px;
+}
+
+.murCarte {
+  display: block;
+  border-radius: var(--rayon-image);
+  overflow: hidden;
+  box-shadow: var(--ombre-carte);
+  transition: transform var(--transition-forme), box-shadow var(--transition-forme);
+}
+
+.murCarte:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--ombre-carte-survol);
+}
+
+.murImage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .murCarte:hover {
+    transform: none;
+  }
+}

@@ -171,14 +171,41 @@ export interface ReponsePanier {
    */
 }
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES MONTANTS SONT RENDUS DEUX FOIS : EN ENTIER, ET FORMATÉS.            │
+ * │                                                                          │
+ * │ Les entiers restent l'autorité — ils servent aux comparaisons et à la    │
+ * │ confirmation de total. Les `*_affichage` sont là pour un CLIENT, qui ne  │
+ * │ peut pas formater lui-même.                                              │
+ * │                                                                          │
+ * │ Pourquoi il ne le peut pas : le nombre de décimales dépend de la devise. │
+ * │ Le franc CFA n'a pas de sous-unité, l'euro en a deux. Un `montant / 100` │
+ * │ écrit dans un navigateur afficherait « 49,90 FCFA » là où le serveur dit │
+ * │ « 4 990 FCFA » — une erreur d'un facteur cent, dans un panier.           │
+ * │                                                                          │
+ * │ Le tiroir de panier est le premier écran à en avoir besoin : il est      │
+ * │ rendu par le client, et il montre un total.                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 export interface ApercuCommande {
-  lignes: { livre_id: string; titre: string; langue: string; prix_unitaire: number }[];
+  lignes: {
+    livre_id: string;
+    titre: string;
+    langue: string;
+    prix_unitaire: number;
+    /** Le prix unitaire formaté par le SERVEUR, seule autorité sur les décimales. */
+    prix_affichage: string;
+  }[];
   refusees: LigneRefusee[];
   zone: string;
   devise: string;
   sous_total: number;
+  sous_total_affichage: string;
   remise: number;
+  remise_affichage: string;
   total: number;
+  total_affichage: string;
   refus_promo: RefusPromo | null;
   zone_divergente: boolean;
 }

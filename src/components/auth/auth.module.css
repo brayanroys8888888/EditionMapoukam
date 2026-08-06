@@ -178,3 +178,112 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * DIRECTION V2
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNIQUEMENT DES STYLES. AUCUNE STRUCTURE NE BOUGE.                       │
+ * │                                                                          │
+ * │ Ces cinq écrans portent trois règles de sécurité que rien ne doit        │
+ * │ défaire :                                                                │
+ * │                                                                          │
+ * │   * l'erreur de connexion est au niveau du FORMULAIRE, jamais du champ — │
+ * │     marquer « mot de passe » signifierait « cette adresse a un compte » ;│
+ * │   * trois messages sont délibérément INDIFFÉRENCIÉS, et des tests        │
+ * │     comparent leur rendu octet par octet ;                               │
+ * │   * les formulaires fonctionnent sans JavaScript.                        │
+ * │                                                                          │
+ * │ D'où cette forme : des surcharges portées par `[data-design='v2']`, dans │
+ * │ le fichier de styles existant. Aucun composant n'est touché, donc aucune │
+ * │ de ces trois règles ne peut être défaite par inadvertance — et la V1     │
+ * │ reste exactement ce qu'elle était quand l'attribut est absent.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/*
+ * Le panneau prend de la présence : plus large, plus rond, posé sur son ombre.
+ *
+ * Un formulaire de connexion étroit et plat sur fond clair est ce qui donne
+ * l'impression d'un formulaire d'administration. Ici il devient une carte.
+ */
+:global(:root[data-design='v2']) .panneau {
+  max-width: 30rem;
+  margin: clamp(40px, 6vw, 72px) auto;
+  padding: clamp(28px, 4vw, 40px);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  box-shadow: var(--ombre-carte);
+}
+
+/* Un filet ocre en tête de carte — le même accent que les boutons. */
+:global(:root[data-design='v2']) .panneau::before {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 5px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  margin-bottom: 22px;
+}
+
+:global(:root[data-design='v2']) .titre {
+  font-size: clamp(28px, 3.2vw, 36px);
+  letter-spacing: -0.025em;
+  margin-bottom: var(--espace-3);
+}
+
+:global(:root[data-design='v2']) .intro {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+}
+
+/*
+ * Les liens de bas de formulaire prennent le vert de la marque.
+ *
+ * Ce sont ceux qu'on cherche quand on est bloqué — « mot de passe oublié »,
+ * « créer un compte ». Les laisser en gris les rendrait invisibles au moment
+ * précis où ils comptent.
+ */
+:global(:root[data-design='v2']) .liens a {
+  color: var(--v2-vert);
+  font-weight: var(--graisse-demi);
+}
+
+:global(:root[data-design='v2']) .liens a:hover {
+  color: var(--v2-vert-clair);
+}
+
+:global(:root[data-design='v2']) .lienSecondaire {
+  color: var(--encre-douce);
+}
+
+/*
+ * L'avertissement de session révoquée passe en crème bordée d'ocre.
+ *
+ * Il reste DISTINCT de l'erreur rouge : une session fermée par sécurité
+ * n'appelle pas à corriger une saisie, mais à changer son mot de passe. La
+ * couleur porte cette différence avant que le texte ne l'explique.
+ */
+:global(:root[data-design='v2']) .avertissement {
+  border-left: 4px solid var(--action);
+  border-radius: var(--rayon-encart);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v2']) .message {
+  border-radius: var(--rayon-encart);
+  border-left: 4px solid var(--v2-vert);
+}
+
+:global(:root[data-design='v2']) .messageTexte {
+  color: var(--encre);
+}
+
+/* L'erreur reste ROUGE, et le reste : c'est le seul cas où quelque chose a
+   réellement échoué, et le seul qui doive alarmer. */
+:global(:root[data-design='v2']) .erreurFormulaire {
+  border-radius: var(--rayon-encart);
+  border-left: 4px solid var(--region-afrique_centrale-encre);
+}

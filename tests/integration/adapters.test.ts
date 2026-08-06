@@ -261,9 +261,23 @@ describe('FileMailer', () => {
 describe('sélection des adaptateurs', () => {
   it('branche le faux prestataire et l’écriture sur disque', () => {
     resetAdapters();
+    const precedentMailer = process.env['MAILER'];
+    const precedentPayment = process.env['PAYMENT_PROVIDER'];
+    process.env['MAILER'] = 'file';
+    process.env['PAYMENT_PROVIDER'] = 'fake';
+    resetServerEnvCache();
 
-    expect(getPaymentProvider()).toBeInstanceOf(FakePaymentProvider);
-    expect(getMailer()).toBeInstanceOf(FileMailer);
+    try {
+      expect(getPaymentProvider()).toBeInstanceOf(FakePaymentProvider);
+      expect(getMailer()).toBeInstanceOf(FileMailer);
+    } finally {
+      if (precedentMailer === undefined) delete process.env['MAILER'];
+      else process.env['MAILER'] = precedentMailer;
+      if (precedentPayment === undefined) delete process.env['PAYMENT_PROVIDER'];
+      else process.env['PAYMENT_PROVIDER'] = precedentPayment;
+      resetServerEnvCache();
+      resetAdapters();
+    }
   });
 
   it('refuse explicitement un adaptateur non implémenté', () => {

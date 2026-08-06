@@ -59,7 +59,20 @@ const modificationSchema = z
     inclus_abonnement: z.boolean().optional(),
     disponible_achat: z.boolean().optional(),
     auteur: z.string().trim().min(1).max(200).optional(),
+    illustrateur: z.string().trim().min(1).max(200).optional(),
     origine_culturelle: z.string().trim().min(1).max(200).optional(),
+    /*
+     * La RÉGION, exigée à la publication depuis la migration 0044.
+     *
+     * Elle n'est pas déduite de `origine_culturelle` : `region_depuis_origine`
+     * sait le faire, mais son commentaire est formel — « amorçage et reprise
+     * de données uniquement ; en exploitation, l'éditeur pose la région à la
+     * main ». Une déduction se tromperait sans le dire, sur le champ même qui
+     * décide du filtre du catalogue.
+     */
+    region: z
+      .enum(['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'])
+      .optional(),
     age_min: z.int().min(0).max(18).optional(),
     age_max: z.int().min(0).max(18).optional(),
     nb_pages_extrait: z.int().min(1).max(100).optional(),
@@ -90,9 +103,11 @@ export async function PATCH(request: Request): Promise<Response> {
       ? { disponibleAchat: champs.disponible_achat }
       : {}),
     ...(champs.auteur !== undefined ? { auteur: champs.auteur } : {}),
+    ...(champs.illustrateur !== undefined ? { illustrateur: champs.illustrateur } : {}),
     ...(champs.origine_culturelle !== undefined
       ? { origineCulturelle: champs.origine_culturelle }
       : {}),
+    ...(champs.region !== undefined ? { region: champs.region } : {}),
     ...(champs.age_min !== undefined ? { ageMin: champs.age_min } : {}),
     ...(champs.age_max !== undefined ? { ageMax: champs.age_max } : {}),
     ...(champs.nb_pages_extrait !== undefined

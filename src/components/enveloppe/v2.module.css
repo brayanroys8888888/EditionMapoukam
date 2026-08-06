@@ -1,0 +1,732 @@
+/*
+ * ENVELOPPE — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QUI CHANGE, ET POURQUOI.                                             │
+ * │                                                                          │
+ * │ La V1 posait un en-tête crème sur une page crème : rien ne séparait la  │
+ * │ navigation du contenu, et c'est une part de ce qui faisait « template   │
+ * │ générique ». La V2 lui donne du blanc, une ombre au défilement, et un   │
+ * │ pied vert profond qui FERME la page au lieu de la laisser s'éteindre.   │
+ * │                                                                          │
+ * │ Aucune couleur n'est écrite ici : les jetons ont déjà basculé.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+
+.entete {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--fond);
+  border-bottom: 1px solid var(--bordure);
+  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EN-TÊTE POSÉ SUR LE HERO — accueil uniquement.                        │
+ * │                                                                          │
+ * │ Transparent, il flotte sur l'image du hero, dont le voile sombre garantit│
+ * │ le contraste. Dès qu'on défile de quarante pixels, la classe tombe et le │
+ * │ fond crème revient : au-delà, ce qui passe dessous est clair, et du      │
+ * │ texte blanc y serait illisible.                                          │
+ * │                                                                          │
+ * │ Tout est ici en CSS ; le composant ne fait qu'ajouter ou retirer la      │
+ * │ classe. Sans JavaScript, l'en-tête reste plein — le bon repli.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SUPERPOSÉ : L'EN-TÊTE SORT DU FLUX, ET LE HERO PASSE DERRIÈRE.          │
+ * │                                                                          │
+ * │ `sticky` occupe sa place : le hero commençait sous l'en-tête, l'image    │
+ * │ ne passait pas derrière la navigation, et les boutons transparents se    │
+ * │ détachaient sur la crème de la page — donc invisibles.                   │
+ * │                                                                          │
+ * │ `fixed` le décolle. La marge haute de `.heroGrille` réserve déjà la      │
+ * │ hauteur nécessaire pour que le titre ne passe pas dessous.               │
+ * │                                                                          │
+ * │ Cette classe n'est posée QUE par `EnteteReactif`, c'est-à-dire sur       │
+ * │ l'accueil seul. Ailleurs l'en-tête reste `sticky`, ce qui est le bon     │
+ * │ comportement : il n'y a pas d'image à faire passer dessous.              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.enteteSuperpose {
+  position: fixed;
+  inset: 0 0 auto 0;
+}
+
+.entetePose {
+  background: transparent;
+  border-bottom-color: transparent;
+  color: var(--v2-fond);
+}
+
+.entetePose .marque,
+.entetePose .navigation a,
+.entetePose .montant {
+  color: var(--v2-fond);
+}
+
+.entetePose .navigation a:hover,
+.entetePose .navigation a[aria-current='page'] {
+  color: var(--action);
+}
+
+.entetePose .carreAction {
+  border-color: rgb(251 247 239 / 45%);
+  background: rgb(251 247 239 / 12%);
+  color: var(--v2-fond);
+}
+
+.entetePose .carreAction:hover {
+  border-color: var(--v2-fond);
+  color: var(--v2-fond);
+}
+
+.entetePose .langues {
+  border-color: rgb(251 247 239 / 40%);
+}
+
+.entetePose .langue {
+  color: var(--v2-fond);
+}
+
+.entetePose .langueActive {
+  background: var(--v2-fond);
+  color: var(--v2-vert);
+}
+
+.entetePose .langueActive:hover {
+  background: var(--v2-fond);
+  color: var(--v2-vert);
+}
+
+/* Le sceau du logo s'éclaircit pour rester lisible sur l'image. */
+.entetePose .marque {
+  --sceau-fond: var(--v2-fond);
+  --sceau-encre: var(--v2-vert);
+}
+
+.enteteInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* ── Mot-symbole ────────────────────────────────────────────────────────── */
+
+.marque {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.015em;
+  color: var(--v2-vert);
+  line-height: 1.05;
+}
+
+.marque:hover {
+  color: var(--v2-vert);
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--v2-vert);
+  display: grid;
+  place-items: center;
+}
+
+.losange {
+  width: 14px;
+  height: 14px;
+  background: var(--action);
+  transform: rotate(45deg);
+  display: block;
+}
+
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+
+.navigation {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin: 0 auto;
+  flex-wrap: wrap;
+}
+
+/*
+ * Sous 900 px, la navigation en ligne cède la place au menu plein écran.
+ *
+ * Elle reste DANS LE DOCUMENT — masquée, pas supprimée : sans JavaScript, le
+ * bouton du menu n'apparaît pas, et il ne resterait alors plus aucun moyen
+ * d'atteindre le catalogue depuis un téléphone.
+ */
+@media (max-width: 900px) {
+  .navigation {
+    display: none;
+  }
+
+  /* Le sélecteur de langue vit dans le pied sur écran étroit ; le répéter
+     dans une barre déjà serrée pousserait le panier hors de l'écran. */
+  .enteteInterieur > .actions > .langues {
+    display: none;
+  }
+}
+
+.navigation a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 8px 14px;
+  border-radius: var(--rayon-controle);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  transition: color var(--transition-couleur);
+}
+
+/*
+ * Le soulignement pousse depuis le CENTRE, il n'apparaît pas d'un coup.
+ *
+ * C'est une des micro-interactions que la V1 n'avait pas et qui manquaient
+ * pour que le site paraisse vivant. Un `transform` plutôt qu'une largeur :
+ * l'un est composé par le GPU, l'autre relance la mise en page à chaque image.
+ */
+.navigation a::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--action);
+  transform: scaleX(0);
+  transition: transform var(--transition-forme);
+}
+
+.navigation a:hover {
+  color: var(--v2-vert);
+}
+
+.navigation a:hover::after,
+.navigation a[aria-current='page']::after {
+  transform: scaleX(1);
+}
+
+.navigation a[aria-current='page'] {
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+}
+
+/* ── Actions ────────────────────────────────────────────────────────────── */
+
+.actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  flex-wrap: wrap;
+}
+
+/*
+ * Le montant du panier, EN TOUTES LETTRES dans l'en-tête.
+ *
+ * C'est le détail qui rassure le plus sur une boutique : à tout moment on sait
+ * ce qu'on s'apprête à payer, sans ouvrir quoi que ce soit.
+ */
+.montant {
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  color: var(--v2-vert);
+  font-variant-numeric: tabular-nums;
+}
+
+.carreAction {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-controle);
+  background: var(--fond);
+  color: var(--encre);
+  transition: border-color var(--transition-couleur), color var(--transition-couleur),
+    transform var(--transition-forme);
+}
+
+.carreAction:hover {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+  transform: translateY(-2px);
+}
+
+/*
+ * La pastille de compte : un NOMBRE, jamais un simple point.
+ *
+ * Un point dit « il y a quelque chose » ; le nombre dit quoi. C'est la
+ * différence entre un signal et une information.
+ */
+.pastilleNombre {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.lienTexte {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 10px 18px;
+  border-radius: var(--rayon-bouton);
+  background: var(--v2-vert);
+  color: var(--fond);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  transition: background var(--transition-couleur), transform var(--transition-forme);
+}
+
+.lienTexte:hover {
+  background: var(--v2-vert-clair);
+  color: var(--fond);
+  transform: translateY(-2px);
+}
+
+/* ── Sélecteur de langue ────────────────────────────────────────────────── */
+
+.langues {
+  display: flex;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-bouton);
+  overflow: hidden;
+}
+
+.langue {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  color: var(--encre-douce);
+  background: transparent;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.langue:hover {
+  background: var(--fond-doux);
+  color: var(--encre);
+}
+
+.langueActive {
+  background: var(--v2-vert);
+  color: var(--fond);
+}
+
+.langueActive:hover {
+  background: var(--v2-vert);
+  color: var(--fond);
+}
+
+.langue:focus-visible {
+  outline-offset: -3px;
+}
+
+/* ── Lien d'évitement ───────────────────────────────────────────────────── */
+
+.evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: var(--espace-3) var(--espace-4);
+  background: var(--action);
+  color: var(--action-encre);
+  font-weight: var(--graisse-forte);
+  border-radius: var(--rayon-controle);
+}
+
+.evitement:focus {
+  left: var(--espace-3);
+  top: var(--espace-3);
+}
+
+/* ── Pied de page ───────────────────────────────────────────────────────── */
+
+/*
+ * Le pied FERME la page.
+ *
+ * Un pied clair sur une page claire laisse le regard sortir par le bas sans
+ * rien conclure. Le vert nuit arrête l'œil, et c'est là que se trouvent les
+ * liens qu'on cherche quand on hésite à acheter.
+ */
+.pied {
+  background: var(--v2-vert-nuit);
+  color: var(--fond);
+  margin-top: 0;
+}
+
+.piedHaut {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 56px 20px 40px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 36px;
+}
+
+.piedMarque {
+  display: flex;
+  align-items: center;
+  /* Le mot-symbole du pied est un lien : il obéit à la même cible tactile. */
+  min-height: var(--cible-min);
+  gap: 11px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.015em;
+  color: var(--fond);
+  margin-bottom: var(--espace-4);
+}
+
+.piedMarque:hover {
+  color: var(--fond);
+}
+
+.piedLogo {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--action);
+  display: grid;
+  place-items: center;
+}
+
+.piedLosange {
+  width: 12px;
+  height: 12px;
+  background: var(--v2-vert-nuit);
+  transform: rotate(45deg);
+  display: block;
+}
+
+.piedBaseline {
+  font-size: var(--taille-l);
+  line-height: 1.6;
+  color: var(--fond);
+  opacity: 0.82;
+  max-width: 34ch;
+}
+
+.piedTitre {
+  font-family: var(--police-interface);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--action);
+  margin-bottom: var(--espace-4);
+}
+
+.piedListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--espace-2);
+}
+
+.piedListe a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  font-size: var(--taille-l);
+  color: var(--fond);
+  opacity: 0.86;
+  transition: opacity var(--transition-couleur), transform var(--transition-forme);
+}
+
+.piedListe a:hover {
+  color: var(--fond);
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SUR TÉLÉPHONE, LE PIED SE REPLIE EN ACCORDÉON.                          │
+ * │                                                                          │
+ * │ Trois colonnes empilées font une dizaine de liens à la file : sur un     │
+ * │ écran étroit, le pied devient plus long que la page qu'il termine. La    │
+ * │ maquette le replie, et c'est `<details>` natif qui le fait.              │
+ * │                                                                          │
+ * │ Ici, FERMÉ par défaut est exactement ce qu'on veut — c'est pourquoi la   │
+ * │ solution marche là où elle ne marchait pas pour les filtres du           │
+ * │ catalogue, qui doivent rester ouverts sur ordinateur.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.piedColonne {
+  border: 0;
+}
+
+.piedResume {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .piedHaut {
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-bottom: 24px;
+  }
+
+  .piedIdentite {
+    margin-bottom: 22px;
+  }
+
+  .piedColonne {
+    border-top: 1px solid rgb(251 247 239 / 16%);
+  }
+
+  /* Le titre de colonne cède la place au résumé dépliant. */
+  .piedColonne .piedTitre {
+    display: none;
+  }
+
+  .piedResume {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: var(--cible-min);
+    padding: 4px 0;
+    font-size: var(--taille-s);
+    font-weight: var(--graisse-forte);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--action);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .piedResume::-webkit-details-marker {
+    display: none;
+  }
+
+  /* Le marqueur passe de « + » à « − » : `[open]` le dit sans JavaScript. */
+  .piedResume::after {
+    content: '+';
+    font-size: var(--taille-2xl);
+    line-height: 1;
+  }
+
+  .piedColonne[open] .piedResume::after {
+    content: '−';
+  }
+
+  .piedColonne .piedListe {
+    padding-bottom: 14px;
+  }
+}
+
+.piedBarre {
+  border-top: 1px solid rgb(251 247 239 / 16%);
+}
+
+.piedBarreInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-4);
+  font-size: var(--taille-m);
+  color: var(--fond);
+  opacity: 0.75;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 44 PX AUSSI DANS LA BARRE DU BAS — RELEVÉ PAR PLAYWRIGHT.               │
+ * │                                                                          │
+ * │ Ces liens tenaient sur la hauteur de leur texte, soit vingt pixels. Ils  │
+ * │ passaient inaperçus parce qu'on ne les vise jamais en développant : ce   │
+ * │ sont « Conditions générales » et « Confidentialité », qu'on cherche      │
+ * │ précisément au moment d'hésiter à payer, au pouce, sur un téléphone.     │
+ * │                                                                          │
+ * │ Aucun test unitaire ne pouvait le voir : jsdom ne calcule pas de boîte.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.piedBarre a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  color: var(--fond);
+  font-size: var(--taille-m);
+}
+
+.piedBarre a:hover {
+  color: var(--action);
+}
+
+.piedBarreLiens {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-4);
+}
+
+/*
+ * En pied de page, le sélecteur de langue s'inverse : bordure claire sur fond
+ * sombre. Sans cette règle il disparaîtrait — sa bordure sable est invisible
+ * sur le vert nuit.
+ */
+.piedBarre .langues {
+  border-color: rgb(251 247 239 / 30%);
+}
+
+.piedBarre .langue {
+  color: var(--fond);
+  opacity: 0.8;
+}
+
+.piedBarre .langue:hover {
+  background: rgb(251 247 239 / 12%);
+  color: var(--fond);
+  opacity: 1;
+}
+
+.piedBarre .langueActive {
+  background: var(--action);
+  color: var(--action-encre);
+  opacity: 1;
+}
+
+.piedBarre .langueActive:hover {
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+/*
+ * ── Raccourci d'administration ─────────────────────────────────────────────
+ *
+ * En OCRE, seul élément de l'en-tête à l'être, et pour une raison : c'est le
+ * seul lien qui mène ailleurs que dans la boutique. Le vert dirait « encore une
+ * page du site » ; l'ocre dit qu'on change de bâtiment.
+ *
+ * Le texte s'écrit sur `--v2-ocre-encre` et jamais sur l'ocre de surface :
+ * celui-ci mesure 2,90:1 sur la crème, en dessous du seuil AA. C'est la règle
+ * de palette la plus facile à enfreindre sans le voir, puisque le résultat
+ * reste lisible pour qui a une bonne vue.
+ *
+ * Déclaré AVANT le bloc final, qui doit rester en fin de fichier : la règle
+ * `display: none` d'`.actionSecondaire` doit gagner la cascade sur le
+ * `display: inline-flex` posé ici, à spécificité égale.
+ */
+.raccourciAdmin {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 10px 16px;
+  border: 1.5px solid var(--v2-ocre);
+  border-radius: var(--rayon-bouton);
+  color: var(--v2-ocre-encre);
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+  transition: background var(--transition-couleur), transform var(--transition-forme);
+}
+
+.raccourciAdmin:hover {
+  background: var(--v2-ocre);
+  color: var(--v2-ocre-encre);
+  transform: translateY(-2px);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ EN ÉCRAN ÉTROIT : LE MENU ET LE PANIER, SUR UNE SEULE LIGNE.            │
+ * │                                                                          │
+ * │ L'en-tête portait six commandes — marque, langues, loupe, montant,       │
+ * │ panier, menu, connexion. Sous 760 px elles passaient à la ligne, et      │
+ * │ l'en-tête faisait deux étages sur un écran qui n'en a pas les moyens.    │
+ * │                                                                          │
+ * │ Il n'en reste que deux : le MENU, qui contient tout le reste, et le      │
+ * │ PANIER, qu'on ne veut jamais avoir à chercher dans un menu.              │
+ * │                                                                          │
+ * │ Ce qui part n'est pas perdu — c'est la condition de ce retrait. Loupe,   │
+ * │ langues et compte sont repris dans le menu plein écran. Le MONTANT part  │
+ * │ aussi : la pastille de nombre du panier dit déjà qu'il y a quelque       │
+ * │ chose, et il était le seul élément dont la largeur varie avec le         │
+ * │ contenu, donc le seul capable de rompre la ligne sans prévenir.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CE BLOC EST EN FIN DE FICHIER, ET DOIT Y RESTER.               │
+ * │                                                                          │
+ * │ `.actionSecondaire` a exactement la même spécificité que `.carreAction`  │
+ * │ et `.lienTexte`, qui posent `display: grid` et `display: flex`. Écrit    │
+ * │ plus haut, il PERDAIT la cascade : les trois commandes restaient         │
+ * │ visibles, la ligne sans retour débordait de 125 px, et Chromium en       │
+ * │ émulation mobile dézoomait toute la page pour la faire entrer — 537 px   │
+ * │ de viewport au lieu de 412. Le symptôme ne ressemblait en rien à sa      │
+ * │ cause : c'est la FEUILLE DE FILTRES qui paraissait trop haute.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  .enteteInterieur {
+    /* La ligne ne se rompt plus : c'est tout l'objet du retrait ci-dessus. */
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 10px 16px;
+  }
+
+  .marque {
+    /* Elle cède la place au besoin plutôt que de pousser les commandes. */
+    min-width: 0;
+    font-size: var(--taille-xl);
+  }
+
+  .actions {
+    flex-wrap: nowrap;
+    margin-left: auto;
+    gap: 10px;
+  }
+
+  .actionSecondaire,
+  .langues,
+  .montant {
+    display: none;
+  }
+}

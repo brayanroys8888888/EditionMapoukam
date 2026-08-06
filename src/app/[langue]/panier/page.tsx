@@ -8,8 +8,9 @@ import { identifierAppelant } from '@/lib/auth/session';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { Erreur } from '@/components/etats';
 import { Motif } from '@/components/motif';
+import { FilEtapes } from '@/components/tunnel';
 import ecran from '@/components/ecran/ecran.module.css';
-import { commander, retirerDuPanier } from './actions';
+import { retirerDuPanier } from './actions';
 
 /**
  * Panier — §4.1 F6.
@@ -59,7 +60,6 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
   }
 
   const erreur = premier(requete['erreur']);
-  const aConfirmer = premier(requete['a_confirmer']);
 
   // Panier vide : un cul-de-sac sans issue serait un écran mort.
   if (!vue || vue.total.lignes.length === 0) {
@@ -89,6 +89,8 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
 
   return (
     <div className={ecran.pageEtroite}>
+      <FilEtapes langue={langue} parcours="achat" etape={1} />
+
       <h1 className={ecran.titre}>{traduire(langue, 'panier.titre')}</h1>
       <p className={ecran.intro}>{traduire(langue, 'offres.achatResume')}</p>
 
@@ -215,21 +217,27 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
       ) : null}
 
       {/* ── Commander ────────────────────────────────────────────────────── */}
-      <form action={commander.bind(null, langue)}>
-        {codePromo ? <input type="hidden" name="code_promo" value={codePromo} /> : null}
-
-        {/*
-          `total_confirme` ne sert QU'À COMPARER, jamais à facturer : un total
-          qui ne correspond pas au calcul du serveur fait échouer la commande,
-          il ne la modifie pas. Il n'est transmis que lorsque le serveur a
-          demandé une confirmation explicite.
-        */}
-        {aConfirmer ? <input type="hidden" name="total_confirme" value={aConfirmer} /> : null}
-
-        <button type="submit" className={ecran.boutonPrimaire}>
-          {traduire(langue, 'panier.commander')}
-        </button>
-      </form>
+      {/*
+        ┌────────────────────────────────────────────────────────────────────┐
+        │ UN LIEN, ET NON PLUS UNE ACTION QUI ÉCRIT LA COMMANDE.            │
+        │                                                                    │
+        │ Ce bouton créait la commande directement. Il mène désormais au      │
+        │ récapitulatif, qui relit le total et demande un geste explicite —   │
+        │ une commande écrite ne se dé-crée pas, elle mérite d'être voulue.   │
+        │                                                                    │
+        │ Un lien plutôt qu'un formulaire, parce que la destination ne MUTE   │
+        │ rien : c'est une lecture. Le code promo suit dans l'adresse, comme  │
+        │ il suit déjà sur cet écran.                                        │
+        └────────────────────────────────────────────────────────────────────┘
+      */}
+      <a
+        className={ecran.boutonPrimaire}
+        href={`/${langue}/panier/confirmation${
+          codePromo ? `?promo=${encodeURIComponent(codePromo)}` : ''
+        }`}
+      >
+        {traduire(langue, 'panier.commander')}
+      </a>
     </div>
   );
 }

@@ -1,0 +1,93 @@
+/*
+ * LE LOGO OFFICIEL.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE FICHIER FOURNI EST BLANC SUR TRANSPARENT.                            │
+ * │                                                                          │
+ * │ Posé tel quel dans un `<img>`, il DISPARAÎT sur l'en-tête clair et sur   │
+ * │ la crème — c'est-à-dire sur la moitié des surfaces du site. Le défaut ne │
+ * │ se voit pas au développement, où l'on regarde surtout le pied vert.      │
+ * │                                                                          │
+ * │ Il est donc employé comme MASQUE : la forme vient du fichier, la couleur │
+ * │ de `currentColor`. Le même fichier devient vert sur la crème, blanc sur  │
+ * │ le vert nuit, ocre au survol — sans qu'on ait à en produire trois        │
+ * │ versions qui divergeraient à la première retouche.                       │
+ * │                                                                          │
+ * │ Le repli, si `mask-image` manquait : un fond `currentColor` plein, donc  │
+ * │ un rectangle coloré. C'est pourquoi le nom de la marque est TOUJOURS     │
+ * │ écrit à côté, en texte — le logo ne porte jamais l'information seul.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.marque {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-height: var(--cible-min);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-2xl);
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  color: inherit;
+}
+
+.marque:hover {
+  color: inherit;
+}
+
+/*
+ * Le sceau : un disque coloré portant le logo en creux.
+ *
+ * C'est ce qui rend le logo lisible partout — un logo blanc sur un disque
+ * vert se voit aussi bien sur la crème que sur le vert nuit, alors que le
+ * logo nu ne se voit que sur l'un des deux.
+ */
+.sceau {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: block;
+  border-radius: 50%;
+  background: var(--sceau-fond, var(--v2-vert));
+  position: relative;
+}
+
+.sceau::after {
+  content: '';
+  position: absolute;
+  /* Le logo occupe 72 % du disque : au-delà il touche les bords, en deçà il
+     flotte. */
+  inset: 14%;
+  background: var(--sceau-encre, var(--v2-fond));
+  mask-image: url('/images/logo-mapoukam.png');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+.marquePetite {
+  font-size: var(--taille-xl);
+}
+
+.marquePetite .sceau {
+  width: 32px;
+  height: 32px;
+}
+
+/*
+ * Sur le vert nuit du pied et du rail d'administration, le sceau s'inverse :
+ * disque ocre, logo sombre. Sans cela, un disque vert sur fond vert nuit
+ * disparaîtrait.
+ */
+.surSombre {
+  --sceau-fond: var(--action);
+  --sceau-encre: var(--v2-vert-nuit);
+}
+
+/* Au-dessus d'une image, le sceau devient clair et l'encre verte. */
+.surImage {
+  --sceau-fond: var(--v2-fond);
+  --sceau-encre: var(--v2-vert);
+}

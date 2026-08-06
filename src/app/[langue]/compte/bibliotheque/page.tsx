@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { langueValide, traduire } from '@/i18n';
+import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
 import { lireBibliotheque } from '@/lib/account/bibliotheque';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { identifierAppelant } from '@/lib/auth/session';
@@ -12,6 +12,7 @@ import { teintesRegion } from '@/components/catalogue';
 import { GabaritEspace } from '@/components/espace';
 import espace from '@/components/espace/espace.module.css';
 import ecran from '@/components/ecran/ecran.module.css';
+import { telechargerConte } from '../actions';
 
 /**
  * Ma bibliothèque — §4.2 F7.
@@ -35,6 +36,7 @@ import ecran from '@/components/ecran/ecran.module.css';
  */
 interface Parametres {
   params: Promise<{ langue: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
@@ -42,8 +44,14 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
   return { title: traduire(langue, 'compte.bibliotheque') };
 }
 
-export default async function PageBibliotheque({ params }: Parametres) {
+export default async function PageBibliotheque({ params, searchParams }: Parametres) {
   const langue = langueValide((await params).langue);
+  const requete = await searchParams;
+
+  // Un téléchargement refusé revient ici avec son CODE : la route rédige ses
+  // messages en français, et l'écran les traduit depuis le code.
+  const brut = requete['erreur'];
+  const erreur = Array.isArray(brut) ? brut[0] : brut;
 
   const appelant = await identifierAppelant(
     new Request('http://interne/', { headers: await headers() }),
@@ -81,6 +89,12 @@ export default async function PageBibliotheque({ params }: Parametres) {
       <h1 className={ecran.titre}>{traduire(langue, 'compte.bibliotheque')}</h1>
       <p className={ecran.intro}>{traduire(langue, 'compte.bibliothequeIntro')}</p>
 
+      {erreur ? (
+        <p className={ecran.alerte} role="alert">
+          {messageErreur(langue, erreur)}
+        </p>
+      ) : null}
+
       {/* ── Abonnement expiré : les trois questions ─────────────────────── */}
       {abonnementPerdu ? (
         <section className={`${ecran.panneau} ${ecran.panneauAttention} ${ecran.section}`}>
@@ -108,7 +122,9 @@ export default async function PageBibliotheque({ params }: Parametres) {
             {traduire(langue, 'compte.perteAbonnementPourquoi')}
           </p>
 
-          <a className={ecran.boutonPrimaire} href={`/${langue}/offres`}>
+          {/* « Reprendre un abonnement » mène au tunnel : celui qui lit cette
+              phrase a déjà été abonné, il n'a rien à redécouvrir. */}
+          <a className={ecran.boutonPrimaire} href={`/${langue}/abonnement/souscrire`}>
             {traduire(langue, 'compte.perteAbonnementAction')}
           </a>
         </section>
@@ -270,27 +286,83 @@ export default async function PageBibliotheque({ params }: Parametres) {
                   )}
 
                   {/*
-                    TOUTES LES COMBINAISONS LANGUE × FORMAT, énumérées depuis
-                    les versions PUBLIÉES du titre : un conte en deux langues
-                    offre quatre téléchargements. Le droit vient de
-                    `peut_telecharger`, jamais d'un motif d'accès — c'est ce qui
-                    garantit qu'un abonné expiré retrouve ses achats intacts.
+                    ┌──────────────────────────────────────────────────────────┐
+                    │ DEUX CHOIX ET UN BOUTON, ET NON UN BOUTON PAR           │
+                    │ COMBINAISON.                                             │
+                    │                                                          │
+                    │ Cette carte énumérait toutes les combinaisons langue ×    │
+                    │ format : un conte en deux langues donnait QUATRE boutons  │
+                    │ de téléchargement, plus « Lire » — cinq commandes dans    │
+                    │ une carte de 224 px, où il fallait lire chaque libellé    │
+                    │ pour distinguer « PDF (FR) » de « PDF (EN) ».            │
+                    │                                                          │
+                    │ Le sélecteur de langue ne paraît QUE s'il y a un choix à  │
+                    │ faire : un menu à une seule entrée impose une décision    │
+                    │ sans en offrir aucune.                                    │
+                    └──────────────────────────────────────────────────────────┘
+
+                    Le droit vient de `peut_telecharger`, jamais d'un motif
+                    d'accès — c'est ce qui garantit qu'un abonné expiré retrouve
+                    ses achats intacts. Le serveur le revérifie de toute façon à
+                    chaque téléchargement, contre `entitlements`.
+
+                    C'est une ACTION et non un lien : la route de téléchargement
+                    rend une URL signée en JSON, pas un fichier. Un lien direct
+                    affichait donc du JSON brut dans le navigateur.
                   */}
-                  {entree.peut_telecharger
-                    ? entree.langues.flatMap((codeLangue) =>
-                        (['pdf', 'epub'] as const).map((format) => (
-                          <a
-                            key={`${codeLangue}-${format}`}
-                            className={espace.achatTelecharger}
-                            href={`/api/downloads/${entree.livre_id}?langue=${codeLangue}&format=${format}`}
+                  {entree.peut_telecharger ? (
+                    <form
+                      className={espace.achatTelechargement}
+                      action={telechargerConte.bind(null, langue, entree.livre_id)}
+                    >
+                      {entree.langues.length > 1 ? (
+                        <span className={espace.achatChoix}>
+                          <label
+                            className={espace.achatChoixLibelle}
+                            htmlFor={`langue-${entree.livre_id}`}
                           >
-                            {traduire(langue, 'compte.telechargerFormat')
-                              .replace('{format}', format.toUpperCase())}{' '}
-                            ({codeLangue.toUpperCase()})
-                          </a>
-                        )),
-                      )
-                    : null}
+                            {traduire(langue, 'compte.choixLangue')}
+                          </label>
+                          <select
+                            className={espace.achatChoixListe}
+                            id={`langue-${entree.livre_id}`}
+                            name="langue_contenu"
+                            defaultValue={entree.langues[0]}
+                          >
+                            {entree.langues.map((codeLangue) => (
+                              <option key={codeLangue} value={codeLangue}>
+                                {traduire(langue, `langue.${codeLangue}` as CleTraduction)}
+                              </option>
+                            ))}
+                          </select>
+                        </span>
+                      ) : (
+                        <input type="hidden" name="langue_contenu" value={entree.langues[0]} />
+                      )}
+
+                      <span className={espace.achatChoix}>
+                        <label
+                          className={espace.achatChoixLibelle}
+                          htmlFor={`format-${entree.livre_id}`}
+                        >
+                          {traduire(langue, 'compte.choixFormat')}
+                        </label>
+                        <select
+                          className={espace.achatChoixListe}
+                          id={`format-${entree.livre_id}`}
+                          name="format"
+                          defaultValue="pdf"
+                        >
+                          <option value="pdf">PDF</option>
+                          <option value="epub">EPUB</option>
+                        </select>
+                      </span>
+
+                      <button type="submit" className={espace.achatTelecharger}>
+                        {traduire(langue, 'compte.telecharger')}
+                      </button>
+                    </form>
+                  ) : null}
                 </div>
               </li>
             ))}

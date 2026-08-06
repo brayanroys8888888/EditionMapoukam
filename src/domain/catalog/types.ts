@@ -153,5 +153,25 @@ export interface SuggestionLivre {
   id: string;
   slug: string;
   titre: string;
+  /**
+   * @deprecated CHEMIN BRUT DE STOCKAGE, jamais une URL affichable.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ NE JAMAIS LE POSER DANS UN `src`.                                     │
+   * │                                                                        │
+   * │ Il vaut `covers/<jeton>/fiche.webp` — sans schéma ni hôte. Un          │
+   * │ navigateur le résout donc RELATIVEMENT à la page courante, ce qui      │
+   * │ donne `/fr/contes/covers/<jeton>/fiche.webp` et un 404.                │
+   * │                                                                        │
+   * │ Le défaut est resté invisible longtemps parce qu'il ne casse rien de   │
+   * │ visible : l'image manque, la mise en page tient, et la section         │
+   * │ « Dans la même tradition » ressemble à une liste de titres sans        │
+   * │ illustration — c'est-à-dire à une intention, pas à une panne.          │
+   * │                                                                        │
+   * │ Lire `couverture` à la place.                                          │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
   couverture_url: string | null;
+  /** Les trois tailles, en URL ABSOLUES. `null` sans couverture. */
+  couverture: UrlsCouverture | null;
 }

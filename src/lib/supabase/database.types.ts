@@ -1688,6 +1688,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_lire_livre: {
+        Args: { p_book_id: string }
+        Returns: {
+          age_max: number
+          age_min: number
+          auteur: string
+          disponible_achat: boolean
+          gratuit: boolean
+          id: string
+          illustrateur: string
+          inclus_abonnement: boolean
+          manques: string[]
+          nb_pages_extrait: number
+          origine_culturelle: string
+          prix: Json
+          publiable: boolean
+          publie_le: string
+          region: Database["public"]["Enums"]["region_conte"]
+          slug: string
+          statut: Database["public"]["Enums"]["book_status"]
+          themes: string[]
+          traductions: Json
+        }[]
+      }
       admin_lister_abonnements: {
         Args: { p_page?: number; p_statut?: string; p_taille?: number }
         Returns: {
@@ -1812,9 +1836,11 @@ export type Database = {
           p_book_id: string
           p_disponible_achat?: boolean
           p_gratuit?: boolean
+          p_illustrateur?: string
           p_inclus_abonnement?: boolean
           p_nb_pages_extrait?: number
           p_origine_culturelle?: string
+          p_region?: Database["public"]["Enums"]["region_conte"]
         }
         Returns: {
           age_max: number | null
@@ -1873,6 +1899,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_modifier_traduction: {
+        Args: {
+          p_acteur: string
+          p_book_id: string
+          p_resume?: string
+          p_titre?: string
+          p_translation_id: string
+        }
+        Returns: {
+          book_id: string
+          cree_le: string
+          fichier_lecture: string | null
+          fichier_telechargement: string | null
+          id: string
+          langue: string
+          maj_le: string
+          nb_pages: number | null
+          recherche: unknown
+          resume: string | null
+          statut: Database["public"]["Enums"]["translation_status"]
+          titre: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "book_translations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_octroyer_droit: {
         Args: {
           p_acteur: string
@@ -1905,6 +1960,10 @@ export type Database = {
       }
       admin_retirer_droit: {
         Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
+        Returns: undefined
+      }
+      admin_supprimer_livre: {
+        Args: { p_acteur: string; p_book_id: string; p_motif: string }
         Returns: undefined
       }
       admin_tableau_de_bord: { Args: never; Returns: Json }
@@ -1944,6 +2003,7 @@ export type Database = {
           p_origine?: string
           p_page?: number
           p_recherche?: string
+          p_region?: Database["public"]["Enums"]["region_conte"]
           p_taille?: number
           p_themes?: string[]
           p_tri?: string
@@ -2219,6 +2279,16 @@ export type Database = {
           montant: number
           nb_transactions: number
           zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      stats_chiffre_affaires_resume: {
+        Args: { p_at?: string; p_debut?: string; p_fin?: string }
+        Returns: {
+          brut: number
+          devise: string
+          nb_transactions: number
+          net: number
+          rembourse: number
         }[]
       }
       stats_langues: {

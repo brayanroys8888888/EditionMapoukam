@@ -266,13 +266,15 @@
 .filtres {
   border: 1.5px solid var(--bordure);
   border-radius: var(--rayon-carte);
-  padding: 14px 16px;
-  margin-bottom: 22px;
+  padding: 22px 24px;
+  min-height: 140px;
+  margin-bottom: 24px;
   display: flex;
   flex-wrap: wrap;
-  gap: 18px 26px;
+  gap: 20px 28px;
   align-items: flex-start;
 }
+
 
 .groupe {
   display: flex;

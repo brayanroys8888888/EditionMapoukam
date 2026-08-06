@@ -1,0 +1,234 @@
+/*
+ * SQUELETTES — DIRECTION V2.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN SQUELETTE ÉPOUSE CE QUI ARRIVE, SINON IL NE SERT À RIEN.             │
+ * │                                                                          │
+ * │ Six lignes grises à la place d'une grille de couvertures ne réservent    │
+ * │ pas la bonne place : à l'arrivée des données, la page saute quand même,  │
+ * │ et sur connexion lente ce saut fait cliquer à côté. Un squelette qui ne  │
+ * │ ressemble pas au résultat est un rotor déguisé.                          │
+ * │                                                                          │
+ * │ D'où trois formes distinctes : la grille de cartes, la fiche à deux      │
+ * │ colonnes, et la liste d'articles. Chacune reprend les mesures exactes de │
+ * │ l'écran qu'elle annonce — mêmes rayons, mêmes gouttières, même rapport   │
+ * │ de couverture.                                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/*
+ * Le balayage lumineux, plutôt qu'un clignotement d'opacité.
+ *
+ * Un `opacity` qui pulse fait respirer la page entière et fatigue au bout de
+ * quelques secondes. Un reflet qui traverse dit « ça travaille » sans battre.
+ */
+.bloc {
+  position: relative;
+  overflow: hidden;
+  background: var(--v2-fond-doux);
+  border-radius: var(--rayon-image);
+}
+
+.bloc::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 58%),
+    transparent
+  );
+  animation: balayage 1.4s infinite;
+}
+
+@keyframes balayage {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/*
+ * Sous `prefers-reduced-motion`, le reflet s'arrête — mais le squelette
+ * RESTE. Un mouvement réduit n'est pas un contenu supprimé : sans lui, la
+ * page paraîtrait vide au lieu de paraître en cours de chargement.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .bloc::after {
+    animation: none;
+  }
+}
+
+/* ── Grille de cartes ───────────────────────────────────────────────────── */
+
+.grille {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 250px), 1fr));
+  gap: 26px;
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 18px;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+}
+
+/* Le rapport 2/3 de la couverture — c'est lui qui réserve la vraie hauteur. */
+.couverture {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+}
+
+.ligne {
+  height: 13px;
+  border-radius: var(--rayon-pastille);
+}
+
+.ligneCourte {
+  width: 45%;
+}
+
+.ligneMoyenne {
+  width: 72%;
+}
+
+.ligneTitre {
+  height: 20px;
+  width: 88%;
+}
+
+.bouton {
+  height: var(--cible-min);
+  border-radius: var(--rayon-bouton);
+  margin-top: 4px;
+}
+
+/* ── Fiche ──────────────────────────────────────────────────────────────── */
+
+.fiche {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: clamp(32px, 5vw, 60px);
+  align-items: start;
+}
+
+.ficheVisuel {
+  padding: clamp(20px, 3vw, 40px);
+  border-radius: var(--rayon-panneau);
+  background: var(--v2-fond-doux);
+}
+
+.ficheCouverture {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  aspect-ratio: 2 / 3;
+  border-radius: var(--rayon-encart);
+}
+
+.ficheColonne {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ficheTitre {
+  height: 42px;
+  width: 78%;
+  border-radius: var(--rayon-controle);
+}
+
+.reponses {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.reponse {
+  height: 84px;
+  border-radius: var(--rayon-encart);
+}
+
+.achat {
+  height: 190px;
+  border-radius: var(--rayon-panneau);
+  margin-top: 14px;
+}
+
+/* ── Liste d'articles ───────────────────────────────────────────────────── */
+
+.articles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 26px;
+}
+
+.article {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  overflow: hidden;
+}
+
+.articleVisuel {
+  height: 150px;
+  border-radius: 0;
+}
+
+.articleCorps {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 22px;
+}
+
+/* ── Cadre commun ───────────────────────────────────────────────────────── */
+
+.page {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: clamp(32px, 4vw, 52px) 20px clamp(56px, 7vw, 80px);
+}
+
+/* Le bandeau vert reste plein : il ne dépend d'aucune donnée. */
+.banniere {
+  background: var(--v2-vert);
+  padding: clamp(38px, 5vw, 64px) 20px;
+}
+
+.banniereInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Sur le vert, les blocs s'éclaircissent : le fond doux y serait invisible. */
+.banniere .bloc {
+  background: rgb(251 247 239 / 18%);
+}
+
+.banniereTitre {
+  height: 46px;
+  width: min(60%, 420px);
+  border-radius: var(--rayon-controle);
+}
+
+.banniereTexte {
+  height: 15px;
+  width: min(80%, 620px);
+}

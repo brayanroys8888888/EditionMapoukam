@@ -53,6 +53,24 @@ export interface DemandeIngestion {
   /** À défaut, le titre est lu dans les métadonnées du PDF, puis du nom de fichier. */
   titre?: string;
   auteur?: string;
+  /**
+   * Titre AUQUEL RATTACHER cette version, au lieu d'en créer un nouveau.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ SANS CELA, LA VERSION ANGLAISE D'UN CONTE DEVENAIT UN SECOND CONTE.   │
+   * │                                                                        │
+   * │ §5.5 : un livre est une entité parente avec N déclinaisons             │
+   * │ linguistiques, et un droit d'accès porte sur le LIVRE, jamais sur une  │
+   * │ version. Déposer la traduction anglaise créait pourtant un second      │
+   * │ `books`, au slug suffixé `-2` — donc un second prix à saisir, une      │
+   * │ seconde publication à faire, et un acheteur du français qui n'avait    │
+   * │ aucun droit sur l'anglais.                                            │
+   * │                                                                        │
+   * │ Le slug, le titre parent et les champs métier ne sont alors PAS        │
+   * │ touchés : ils appartiennent au livre, pas à la version qu'on ajoute.   │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  bookId?: string;
 }
 
 export interface ResultatIngestion {
@@ -292,35 +310,60 @@ async function creerBrouillon(
     demande: DemandeIngestion;
   },
 ): Promise<{ bookId: string; translationId: string; slug: string; auteur: string }> {
-  const slug = await slugDisponible(contexte.titre, async (candidat) => {
-    const { data } = await client.from('books').select('id').eq('slug', candidat).maybeSingle();
-    return data !== null;
-  });
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ DEUX CHEMINS, ET LE SECOND NE TOUCHE PAS AU LIVRE.                    │
+   * │                                                                        │
+   * │ Rattacher une version à un titre existant ne doit RIEN changer de ce   │
+   * │ titre : ni son slug — il est dans l'URL publique — ni son auteur, ni   │
+   * │ ses champs métier, ni son statut. Un éditeur qui ajoute la version     │
+   * │ anglaise ne s'attend pas à voir le titre français repasser en          │
+   * │ brouillon, ni son auteur remplacé par celui qu'un PDF traduit porte    │
+   * │ en métadonnée.                                                         │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const rattachement = await livreExistant(client, contexte.demande.bookId);
 
-  const auteur = contexte.demande.auteur ?? contexte.analyse.auteur ?? AUTEUR_A_RENSEIGNER;
+  const slug = rattachement
+    ? rattachement.slug
+    : await slugDisponible(contexte.titre, async (candidat) => {
+        const { data } = await client.from('books').select('id').eq('slug', candidat).maybeSingle();
+        return data !== null;
+      });
 
-  const livre = await client
-    .from('books')
-    .insert({
-      slug,
-      auteur,
-      // Tout le reste est laissé à l'éditeur. En particulier :
-      //   * `inclus_abonnement` et `disponible_achat` restent faux — la chaîne
-      //     ne décide pas du modèle économique d'un titre (§3.2) ;
-      //   * `publie_le` reste nul — la fenêtre de 3 mois ne court pas encore.
-      statut: 'brouillon',
-    })
-    .select('id')
-    .single();
+  const auteur =
+    rattachement?.auteur ??
+    contexte.demande.auteur ??
+    contexte.analyse.auteur ??
+    AUTEUR_A_RENSEIGNER;
 
-  if (livre.error || !livre.data) {
-    throw new Error(`Création du livre impossible : ${livre.error.message}`);
+  let bookId = rattachement?.id ?? null;
+
+  if (bookId === null) {
+    const livre = await client
+      .from('books')
+      .insert({
+        slug,
+        auteur,
+        // Tout le reste est laissé à l'éditeur. En particulier :
+        //   * `inclus_abonnement` et `disponible_achat` restent faux — la chaîne
+        //     ne décide pas du modèle économique d'un titre (§3.2) ;
+        //   * `publie_le` reste nul — la fenêtre de 3 mois ne court pas encore.
+        statut: 'brouillon',
+      })
+      .select('id')
+      .single();
+
+    if (livre.error || !livre.data) {
+      throw new Error(`Création du livre impossible : ${livre.error.message}`);
+    }
+    bookId = livre.data.id;
   }
 
   const traduction = await client
     .from('book_translations')
     .insert({
-      book_id: livre.data.id,
+      book_id: bookId,
       langue: contexte.langue,
       titre: contexte.titre,
       nb_pages: contexte.analyse.nbPages,
@@ -330,15 +373,38 @@ async function creerBrouillon(
     .single();
 
   if (traduction.error || !traduction.data) {
+    // La contrainte `unique (book_id, langue)` mord ici quand la version
+    // existe déjà. Le message le dit plutôt que de laisser remonter une
+    // violation de contrainte, que l'écran afficherait telle quelle.
     throw new Error(`Création de la version linguistique impossible : ${traduction.error.message}`);
   }
 
-  return {
-    bookId: livre.data.id,
-    translationId: traduction.data.id,
-    slug,
-    auteur,
-  };
+  return { bookId, translationId: traduction.data.id, slug, auteur };
+}
+
+/**
+ * Le titre auquel rattacher, s'il en a été demandé un.
+ *
+ * Lève plutôt que de retomber sur la création d'un nouveau titre : un
+ * identifiant fourni et introuvable est une erreur d'appel, et créer
+ * silencieusement un doublon serait exactement le défaut qu'on corrige.
+ */
+async function livreExistant(
+  client: AppSupabaseClient,
+  bookId: string | undefined,
+): Promise<{ id: string; slug: string; auteur: string } | null> {
+  if (!bookId) return null;
+
+  const { data, error } = await client
+    .from('books')
+    .select('id, slug, auteur')
+    .eq('id', bookId)
+    .maybeSingle();
+
+  if (error) throw new Error(`Lecture du titre impossible : ${error.message}`);
+  if (!data) throw new Error(`Titre ${bookId} introuvable : aucune version n'y a été rattachée.`);
+
+  return data;
 }
 
 interface PagesProduites {

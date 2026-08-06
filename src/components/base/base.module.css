@@ -294,3 +294,55 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * DIRECTION V2 — surcharges de forme, jamais de comportement
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Les couleurs ont déjà basculé par les jetons ; il ne reste que les formes.
+ * `--rayon-bouton` vaut 999 px en V2, ce qui suffit aux boutons — restent les
+ * champs et le bouton primaire, qui gagnent un peu de présence.
+ */
+
+:global(:root[data-design='v2']) .bouton {
+  padding: 15px 28px;
+  font-size: var(--taille-xl);
+}
+
+:global(:root[data-design='v2']) .primaire:hover:not(:disabled) {
+  box-shadow: var(--ombre-flottante);
+}
+
+/*
+ * Le bouton secondaire devient VERT en contour, et non plus encre.
+ *
+ * Sur la V1 le contour d'encre était le second niveau d'action. Ici le vert
+ * est la couleur de marque, et l'encre n'est plus qu'une couleur de texte :
+ * un bouton cerné d'encre y ressemblerait à un champ.
+ */
+:global(:root[data-design='v2']) .secondaire {
+  border-color: var(--v2-vert);
+  color: var(--v2-vert);
+}
+
+:global(:root[data-design='v2']) .secondaire:hover:not(:disabled) {
+  background: var(--v2-vert);
+  color: var(--fond);
+}
+
+/* Les champs s'arrondissent et respirent — c'est ce qui rend un formulaire
+   accueillant plutôt qu'administratif. */
+:global(:root[data-design='v2']) .saisie {
+  padding: 13px 15px;
+  border-radius: var(--rayon-controle);
+  border-width: 1.5px;
+}
+
+:global(:root[data-design='v2']) .saisie:focus {
+  border-color: var(--v2-vert);
+}
+
+:global(:root[data-design='v2']) .libelle {
+  font-size: var(--taille-m);
+  letter-spacing: 0.01em;
+}

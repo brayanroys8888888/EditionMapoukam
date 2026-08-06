@@ -80,7 +80,11 @@ interface CorpsCommande {
   zone: string;
   zone_divergente: boolean;
   refus_promo: string | null;
-  lignes: { livre_id: string; prix_unitaire: number }[];
+  /* Les montants formatés par le SERVEUR — le client ne divise jamais. */
+  total_affichage: string;
+  sous_total_affichage: string;
+  remise_affichage: string;
+  lignes: { livre_id: string; prix_unitaire: number; prix_affichage: string }[];
   refusees: { livre_id: string; titre: string; raison: string }[];
 }
 
@@ -183,6 +187,57 @@ describe('total et grille tarifaire', () => {
 
     expect(corps.sous_total).toBe(1198);
     expect(corps.devise).toBe('EUR');
+  });
+
+  it('rend les montants FORMATÉS, pour que le client n’ait jamais à diviser', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ POURQUOI CES CHAMPS EXISTENT.                                      │
+    // │                                                                    │
+    // │ Le tiroir de panier est rendu par le NAVIGATEUR, et il montre un   │
+    // │ total. Sans montant formaté, il diviserait par cent — juste en     │
+    // │ euro, faux d'un facteur cent en franc CFA, qui n'a pas de          │
+    // │ sous-unité.                                                        │
+    // │                                                                    │
+    // │ Le serveur est la seule autorité sur le nombre de décimales. Ce    │
+    // │ test fige la présence des trois champs et de celui des lignes.     │
+    // └────────────────────────────────────────────────────────────────────┘
+    await ajouterAuPanier(acheteur, 'la-tortue-et-le-lapin');
+
+    const corps = await corpsJson<CorpsCommande>(
+      await apercuCommande(postJson('/api/orders', {}, { jeton: acheteur.accessToken })),
+    );
+
+    expect(corps.total_affichage).toBe('4,99 €');
+    expect(corps.sous_total_affichage).toBe('4,99 €');
+    expect(corps.remise_affichage).toBe('0,00 €');
+
+    for (const ligne of corps.lignes) {
+      expect(ligne.prix_affichage, 'chaque ligne porte son prix formaté').toMatch(/\d/);
+    }
+  });
+
+  it('le formatage suit la DEVISE, pas une division écrite quelque part', async () => {
+    // Le contre-test du précédent. Le franc CFA n'a pas de sous-unité : un
+    // client qui diviserait par cent afficherait « 14,99 » au lieu de
+    // « 1 499 ». Seule la lecture de la devise en base donne le bon résultat.
+    await enPayant('SN', async () => {
+      await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
+
+      const corps = await corpsJson<CorpsCommande>(
+        await apercuCommande(postJson('/api/orders', {}, { jeton: acheteur.accessToken })),
+      );
+
+      // Le franc CFA d'Afrique centrale — la zone Afrique de ce projet.
+      expect(corps.devise).toBe('XAF');
+      // Aucune décimale, et le montant entier — jamais divisé.
+      expect(corps.total_affichage).not.toMatch(/[,.]\d\d\b/);
+      // Les séparateurs de milliers sont ÉCHAPPÉS, jamais écrits en clair :
+      // l'espace fine insécable du français est invisible dans un fichier
+      // source, et une règle de lint la refuse — à raison.
+      expect(corps.total_affichage.replace(/[\s\u00a0\u202f]/g, '')).toContain(
+        String(corps.total),
+      );
+    });
   });
 
   it('sert la zone Afrique en francs CFA au porteur d’un moyen de paiement africain', async () => {

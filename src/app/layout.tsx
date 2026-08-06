@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { headers } from 'next/headers';
 
 import { langueValide } from '@/i18n';
+import { versionDesign } from '@/design/version';
 import '@/design/tokens.css';
 // Les `@font-face` : ils ne dépendent d'aucun jeton, mais les jetons les
 // nomment (`--police-titre: 'Fraunces'`). Déclarés ici, jamais dans un écran.
@@ -43,8 +44,38 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
   const langue = langueValide((await headers()).get('x-langue'));
 
   return (
-    <html lang={langue}>
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ `data-design` EST TOUT LE COMMUTATEUR DE THÈME.                      │
+     * │                                                                      │
+     * │ Il est posé sur l'élément RACINE, et nulle part ailleurs : c'est de  │
+     * │ lui que dépend le bloc `[data-design='v2']` des jetons, donc toute   │
+     * │ la palette. Le poser plus bas ne colorerait qu'une partie de la      │
+     * │ page, et l'oublier servirait la V1 — ce qui est le bon repli.        │
+     * │                                                                      │
+     * │ Aucun composant ne le lit : ils lisent des jetons, qui changent de   │
+     * │ valeur sous eux. C'est ce qui permet à treize écrans déjà livrés de  │
+     * │ changer de direction sans qu'une ligne de leur code bouge.           │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    <html lang={langue} data-design={versionDesign()}>
       <head>
+        {/*
+         * ┌────────────────────────────────────────────────────────────────┐
+         * │ L'ICÔNE D'ONGLET EST LE LOGO SUR UN DISQUE VERT.              │
+         * │                                                                │
+         * │ Le fichier fourni est BLANC sur transparent : posé tel quel    │
+         * │ comme favicon, il serait invisible sur l'onglet clair de tout  │
+         * │ navigateur — c'est-à-dire dans le cas le plus courant.         │
+         * │                                                                │
+         * │ `scripts/` le compose donc sur un disque vert, une fois, et le │
+         * │ résultat est versionné. Une icône générée à la volée par le    │
+         * │ navigateur n'existe pas.                                       │
+         * └────────────────────────────────────────────────────────────────┘
+         */}
+        <link rel="icon" href="/favicon.png" type="image/png" sizes="32x32" />
+        <link rel="apple-touch-icon" href="/images/icone-180.png" sizes="180x180" />
+
         {/*
          * Les DEUX familles que toute page emploie au-dessus de la ligne de
          * flottaison — l'interface et les titres. Literata n'est préchargée

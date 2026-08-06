@@ -37,6 +37,10 @@ const requeteSchema = periodeSchema.extend(paginationSchema.shape).extend({
   agregat: z
     .enum([
       'chiffre_affaires',
+      // Le MÊME chiffre d'affaires, consolidé par devise et par elle seule.
+      // Il ne remplace pas le précédent : celui-ci ventile par flux et par
+      // zone, celui-là répond à « combien, en euros, sur la période ».
+      'chiffre_affaires_resume',
       'abonnes',
       'mouvements',
       'titres_achetes',
@@ -64,6 +68,8 @@ export async function GET(request: Request): Promise<Response> {
     switch (query.data.agregat) {
       case 'chiffre_affaires':
         return await stats.chiffreAffaires(periode);
+      case 'chiffre_affaires_resume':
+        return await stats.chiffreAffairesResume(periode);
       case 'abonnes':
         return await stats.abonnes();
       case 'mouvements':

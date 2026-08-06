@@ -70,7 +70,15 @@ export default async function PageAbonnement({ params }: Parametres) {
             <p className={ecran.videCorps}>{traduire(langue, 'offres.abonnementResume')}</p>
           </div>
 
-          <a className={ecran.boutonPrimaire} href={`/${langue}/offres`}>
+          {/*
+            Vers le TUNNEL, et non vers `/offres`.
+
+            Cet écran est atteint par quelqu'un qui cherche son abonnement et
+            découvre qu'il n'en a pas : il sait déjà ce qu'il veut. Le renvoyer
+            à la page des offres lui ferait relire un comparatif pour retrouver
+            le bouton qu'il vient de chercher.
+          */}
+          <a className={ecran.boutonPrimaire} href={`/${langue}/abonnement/souscrire`}>
             {traduire(langue, 'abonnement.aucunAction')}
           </a>
         </div>
