@@ -205,3 +205,17 @@ export async function lancerPoppler(
   const { stdout } = await executer(binaire, args, options);
   return stdout;
 }
+
+/**
+ * Vérifie si un outil poppler est disponible sur le système.
+ * Permet d'activer un repli applicatif (ex. Vercel) quand poppler n'est pas installé.
+ */
+export async function popplerEstDisponible(outil: OutilPoppler): Promise<boolean> {
+  try {
+    await resoudreOutil(outil);
+    return true;
+  } catch {
+    return false;
+  }
+}
+

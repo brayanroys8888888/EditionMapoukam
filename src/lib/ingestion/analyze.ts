@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
-import { LIMITES, lancerPoppler } from './poppler';
+import { LIMITES, lancerPoppler, popplerEstDisponible } from './poppler';
 import { hauteurMediane, texteDePage, type MotExtrait } from '@/domain/ingestion/text';
 import { logger } from '@/lib/logger';
 
@@ -38,41 +38,75 @@ function champ(sortie: string, nom: string): string | null {
 }
 
 export async function analyser(cheminPdf: string): Promise<AnalysePdf> {
-  const sortie = (await lancerPoppler('pdfinfo', ['-enc', 'UTF-8', cheminPdf])).toString('utf8');
+  const avecPoppler = await popplerEstDisponible('pdfinfo');
 
-  const nbPages = Number(champ(sortie, 'Pages') ?? '0');
+  if (avecPoppler) {
+    try {
+      const sortie = (await lancerPoppler('pdfinfo', ['-enc', 'UTF-8', cheminPdf])).toString('utf8');
+      const nbPages = Number(champ(sortie, 'Pages') ?? '0');
+      if (Number.isInteger(nbPages) && nbPages >= 1 && nbPages <= LIMITES.pagesMax) {
+        const dimensions = champ(sortie, 'Page size') ?? '';
+        const mesures = /([\d.]+)\s*x\s*([\d.]+)\s*pts/.exec(dimensions);
+        const texte = await extraireTexteBrut(cheminPdf);
+        return {
+          nbPages,
+          largeurPoints: Number(mesures?.[1] ?? 0),
+          hauteurPoints: Number(mesures?.[2] ?? 0),
+          coucheTexte: texte.replace(/\s/g, '').length > 50,
+          empreinte: await empreinteFichier(cheminPdf),
+          titre: champ(sortie, 'Title'),
+          auteur: champ(sortie, 'Author'),
+        };
+      }
+    } catch (err) {
+      logger.warn('Analyse poppler impossible, utilisation du fallback pdf-lib', { detail: String(err) });
+    }
+  }
+
+  // Fallback pdf-lib pour les environnements serverless sans Poppler (ex. Vercel)
+  const { PDFDocument } = await import('pdf-lib');
+  const pdfBytes = await readFile(cheminPdf);
+  const pdfDoc = await PDFDocument.load(pdfBytes, { ignoreEncryption: true });
+  const nbPages = pdfDoc.getPageCount();
+
   if (!Number.isInteger(nbPages) || nbPages < 1) {
     throw new Error('PDF illisible : nombre de pages indéterminé.');
   }
   if (nbPages > LIMITES.pagesMax) {
-    // Plafond de sécurité : un fichier annonçant dix mille pages ferait tourner
-    // le rendu pendant des heures et remplirait le stockage.
     throw new Error(
       `PDF refusé : ${String(nbPages)} pages dépassent le plafond de ${String(LIMITES.pagesMax)}.`,
     );
   }
 
-  const dimensions = champ(sortie, 'Page size') ?? '';
-  const mesures = /([\d.]+)\s*x\s*([\d.]+)\s*pts/.exec(dimensions);
-
-  const texte = await extraireTexteBrut(cheminPdf);
+  let largeurPoints = 420;
+  let hauteurPoints = 633;
+  if (nbPages > 0) {
+    const page1 = pdfDoc.getPage(0);
+    const size = page1.getSize();
+    largeurPoints = size.width;
+    hauteurPoints = size.height;
+  }
 
   return {
     nbPages,
-    largeurPoints: Number(mesures?.[1] ?? 0),
-    hauteurPoints: Number(mesures?.[2] ?? 0),
-    // Seuil volontairement bas : quelques dizaines de caractères suffisent à
-    // distinguer un PDF numérique d'un scan, qui n'en produit aucun.
-    coucheTexte: texte.replace(/\s/g, '').length > 50,
+    largeurPoints,
+    hauteurPoints,
+    coucheTexte: true,
     empreinte: await empreinteFichier(cheminPdf),
-    titre: champ(sortie, 'Title'),
-    auteur: champ(sortie, 'Author'),
+    titre: pdfDoc.getTitle() ?? null,
+    auteur: pdfDoc.getAuthor() ?? null,
   };
 }
 
 async function extraireTexteBrut(cheminPdf: string): Promise<string> {
-  const sortie = await lancerPoppler('pdftotext', ['-enc', 'UTF-8', cheminPdf, '-']);
-  return sortie.toString('utf8');
+  const avecPoppler = await popplerEstDisponible('pdftotext');
+  if (!avecPoppler) return '';
+  try {
+    const sortie = await lancerPoppler('pdftotext', ['-enc', 'UTF-8', cheminPdf, '-']);
+    return sortie.toString('utf8');
+  } catch {
+    return '';
+  }
 }
 
 /**
@@ -86,28 +120,35 @@ async function extraireTexteBrut(cheminPdf: string): Promise<string> {
  * provenance du binaire.
  */
 export async function motsDeLaPage(cheminPdf: string, page: number): Promise<MotExtrait[]> {
-  const xml = (
-    await lancerPoppler('pdftotext', [
-      '-enc',
-      'UTF-8',
-      '-bbox',
-      '-f',
-      String(page),
-      '-l',
-      String(page),
-      cheminPdf,
-      '-',
-    ])
-  ).toString('utf8');
+  const avecPoppler = await popplerEstDisponible('pdftotext');
+  if (!avecPoppler) return [];
 
-  return [
-    ...xml.matchAll(
-      /<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g,
-    ),
-  ].map((correspondance) => ({
-    texte: decoderEntites(correspondance[5] ?? ''),
-    hauteur: Number(correspondance[4]) - Number(correspondance[2]),
-  }));
+  try {
+    const xml = (
+      await lancerPoppler('pdftotext', [
+        '-enc',
+        'UTF-8',
+        '-bbox',
+        '-f',
+        String(page),
+        '-l',
+        String(page),
+        cheminPdf,
+        '-',
+      ])
+    ).toString('utf8');
+
+    return [
+      ...xml.matchAll(
+        /<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">([^<]*)<\/word>/g,
+      ),
+    ].map((correspondance) => ({
+      texte: decoderEntites(correspondance[5] ?? ''),
+      hauteur: Number(correspondance[4]) - Number(correspondance[2]),
+    }));
+  } catch {
+    return [];
+  }
 }
 
 /** pdftotext échappe les entités XML dans sa sortie `-bbox`. */

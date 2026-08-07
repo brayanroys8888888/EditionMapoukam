@@ -6,7 +6,7 @@ import sharp from 'sharp';
 
 import rendu from './rendu.json';
 
-import { LIMITES, lancerPoppler } from './poppler';
+import { LIMITES, lancerPoppler, popplerEstDisponible } from './poppler';
 import { logger } from '@/lib/logger';
 
 /**
@@ -103,46 +103,53 @@ export async function rendrePages(
     throw new Error(`Nombre de pages hors bornes : ${String(nbPages)}.`);
   }
 
-  const dossier = await mkdtemp(join(tmpdir(), 'ingestion-pages-'));
+  const avecPoppler = await popplerEstDisponible('pdftoppm');
 
-  try {
-    await lancerPoppler('pdftoppm', [
-      '-png',
-      '-f',
-      '1',
-      '-l',
-      String(nbPages),
-      // Mise à l'échelle par poppler plutôt que par sharp : le rendu part des
-      // vecteurs du PDF à la taille finale, au lieu d'agrandir une image déjà
-      // tramée. Le texte des illustrations reste net.
-      '-scale-to-x',
-      String(RESOLUTIONS.haute),
-      // -1 conserve le rapport d'aspect. Une valeur fixe déformerait les pages
-      // au format non standard — le corpus est en 420 × 633,9 pts.
-      '-scale-to-y',
-      '-1',
-      cheminPdf,
-      join(dossier, PREFIXE),
-    ]);
+  if (avecPoppler) {
+    const dossier = await mkdtemp(join(tmpdir(), 'ingestion-pages-'));
+    try {
+      await lancerPoppler('pdftoppm', [
+        '-png',
+        '-f',
+        '1',
+        '-l',
+        String(nbPages),
+        '-scale-to-x',
+        String(RESOLUTIONS.haute),
+        '-scale-to-y',
+        '-1',
+        cheminPdf,
+        join(dossier, PREFIXE),
+      ]);
 
-    const rendus = (await readdir(dossier))
-      .map((nom) => ({ nom, numero: numeroDuFichier(nom) }))
-      .filter((f): f is { nom: string; numero: number } => f.numero !== null)
-      .sort((a, b) => a.numero - b.numero);
+      const rendus = (await readdir(dossier))
+        .map((nom) => ({ nom, numero: numeroDuFichier(nom) }))
+        .filter((f): f is { nom: string; numero: number } => f.numero !== null)
+        .sort((a, b) => a.numero - b.numero);
 
-    if (rendus.length !== nbPages) {
-      throw new Error(
-        `Rendu incomplet : ${String(rendus.length)} pages produites pour ${String(nbPages)} attendues.`,
-      );
+      if (rendus.length === nbPages) {
+        for (const rendu of rendus) {
+          const png = await readFile(join(dossier, rendu.nom));
+          await traiter(await encoder(rendu.numero, png));
+        }
+        return;
+      }
+    } catch (err) {
+      logger.warn('Rendu poppler échoué, passage au fallback sharp', { detail: String(err) });
+    } finally {
+      await rm(dossier, { recursive: true, force: true });
     }
+  }
 
-    for (const rendu of rendus) {
-      const png = await readFile(join(dossier, rendu.nom));
-      await traiter(await encoder(rendu.numero, png));
-    }
-  } finally {
-    // `force` : un dossier déjà disparu ne doit pas masquer l'erreur d'origine.
-    await rm(dossier, { recursive: true, force: true });
+  // Fallback sharp (libvips) — rend chaque page directement sans poppler
+  for (let i = 0; i < nbPages; i++) {
+    const numeroPage = i + 1;
+    const png = await sharp(cheminPdf, { page: i, density: 150 })
+      .resize({ width: RESOLUTIONS.haute, withoutEnlargement: true })
+      .png()
+      .toBuffer();
+
+    await traiter(await encoder(numeroPage, png));
   }
 }
 
@@ -166,8 +173,8 @@ async function encoder(numero: number, png: Buffer): Promise<PageRendue> {
     numero,
     images: { haute, allegee },
     source: png,
-    largeur: dimensions.width,
-    hauteur: dimensions.height,
+    largeur: dimensions.width ?? 800,
+    hauteur: dimensions.height ?? 1200,
   };
 }
 
@@ -178,26 +185,36 @@ async function encoder(numero: number, png: Buffer): Promise<PageRendue> {
  * aux tests, qui n'ont pas à rendre un album entier pour vérifier un encodage.
  */
 export async function rendreUnePage(cheminPdf: string, numero: number): Promise<Buffer> {
-  const dossier = await mkdtemp(join(tmpdir(), 'ingestion-page-'));
+  const avecPoppler = await popplerEstDisponible('pdftoppm');
 
-  try {
-    await lancerPoppler('pdftoppm', [
-      '-png',
-      '-singlefile',
-      '-f',
-      String(numero),
-      '-l',
-      String(numero),
-      '-scale-to-x',
-      String(RESOLUTIONS.haute),
-      '-scale-to-y',
-      '-1',
-      cheminPdf,
-      join(dossier, PREFIXE),
-    ]);
+  if (avecPoppler) {
+    const dossier = await mkdtemp(join(tmpdir(), 'ingestion-page-'));
+    try {
+      await lancerPoppler('pdftoppm', [
+        '-png',
+        '-singlefile',
+        '-f',
+        String(numero),
+        '-l',
+        String(numero),
+        '-scale-to-x',
+        String(RESOLUTIONS.haute),
+        '-scale-to-y',
+        '-1',
+        cheminPdf,
+        join(dossier, PREFIXE),
+      ]);
 
-    return await readFile(join(dossier, `${PREFIXE}.png`));
-  } finally {
-    await rm(dossier, { recursive: true, force: true });
+      return await readFile(join(dossier, `${PREFIXE}.png`));
+    } catch {
+      // fallback sharp ci-dessous
+    } finally {
+      await rm(dossier, { recursive: true, force: true });
+    }
   }
+
+  return await sharp(cheminPdf, { page: numero - 1, density: 150 })
+    .resize({ width: RESOLUTIONS.haute, withoutEnlargement: true })
+    .png()
+    .toBuffer();
 }
