@@ -113,12 +113,14 @@ export async function deposerPage(
   const client = options.client ?? createServiceClient();
   const chemins = {} as Record<Resolution, string>;
 
-  for (const resolution of Object.keys(images) as Resolution[]) {
-    const chemin = cheminPage(jeton, numero, resolution);
-    const image = images[resolution];
-    await deposer(client, chemin, image, 'image/webp');
-    chemins[resolution] = chemin;
-  }
+  await Promise.all(
+    (Object.keys(images) as Resolution[]).map(async (resolution) => {
+      const chemin = cheminPage(jeton, numero, resolution);
+      const image = images[resolution];
+      await deposer(client, chemin, image, 'image/webp');
+      chemins[resolution] = chemin;
+    }),
+  );
 
   return chemins;
 }
@@ -134,8 +136,10 @@ export async function deposerTelechargeables(
   const cheminPdf = cheminTelechargement(jeton, 'pdf');
   const cheminEpub = cheminTelechargement(jeton, 'epub');
 
-  await deposer(client, cheminPdf, fichiers.pdf, 'application/pdf');
-  await deposer(client, cheminEpub, fichiers.epub, 'application/epub+zip');
+  await Promise.all([
+    deposer(client, cheminPdf, fichiers.pdf, 'application/pdf'),
+    deposer(client, cheminEpub, fichiers.epub, 'application/epub+zip'),
+  ]);
 
   return { pdf: cheminPdf, epub: cheminEpub };
 }

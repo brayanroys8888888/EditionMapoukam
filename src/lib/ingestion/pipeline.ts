@@ -512,6 +512,7 @@ async function finaliser(
   const traduction = await client
     .from('book_translations')
     .update({
+      fichier_lecture: `book-pages/${valeurs.bookId}`,
       fichier_telechargement: valeurs.cheminTelechargement,
       nb_pages: valeurs.nbPages,
     })

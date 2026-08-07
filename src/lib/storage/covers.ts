@@ -148,25 +148,27 @@ export async function publierCouverture(
   const client = options.client ?? createServiceClient();
   const chemins = {} as Record<TailleCouverture, string>;
 
-  for (const image of images) {
-    if (image.largeur > LARGEUR_PUBLIQUE_MAX) {
-      throw new Error(
-        `Couverture refusée : ${String(image.largeur)} px dépasse la largeur d'affichage maximale (${String(LARGEUR_PUBLIQUE_MAX)} px). L'original haute définition reste dans le stockage privé.`,
-      );
-    }
+  await Promise.all(
+    images.map(async (image) => {
+      if (image.largeur > LARGEUR_PUBLIQUE_MAX) {
+        throw new Error(
+          `Couverture refusée : ${String(image.largeur)} px dépasse la largeur d'affichage maximale (${String(LARGEUR_PUBLIQUE_MAX)} px). L'original haute définition reste dans le stockage privé.`,
+        );
+      }
 
-    const cheminComplet = cheminCouverture(jeton, image.taille);
-    const chemin = cheminComplet.slice(BUCKET_PUBLIC.length + 1);
+      const cheminComplet = cheminCouverture(jeton, image.taille);
+      const chemin = cheminComplet.slice(BUCKET_PUBLIC.length + 1);
 
-    const { error } = await client.storage
-      .from(BUCKET_PUBLIC)
-      .upload(chemin, image.contenu, { contentType: 'image/webp', upsert: true });
+      const { error } = await client.storage
+        .from(BUCKET_PUBLIC)
+        .upload(chemin, image.contenu, { contentType: 'image/webp', upsert: true });
 
-    if (error) {
-      throw new Error(`Dépôt de couverture impossible (${image.taille}) : ${error.message}`);
-    }
-    chemins[image.taille] = cheminComplet;
-  }
+      if (error) {
+        throw new Error(`Dépôt de couverture impossible (${image.taille}) : ${error.message}`);
+      }
+      chemins[image.taille] = cheminComplet;
+    }),
+  );
 
   logger.info('Couvertures publiées', { jeton, tailles: images.map((i) => i.taille) });
   return { jeton, chemins };
