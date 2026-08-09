@@ -7,6 +7,7 @@ import sharp from 'sharp';
 import rendu from './rendu.json';
 
 import { LIMITES, lancerPoppler, popplerEstDisponible } from './poppler';
+import { rasteriserPage, rasteriserToutesLesPages } from './rasteriser';
 import { logger } from '@/lib/logger';
 
 /**
@@ -141,16 +142,24 @@ export async function rendrePages(
     }
   }
 
-  // Fallback sharp (libvips) — rend chaque page directement sans poppler
-  for (let i = 0; i < nbPages; i++) {
-    const numeroPage = i + 1;
-    const png = await sharp(cheminPdf, { page: i, density: 150 })
-      .resize({ width: RESOLUTIONS.haute, withoutEnlargement: true })
-      .png()
-      .toBuffer();
-
-    await traiter(await encoder(numeroPage, png));
-  }
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE REPLI, ET CE QU'IL REMPLACE.                                      │
+   * │                                                                      │
+   * │ Il appelait `sharp(cheminPdf, { page })`. sharp s'appuie sur libvips, │
+   * │ et libvips ne lit le PDF que s'il a été compilé avec poppler ou       │
+   * │ pdfium — ce qui n'est pas le cas des binaires npm. Le repli levait    │
+   * │ donc « unsupported image format » sur CHAQUE conte déposé en ligne.   │
+   * │                                                                      │
+   * │ Et il ne pouvait pas être remarqué en développement : poppler y est   │
+   * │ installé, la branche n'était jamais prise. Un repli qu'aucun          │
+   * │ environnement n'emprunte est un repli que personne n'éprouve — d'où   │
+   * │ le test qui l'exerce désormais explicitement.                         │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  await rasteriserToutesLesPages(cheminPdf, nbPages, RESOLUTIONS.haute, async (numero, png) => {
+    await traiter(await encoder(numero, png));
+  });
 }
 
 /** Encode une page rendue dans les deux résolutions. */
@@ -213,8 +222,7 @@ export async function rendreUnePage(cheminPdf: string, numero: number): Promise<
     }
   }
 
-  return await sharp(cheminPdf, { page: numero - 1, density: 150 })
-    .resize({ width: RESOLUTIONS.haute, withoutEnlargement: true })
-    .png()
-    .toBuffer();
+  // Même repli que `rendrePages`, et pour la même raison : sharp ne sait pas
+  // lire un PDF, quel que soit l'environnement.
+  return await rasteriserPage(cheminPdf, numero, RESOLUTIONS.haute);
 }

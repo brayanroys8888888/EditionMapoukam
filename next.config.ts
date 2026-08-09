@@ -6,9 +6,24 @@ const nextConfig: NextConfig = {
   // `npm run verify`, jamais contournées au build. (Next 16 a retiré
   // l'intégration ESLint du build ; `npm run lint` s'en charge.)
   typescript: { ignoreBuildErrors: false },
-  // poppler et sharp sont invoqués côté serveur uniquement ; ils ne doivent
-  // jamais être embarqués dans un bundle client.
-  serverExternalPackages: ['sharp'],
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ TROIS PAQUETS QUE LE GROUPEUR NE DOIT PAS TOUCHER.                   │
+   * │                                                                      │
+   * │ `sharp` et `@napi-rs/canvas` embarquent des BINAIRES NATIFS, choisis  │
+   * │ à l'exécution selon la plateforme. Empaquetés, leur résolution casse  │
+   * │ — et elle casse au DÉPLOIEMENT, pas en local, puisque le binaire      │
+   * │ manquant est celui de Linux.                                          │
+   * │                                                                      │
+   * │ `pdfjs-dist` est chargé par `await import()` et va chercher ses       │
+   * │ propres ressources (cartes de caractères, polices standard) par des   │
+   * │ chemins relatifs à son paquet. Le groupeur les perd en route.         │
+   * │                                                                      │
+   * │ Les trois ne servent QUE côté serveur : rien de tout cela n'a de      │
+   * │ raison d'atteindre un navigateur.                                     │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  serverExternalPackages: ['sharp', '@napi-rs/canvas', 'pdfjs-dist'],
 
   experimental: {
     /*
