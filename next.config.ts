@@ -25,6 +25,30 @@ const nextConfig: NextConfig = {
    */
   serverExternalPackages: ['sharp', '@napi-rs/canvas', 'pdfjs-dist'],
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ CE QUE LE TRACEUR DE FICHIERS NE TROUVE PAS TOUT SEUL.               │
+   * │                                                                      │
+   * │ Vercel n'embarque dans une fonction que les fichiers qu'il a su       │
+   * │ SUIVRE depuis les imports. Il suit bien les imports statiques ; il    │
+   * │ perd la trace de ce qu'un paquet charge lui-même à l'exécution.       │
+   * │                                                                      │
+   * │ pdf.js est exactement ce cas : il résout son *worker* et ses cartes   │
+   * │ de caractères par des chemins calculés au moment du rendu. Rien ne    │
+   * │ les désigne dans le code, donc rien ne les fait monter dans le        │
+   * │ paquet — et l'absence ne se voit qu'EN LIGNE, au premier conte        │
+   * │ déposé, sous la forme d'un module introuvable.                        │
+   * │                                                                      │
+   * │ Le motif vise les trois routes qui ingèrent : la route d'API et les   │
+   * │ deux écrans qui hébergent une Server Action de dépôt.                 │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  outputFileTracingIncludes: {
+    '/api/admin/books/ingest': ['./node_modules/pdfjs-dist/legacy/build/**'],
+    '/[langue]/admin/contes/nouveau': ['./node_modules/pdfjs-dist/legacy/build/**'],
+    '/[langue]/admin/contes/[id]': ['./node_modules/pdfjs-dist/legacy/build/**'],
+  },
+
   experimental: {
     /*
      * ┌──────────────────────────────────────────────────────────────────────┐
