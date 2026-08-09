@@ -103,25 +103,56 @@ describe('places du sémaphore', () => {
   it('fait ATTENDRE plutôt que de refuser', async () => {
     // Le choix de conception : sur connexion lente (§5.1), une attente est
     // préférable à un refus qui obligerait à tout recommencer.
+    //
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ AUCUN DÉLAI RÉEL ICI, ET C'EST UNE CORRECTION.                     │
+    // │                                                                    │
+    // │ Ce test tenait la première place occupée pendant 20 ms, puis        │
+    // │ attendait 5 ms avant de mesurer. Les marges étaient assez larges    │
+    // │ pour la machine au repos, et trop courtes pour la porte complète :  │
+    // │ sous la charge des soixante-quatorze fichiers, l'attente de 5 ms en │
+    // │ prenait plus de 20, la première place était donc DÉJÀ rendue, et la │
+    // │ file mesurée à zéro au lieu d'un.                                   │
+    // │                                                                    │
+    // │ Il échouait une fois sur quelques dizaines — et passait toujours en │
+    // │ isolation, ce qui est la pire des signatures : on conclut à un      │
+    // │ hasard, puis on cesse de lire les échecs de la porte.               │
+    // │                                                                    │
+    // │ La place est désormais tenue par une promesse qu'on résout à la     │
+    // │ main. Il n'y a plus de course : le premier ne peut pas terminer     │
+    // │ avant qu'on l'ait décidé, quelle que soit la charge.                │
+    // └────────────────────────────────────────────────────────────────────┘
     const semaphore = new Semaphore(1);
     const ordre: string[] = [];
 
+    let libererPremier!: () => void;
+    const tenue = new Promise<void>((resoudre) => {
+      libererPremier = resoudre;
+    });
+
     const premier = semaphore.tenir(async () => {
-      await differer(20);
+      await tenue;
       ordre.push('premier');
     });
-    // Le temps que le premier prenne sa place.
-    await differer(5);
+
+    // Laisse la microtâche du premier `tenir` s'exécuter : il prend sa place,
+    // puis se bloque sur `tenue`. Aucune horloge n'intervient.
+    await Promise.resolve();
     expect(semaphore.enAttente).toBe(0);
 
     const second = semaphore.tenir(async () => {
       ordre.push('second');
       return Promise.resolve();
     });
-    await differer(1);
+
+    await Promise.resolve();
+    // La place unique est prise et non rendue : le second ne peut QUE attendre.
     expect(semaphore.enAttente).toBe(1);
 
+    libererPremier();
     await Promise.all([premier, second]);
+
+    // L'ordre est garanti par la file, pas par le temps qui passe.
     expect(ordre).toEqual(['premier', 'second']);
   });
 });

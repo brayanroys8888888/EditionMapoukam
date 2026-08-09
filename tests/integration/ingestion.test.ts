@@ -469,6 +469,28 @@ describe('rattachement d’une version à un titre existant', () => {
 
     ajoutee = await ingerer({ cheminPdf: SECOND, langue: 'en', bookId: resultat.bookId });
 
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ CETTE ASSERTION-CI DOIT VENIR EN PREMIER, ET VOICI POURQUOI.         │
+     * │                                                                      │
+     * │ `ingerer` teste l'EMPREINTE du fichier avant toute chose : si ce PDF  │
+     * │ a déjà été ingéré — par un dépôt manuel resté en base, typiquement —  │
+     * │ elle rend l'ingestion existante SANS JAMAIS regarder `bookId`.        │
+     * │                                                                      │
+     * │ Le rattachement n'est alors pas testé du tout, et l'échec se présente │
+     * │ comme une comparaison d'identifiants qui ne dit rien de sa cause :    │
+     * │ « expected 43c66e66… received d18a9972… ». C'est arrivé, et il a      │
+     * │ fallu fouiller la base pour comprendre.                              │
+     * │                                                                      │
+     * │ Échouer ICI nomme le vrai problème : le corpus n'était pas vierge.    │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    expect(
+      ajoutee.dejaIngere,
+      `Ce PDF était DÉJÀ ingéré : le rattachement n'a pas été exercé. ` +
+        `Un dépôt manuel de « ${SECOND} » traîne probablement en base — l'effacer.`,
+    ).toBe(false);
+
     // Le MÊME livre, et une AUTRE version.
     expect(ajoutee.bookId).toBe(resultat.bookId);
     expect(ajoutee.translationId).not.toBe(resultat.translationId);

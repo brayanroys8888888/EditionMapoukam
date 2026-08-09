@@ -40,8 +40,31 @@ function jours(n: number): Date {
   return new Date(DEPART.getTime() + n * 86_400_000);
 }
 
-/** Souscrit avec essai, à l'instant de départ. */
-async function souscrireAvecEssai(zone: 'international' | 'afrique' = 'international') {
+/**
+ * Souscrit avec essai, à l'instant de départ — ou à un autre, sur demande.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI L'INSTANT DOIT POUVOIR ÊTRE CHOISI.                            │
+ * │                                                                          │
+ * │ Presque tous les tests de ce fichier injectent une `FixedClock` et       │
+ * │ pilotent donc le temps de bout en bout. `DEPART` leur convient : il est  │
+ * │ arbitraire, et c'est très bien.                                          │
+ * │                                                                          │
+ * │ Les tests de ROUTE, eux, ne le peuvent pas. Ils passent par HTTP, et la  │
+ * │ base y répond avec `app_now()` — le temps RÉEL. Un essai de sept jours   │
+ * │ ouvert le 29 juillet était donc « en essai » pour la fixture et          │
+ * │ « anomalie » pour la route, dès le 5 août à midi. Le test a cessé de     │
+ * │ passer sans qu'une ligne ait bougé.                                      │
+ * │                                                                          │
+ * │ C'est la SECONDE fois que ce fichier échoue par calendrier (voir §9 du   │
+ * │ point de reprise). La première correction avait traité une assertion ;   │
+ * │ celle-ci traite la cause — l'ancre est un paramètre.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+async function souscrireAvecEssai(
+  zone: 'international' | 'afrique' = 'international',
+  ancre: Date = DEPART,
+) {
   return await appliquerEvenement(
     {
       userId: abonne.id,
@@ -52,8 +75,20 @@ async function souscrireAvecEssai(zone: 'international' | 'afrique' = 'internati
       montant: zone === 'afrique' ? 2500 : 799,
       joursEssai: 7,
     },
-    { clock: new FixedClock(DEPART) },
+    { clock: new FixedClock(ancre) },
   );
+}
+
+/**
+ * Un instant tel que l'essai de sept jours COUVRE le moment présent.
+ *
+ * Les routes lisent `app_now()`, c'est-à-dire l'heure réelle : une fixture doit
+ * donc être ancrée par rapport à elle, jamais à une date écrite en dur. Une
+ * heure en arrière place la souscription dans le passé — ce qu'elle doit être —
+ * tout en laissant six jours d'essai devant elle.
+ */
+function ancreCouvrantMaintenant(): Date {
+  return new Date(Date.now() - 3_600_000);
 }
 
 beforeAll(async () => {
@@ -782,7 +817,9 @@ describe('routes', () => {
   });
 
   it('rendent l’état courant, et rappellent que le téléchargement n’est pas inclus', async () => {
-    await souscrireAvecEssai();
+    // Ancrée sur MAINTENANT : cette assertion passe par la route, qui lit
+    // `app_now()`. Ancrée sur `DEPART`, elle a cessé de passer le 5 août.
+    await souscrireAvecEssai('international', ancreCouvrantMaintenant());
 
     const corps = await corpsJson<{
       abonnement: { statut: string; zone: string } | null;

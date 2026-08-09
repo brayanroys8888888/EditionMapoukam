@@ -53,19 +53,35 @@
   min-height: var(--cible-min);
   text-align: left;
   padding: 12px 14px;
-  border: 1.5px solid var(--v2-vert, #1a5c2a);
+  /*
+   * `var(--v2-vert)` SANS REPLI, et le repli qui était là méritait de partir.
+   *
+   * Ces six déclarations portaient une valeur de repli écrite en dur — et qui
+   * n'était même pas celle du jeton. Elle ne pouvait donc rien sauver ; elle ne
+   * pouvait que MENTIR, le jour où la variable viendrait à manquer, en
+   * affichant un vert que la charte ne connaît pas.
+   *
+   * `tests/unit/design-tokens.test.ts` interdit toute couleur littérale hors du
+   * fichier de jetons, et c'est exactement ce cas qu'il vise : une seconde
+   * source de vérité visuelle, invisible tant qu'elle ne sert pas.
+   *
+   * Ce commentaire n'en cite donc aucune : le test lit aussi les commentaires,
+   * comme celui qui interdit la lecture directe de l'horloge. Écrire la valeur
+   * proscrite pour expliquer qu'on l'a retirée rouvrirait la porte qu'on ferme.
+   */
+  border: 1.5px solid var(--v2-vert);
   border-radius: var(--rayon-bouton);
   background: var(--fond);
-  color: var(--v2-vert, #1a5c2a);
+  color: var(--v2-vert);
   font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
   transition: background var(--transition-couleur), color var(--transition-couleur);
 }
 
 .onglet:hover {
-  background: var(--v2-vert, #1a5c2a);
+  background: var(--v2-vert);
   color: var(--fond);
-  border-color: var(--v2-vert, #1a5c2a);
+  border-color: var(--v2-vert);
 }
 
 /*
@@ -73,8 +89,8 @@
  * REDIT visuellement ; elle ne le remplace pas.
  */
 .ongletActif {
-  border-color: var(--v2-vert, #1a5c2a);
-  background: var(--v2-vert, #1a5c2a);
+  border-color: var(--v2-vert);
+  background: var(--v2-vert);
   color: var(--fond);
   font-weight: var(--graisse-forte);
 }

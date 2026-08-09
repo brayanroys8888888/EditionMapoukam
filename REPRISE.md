@@ -152,6 +152,146 @@ exige le port 3000 libre.
 
 ---
 
+## 0 bis. Le dépôt d'un conte en ligne — TROIS SYMPTÔMES, UN CHRONOMÈTRE
+
+> 9 août 2026, après la mise en ligne de la V2 sur Vercel.
+
+### Ce qui était signalé
+
+1. le dépôt d'un conte ne redirige plus vers l'écran d'édition — il faut
+   repasser par le tableau de bord ;
+2. les couvertures des contes récemment publiés ne s'affichent pas ;
+3. la lecture en ligne ne fonctionne pas sur ces mêmes contes.
+
+Trois symptômes sans rapport apparent. **Une seule cause.**
+
+### La cause
+
+**Aucun `maxDuration` n'était déclaré, et aucun `vercel.json` n'existait.**
+Vercel coupe donc la fonction au bout de 10 à 15 secondes, quand une ingestion
+en demande une trentaine — rendre N pages en deux résolutions n'est pas une
+requête, c'est un traitement.
+
+Le brouillon étant créé à la **première** étape et tout le reste rattaché à la
+**dernière**, la fonction tuée en cours de route laissait exactement l'état
+observé :
+
+| Étape | Sort |
+| --- | --- |
+| `creerBrouillon` | ✅ le livre existe, visible et publiable |
+| rendu des pages | souvent ✅ — c'est l'étape longue, elle aboutissait |
+| `publierCouverture` | fichiers déposés, mais **jamais rattachés** |
+| `finaliser` (couverture + `fichier_lecture`) | ❌ **jamais atteinte** |
+| réponse HTTP → redirection | ❌ jamais envoyée |
+
+### Ce qui a été corrigé
+
+- **`export const maxDuration = 60`** sur `api/admin/books/ingest/route.ts`,
+  `admin/contes/nouveau/page.tsx` et `admin/contes/[id]/page.tsx`.
+
+  > ⚠️ **Le déclarer sur la seule route d'API n'aurait rien corrigé.**
+  > `deposerConte` appelle `ingererRoute(req)` **en direct**, en mémoire, et non
+  > par un `fetch`. Le travail se fait donc dans la fonction serverless de la
+  > **page** qui héberge la Server Action, et c'est son plafond que Vercel
+  > applique. Un correctif posé au mauvais endroit en aurait eu toutes les
+  > apparences.
+
+  60 s et pas plus : c'est le plafond du palier **Hobby**, et une valeur qui
+  dépasse le palier souscrit **fait échouer le déploiement**. Sur un palier Pro,
+  elle peut monter à 300.
+
+- **`pipeline.ts` persiste désormais chaque acquis dès qu'il existe** —
+  `rattacherCouverture()` juste après la publication des images,
+  `ouvrirLecture()` juste après l'enregistrement des pages, `finaliser()` réduit
+  au seul téléchargeable. Un plafond ne suffit pas : un PDF assez gros le
+  dépassera toujours. Ce qui rend le système robuste, c'est qu'une interruption
+  y laisse un conte **utilisable** plutôt qu'une coquille.
+
+  La règle : **on ne diffère jamais l'enregistrement d'un fait acquis derrière
+  une étape qui ne le conditionne pas.** La lecture en ligne ne dépend en rien
+  de l'EPUB ; elle attendait pourtant qu'il soit assemblé.
+
+- **`nettoyerApresEchec` déréférence ce qu'il efface.** Conséquence directe du
+  point précédent : un échec après l'écriture de la couverture aurait laissé la
+  base pointer vers des fichiers supprimés. Or une couverture manquante ne fait
+  pas un trou visible — `NoSuchKey` donne une **image cassée** là où le
+  substitut se serait affiché proprement. Déjà rencontré (§7), déjà passé
+  inaperçu des jours.
+
+### Réparer les contes déjà déposés
+
+```bash
+node scripts/reparer-ingestions-interrompues.mjs --distant --sec   # énumère
+node scripts/reparer-ingestions-interrompues.mjs --distant         # écrit
+node scripts/produire-couvertures.mjs --distant                    # couvertures
+```
+
+Idempotent, et il **n'invente rien** : une version dont les pages manquent est
+signalée pour redépôt, jamais « réparée ». Lui poser `fichier_lecture`
+ouvrirait un lecteur sur un livre vide — l'acheteur croirait le produit
+défectueux plutôt qu'indisponible.
+
+### Deux défauts trouvés au passage, sans rapport avec l'ingestion
+
+La porte les a signalés en même temps ; ni l'un ni l'autre ne venait de ce
+chantier.
+
+**1. Une couleur littérale dans `espace.module.css`.** Six déclarations
+portaient `var(--v2-vert, ...)` avec un repli écrit en dur — arrivé avec le
+commit `7bfe099` (« boutons verts »). Le repli **n'était même pas la teinte du
+jeton** : il ne pouvait donc rien sauver, seulement afficher un vert étranger à
+la charte le jour où la variable manquerait. Replis retirés.
+
+> Et le commentaire qui expliquait la correction citait les deux valeurs, ce qui
+> **faisait échouer le test à son tour**. `design-tokens.test.ts` lit le contenu
+> brut, commentaires compris — exactement comme celui qui interdit la lecture
+> directe de l'horloge (§9). Écrire la valeur proscrite pour dire qu'on l'a
+> retirée rouvre la porte qu'on ferme.
+
+**2. `subscriptions.test.ts` a de nouveau échoué par CALENDRIER.** Deuxième
+occurrence, et la première correction n'avait traité qu'une assertion.
+
+La fixture ouvre un essai de sept jours ancré sur `DEPART`
+(29 juillet). Les tests de transition injectent une `FixedClock` et pilotent donc
+le temps de bout en bout — ils vont bien. Mais le test de **route** passe par
+HTTP, et la base y répond avec `app_now()`, c'est-à-dire l'heure **réelle** :
+depuis le 5 août à midi, l'essai était échu et la route rendait `anomalie` là où
+le test attendait `essai`.
+
+Corrigé à la cause : `souscrireAvecEssai` accepte désormais une **ancre**, et le
+test de route passe un instant relatif à maintenant. La règle qui s'en dégage :
+**une fixture lue à travers une route ne peut pas être ancrée sur une date écrite
+en dur.**
+
+**3. `concurrence.test.ts` était INSTABLE, et sa signature était la pire qui
+soit.** Il tenait la place du sémaphore pendant 20 ms, attendait 5 ms, puis
+mesurait la file. Marges suffisantes sur une machine au repos ; insuffisantes
+sous la charge des soixante-quatorze fichiers, où l'attente de 5 ms en prenait
+plus de 20 — la place était donc déjà rendue, et la file mesurée à zéro.
+
+Il échouait une fois sur quelques dizaines **et passait toujours en isolation**.
+C'est la signature la plus coûteuse : on conclut au hasard, puis on cesse de lire
+les échecs de la porte — ce que `porte-tests.mjs` existe précisément pour
+empêcher.
+
+Réécrit **sans aucune horloge** : la place est tenue par une promesse résolue à
+la main, si bien qu'il n'y a plus de course. Vérifié par huit exécutions
+concurrentes.
+
+### Le piège des contes d'essai, troisième occurrence
+
+Un brouillon `zako`, déposé à la main pendant le diagnostic, a fait échouer le
+test de rattachement d'une manière parfaitement opaque : `ingerer` teste
+l'**empreinte** du fichier avant tout, si bien qu'un PDF déjà ingéré est rendu
+tel quel **sans que `bookId` soit même regardé**. L'échec se présentait comme
+une comparaison d'identifiants.
+
+Le test assert désormais `dejaIngere === false` **en premier**, avec un message
+qui nomme la vraie cause. Un test qui échoue pour la mauvaise raison coûte plus
+qu'un test absent.
+
+---
+
 ## 1. Où en est le chantier
 
 La **direction V2** est un *thème commutable*, pas une seconde application.
