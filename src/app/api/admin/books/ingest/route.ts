@@ -262,10 +262,97 @@ export async function POST(request: Request): Promise<Response> {
       statut: 'brouillon',
     });
   } catch (erreur) {
-    // Le détail part au journal, jamais au client : il contient des chemins de
-    // fichiers et des messages de sous-processus.
-    return errors.interne(erreur);
+    /*
+     * ┌────────────────────────────────────────────────────────────────────┐
+     * │ LE DÉTAIL RESTE AU JOURNAL. L'ÉTAPE, ELLE, REMONTE.               │
+     * │                                                                    │
+     * │ Toute panne d'ingestion rendait « erreur_interne », donc « Une      │
+     * │ erreur est survenue. Réessayez plus tard. » L'éditeur réessayait,   │
+     * │ échouait pareil, et personne — lui pas plus que le développeur —    │
+     * │ ne pouvait savoir si le fichier était en cause, le rendu, ou le     │
+     * │ stockage. Diagnostiquer exigeait l'accès aux journaux du serveur.   │
+     * │                                                                    │
+     * │ Ce qui remonte désormais est l'ÉTAPE qui a échoué, jamais le        │
+     * │ message : un nom de code stable, que l'interface traduit en une     │
+     * │ phrase actionnable. Aucun chemin de fichier, aucune sortie de       │
+     * │ sous-processus, aucune trace de pile ne franchit cette frontière —  │
+     * │ c'est la règle, et elle n'est pas assouplie ici.                    │
+     * │                                                                    │
+     * │ « Où ça a cassé » n'est pas un détail interne : c'est ce qui        │
+     * │ distingue un PDF illisible d'une panne de stockage, et cela change  │
+     * │ ce que l'éditeur doit faire.                                        │
+     * └────────────────────────────────────────────────────────────────────┘
+     */
+    const etape = etapeEnEchec(erreur);
+
+    logger.error('Ingestion échouée', {
+      userId: garde.acteur.id,
+      etape,
+      detail: erreur instanceof Error ? erreur.message : String(erreur),
+    });
+
+    return fail(500, {
+      code: etape,
+      message: MESSAGES_ECHEC[etape],
+    });
   } finally {
     await rm(dossier, { recursive: true, force: true });
   }
+}
+
+/** Les étapes que le dépôt sait nommer, et ce qu'elles disent à l'éditeur. */
+const MESSAGES_ECHEC = {
+  pdf_illisible:
+    'Ce PDF n’a pas pu être lu. Il est peut-être protégé par un mot de passe, ou endommagé.',
+  rendu_impossible:
+    'Les pages de ce PDF n’ont pas pu être converties en images. Le document est peut-être trop complexe ou corrompu.',
+  stockage_indisponible:
+    'Les fichiers produits n’ont pas pu être enregistrés. Réessayez dans un instant.',
+  traitement_trop_long:
+    'Le traitement a dépassé le temps imparti. Ce conte est probablement trop volumineux pour être déposé en une fois.',
+  erreur_interne: 'Une erreur est survenue. Réessayez plus tard.',
+} as const;
+
+type EtapeEchec = keyof typeof MESSAGES_ECHEC;
+
+/**
+ * Classe une exception en étape, sans jamais rendre son message.
+ *
+ * La reconnaissance se fait sur des motifs volontairement LARGES : mieux vaut
+ * retomber sur `erreur_interne` — le comportement d'avant — que de nommer une
+ * étape à tort et d'envoyer l'éditeur chercher au mauvais endroit.
+ */
+function etapeEnEchec(erreur: unknown): EtapeEchec {
+  const message = (erreur instanceof Error ? erreur.message : String(erreur)).toLowerCase();
+
+  if (message.includes('attente trop longue') || message.includes('timeout')) {
+    return 'traitement_trop_long';
+  }
+  if (
+    message.includes('illisible') ||
+    message.includes('nombre de pages') ||
+    message.includes('encrypt') ||
+    message.includes('password')
+  ) {
+    return 'pdf_illisible';
+  }
+  if (
+    message.includes('unsupported image format') ||
+    message.includes('rendu') ||
+    message.includes('canvas') ||
+    message.includes('pdfjs') ||
+    message.includes('couverture')
+  ) {
+    return 'rendu_impossible';
+  }
+  if (
+    message.includes('storage') ||
+    message.includes('stockage') ||
+    message.includes('bucket') ||
+    message.includes('dépôt')
+  ) {
+    return 'stockage_indisponible';
+  }
+
+  return 'erreur_interne';
 }

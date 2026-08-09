@@ -43,6 +43,10 @@
     "publication_refusee": "At least one title is not publishable. Check the list of missing fields in the catalogue.",
     "periode_invalide": "The requested period is invalid, or longer than three years.",
     "fichier_trop_volumineux": "The file exceeds the maximum accepted size (100 MB).",
+    "pdf_illisible": "This PDF could not be read. It may be password-protected, or damaged.",
+    "rendu_impossible": "The pages of this PDF could not be converted into images. The document may be too complex, or corrupted.",
+    "stockage_indisponible": "The produced files could not be saved. Try again in a moment.",
+    "traitement_trop_long": "Processing exceeded the allotted time. This tale is probably too large to be uploaded in one go.",
     "inconnue": "Something went wrong."
   },
   "navigation": {
