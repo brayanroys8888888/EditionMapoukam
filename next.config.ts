@@ -1,35 +1,25 @@
 import type { NextConfig } from 'next';
 
 /**
- * CE QUE LE TRACEUR DE FICHIERS NE PEUT PAS DEVINER.
+ * LE MOTEUR DE RENDU, EMBARQUÉ DANS LES FONCTIONS QUI INGÈRENT.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ DEUX PAQUETS QUI CHOISISSENT LEURS FICHIERS À L'EXÉCUTION.              │
+ * │ POURQUOI CETTE LIGNE EXISTE ENCORE, ALORS QUE LE MOTEUR A CHANGÉ.       │
  * │                                                                          │
  * │ Vercel n'embarque dans une fonction que ce qu'il a su SUIVRE depuis les  │
- * │ imports. Il suit les imports statiques ; il perd tout ce qu'un paquet    │
- * │ résout lui-même au moment de tourner.                                    │
+ * │ imports. `@hyzyla/pdfium` charge son `.wasm` à l'exécution, par un       │
+ * │ chemin relatif à son propre paquet : rien dans le code applicatif ne le  │
+ * │ désigne, donc rien ne le fait monter.                                    │
  * │                                                                          │
- * │ `@napi-rs/canvas` est le cas d'école : son `requireNative()` choisit le  │
- * │ binaire dans des branches conditionnelles sur `process.platform`, et va  │
- * │ jusqu'à lancer `ldd --version` pour distinguer glibc de musl. Aucune     │
- * │ analyse statique ne peut résoudre cela — le binaire Linux restait donc   │
- * │ hors du paquet, et le rendu échouait en ligne sur un « module            │
- * │ introuvable » qui ne disait pas son nom.                                 │
- * │                                                                          │
- * │ `pdfjs-dist` fait de même avec son worker et ses cartes de caractères.   │
- * │                                                                          │
- * │ Le motif est LARGE (`@napi-rs/**`) à dessein : viser le seul paquet      │
- * │ `linux-x64-gnu` reviendrait à parier sur l'architecture de              │
- * │ l'hébergeur, et ce pari se perdrait en silence le jour où elle change.   │
- * │ Quelques mégaoctets de plus valent mieux qu'une fonction qui se déploie  │
- * │ sans son moteur de rendu.                                                │
+ * │ La différence avec le moteur précédent est décisive. `@napi-rs/canvas`   │
+ * │ résolvait un binaire NATIF selon la plateforme — branches sur            │
+ * │ `process.platform`, `ldd --version` pour distinguer glibc de musl — et   │
+ * │ aucune inclusion ne l'a jamais rendu chargeable en ligne : mesuré deux   │
+ * │ fois en production. Ici il n'y a qu'UN fichier, le même partout, à un    │
+ * │ chemin fixe. Une inclusion suffit, et elle est vérifiable.               │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-const MOTEUR_DE_RENDU = [
-  './node_modules/pdfjs-dist/legacy/build/**',
-  './node_modules/@napi-rs/**',
-];
+const MOTEUR_DE_RENDU = ['./node_modules/@hyzyla/pdfium/dist/**'];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -39,22 +29,21 @@ const nextConfig: NextConfig = {
   typescript: { ignoreBuildErrors: false },
   /*
    * ┌──────────────────────────────────────────────────────────────────────┐
-   * │ TROIS PAQUETS QUE LE GROUPEUR NE DOIT PAS TOUCHER.                   │
+   * │ DEUX PAQUETS QUE LE GROUPEUR NE DOIT PAS TOUCHER.                    │
    * │                                                                      │
-   * │ `sharp` et `@napi-rs/canvas` embarquent des BINAIRES NATIFS, choisis  │
-   * │ à l'exécution selon la plateforme. Empaquetés, leur résolution casse  │
-   * │ — et elle casse au DÉPLOIEMENT, pas en local, puisque le binaire      │
-   * │ manquant est celui de Linux.                                          │
+   * │ `sharp` embarque un BINAIRE NATIF, choisi à l'exécution selon la      │
+   * │ plateforme. Empaqueté, sa résolution casse — et elle casse au         │
+   * │ DÉPLOIEMENT, pas en local, puisque le binaire manquant est celui de   │
+   * │ Linux.                                                                │
    * │                                                                      │
-   * │ `pdfjs-dist` est chargé par `await import()` et va chercher ses       │
-   * │ propres ressources (cartes de caractères, polices standard) par des   │
-   * │ chemins relatifs à son paquet. Le groupeur les perd en route.         │
+   * │ `@hyzyla/pdfium` charge un `.wasm` de quatre mégaoctets par un chemin │
+   * │ relatif à son paquet. Empaqueté, ce chemin ne veut plus rien dire.    │
    * │                                                                      │
-   * │ Les trois ne servent QUE côté serveur : rien de tout cela n'a de      │
+   * │ Les deux ne servent QUE côté serveur : rien de tout cela n'a de       │
    * │ raison d'atteindre un navigateur.                                     │
    * └──────────────────────────────────────────────────────────────────────┘
    */
-  serverExternalPackages: ['sharp', '@napi-rs/canvas', 'pdfjs-dist'],
+  serverExternalPackages: ['sharp', '@hyzyla/pdfium'],
 
   /*
    * ┌──────────────────────────────────────────────────────────────────────┐
@@ -64,14 +53,15 @@ const nextConfig: NextConfig = {
    * │ SUIVRE depuis les imports. Il suit bien les imports statiques ; il    │
    * │ perd la trace de ce qu'un paquet charge lui-même à l'exécution.       │
    * │                                                                      │
-   * │ pdf.js est exactement ce cas : il résout son *worker* et ses cartes   │
-   * │ de caractères par des chemins calculés au moment du rendu. Rien ne    │
-   * │ les désigne dans le code, donc rien ne les fait monter dans le        │
+   * │ Le moteur WASM est exactement ce cas : rien dans le code applicatif   │
+   * │ ne désigne son fichier `.wasm`, donc rien ne le fait monter dans le   │
    * │ paquet — et l'absence ne se voit qu'EN LIGNE, au premier conte        │
    * │ déposé, sous la forme d'un module introuvable.                        │
    * │                                                                      │
-   * │ Le motif vise les trois routes qui ingèrent : la route d'API et les   │
-   * │ deux écrans qui hébergent une Server Action de dépôt.                 │
+   * │ Il vise les trois routes qui ingèrent : la route d'API, et les deux   │
+   * │ écrans qui hébergent une Server Action de dépôt — car c'est la        │
+   * │ fonction de la PAGE qui exécute le travail, l'action appelant la      │
+   * │ route en mémoire plutôt que par le réseau.                            │
    * └──────────────────────────────────────────────────────────────────────┘
    */
   outputFileTracingIncludes: {

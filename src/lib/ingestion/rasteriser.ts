@@ -1,52 +1,74 @@
 import { readFile } from 'node:fs/promises';
 
+import sharp from 'sharp';
+
 import { logger } from '@/lib/logger';
 
 /**
  * RASTERISATION D'UN PDF SANS POPPLER — le chemin des environnements serverless.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ LE DÉFAUT QUE CE MODULE CORRIGE, ET POURQUOI IL ÉTAIT INVISIBLE.        │
+ * │ TROIS MOTEURS ESSAYÉS, ET POURQUOI C'EST LE TROISIÈME QUI TIENT.        │
  * │                                                                          │
- * │ Le repli précédent appelait `sharp(cheminPdf, { page })`. sharp s'appuie  │
- * │ sur libvips, et libvips NE LIT LE PDF QUE s'il a été compilé avec poppler │
- * │ ou pdfium — ce qui n'est pas le cas des binaires distribués par npm.      │
+ * │ 1. `sharp` — ne lit PAS le PDF. libvips n'a le support PDF que compilé   │
+ * │    avec poppler ou pdfium, ce que les binaires npm ne sont pas :         │
+ * │    `sharp.format.pdf.input` vaut `{ file: false, buffer: false }`.       │
+ * │    Le repli d'origine ne pouvait donc pas fonctionner.                   │
  * │                                                                          │
- * │ Vérifiable en une ligne, et sans appel réseau :                          │
+ * │ 2. `pdf.js` + `@napi-rs/canvas` — fonctionne en local, échoue en ligne.  │
+ * │    `@napi-rs/canvas` est un module NATIF dont le `requireNative()`       │
+ * │    choisit son binaire À L'EXÉCUTION, dans des branches sur              │
+ * │    `process.platform`, et lance `ldd --version` pour distinguer glibc de │
+ * │    musl. Aucune analyse statique ne suit cela : le traceur de fichiers   │
+ * │    laissait le binaire hors du paquet. `outputFileTracingIncludes` n'y a │
+ * │    rien changé — mesuré en production, deux fois.                        │
  * │                                                                          │
- * │     sharp.format.pdf.input → { file: false, buffer: false, stream: false }│
- * │                                                                          │
- * │ Le repli ne pouvait donc PAS fonctionner. En local il ne s'exécutait      │
- * │ jamais — poppler est installé, la branche n'était pas prise — et en ligne │
- * │ il levait à chaque conte. Un repli qu'aucun environnement de              │
- * │ développement n'emprunte est un repli que personne n'éprouve.            │
+ * │ 3. `@hyzyla/pdfium` — WebAssembly. **Aucun binaire natif, donc aucune    │
+ * │    résolution de plateforme.** Le même `.wasm` tourne sur Windows, sur   │
+ * │    Linux, en x64 comme en arm64. Il n'y a plus rien à embarquer          │
+ * │    correctement, donc plus rien à embarquer de travers.                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ POURQUOI pdf.js, ET SOUS QUELLE LICENCE.                                │
+ * │ LA LICENCE A ÉCARTÉ LE CANDIDAT LE PLUS ÉVIDENT.                        │
  * │                                                                          │
- * │ Rasteriser un PDF demande un interpréteur complet : polices, chemins      │
- * │ vectoriels, transparence, espaces colorimétriques. `pdf-lib` sait lire la │
- * │ STRUCTURE d'un document — compter ses pages, lire ses métadonnées — mais  │
- * │ ne dessine rien. C'est ce malentendu qui a produit le repli cassé.        │
+ * │ `mupdf` rasterise très bien, et il est sous **AGPL-3.0** : exactement ce │
+ * │ qui vaut à PyMuPDF et ebooklib leur interdiction dans ce projet, parce   │
+ * │ qu'elle contaminerait une application exposée en réseau.                 │
  * │                                                                          │
- * │ `pdfjs-dist` est sous **Apache-2.0** et `@napi-rs/canvas` sous **MIT** :  │
- * │ deux licences permissives, conformes à la règle du projet. Ni l'une ni    │
- * │ l'autre n'est copyleft, et aucune ne s'approche de l'AGPL qui vaut à      │
- * │ PyMuPDF et ebooklib leur interdiction — c'est précisément la raison pour  │
- * │ laquelle ces deux-là sont écartées alors qu'elles feraient le même        │
- * │ travail.                                                                 │
+ * │ `@hyzyla/pdfium` est sous **MIT**, et PDFium lui-même sous BSD. Rien à   │
+ * │ arbitrer.                                                                │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ CE MODULE N'EST PAS LE CHEMIN PRINCIPAL, ET NE DOIT PAS LE DEVENIR.     │
+ * │ CE MODULE N'EST PAS LE CHEMIN PRINCIPAL.                                │
  * │                                                                          │
- * │ poppler reste préféré partout où il existe : c'est un rendu natif, plus   │
- * │ rapide et de meilleure fidélité typographique. Ceci est la roue de        │
- * │ secours — celle qu'on emprunte quand le binaire est absent, c'est-à-dire  │
- * │ en serverless.                                                           │
+ * │ poppler reste préféré partout où il existe : rendu natif, plus rapide.   │
+ * │ Ceci est la roue de secours — celle qu'on emprunte quand le binaire est  │
+ * │ absent, c'est-à-dire en serverless.                                      │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+
+/** Le peu de l'interface de `@hyzyla/pdfium` dont ce module se sert. */
+interface Bibliotheque {
+  loadDocument: (donnees: Buffer) => Promise<Document>;
+  destroy: () => void;
+}
+
+interface Document {
+  getPageCount: () => number;
+  getPage: (index: number) => Page;
+  destroy: () => void;
+}
+
+interface Page {
+  getOriginalSize: () => { originalWidth: number; originalHeight: number };
+  render: (options: { scale: number; render: 'bitmap' }) => Promise<{
+    data: Uint8Array;
+    width: number;
+    height: number;
+  }>;
+}
 
 /**
  * Charge le moteur, en distinguant « absent » de « en panne ».
@@ -55,36 +77,22 @@ import { logger } from '@/lib/logger';
  * │ POURQUOI CETTE DISTINCTION MÉRITE DU CODE.                              │
  * │                                                                          │
  * │ Un moteur ABSENT et un moteur qui ÉCHOUE demandent deux gestes opposés.  │
- * │ Le premier est un défaut de déploiement — le binaire n'a pas été         │
- * │ embarqué dans la fonction — et aucun changement de PDF n'y fera rien.    │
- * │ Le second est un document que ce moteur ne sait pas dessiner.            │
+ * │ Le premier est un défaut de déploiement, et aucun changement de PDF n'y  │
+ * │ fera rien. Le second est un document que le moteur ne sait pas dessiner. │
  * │                                                                          │
  * │ Confondus, ils rendaient le même « rendu impossible », et l'éditeur      │
- * │ redéposait indéfiniment un fichier parfaitement valide.                  │
+ * │ redéposait indéfiniment un fichier parfaitement valide. C'est ce qui     │
+ * │ s'est produit, et c'est ce que ce message a fini par trancher.           │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-async function chargerMoteur(): Promise<{
-  pdfjs: MoteurPdf;
-  createCanvas: (l: number, h: number) => Canvas;
-}> {
+async function chargerMoteur(): Promise<Bibliotheque> {
   try {
-    const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as MoteurPdf;
-    const canvas = await import('@napi-rs/canvas');
-    return {
-      pdfjs,
-      createCanvas: canvas.createCanvas as unknown as (l: number, h: number) => Canvas,
-    };
+    // Le paquet porte ses propres types : aucune assertion à poser ici.
+    const { PDFiumLibrary } = await import('@hyzyla/pdfium');
+    return await PDFiumLibrary.init();
   } catch (cause) {
-    /*
-     * Le message porte `moteur_de_rendu_absent`, que la route d'ingestion
-     * reconnaît. C'est un défaut d'EMPAQUETAGE, pas de document : sur Vercel,
-     * `@napi-rs/canvas` résout son binaire natif à l'exécution, et le traceur
-     * de fichiers ne peut pas le suivre — d'où `outputFileTracingIncludes`
-     * dans `next.config.ts`.
-     */
     throw new Error(
-      `moteur_de_rendu_absent : pdf.js ou @napi-rs/canvas n'a pas pu être chargé. ` +
-        `Vérifier outputFileTracingIncludes dans next.config.ts.`,
+      `moteur_de_rendu_absent : @hyzyla/pdfium n'a pas pu être chargé.`,
       { cause },
     );
   }
@@ -93,101 +101,73 @@ async function chargerMoteur(): Promise<{
 /** Vrai si la rasterisation logicielle est utilisable dans cet environnement. */
 export async function rasteriseurDisponible(): Promise<boolean> {
   try {
-    await chargerMoteur();
+    (await chargerMoteur()).destroy();
     return true;
   } catch {
     return false;
   }
 }
 
-/** Le peu de pdf.js dont ce module se sert. */
-interface MoteurPdf {
-  getDocument: (options: { data: Uint8Array; useSystemFonts: boolean }) => TacheChargement;
-}
-
-/** Le peu de l'interface d'un canvas dont ce module se sert. */
-interface Canvas {
-  width: number;
-  height: number;
-  getContext: (type: '2d') => {
-    fillStyle: string;
-    fillRect: (x: number, y: number, l: number, h: number) => void;
-  };
-  toBuffer: (mime: 'image/png') => Buffer;
+/**
+ * Convertit un rendu brut en PNG.
+ *
+ * PDFium rend une image BRUTE en RGBA — pas un fichier, une nappe d'octets.
+ * `sharp` sait la lire à condition qu'on lui dise ses dimensions et son nombre
+ * de canaux, puisque rien dans les octets ne les porte.
+ */
+async function enPng(rendu: { data: Uint8Array; width: number; height: number }): Promise<Buffer> {
+  return await sharp(Buffer.from(rendu.data), {
+    raw: { width: rendu.width, height: rendu.height, channels: 4 },
+  })
+    /*
+     * Fond BLANC aplati sous l'image.
+     *
+     * PDFium rend avec un canal alpha, et un PDF ne peint pas son propre fond :
+     * les blancs de la page seraient donc des TROUS. Invisible sur un
+     * visualiseur à fond clair, béant dès que la page est posée sur autre
+     * chose. Le papier est blanc ; on le dessine.
+     */
+    .flatten({ background: '#ffffff' })
+    .png()
+    .toBuffer();
 }
 
 /**
- * Charge un document une seule fois, pour en rendre plusieurs pages.
+ * L'échelle qui amène une page à la largeur voulue.
  *
- * Rouvrir le PDF à chaque page ferait réanalyser la table des polices et des
- * objets à chaque fois — sur un album de quarante pages, c'est quarante fois le
- * même travail.
+ * Calculée depuis la largeur cible plutôt que fixée en points par pouce : c'est
+ * la largeur en pixels qui fait la qualité de lecture à l'écran, et elle doit
+ * être la même quel que soit le format du papier d'origine — un album à
+ * l'italienne et un format portrait doivent produire des images comparables.
  */
-async function ouvrir(cheminPdf: string): Promise<TacheChargement> {
-  /*
-   * La construction `legacy` et non la moderne : elle vise Node et n'exige ni
-   * `DOMMatrix`, ni `Path2D`, ni les autres objets que pdf.js attend d'un
-   * navigateur. La construction moderne échoue au chargement sous Node, avec
-   * un message qui ne dit pas qu'il s'agit d'un problème d'environnement.
-   */
-  const { pdfjs } = await chargerMoteur();
-
-  const donnees = new Uint8Array(await readFile(cheminPdf));
-
-  /*
-   * ┌──────────────────────────────────────────────────────────────────────┐
-   * │ LA VERSION EST LA PROTECTION, ET IL N'Y A PAS DE DRAPEAU À POSER.    │
-   * │                                                                      │
-   * │ pdf.js a porté un avis de sécurité HAUTE : exécution de JavaScript    │
-   * │ arbitraire à l'ouverture d'un PDF forgé (GHSA-hq66-cqwq-w95j,         │
-   * │ >= 5.6.83 et < 6.2.108). Ce projet ingère des fichiers déposés — la   │
-   * │ surface la moins fiable du produit — donc la version corrigée n'est   │
-   * │ pas négociable. `package.json` exige >= 6.2.108.                      │
-   * │                                                                      │
-   * │ Le réflexe serait d'ajouter `isEvalSupported: false` par précaution.  │
-   * │ L'option N'EXISTE PLUS en 6 : le chemin fondé sur `eval` a été retiré │
-   * │ purement et simplement, et c'est justement en quoi consiste le        │
-   * │ correctif. L'écrire ne protégerait de rien et laisserait croire que   │
-   * │ la sécurité tient à un réglage plutôt qu'à la version.                │
-   * │                                                                      │
-   * │ `useSystemFonts: false`, lui, existe et sert : il interdit d'aller    │
-   * │ chercher une police sur le système ou le réseau. Un serveur qui       │
-   * │ télécharge une ressource pour dessiner un conte est une dépendance    │
-   * │ réseau invisible, et une fuite sur ce qu'il traite.                   │
-   * └──────────────────────────────────────────────────────────────────────┘
-   */
-  // `MoteurPdf` déclare déjà le type de retour : plus d'assertion à poser ici.
-  return pdfjs.getDocument({ data: donnees, useSystemFonts: false });
+function echellePour(page: Page, largeurCible: number): number {
+  const { originalWidth } = page.getOriginalSize();
+  if (!originalWidth || originalWidth <= 0) return 1;
+  return largeurCible / originalWidth;
 }
 
-/**
- * Rend une page en PNG, à la largeur demandée.
- *
- * L'échelle est calculée depuis la largeur voulue plutôt que fixée en points
- * par pouce : c'est la largeur en pixels qui fait la qualité de lecture à
- * l'écran, et elle doit être la même quelle que soit la taille du papier
- * d'origine — un album à l'italienne et un format portrait doivent produire des
- * images comparables.
- */
+/** Rend une page en PNG, à la largeur demandée. */
 export async function rasteriserPage(
   cheminPdf: string,
   numero: number,
   largeurCible: number,
 ): Promise<Buffer> {
-  const tache = await ouvrir(cheminPdf);
+  const bibliotheque = await chargerMoteur();
+  const donnees = await readFile(cheminPdf);
+
+  let document: Document | null = null;
   try {
-    return await dessiner(await tache.promise, numero, largeurCible);
+    document = await bibliotheque.loadDocument(donnees);
+
+    const page = document.getPage(numero - 1);
+    const rendu = await page.render({ scale: echellePour(page, largeurCible), render: 'bitmap' });
+
+    return await enPng(rendu);
   } finally {
-    /*
-     * `destroy()` vit sur la TÂCHE DE CHARGEMENT, pas sur le document.
-     *
-     * Le document rendu par `tache.promise` n'expose que `cleanup()`, qui vide
-     * les caches sans libérer le contexte de travail. Appeler `destroy()` sur
-     * lui lève « is not a function » — vérifié sur pdf.js 6. Sans cette
-     * libération, un serveur de longue durée accumule un contexte par document
-     * ouvert, et l'ingestion est justement ce qui en ouvre le plus.
-     */
-    await tache.destroy();
+    // Le WASM tient sa propre mémoire : sans libération, un serveur de longue
+    // durée la garde pour chaque document ouvert.
+    document?.destroy();
+    bibliotheque.destroy();
   }
 }
 
@@ -204,103 +184,33 @@ export async function rasteriserToutesLesPages(
   largeurCible: number,
   traiter: (numero: number, png: Buffer) => Promise<void>,
 ): Promise<void> {
-  const tache = await ouvrir(cheminPdf);
+  const bibliotheque = await chargerMoteur();
+  const donnees = await readFile(cheminPdf);
 
+  let document: Document | null = null;
   try {
-    const document = await tache.promise;
+    document = await bibliotheque.loadDocument(donnees);
 
-    if (document.numPages !== nbPages) {
+    const reel = document.getPageCount();
+    if (reel !== nbPages) {
       logger.warn('Nombre de pages divergent entre analyse et rendu', {
         analyse: nbPages,
-        rendu: document.numPages,
+        rendu: reel,
       });
     }
 
     // La borne est celle du DOCUMENT, pas celle qu'on nous annonce : rendre une
     // page inexistante lèverait, et l'analyse a pu être faite par un autre
     // outil que celui qui dessine.
-    const total = Math.min(nbPages, document.numPages);
+    const total = Math.min(nbPages, reel);
 
     for (let numero = 1; numero <= total; numero += 1) {
-      await traiter(numero, await dessiner(document, numero, largeurCible));
+      const page = document.getPage(numero - 1);
+      const rendu = await page.render({ scale: echellePour(page, largeurCible), render: 'bitmap' });
+      await traiter(numero, await enPng(rendu));
     }
   } finally {
-    await tache.destroy();
+    document?.destroy();
+    bibliotheque.destroy();
   }
-}
-
-/** Dessine une page d'un document déjà ouvert. */
-async function dessiner(
-  document: DocumentPdf,
-  numero: number,
-  largeurCible: number,
-): Promise<Buffer> {
-  const { createCanvas } = await chargerMoteur();
-
-  const page = await document.getPage(numero);
-
-  // L'échelle 1 donne la taille en points typographiques ; on en déduit le
-  // facteur qui amène la page à la largeur voulue en pixels.
-  const naturelle = page.getViewport({ scale: 1 });
-  const echelle = largeurCible / naturelle.width;
-  const vue = page.getViewport({ scale: echelle });
-
-  const canvas = createCanvas(Math.ceil(vue.width), Math.ceil(vue.height));
-  const contexte = canvas.getContext('2d');
-
-  /*
-   * FOND BLANC POSÉ EXPLICITEMENT.
-   *
-   * Un canvas neuf est TRANSPARENT, et un PDF ne peint pas son propre fond. En
-   * PNG le résultat serait donc une page dont les blancs sont des trous — ce
-   * qui ne se voit pas sur un visualiseur à fond clair, et saute aux yeux dès
-   * que la page est posée sur autre chose. Le papier est blanc ; on le dessine.
-   */
-  contexte.fillStyle = '#ffffff';
-  contexte.fillRect(0, 0, canvas.width, canvas.height);
-
-  await page.render({
-    // Le contexte de `@napi-rs/canvas` implémente la même interface que celui
-    // d'un navigateur ; pdf.js ne fait pas la différence. Le typage, lui, ne
-    // peut pas l'exprimer sans faire dépendre l'un de l'autre.
-    canvasContext: contexte,
-    viewport: vue,
-    // pdf.js 6 veut aussi la surface elle-même, et pas seulement son contexte.
-    canvas,
-  }).promise;
-
-  // La page est rendue : ses ressources n'ont plus de raison d'être retenues.
-  page.cleanup();
-
-  return canvas.toBuffer('image/png');
-}
-
-/*
- * Le peu de l'interface de pdf.js dont ce module se sert.
- *
- * Déclaré ici plutôt qu'importé de `pdfjs-dist` : le module est chargé par
- * `await import()` — il ne doit pas peser sur le démarrage, ni sur les
- * environnements qui n'en ont pas besoin — et un `import type` depuis un paquet
- * à exports conditionnels ne se résout pas de la même façon selon la cible.
- * Ces trois signatures suffisent, et un changement d'API les casserait ici,
- * franchement, plutôt qu'à l'exécution.
- */
-interface TacheChargement {
-  promise: Promise<DocumentPdf>;
-  destroy: () => Promise<void>;
-}
-
-interface DocumentPdf {
-  numPages: number;
-  getPage: (n: number) => Promise<PagePdf>;
-}
-
-interface PagePdf {
-  getViewport: (options: { scale: number }) => { width: number; height: number };
-  render: (options: {
-    canvasContext: unknown;
-    viewport: unknown;
-    canvas: unknown;
-  }) => { promise: Promise<void> };
-  cleanup: () => void;
 }
