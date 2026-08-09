@@ -46,6 +46,13 @@ const QUALITE: Record<Resolution, number> = rendu.qualite;
 
 export interface PageRendue {
   numero: number;
+  /**
+   * Vrai si l'image est UNIE, c'est-à-dire si le rendu n'a rien dessiné.
+   *
+   * Porté par la page et non compté dans le module : deux ingestions tournent
+   * en parallèle, et un compteur partagé mêlerait leurs documents.
+   */
+  unie: boolean;
   /** Une image par résolution, prête à être déposée. */
   images: Record<Resolution, Buffer>;
   /**
@@ -162,6 +169,36 @@ export async function rendrePages(
   });
 }
 
+/**
+ * Vrai si l'image est UNIE — c'est-à-dire si le rendu n'a rien dessiné.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PIRE ÉCHEC DE RENDU EST CELUI QUI NE LÈVE PAS.                       │
+ * │                                                                          │
+ * │ Un moteur qui échoue proprement produit une exception, qu'on nomme et    │
+ * │ qu'on montre. Un moteur qui échoue MAL produit une image parfaitement    │
+ * │ valide — bonnes dimensions, bon format, bon poids — et entièrement       │
+ * │ blanche. Rien dans la chaîne ne s'en aperçoit : elle est déposée,        │
+ * │ rattachée, publiée, et le défaut n'apparaît que sous les yeux d'un       │
+ * │ lecteur, sur une page vide.                                              │
+ * │                                                                          │
+ * │ L'écart-type le décide : une page blanche a une variance nulle, une page │
+ * │ dessinée non. Le seuil est bas — 1 sur 255 — parce qu'il ne s'agit pas   │
+ * │ de juger la qualité d'une illustration, seulement de distinguer          │
+ * │ « quelque chose » de « rien ».                                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+async function estUnie(image: Buffer): Promise<boolean> {
+  try {
+    const stats = await sharp(image).stats();
+    return !stats.channels.some((canal) => canal.stdev > 1);
+  } catch {
+    // Une image illisible n'est pas « unie » : c'est un autre défaut, et le
+    // faire passer pour celui-ci brouillerait le diagnostic.
+    return false;
+  }
+}
+
 /** Encode une page rendue dans les deux résolutions. */
 async function encoder(numero: number, png: Buffer): Promise<PageRendue> {
   const haute = await sharp(png).webp({ quality: QUALITE.haute }).toBuffer();
@@ -171,6 +208,19 @@ async function encoder(numero: number, png: Buffer): Promise<PageRendue> {
     .toBuffer();
 
   const dimensions = await sharp(haute).metadata();
+
+  /*
+   * L'état voyage AVEC la page, jamais dans une variable de module : deux
+   * ingestions tournent en parallèle (le sémaphore en autorise deux), et un
+   * compteur partagé attribuerait les pages blanches de l'une au document de
+   * l'autre.
+   *
+   * NON fatal ici : une page unie au milieu d'un album peut être voulue — une
+   * page de garde, une séparation. C'est le pipeline qui décide, en regardant
+   * le document entier.
+   */
+  const unie = await estUnie(haute);
+  if (unie) logger.warn('Page rendue UNIE — le moteur n’a rien dessiné', { numero });
 
   logger.debug('Page rendue', {
     numero,
@@ -184,6 +234,7 @@ async function encoder(numero: number, png: Buffer): Promise<PageRendue> {
     source: png,
     largeur: dimensions.width ?? 800,
     hauteur: dimensions.height ?? 1200,
+    unie,
   };
 }
 

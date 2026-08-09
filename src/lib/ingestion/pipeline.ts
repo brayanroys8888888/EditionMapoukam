@@ -483,8 +483,10 @@ async function produirePages(
   const pages: PageAEnregistrer[] = [];
   const pagesEpub: PageEpub[] = [];
   let couverture: Buffer | null = null;
+  let unies = 0;
 
   await rendrePages(cheminPdf, nbPages, async (page) => {
+    if (page.unie) unies += 1;
     const chemins = await deposerPage(jeton, page.numero, page.images, { client });
 
     // Le texte est indexé par numéro de page, l'extraction en ayant produit un
@@ -515,6 +517,38 @@ async function produirePages(
 
   if (couverture === null) {
     throw new Error('Rendu sans première page : couverture impossible.');
+  }
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ UN DOCUMENT ENTIÈREMENT BLANC EST UN ÉCHEC, PAS UN CONTE.           │
+   * │                                                                      │
+   * │ Le moteur peut « réussir » en ne dessinant rien : images de bonnes    │
+   * │ dimensions, bon format, bon poids, et entièrement unies. Rien dans la │
+   * │ chaîne ne s'en apercevait — elles étaient déposées, rattachées,       │
+   * │ publiées — et le défaut n'apparaissait que sous les yeux d'un lecteur │
+   * │ devant un album vide. La couverture, tirée de la même première page,  │
+   * │ était blanche elle aussi : d'où une fiche sans image ET une lecture   │
+   * │ vide, deux symptômes pour une seule panne.                            │
+   * │                                                                      │
+   * │ Le refus porte sur la TOTALITÉ, jamais sur une page isolée : une page │
+   * │ unie au milieu d'un album est parfaitement légitime — page de garde,  │
+   * │ séparation, fin de chapitre. Un document dont AUCUNE page ne porte    │
+   * │ quoi que ce soit, non.                                                │
+   * │                                                                      │
+   * │ Échouer ici vaut mieux que publier : un conte manquant se redépose,   │
+   * │ un conte blanc se vend.                                               │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (pages.length > 0 && unies === pages.length) {
+    throw new Error(
+      `rendu_impossible : les ${String(pages.length)} pages rendues sont vides. ` +
+        `Le moteur de rendu n'a rien dessiné.`,
+    );
+  }
+
+  if (unies > 0) {
+    logger.warn('Des pages rendues sont vides', { unies, total: pages.length });
   }
 
   return { pages, pagesEpub, couverture };
