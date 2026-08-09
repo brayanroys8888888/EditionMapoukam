@@ -43,6 +43,7 @@
     "publication_refusee": "Au moins un titre n’est pas publiable. Consultez la liste des manques dans le catalogue.",
     "periode_invalide": "La période demandée est invalide ou dépasse trois ans.",
     "fichier_trop_volumineux": "Le fichier dépasse la taille maximale acceptée (100 Mo).",
+    "moteur_de_rendu_absent": "Le moteur de rendu n'est pas disponible sur le serveur. Ce n'est pas votre fichier : signalez-le, aucun dépôt ne fonctionnera tant que ce ne sera pas corrigé.",
     "pdf_illisible": "Ce PDF n'a pas pu être lu. Il est peut-être protégé par un mot de passe, ou endommagé.",
     "rendu_impossible": "Les pages de ce PDF n'ont pas pu être converties en images. Le document est peut-être trop complexe ou corrompu.",
     "stockage_indisponible": "Les fichiers produits n'ont pas pu être enregistrés. Réessayez dans un instant.",

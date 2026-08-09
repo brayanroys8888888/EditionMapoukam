@@ -302,6 +302,14 @@ export async function POST(request: Request): Promise<Response> {
 
 /** Les étapes que le dépôt sait nommer, et ce qu'elles disent à l'éditeur. */
 const MESSAGES_ECHEC = {
+  /*
+   * Un défaut de DÉPLOIEMENT, pas de document. Il est nommé à part parce
+   * qu'aucun changement de PDF n'y fera rien : c'est le moteur de rendu qui
+   * n'a pas été embarqué dans la fonction. Confondu avec `rendu_impossible`,
+   * il faisait redéposer indéfiniment un fichier parfaitement valide.
+   */
+  moteur_de_rendu_absent:
+    'Le moteur de rendu n’est pas disponible sur le serveur. Ce n’est pas votre fichier : signalez-le, aucun dépôt ne fonctionnera tant que ce ne sera pas corrigé.',
   pdf_illisible:
     'Ce PDF n’a pas pu être lu. Il est peut-être protégé par un mot de passe, ou endommagé.',
   rendu_impossible:
@@ -325,6 +333,15 @@ type EtapeEchec = keyof typeof MESSAGES_ECHEC;
 function etapeEnEchec(erreur: unknown): EtapeEchec {
   const message = (erreur instanceof Error ? erreur.message : String(erreur)).toLowerCase();
 
+  // TESTÉ EN PREMIER : le moteur absent produit aussi les mots « canvas » et
+  // « pdfjs », qui le feraient sinon passer pour un échec de rendu ordinaire.
+  if (
+    message.includes('moteur_de_rendu_absent') ||
+    message.includes('cannot find module') ||
+    message.includes('err_module_not_found')
+  ) {
+    return 'moteur_de_rendu_absent';
+  }
   if (message.includes('attente trop longue') || message.includes('timeout')) {
     return 'traitement_trop_long';
   }

@@ -48,15 +48,72 @@ import { logger } from '@/lib/logger';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
+/**
+ * Charge le moteur, en distinguant « absent » de « en panne ».
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CETTE DISTINCTION MÉRITE DU CODE.                              │
+ * │                                                                          │
+ * │ Un moteur ABSENT et un moteur qui ÉCHOUE demandent deux gestes opposés.  │
+ * │ Le premier est un défaut de déploiement — le binaire n'a pas été         │
+ * │ embarqué dans la fonction — et aucun changement de PDF n'y fera rien.    │
+ * │ Le second est un document que ce moteur ne sait pas dessiner.            │
+ * │                                                                          │
+ * │ Confondus, ils rendaient le même « rendu impossible », et l'éditeur      │
+ * │ redéposait indéfiniment un fichier parfaitement valide.                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+async function chargerMoteur(): Promise<{
+  pdfjs: MoteurPdf;
+  createCanvas: (l: number, h: number) => Canvas;
+}> {
+  try {
+    const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as MoteurPdf;
+    const canvas = await import('@napi-rs/canvas');
+    return {
+      pdfjs,
+      createCanvas: canvas.createCanvas as unknown as (l: number, h: number) => Canvas,
+    };
+  } catch (cause) {
+    /*
+     * Le message porte `moteur_de_rendu_absent`, que la route d'ingestion
+     * reconnaît. C'est un défaut d'EMPAQUETAGE, pas de document : sur Vercel,
+     * `@napi-rs/canvas` résout son binaire natif à l'exécution, et le traceur
+     * de fichiers ne peut pas le suivre — d'où `outputFileTracingIncludes`
+     * dans `next.config.ts`.
+     */
+    throw new Error(
+      `moteur_de_rendu_absent : pdf.js ou @napi-rs/canvas n'a pas pu être chargé. ` +
+        `Vérifier outputFileTracingIncludes dans next.config.ts.`,
+      { cause },
+    );
+  }
+}
+
 /** Vrai si la rasterisation logicielle est utilisable dans cet environnement. */
 export async function rasteriseurDisponible(): Promise<boolean> {
   try {
-    await import('pdfjs-dist/legacy/build/pdf.mjs');
-    await import('@napi-rs/canvas');
+    await chargerMoteur();
     return true;
   } catch {
     return false;
   }
+}
+
+/** Le peu de pdf.js dont ce module se sert. */
+interface MoteurPdf {
+  getDocument: (options: { data: Uint8Array; useSystemFonts: boolean }) => TacheChargement;
+}
+
+/** Le peu de l'interface d'un canvas dont ce module se sert. */
+interface Canvas {
+  width: number;
+  height: number;
+  getContext: (type: '2d') => {
+    fillStyle: string;
+    fillRect: (x: number, y: number, l: number, h: number) => void;
+  };
+  toBuffer: (mime: 'image/png') => Buffer;
 }
 
 /**
@@ -73,7 +130,7 @@ async function ouvrir(cheminPdf: string): Promise<TacheChargement> {
    * navigateur. La construction moderne échoue au chargement sous Node, avec
    * un message qui ne dit pas qu'il s'agit d'un problème d'environnement.
    */
-  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const { pdfjs } = await chargerMoteur();
 
   const donnees = new Uint8Array(await readFile(cheminPdf));
 
@@ -99,10 +156,8 @@ async function ouvrir(cheminPdf: string): Promise<TacheChargement> {
    * │ réseau invisible, et une fuite sur ce qu'il traite.                   │
    * └──────────────────────────────────────────────────────────────────────┘
    */
-  return pdfjs.getDocument({
-    data: donnees,
-    useSystemFonts: false,
-  }) as unknown as TacheChargement;
+  // `MoteurPdf` déclare déjà le type de retour : plus d'assertion à poser ici.
+  return pdfjs.getDocument({ data: donnees, useSystemFonts: false });
 }
 
 /**
@@ -180,7 +235,7 @@ async function dessiner(
   numero: number,
   largeurCible: number,
 ): Promise<Buffer> {
-  const { createCanvas } = await import('@napi-rs/canvas');
+  const { createCanvas } = await chargerMoteur();
 
   const page = await document.getPage(numero);
 

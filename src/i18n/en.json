@@ -43,6 +43,7 @@
     "publication_refusee": "At least one title is not publishable. Check the list of missing fields in the catalogue.",
     "periode_invalide": "The requested period is invalid, or longer than three years.",
     "fichier_trop_volumineux": "The file exceeds the maximum accepted size (100 MB).",
+    "moteur_de_rendu_absent": "The rendering engine is not available on the server. This is not your file: report it, no upload will work until it is fixed.",
     "pdf_illisible": "This PDF could not be read. It may be password-protected, or damaged.",
     "rendu_impossible": "The pages of this PDF could not be converted into images. The document may be too complex, or corrupted.",
     "stockage_indisponible": "The produced files could not be saved. Try again in a moment.",

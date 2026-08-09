@@ -1,5 +1,36 @@
 import type { NextConfig } from 'next';
 
+/**
+ * CE QUE LE TRACEUR DE FICHIERS NE PEUT PAS DEVINER.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX PAQUETS QUI CHOISISSENT LEURS FICHIERS À L'EXÉCUTION.              │
+ * │                                                                          │
+ * │ Vercel n'embarque dans une fonction que ce qu'il a su SUIVRE depuis les  │
+ * │ imports. Il suit les imports statiques ; il perd tout ce qu'un paquet    │
+ * │ résout lui-même au moment de tourner.                                    │
+ * │                                                                          │
+ * │ `@napi-rs/canvas` est le cas d'école : son `requireNative()` choisit le  │
+ * │ binaire dans des branches conditionnelles sur `process.platform`, et va  │
+ * │ jusqu'à lancer `ldd --version` pour distinguer glibc de musl. Aucune     │
+ * │ analyse statique ne peut résoudre cela — le binaire Linux restait donc   │
+ * │ hors du paquet, et le rendu échouait en ligne sur un « module            │
+ * │ introuvable » qui ne disait pas son nom.                                 │
+ * │                                                                          │
+ * │ `pdfjs-dist` fait de même avec son worker et ses cartes de caractères.   │
+ * │                                                                          │
+ * │ Le motif est LARGE (`@napi-rs/**`) à dessein : viser le seul paquet      │
+ * │ `linux-x64-gnu` reviendrait à parier sur l'architecture de              │
+ * │ l'hébergeur, et ce pari se perdrait en silence le jour où elle change.   │
+ * │ Quelques mégaoctets de plus valent mieux qu'une fonction qui se déploie  │
+ * │ sans son moteur de rendu.                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const MOTEUR_DE_RENDU = [
+  './node_modules/pdfjs-dist/legacy/build/**',
+  './node_modules/@napi-rs/**',
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Ce chantier est backend : les erreurs de type sont traitées par
@@ -44,9 +75,9 @@ const nextConfig: NextConfig = {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   outputFileTracingIncludes: {
-    '/api/admin/books/ingest': ['./node_modules/pdfjs-dist/legacy/build/**'],
-    '/[langue]/admin/contes/nouveau': ['./node_modules/pdfjs-dist/legacy/build/**'],
-    '/[langue]/admin/contes/[id]': ['./node_modules/pdfjs-dist/legacy/build/**'],
+    '/api/admin/books/ingest': MOTEUR_DE_RENDU,
+    '/[langue]/admin/contes/nouveau': MOTEUR_DE_RENDU,
+    '/[langue]/admin/contes/[id]': MOTEUR_DE_RENDU,
   },
 
   experimental: {
