@@ -152,9 +152,11 @@ exige le port 3000 libre.
 
 ---
 
-## 0 bis. Le dépôt d'un conte en ligne — TROIS SYMPTÔMES, UN CHRONOMÈTRE
+## 0 bis. Le dépôt d'un conte en ligne — CINQ DÉFAUTS, UN SEUL COUPABLE
 
-> 9 août 2026, après la mise en ligne de la V2 sur Vercel.
+> 9 et 10 août 2026, après la mise en ligne de la V2 sur Vercel.
+> **Résolu.** Vérifié en mesurant les fichiers réellement servis : sept
+> couvertures, zéro corrompue.
 
 ### Ce qui était signalé
 
@@ -163,7 +165,15 @@ exige le port 3000 libre.
 2. les couvertures des contes récemment publiés ne s'affichent pas ;
 3. la lecture en ligne ne fonctionne pas sur ces mêmes contes.
 
-Trois symptômes sans rapport apparent. **Une seule cause.**
+> ⚠️ **Cette section a d'abord conclu « trois symptômes, une seule cause : le
+> chronomètre ». C'ÉTAIT FAUX**, et l'erreur mérite d'être conservée plutôt
+> qu'effacée : le plafond serverless était un défaut réel, il a été corrigé, et
+> le problème est resté entier. Quatre défauts authentiques ont ainsi été
+> réparés avant qu'on n'atteigne le bon — voir §0 ter.
+>
+> Ce qui a débloqué n'a pas été une meilleure déduction, mais **d'arrêter de
+> déduire** : rendre l'erreur nommable, puis télécharger les fichiers en ligne
+> et lire leurs octets.
 
 ### La cause
 
@@ -289,6 +299,165 @@ une comparaison d'identifiants.
 Le test assert désormais `dejaIngere === false` **en premier**, avec un message
 qui nomme la vraie cause. Un test qui échoue pour la mauvaise raison coûte plus
 qu'un test absent.
+
+---
+
+## 0 ter. Les quatre défauts suivants, et le vrai coupable — 10 août 2026
+
+> Suite directe du §0 bis, qui s'était trompé de cause. Chacun des défauts
+> ci-dessous était **réel** et méritait sa correction ; aucun n'était celui qui
+> bloquait l'éditeur, sauf le dernier.
+
+### 1. `sharp` NE LIT PAS le PDF — le repli était cassé par construction
+
+Le repli serverless (« pdf-lib + sharp », commit `0f7f46f`) appelait
+`sharp(cheminPdf, { page })`. Or libvips ne lit le PDF que compilé avec poppler
+ou pdfium, ce que **les binaires npm ne sont pas** :
+
+```
+sharp.format.pdf.input → { file: false, buffer: false, stream: false }
+sharp("conte.pdf")     → « Input file contains unsupported image format »
+```
+
+`pdf-lib` sait lire la **structure** d'un PDF — compter ses pages, lire ses
+métadonnées — mais **ne dessine rien**. La moitié analyse fonctionnait donc, la
+moitié rendu levait à chaque conte.
+
+**Pourquoi personne ne l'a vu :** poppler est installé sur les postes de
+développement, donc la branche de repli n'était **jamais prise**. Un repli
+qu'aucun environnement n'emprunte est un repli que personne n'éprouve. D'où
+`tests/integration/ingestion-sans-poppler.test.ts`, qui neutralise poppler et
+fait tourner la chaîne entière.
+
+### 2. Un binaire NATIF ne se trace pas — le moteur ne se chargeait pas
+
+Premier remplacement : `pdf.js` + `@napi-rs/canvas`. Fonctionnait en local,
+échouait en ligne. `requireNative()` choisit son binaire **à l'exécution** :
+
+```js
+if (process.platform === 'linux') { … }
+execSync('ldd --version')        // glibc ou musl ?
+require('@napi-rs/canvas-linux-x64-gnu')
+```
+
+Aucune analyse statique ne suit cela. `outputFileTracingIncludes` n'y a rien
+changé — **mesuré deux fois en production**.
+
+### 3. La bascule en WebAssembly — la cause supprimée, pas ajustée
+
+`@hyzyla/pdfium` (**MIT**, PDFium sous BSD) : un seul fichier `.wasm`, le même
+sur toute plateforme, à un chemin fixe. Plus rien à embarquer correctement, donc
+plus rien à embarquer de travers — et l'embarquement devient **vérifiable** :
+
+```
+route ingest / contes/nouveau / contes/[id] → pdfium.wasm dans le manifeste ✅
+```
+
+> `mupdf` rasterise très bien et a été **écarté** : AGPL-3.0, c'est-à-dire ce
+> qui vaut à PyMuPDF et ebooklib leur interdiction dans ce projet.
+
+`pdfjs-dist` et `@napi-rs/canvas` sont **retirés**. Le rendu est aussi plus
+rapide : 950 ms contre 2,4 s.
+
+### 4. Une page blanche est un échec de rendu — et il ne lève pas
+
+Un moteur qui échoue **mal** produit une image parfaitement valide — bonnes
+dimensions, bon format, bon poids — et entièrement blanche. Elle était déposée,
+rattachée, publiée. Le pipeline refuse désormais un document dont **toutes** les
+pages sont unies ; le refus ne porte jamais sur une page isolée, une page de
+garde étant légitime.
+
+### 5. LE COUPABLE — un `Buffer` nu décodé comme du texte
+
+Diagnostic **mesuré** sur les fichiers réellement servis, et non déduit. Sur les
+dix couvertures du catalogue : huit valides, **deux répondant `200 image/webp`
+en étant illisibles** — les deux plus récentes, déposées par le web.
+
+```
+saine     : 52 49 46 46  66 67 00 00        RIFF fg..
+corrompue : 52 49 46 46  ef bf bd ef bf bd  RIFF ......
+```
+
+`EF BF BD` est l'encodage UTF-8 de **U+FFFD**. Chaque octet ne formant pas de
+l'UTF-8 valide avait été remplacé : le binaire avait traversé un **décodage
+texte**. Une vignette de 26 Ko en pesait 68.
+
+Les dépôts passaient un `Buffer` **nu** à `fetch`, que Next instrumente pour son
+cache. Ils passent désormais un **`Blob`** (`src/lib/storage/blob.ts`), traité
+comme une pièce opaque.
+
+**Trois raisons pour lesquelles rien ne l'avait vu :**
+
+1. **le dépôt RÉUSSIT** — aucune exception, rien dans les journaux ; c'est à la
+   lecture, bien plus tard, qu'une image refuse de s'ouvrir ;
+2. **en local il n'existe pas** — le client Supabase parle à Docker sans passer
+   par le `fetch` de Next ;
+3. **le fichier ressemble à un WebP** — bons en-têtes, bon type MIME, servi en
+   `200`. Il est seulement plus gros.
+
+`tests/integration/stockage-binaire.test.ts` relit ce qu'il dépose et compare
+les empreintes. Il éprouve aussi des octets **aléatoires** : « RIFF » est de
+l'ASCII pur qui survit à un décodage texte — c'est bien pourquoi les fichiers
+corrompus avaient l'air valides — alors que du bruit ne pardonne rien.
+
+### Le dépôt nomme désormais l'étape qui échoue
+
+Toute panne rendait `erreur_interne`, donc « Réessayez plus tard ». Diagnostiquer
+exigeait les journaux du serveur, que l'éditeur n'a pas. Cinq codes distincts
+remontent maintenant — `moteur_de_rendu_absent`, `pdf_illisible`,
+`rendu_impossible`, `stockage_indisponible`, `traitement_trop_long` — sans qu'un
+seul chemin de fichier ni une trace de pile ne franchisse la frontière.
+
+**C'est ce qui a débloqué l'enquête.** « Où ça a cassé » n'est pas un détail
+interne : c'est ce qui distingue un PDF protégé d'une panne de déploiement.
+
+### Combien de pages la chaîne tient-elle ? — mesuré le 10 août
+
+Le code plafonne à **300 pages** (`LIMITES.pagesMax`). La contrainte réelle n'est
+pas là : c'est le **temps de fonction**.
+
+Mesuré sur un conte du corpus, rendu WASM + encodage des deux résolutions,
+**sans** les téléversements :
+
+```
+790 ms par page   →  ~75 pages en 60 s   (palier Hobby)
+                  →  ~379 pages en 300 s (palier Pro)
+```
+
+Bout en bout, téléversements compris, compter plutôt **1,5 à 2 s par page** : la
+chaîne complète sur 14 pages prend 22 s en local, et les dépôts vont plus vite
+vers Docker que vers un Supabase hébergé.
+
+| Pages | Hobby (60 s) | Pro (300 s) |
+| --- | --- | --- |
+| ~30 | ✅ | ✅ |
+| ~50 | limite | ✅ |
+| **100** | ❌ **échoue** | ✅ |
+| 300 | ❌ | limite |
+
+**Un dépassement n'abîme rien mais perd tout le travail :** `enregistrerPages`
+n'intervient qu'une fois TOUTES les pages rendues, si bien qu'une coupure en
+cours de rendu laisse un titre sans page. L'éditeur voit alors
+`traitement_trop_long`, qui nomme exactement ce cas.
+
+**Pour dépasser 75 pages :** passer `maxDuration` de 60 à **300** dans les trois
+fichiers (route d'ingestion + les deux écrans), ce qu'un palier Pro autorise. Une
+valeur au-dessus du palier souscrit **fait échouer le déploiement**.
+
+### CE QU'IL FAUT EN RETENIR
+
+> **Devant une image qui ne s'affiche pas alors que le dépôt a réussi :
+> télécharger le fichier et lire ses octets AVANT tout autre diagnostic.**
+
+Quatre corrections justes ont précédé la bonne. Toutes portaient sur des défauts
+réels, aucune n'a résolu le problème — parce qu'elles répondaient à des
+hypothèses, pas à une mesure. Une seule commande sur le fichier servi aurait
+tranché dès le premier jour.
+
+**Corollaire :** un défaut qui ne se reproduit qu'en ligne vient presque toujours
+de la **plateforme** — durée, taille de corps, traçage de fichiers, traitement du
+binaire — et non du code métier. Les quatre premiers défauts de cette liste sont
+tous de cette famille.
 
 ---
 
