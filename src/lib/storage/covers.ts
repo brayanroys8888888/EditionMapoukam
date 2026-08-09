@@ -4,6 +4,7 @@ import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { createServiceClient } from '@/lib/supabase/clients';
 import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
+import { enBlob } from './blob';
 import taillesCouverture from './tailles-couverture.json';
 
 /**
@@ -159,9 +160,20 @@ export async function publierCouverture(
       const cheminComplet = cheminCouverture(jeton, image.taille);
       const chemin = cheminComplet.slice(BUCKET_PUBLIC.length + 1);
 
+      /*
+       * Un `Blob`, jamais un `Buffer` nu — voir `./blob.ts`, qui porte les
+       * octets mesurés. En production, un corps binaire nu passé au `fetch`
+       * instrumenté de Next était lu comme du TEXTE, et chaque octet non
+       * conforme à l'UTF-8 remplacé par U+FFFD. Les couvertures arrivaient
+       * avec les bons en-têtes, un poids plus élevé, un `200 image/webp` — et
+       * parfaitement illisibles.
+       */
       const { error } = await client.storage
         .from(BUCKET_PUBLIC)
-        .upload(chemin, image.contenu, { contentType: 'image/webp', upsert: true });
+        .upload(chemin, enBlob(image.contenu, 'image/webp'), {
+          contentType: 'image/webp',
+          upsert: true,
+        });
 
       if (error) {
         throw new Error(`Dépôt de couverture impossible (${image.taille}) : ${error.message}`);

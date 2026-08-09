@@ -4,6 +4,7 @@ import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { createServiceClient } from '@/lib/supabase/clients';
 import type { Resolution } from './render-pages';
 import { logger } from '@/lib/logger';
+import { enBlob } from '@/lib/storage/blob';
 
 /**
  * Dépôt des produits de l'ingestion dans les bucket PRIVÉS.
@@ -85,12 +86,13 @@ async function deposer(
 
   const { error } = await client.storage
     .from(bucket)
-    .upload(chemin, contenu, { contentType, upsert: true });
+    .upload(chemin, enBlob(contenu, contentType), { contentType, upsert: true });
 
   if (error) {
     throw new Error(`Dépôt impossible (${cheminComplet}) : ${error.message}`);
   }
 }
+
 
 /** Dépose le PDF d'origine. */
 export async function deposerSource(
