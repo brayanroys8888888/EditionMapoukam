@@ -155,10 +155,14 @@ export async function ingerer(
   // l'autre. Il est retenu ici pour pouvoir être nettoyé en cas d'échec.
   let jetonCouverture: string | null = null;
   let translationId: string | null = null;
+  // Suivi pour le nettoyage : il doit pouvoir DÉRÉFÉRENCER la couverture qu'il
+  // efface, sans quoi le livre pointerait vers un fichier disparu.
+  let livreId: string | null = null;
 
   try {
     const cree = await creerBrouillon(client, { titre, langue: demande.langue, analyse, demande });
     translationId = cree.translationId;
+    livreId = cree.bookId;
 
     await marquer(client, jobId, {
       etape: 'depot_source',
@@ -187,6 +191,25 @@ export async function ingerer(
     const publiee = await publierCouverture(await declinerCouverture(couverture), { client });
     jetonCouverture = publiee.jeton;
 
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ LA COUVERTURE EST RATTACHÉE ICI, PAS À LA FIN.                      │
+     * │                                                                      │
+     * │ Elle existe : les trois tailles sont déposées dans le bucket. Ne la  │
+     * │ rattacher qu'à `finaliser()`, six étapes plus loin, faisait qu'une   │
+     * │ interruption laissait des fichiers ORPHELINS dans le stockage et un  │
+     * │ livre sans couverture — alors que tout le travail avait été fait.    │
+     * │                                                                      │
+     * │ C'est ce qui s'est produit en ligne : Vercel coupait la fonction     │
+     * │ pendant le rendu ou l'EPUB, et les contes déposés s'affichaient sans │
+     * │ image. Le rendu était pourtant terminé.                              │
+     * │                                                                      │
+     * │ Écrire un acquis dès qu'il est acquis ne coûte qu'une requête, et    │
+     * │ rend chaque étape franchie DÉFINITIVE.                               │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    await rattacherCouverture(client, cree.bookId, publiee.chemins.fiche, publiee.jeton);
+
     await marquer(client, jobId, { etape: 'epub' });
     const epub = await assemblerEpub(pagesEpub, {
       titre,
@@ -209,15 +232,27 @@ export async function ingerer(
     await marquer(client, jobId, { etape: 'enregistrement_pages' });
     await enregistrerPages(cree.translationId, pages, { client });
 
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ LA LECTURE EN LIGNE EST OUVERTE DÈS QUE LES PAGES EXISTENT.          │
+     * │                                                                      │
+     * │ `fichier_lecture` est ce qui autorise le lecteur en ligne. Il était  │
+     * │ écrit par `finaliser()`, c'est-à-dire APRÈS l'EPUB et le dépôt des   │
+     * │ téléchargeables — deux étapes dont la lecture en ligne ne dépend en  │
+     * │ RIEN.                                                                │
+     * │                                                                      │
+     * │ Une interruption entre les deux laissait donc un conte dont toutes   │
+     * │ les pages étaient en base et lisibles, mais que le lecteur refusait  │
+     * │ d'ouvrir. C'est le deuxième symptôme signalé en ligne.               │
+     * │                                                                      │
+     * │ L'ordre suit désormais la DÉPENDANCE RÉELLE : les pages sont         │
+     * │ enregistrées, donc la lecture est possible, donc on l'ouvre.         │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    await ouvrirLecture(client, cree.bookId, cree.translationId, analyse.nbPages);
+
     await finaliser(client, {
-      bookId: cree.bookId,
       translationId: cree.translationId,
-      nbPages: analyse.nbPages,
-      couvertureUrl: publiee.chemins.fiche,
-      // Le JETON, et non trois chemins : c'est lui qui porte l'identité du jeu
-      // de couvertures, et `src/lib/storage/covers.ts` reste seul à connaître
-      // la convention qui en dérive les trois tailles.
-      couvertureJeton: publiee.jeton,
       cheminTelechargement: cheminTelechargement(jeton, 'pdf'),
     });
 
@@ -254,7 +289,7 @@ export async function ingerer(
 
     // Le nettoyage vient APRÈS l'enregistrement de l'échec : si le balayage
     // échoue à son tour, la trace de l'erreur d'origine est déjà en base.
-    await nettoyerApresEchec(client, { jeton, jetonCouverture, translationId });
+    await nettoyerApresEchec(client, { jeton, jetonCouverture, translationId, bookId: livreId });
 
     logger.error('Ingestion échouée', { jobId, jeton, detail });
     throw erreur;
@@ -485,37 +520,79 @@ async function produirePages(
   return { pages, pagesEpub, couverture };
 }
 
-/** Rattache les fichiers produits au livre et à sa traduction. */
-async function finaliser(
+/**
+ * TROIS ÉCRITURES, TROIS MOMENTS — ET C'EST LE CORRECTIF.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QU'UN `finaliser()` UNIQUE COÛTAIT.                                  │
+ * │                                                                          │
+ * │ Une seule fonction écrivait, tout à la fin : couverture, lecture en      │
+ * │ ligne et téléchargement. Tant que rien ne l'interrompait, c'était        │
+ * │ élégant — un point unique, facile à relire.                             │
+ * │                                                                          │
+ * │ Mais une ingestion N'EST PAS ATOMIQUE : elle dépose des fichiers dans un │
+ * │ stockage, et le stockage ne participe à aucune transaction. Tout écrire  │
+ * │ à la fin ne rendait donc pas l'opération tout-ou-rien — cela garantissait │
+ * │ seulement que le TRAVAIL DÉJÀ FAIT serait perdu pour la base tout en     │
+ * │ restant présent sur le disque.                                          │
+ * │                                                                          │
+ * │ Chaque acquis est désormais écrit dès qu'il existe. La règle : on ne     │
+ * │ diffère jamais l'enregistrement d'un fait acquis derrière une étape qui  │
+ * │ ne le conditionne pas.                                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/** La couverture existe dans le bucket : on la rattache au livre. */
+async function rattacherCouverture(
   client: AppSupabaseClient,
-  valeurs: {
-    bookId: string;
-    translationId: string;
-    nbPages: number;
-    couvertureUrl: string;
-    couvertureJeton: string;
-    cheminTelechargement: string;
-  },
+  bookId: string,
+  couvertureUrl: string,
+  // Le JETON, et non trois chemins : c'est lui qui porte l'identité du jeu de
+  // couvertures, et `src/lib/storage/covers.ts` reste seul à connaître la
+  // convention qui en dérive les trois tailles.
+  couvertureJeton: string,
 ): Promise<void> {
   const livre = await client
     .from('books')
-    .update({
-      couverture_url: valeurs.couvertureUrl,
-      couverture_jeton: valeurs.couvertureJeton,
-    })
-    .eq('id', valeurs.bookId);
+    .update({ couverture_url: couvertureUrl, couverture_jeton: couvertureJeton })
+    .eq('id', bookId);
 
   if (livre.error) {
     throw new Error(`Mise à jour du livre impossible : ${livre.error.message}`);
   }
+}
 
+/** Les pages sont en base : la lecture en ligne devient possible. */
+async function ouvrirLecture(
+  client: AppSupabaseClient,
+  bookId: string,
+  translationId: string,
+  nbPages: number,
+): Promise<void> {
   const traduction = await client
     .from('book_translations')
-    .update({
-      fichier_lecture: `book-pages/${valeurs.bookId}`,
-      fichier_telechargement: valeurs.cheminTelechargement,
-      nb_pages: valeurs.nbPages,
-    })
+    .update({ fichier_lecture: `book-pages/${bookId}`, nb_pages: nbPages })
+    .eq('id', translationId);
+
+  if (traduction.error) {
+    throw new Error(`Ouverture de la lecture impossible : ${traduction.error.message}`);
+  }
+}
+
+/**
+ * Le téléchargeable, et lui seul.
+ *
+ * Il reste en dernier parce qu'il dépend réellement de l'EPUB assemblé et du
+ * dépôt qui le précède — contrairement à la couverture et à la lecture, qui n'y
+ * étaient rattachées que par habitude d'ordonnancement.
+ */
+async function finaliser(
+  client: AppSupabaseClient,
+  valeurs: { translationId: string; cheminTelechargement: string },
+): Promise<void> {
+  const traduction = await client
+    .from('book_translations')
+    .update({ fichier_telechargement: valeurs.cheminTelechargement })
     .eq('id', valeurs.translationId);
 
   if (traduction.error) {
@@ -550,7 +627,12 @@ async function marquer(
  */
 async function nettoyerApresEchec(
   client: AppSupabaseClient,
-  quoi: { jeton: string; jetonCouverture: string | null; translationId: string | null },
+  quoi: {
+    jeton: string;
+    jetonCouverture: string | null;
+    translationId: string | null;
+    bookId: string | null;
+  },
 ): Promise<void> {
   try {
     await nettoyerStockage(quoi.jeton, { client });
@@ -559,6 +641,36 @@ async function nettoyerApresEchec(
     }
     if (quoi.translationId) {
       await effacerPages(quoi.translationId, { client });
+    }
+
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ CE QUI EST EFFACÉ DOIT AUSSI ÊTRE DÉRÉFÉRENCÉ.                      │
+     * │                                                                      │
+     * │ Depuis que la couverture et la lecture sont écrites DÈS QU'ELLES     │
+     * │ existent, un échec survenu APRÈS elles laisserait la base pointer    │
+     * │ vers des fichiers que ce nettoyage vient de supprimer.               │
+     * │                                                                      │
+     * │ Ce n'est pas une nuisance mineure. Une couverture manquante ne fait  │
+     * │ pas un trou visible : `NoSuchKey` donne une IMAGE CASSÉE là où le    │
+     * │ substitut prévu se serait affiché proprement — un défaut déjà        │
+     * │ rencontré sur ce projet, et qui a mis des jours à être remarqué.     │
+     * │                                                                      │
+     * │ Un jeton nul fait retomber l'affichage sur `SubstitutCouverture`,    │
+     * │ qui est le comportement voulu pour un titre sans couverture.         │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    if (quoi.bookId && quoi.jetonCouverture) {
+      await client
+        .from('books')
+        .update({ couverture_url: null, couverture_jeton: null })
+        .eq('id', quoi.bookId);
+    }
+    if (quoi.translationId) {
+      await client
+        .from('book_translations')
+        .update({ fichier_lecture: null })
+        .eq('id', quoi.translationId);
     }
   } catch (erreur) {
     logger.warn('Nettoyage après échec incomplet', { jeton: quoi.jeton, detail: erreur });

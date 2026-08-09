@@ -32,6 +32,23 @@ import { deposerConte } from '../actions';
  * │ fois — c'est-à-dire déposer le même fichier deux fois.                   │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+/**
+ * LA DURÉE MAXIMALE SE DÉCLARE ICI AUSSI, ET C'EST CONTRE-INTUITIF.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'INGESTION NE TOURNE PAS DANS LA FONCTION DE LA ROUTE D'API.           │
+ * │                                                                          │
+ * │ `deposerConte` appelle `ingererRoute(req)` DIRECTEMENT, en mémoire,      │
+ * │ plutôt que par un `fetch` vers `/api/admin/books/ingest`. Le travail se  │
+ * │ fait donc dans la fonction serverless de CETTE PAGE — celle qui héberge  │
+ * │ la Server Action — et c'est son plafond à elle que Vercel applique.      │
+ * │                                                                          │
+ * │ Le déclarer sur la seule route d'API n'aurait donc rien corrigé, et      │
+ * │ aurait eu toutes les apparences d'un correctif.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const maxDuration = 60;
+
 interface Parametres {
   params: Promise<{ langue: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

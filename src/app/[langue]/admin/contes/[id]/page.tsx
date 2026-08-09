@@ -62,6 +62,14 @@ import {
  * │ partagés pour un gain purement cosmétique.                               │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+/**
+ * Cet écran héberge `ajouterVersionConte`, qui déclenche une ingestion complète
+ * — même traitement, même durée, même plafond que le dépôt initial. Voir
+ * `contes/nouveau/page.tsx` : c'est la fonction de la PAGE que Vercel borne,
+ * puisque l'action appelle la route d'ingestion en mémoire.
+ */
+export const maxDuration = 60;
+
 interface Parametres {
   params: Promise<{ langue: string; id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;

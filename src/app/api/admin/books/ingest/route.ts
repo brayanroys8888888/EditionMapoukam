@@ -75,6 +75,40 @@ export const TAILLE_MAX_OCTETS = 100 * 1024 * 1024;
 const PLACES_INGESTION = 2;
 const DELAI_ATTENTE_MS = 10 * 60 * 1000;
 
+/**
+ * DURÉE MAXIMALE DE LA FONCTION SERVERLESS.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE DÉFAUT QUE CETTE LIGNE CORRIGE — TROIS SYMPTÔMES, UNE SEULE CAUSE.   │
+ * │                                                                          │
+ * │ Sans elle, Vercel coupe la fonction au bout de 10 à 15 secondes. Une     │
+ * │ ingestion en demande une trentaine : rendre N pages en deux résolutions  │
+ * │ n'est pas une requête, c'est un traitement.                              │
+ * │                                                                          │
+ * │ La fonction était donc TUÉE EN COURS DE ROUTE, et comme le brouillon est │
+ * │ créé au tout début, l'éditeur voyait :                                   │
+ * │                                                                          │
+ * │   * pas de redirection vers l'écran d'édition — la fonction n'a jamais   │
+ * │     répondu, d'où l'écran d'erreur et le détour par le tableau de bord ; │
+ * │   * pas de couverture — `publierCouverture` vient après le rendu ;       │
+ * │   * pas de lecture en ligne — `fichier_lecture` est écrit en dernier.    │
+ * │                                                                          │
+ * │ Trois symptômes sans rapport apparent, et un seul chronomètre.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * 60 secondes, et pas davantage : c'est le plafond du palier Hobby de Vercel,
+ * et une valeur qui dépasse le palier souscrit fait ÉCHOUER LE DÉPLOIEMENT.
+ * Sur un palier Pro, elle peut monter à 300 — mais ce fichier ne peut pas
+ * deviner le palier, et un déploiement refusé serait pire que le défaut qu'on
+ * corrige.
+ *
+ * Ce plafond ne suffit d'ailleurs pas à lui seul : un PDF assez gros le
+ * dépassera toujours. C'est pourquoi `pipeline.ts` persiste désormais chaque
+ * acquis DÈS QU'IL EXISTE, au lieu de tout écrire à la fin — une interruption
+ * y laisse un conte utilisable plutôt qu'une coquille.
+ */
+export const maxDuration = 60;
+
 const ingestions = new Semaphore(PLACES_INGESTION);
 
 /** Réservé aux tests : observe la file sans la modifier. */
