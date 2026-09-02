@@ -1773,7 +1773,12 @@ export type Database = {
         }[]
       }
       admin_lister_livres: {
-        Args: { p_page?: number; p_statut?: string; p_taille?: number }
+        Args: {
+          p_page?: number
+          p_statut?: string
+          p_taille?: number
+          p_type?: string
+        }
         Returns: {
           auteur: string
           disponible_achat: boolean
@@ -1787,6 +1792,7 @@ export type Database = {
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           total_lignes: number
+          type_document: Database["public"]["Enums"]["document_type"]
         }[]
       }
       admin_lister_promos: {

@@ -65,7 +65,25 @@ une variante portrait prévue pour l’avenir.
 
 ---
 
-## ⚠️ Point 2 — LE LIVRET PÉDAGOGIQUE EST ABSENT DE LA SPÉCIFICATION
+## ✅ Point 2 — LE LIVRET PÉDAGOGIQUE ~~EST ABSENT DE~~ **EST ENTRÉ DANS** LA SPÉCIFICATION
+
+> **Tranché le 2 septembre 2026 par l'éditeur.** Les trois questions ci-dessous
+> ont reçu leur réponse, et la réponse est inscrite dans
+> `docs/cahier-des-charges.md` **section 3.5**, qui n'existait pas quand ce
+> document a été écrit. Le reste de la section est conservé tel quel : il dit
+> ce qui était vrai avant l'arbitrage, et pourquoi il fallait le demander.
+>
+> | # | Question | Réponse |
+> |---|---|---|
+> | 1 | Un livret entre-t-il dans l'abonnement ? | **Modulaire, titre par titre** — offert, inclus dans l'abonnement, vendu à l'unité, ou plusieurs à la fois. Aucune règle propre au support (§3.5.2) |
+> | 2 | La fenêtre de trois mois s'applique-t-elle ? | **Sans objet** : la fenêtre a été retirée de toute la plateforme le même jour (migration `0064`, §3.2) |
+> | 3 | Catalogue mêlé ou séparé ? | **Séparé, sans rien fermer** : `/contes` et `/livrets` s'ajoutent, `/catalogue` reste le fonds entier (§3.5.3) |
+>
+> Ce que la réponse 1 confirme, et qui valait d'être demandé : `access_for_books`
+> ne lit **jamais** `type_document`, et ne doit jamais le lire.
+> `tests/integration/livret-acces-modulaire.test.ts` en fait une contrainte —
+> les huit combinaisons des trois leviers doivent rendre le même verdict sur un
+> conte et sur un livret.
 
 **Signalé, pas tranché.** `CLAUDE.md` est explicite sur les deux règles qui se
 croisent ici :
@@ -125,5 +143,18 @@ Elles restent **ouvertes**, et aucune n'a été tranchée dans le code :
    Le choix actuel est le moins destructeur, ce n'est pas une décision
    éditoriale pour autant.
 
-**À faire :** faire trancher ces trois points, puis les inscrire dans
-`docs/cahier-des-charges.md` — un fichier que ce chantier n'a pas touché.
+~~**À faire :** faire trancher ces trois points, puis les inscrire dans
+`docs/cahier-des-charges.md` — un fichier que ce chantier n'a pas touché.~~
+
+**FAIT le 2 septembre 2026.** Les trois points sont tranchés (encadré en tête
+de section), et la spécification a été modifiée : section **3.5** (les deux
+supports, l'accès modulaire, la séparation des rayons), **F2 bis** au périmètre
+fonctionnel, les champs `type_document`, `orientation` et `gratuit` ajoutés à
+l'entité `books` en §8.1, et deux lignes de plus au tableau des décisions
+arrêtées (§16.1).
+
+La modification de `docs/cahier-des-charges.md` est normalement **interdite**
+par `CLAUDE.md`. L'interdiction a été levée par le propriétaire, explicitement
+et pour cette tâche ; `CLAUDE.md` porte désormais l'exception en toutes lettres,
+avec l'obligation de dire dans le texte ce qui change et pourquoi — ce que fait
+chaque encadré ajouté.

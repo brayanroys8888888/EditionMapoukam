@@ -5,22 +5,48 @@
 
 ---
 
-## 0 bis. Livrets pédagogiques — livré, avec UNE question ouverte
+## 0 bis. Livrets pédagogiques — livré, et les trois arbitrages sont rendus
 
-> Écrit le 2 septembre 2026.
+> Écrit le 2 septembre 2026, complété le même jour après arbitrage.
 
 Le support « livret pédagogique » traverse maintenant toute la chaîne :
 migrations **0061** (colonnes), **0062** (les poser et les relire depuis
-l'administration), **0063** (les filtrer au catalogue public). Deux écrans
-neufs : `/{langue}/admin/livrets/nouveau` pour le dépôt, `/{langue}/livrets`
-pour le rayon public.
+l'administration), **0063** (les filtrer au catalogue public), **0065** (les
+retrouver et les isoler dans la liste du back-office). Trois écrans :
+`/{langue}/admin/livrets/nouveau` pour le dépôt, `/{langue}/livrets` et
+`/{langue}/contes` pour les deux rayons publics.
 
-⚠️ **Le mot « livret » n'apparaît PAS une fois dans
-`docs/cahier-des-charges.md`**, qui fait foi. Aucune règle métier n'a été
-inventée pour autant — un livret suit exactement les règles d'un conte — mais
-trois arbitrages restent à rendre : abonnement, fenêtre de trois mois, et
-défaut du catalogue. Ils sont écrits en fin de
-`docs/ajout-livret-pedagogique-2026-09-02.md`, sous « Point 2 ».
+### Les trois arbitrages, tranchés le 2 septembre 2026
+
+| # | Question | Réponse |
+| --- | --- | --- |
+| 1 | Un livret entre-t-il dans l'abonnement ? | **Modulaire, titre par titre** : `gratuit`, `inclus_abonnement` et `disponible_achat` sont indépendants et se posent par titre |
+| 2 | La fenêtre de trois mois s'applique-t-elle ? | **Sans objet** — la fenêtre a été retirée de toute la plateforme (migration **0064**) |
+| 3 | Catalogue mêlé ou séparé ? | **Séparé, sans rien fermer** : `/contes` et `/livrets` s'ajoutent, `/catalogue` reste le fonds entier |
+
+Le mot « livret » **est désormais dans `docs/cahier-des-charges.md`** :
+section **3.5** entière, **F2 bis** au périmètre fonctionnel, les champs à
+l'entité `books` en §8.1, et deux lignes au tableau des décisions arrêtées.
+La spécification a été modifiée sur instruction expresse du propriétaire —
+`CLAUDE.md` porte l'exception, chaque ajout dit ce qui change et pourquoi.
+
+### Ce qui tient la décision en place
+
+- `tests/integration/livret-acces-modulaire.test.ts` — les huit combinaisons
+  des trois leviers rendent le **même** verdict sur un conte et sur un livret.
+  Un `if (type_document …)` ajouté au moteur de droits fera échouer ce test.
+- `tests/unit/navigation-rayons.test.ts` — les trois listes de navigation
+  (en-tête V1, en-tête V2, menu plein écran) mènent aux mêmes écrans. Ni le
+  thème ni la largeur de la fenêtre ne décident de ce que le site contient.
+
+### Le piège de la liste d'administration
+
+Les trois leviers existaient déjà et fonctionnaient déjà pour un livret — mais
+ils se posent sur la fiche d'édition, et le seul chemin vers cette fiche est la
+liste du back-office, qui ne disait pas quel titre était un livret. Une
+capacité qu'on ne peut pas atteindre n'est pas une capacité : d'où la migration
+**0065**, qui fait rendre et filtrer `type_document` par
+`admin_lister_livres`.
 
 ---
 

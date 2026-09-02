@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { langueValide, traduire, type CleTraduction } from '@/i18n';
+import type { TypeDocument } from '@/domain/catalog/types';
 import { listerLivres } from '@/lib/admin/service';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
@@ -33,6 +34,7 @@ interface LigneLivre {
   slug: string;
   auteur: string;
   statut: 'publie' | 'brouillon' | 'archive';
+  type_document: TypeDocument;
   gratuit: boolean;
   inclus_abonnement: boolean;
   disponible_achat: boolean;
@@ -43,6 +45,16 @@ interface LigneLivre {
 }
 
 const STATUTS = ['publie', 'brouillon', 'archive'] as const;
+
+/**
+ * Les supports, dans l’ordre de l’énumération `document_type`.
+ *
+ * Leurs libellés vivent sous `documents.*`, comme sur la fiche d’édition et
+ * dans le catalogue public : un jeu de mots propre à l’administration aurait
+ * fait deux vérités pour le même support, et c’est la seconde qui aurait
+ * cessé d’être relue.
+ */
+const TYPES = ['conte', 'livret_pedagogique'] as const satisfies readonly TypeDocument[];
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
@@ -61,13 +73,22 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
   // Un statut inconnu dans l'URL ne fait pas tomber l'écran : il est ignoré.
   const statut = STATUTS.includes(demande as (typeof STATUTS)[number]) ? demande : undefined;
 
+  const typeBrut = requete['type'];
+  const typeDemande = Array.isArray(typeBrut) ? typeBrut[0] : typeBrut;
+  // Même indulgence que pour le statut : un support inconnu est ignoré, il ne
+  // vide pas la liste et ne fait pas tomber l’écran.
+  const type = TYPES.includes(typeDemande as (typeof TYPES)[number]) ? typeDemande : undefined;
+
   const qBrut = requete['q'];
   const qSeule = Array.isArray(qBrut) ? qBrut[0] : qBrut;
   const q = qSeule?.trim();
 
-  const resultat = await listerLivres({ statut: statut ?? null, page: 1, taille: 100 }).catch(
-    () => null,
-  );
+  const resultat = await listerLivres({
+    statut: statut ?? null,
+    type: type ?? null,
+    page: 1,
+    taille: 100,
+  }).catch(() => null);
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
 
   const tousLivres = resultat.donnees as unknown as LigneLivre[];
@@ -83,9 +104,19 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
 
   const base = `/${langue}/admin/contes`;
 
-  const lienFiltreStatut = (valeur?: string) => {
+  /**
+   * Un lien qui change UN filtre et conserve les autres.
+   *
+   * Deux fonctions distinctes auraient chacune oublié l’autre filtre :
+   * choisir « livrets » aurait effacé « brouillon », et l’éditeur aurait cru
+   * que ses livrets étaient tous publiés.
+   */
+  const lien = (modification: { statut?: string; type?: string }) => {
     const params = new URLSearchParams();
-    if (valeur) params.set('statut', valeur);
+    const statutCible = 'statut' in modification ? modification.statut : statut;
+    const typeCible = 'type' in modification ? modification.type : type;
+    if (statutCible) params.set('statut', statutCible);
+    if (typeCible) params.set('type', typeCible);
     if (q) params.set('q', q);
     const qs = params.toString();
     return qs ? `${base}?${qs}` : base;
@@ -124,6 +155,7 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
       {/* ── Barre de recherche admin ────────────────────────────────────── */}
       <form method="get" action={base} className={styles.recherche} role="search">
         {statut ? <input type="hidden" name="statut" value={statut} /> : null}
+        {type ? <input type="hidden" name="type" value={type} /> : null}
         <input
           type="search"
           name="q"
@@ -138,7 +170,7 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
         {q ? (
           <a
             className={styles.boutonDiscret}
-            href={statut ? `${base}?statut=${statut}` : base}
+            href={lien({ statut: undefined, type: undefined })}
           >
             {traduire(langue, 'catalogue.retirerTousFiltres')}
           </a>
@@ -149,7 +181,7 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
       <nav className={styles.filtres} aria-label={traduire(langue, 'admin.colStatut')}>
         <a
           className={statut ? styles.filtre : `${styles.filtre} ${styles.filtreActif}`}
-          href={lienFiltreStatut(undefined)}
+          href={lien({ statut: undefined })}
           aria-current={statut ? undefined : 'true'}
         >
           {traduire(langue, 'admin.tousLesStatuts')}
@@ -161,10 +193,44 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
             <a
               key={valeur}
               className={actif ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-              href={lienFiltreStatut(valeur)}
+              href={lien({ statut: valeur })}
               aria-current={actif ? 'true' : undefined}
             >
               {traduire(langue, `admin.statut_${valeur}` as CleTraduction)}
+            </a>
+          );
+        })}
+      </nav>
+
+      {/*
+        ┌───────────────────────────────────────────────────────────┐
+        │ SANS CE FILTRE, L’ACCÈS MODULAIRE DES LIVRETS EST INATTEIGNABLE.  │
+        │                                                                    │
+        │ Les trois leviers se posent titre par titre, sur la fiche          │
+        │ d’édition, et cette liste est le seul chemin vers cette fiche. Sur │
+        │ deux cents titres mêlés, régler l’accès des livrets demandait de   │
+        │ les ouvrir un par un pour voir de quel support il s’agit.          │
+        └───────────────────────────────────────────────────────────┘
+      */}
+      <nav className={styles.filtres} aria-label={traduire(langue, 'admin.colSupport')}>
+        <a
+          className={type ? styles.filtre : `${styles.filtre} ${styles.filtreActif}`}
+          href={lien({ type: undefined })}
+          aria-current={type ? undefined : 'true'}
+        >
+          {traduire(langue, 'admin.tousLesSupports')}
+        </a>
+
+        {TYPES.map((valeur) => {
+          const actif = type === valeur;
+          return (
+            <a
+              key={valeur}
+              className={actif ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
+              href={lien({ type: valeur })}
+              aria-current={actif ? 'true' : undefined}
+            >
+              {traduire(langue, `documents.${valeur}` as CleTraduction)}
             </a>
           );
         })}
@@ -181,6 +247,7 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
                 <th scope="col">{traduire(langue, 'admin.colSlug')}</th>
                 <th scope="col">{traduire(langue, 'admin.colAuteur')}</th>
                 <th scope="col">{traduire(langue, 'admin.colStatut')}</th>
+                <th scope="col">{traduire(langue, 'admin.colSupport')}</th>
                 <th scope="col">{traduire(langue, 'admin.colAcces')}</th>
                 <th scope="col" className={styles.numerique}>
                   {traduire(langue, 'admin.colPrix')}
@@ -246,6 +313,18 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
                       </span>
                     </td>
 
+                    <td>
+                      {traduire(langue, `documents.${livre.type_document}` as CleTraduction)}
+                    </td>
+
+                    {/*
+                      Les trois leviers sont INDÉPENDANTS : un titre peut être
+                      offert, inclus dans l’abonnement, vendu à l’unité, ou
+                      plusieurs à la fois. La cellule les ÉNUMÈRE donc, elle ne
+                      choisit pas un « mode » parmi trois — ce serait fabriquer
+                      une exclusivité que ni la base ni le moteur de droits
+                      n’imposent.
+                    */}
                     <td>{acces.length > 0 ? acces.join(' · ') : traduire(langue, 'admin.nonPublie')}</td>
 
                     <td className={styles.numerique}>

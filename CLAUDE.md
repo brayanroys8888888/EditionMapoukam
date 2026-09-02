@@ -162,7 +162,7 @@ RPC aux fonctions réellement présentes dans le type généré. Une fonction aj
 en SQL et non régénérée **ne compile pas** — ce qui est le comportement voulu.
 
 Les migrations sont numérotées et **jamais modifiées après application** : on
-ajoute une migration corrective. Le dépôt en est à la **0064**.
+ajoute une migration corrective. Le dépôt en est à la **0065**.
 
 ## Architecture — les quatre couches, et ce qui les sépare
 
@@ -347,6 +347,17 @@ gestionnaire de webhooks. Elle ne modifie jamais la base de données directement
   jamais par un abonnement.
 - Un titre peut être simultanément inclus dans l'abonnement et vendu à l'unité.
   Les champs `inclus_abonnement` et `disponible_achat` sont indépendants.
+- **Un livret pédagogique suit exactement les règles d'un conte.** Le catalogue
+  porte deux supports (`type_document`), et le support est une étiquette de
+  rangement : il n'ouvre et ne ferme aucun droit. `access_for_books` ne lit
+  **jamais** `type_document`, et ne doit jamais le lire —
+  `tests/integration/livret-acces-modulaire.test.ts` compare les verdicts rendus
+  sur les huit combinaisons des trois leviers, une fois comme conte, une fois
+  comme livret, et exige qu'ils soient identiques.
+
+  L'accès d'un livret est donc **modulaire, titre par titre** : offert, inclus
+  dans l'abonnement, vendu à l'unité, ou plusieurs à la fois. Décision de
+  l'éditeur du 2 septembre 2026, inscrite au cahier des charges §3.5.
 - **Il n'y a AUCUN délai entre la publication et l'entrée dans l'abonnement.**
   Un titre publié et marqué `inclus_abonnement` est lisible par un abonné à
   l'instant même. `publie_le` ordonne le catalogue ; elle n'ouvre et ne ferme

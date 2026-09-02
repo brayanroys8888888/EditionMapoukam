@@ -139,7 +139,7 @@ export async function listerCommandes(
 }
 
 export async function listerLivres(
-  filtres: { statut?: string | null } & Pagination,
+  filtres: { statut?: string | null; type?: string | null } & Pagination,
   options: { client?: AppSupabaseClient } = {},
 ) {
   const client = options.client ?? createServiceClient();
@@ -147,6 +147,10 @@ export async function listerLivres(
     p_statut: filtres.statut ?? null,
     p_page: filtres.page,
     p_taille: filtres.taille,
+    // Le support filtre EN BASE, pas sur la page reçue : sinon `total_lignes`
+    // compterait tout le catalogue, et la pagination annoncerait des pages de
+    // livrets qui n'existent pas.
+    p_type: filtres.type ?? null,
   });
 }
 

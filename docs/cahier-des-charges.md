@@ -159,6 +159,77 @@ Le positionnement éditorial attire mécaniquement deux publics au pouvoir d'ach
 - Codes promotionnels (montant fixe ou pourcentage, avec date d'expiration)
 - Ces mécanismes sont gérés nativement par le prestataire de paiement
 
+### 3.5 Les supports du catalogue, et l'accès modulaire
+
+> **Ajout du 2 septembre 2026, sur décision de l'éditeur.** Cette section
+> n'existait pas : la spécification ne décrivait qu'un catalogue de contes, et
+> le mot « livret » n'y figurait pas une fois. Le back-office en produisait
+> pourtant depuis la migration `0061`, sans qu'aucune règle métier ne les
+> couvre. Les trois arbitrages laissés ouverts par
+> `docs/ajout-livret-pedagogique-2026-09-02.md` sont tranchés ici.
+
+#### 3.5.1 Deux supports, un seul catalogue
+
+Le catalogue porte deux **supports**, distingués par le champ `type_document` :
+
+| Support | Ce que c'est | Mise en page usuelle |
+|---|---|---|
+| **Conte** | Une histoire illustrée, lue d'un bout à l'autre | Portrait |
+| **Livret pédagogique** | Un support d'activités : exercices, coloriages, fiches de lecture, à imprimer ou à projeter | Paysage |
+
+Un livret pédagogique **est un titre du catalogue**, pas une seconde nature de
+produit. Il traverse la même chaîne d'ingestion, porte les mêmes prix par zone,
+les mêmes versions linguistiques, les mêmes couvertures, la même protection du
+contenu (section 10) et le même moteur de droits. Le support est une
+**étiquette de rangement et d'affichage** ; il n'ouvre et ne ferme aucun droit.
+
+#### 3.5.2 L'accès à un livret est modulaire, titre par titre
+
+**C'est la règle de cette section.** Un livret pédagogique peut être :
+
+- **offert** — lisible en ligne par tous, sans compte (`gratuit`) ;
+- **inclus dans l'abonnement** — lisible en ligne par les abonnés
+  (`inclus_abonnement`) ;
+- **vendu à l'unité** — téléchargeable par son acheteur (`disponible_achat`) ;
+- **plusieurs de ces choses à la fois**, ou aucune.
+
+Les trois champs sont **indépendants**, et l'éditeur les pose **titre par
+titre** depuis le back-office. Il n'existe aucune règle qui rendrait un livret
+*toujours* gratuit, ou *jamais* inclus dans l'abonnement : ce serait décider
+une fois pour toutes ce que la section 3.2 fait décider titre par titre.
+
+Ce qui **ne change pas**, et qui prime sur tout le reste : le principe 1 de la
+section 3.2 s'applique intégralement à un livret. **L'abonnement n'ouvre jamais
+le téléchargement.** Un livret inclus dans l'abonnement se lit en ligne ; seul
+un achat en ouvre le fichier.
+
+Techniquement, cette modularité ne demande aucun traitement particulier : le
+moteur de droits `access_for_books` ne lit **jamais** `type_document`. C'est
+une propriété qu'un test d'intégration dédié maintient — il compare les
+verdicts rendus sur les huit combinaisons des trois leviers, une fois comme
+conte, une fois comme livret, et exige qu'ils soient identiques.
+
+#### 3.5.3 Le catalogue est séparé par support, sans se fermer
+
+Trois écrans, et non deux :
+
+| Écran | Ce qu'il montre |
+|---|---|
+| `/contes` | Les contes seuls |
+| `/livrets` | Les livrets pédagogiques seuls |
+| `/catalogue` | **Le fonds entier**, les deux supports mêlés |
+
+Un conte et un livret ne se cherchent pas de la même façon — l'un se lit le
+soir, l'autre s'imprime pour une classe — et les mêler par défaut obligeait le
+lecteur à poser un filtre avant de commencer. Une **liste déroulante** dans la
+barre de navigation mène aux trois.
+
+`/catalogue` **demeure** et reste le fonds entier : il porte la recherche sur
+tout le catalogue, et reste la cible de la recherche, du plan de site et des
+liens déjà partagés. Le défaut inverse — un catalogue qui ne montrerait que les
+contes — ferait disparaître les livrets de la recherche et des suggestions.
+**Deux portes s'ajoutent ; aucune ne se ferme.**
+
 ---
 
 ## 4. Périmètre fonctionnel
@@ -176,6 +247,18 @@ Le positionnement éditorial attire mécaniquement deux publics au pouvoir d'ach
 - **Filtres :** tranche d'âge, langue, thème/région d'origine du conte, type d'accès (abonnement / achat), niveau de lecture
 - **Tri :** nouveautés, popularité, alphabétique, prix
 - Recherche par mot-clé (titre, auteur, thème)
+
+#### F2 bis. Rayons par support — ajout du 2 septembre 2026
+- Deux écrans supplémentaires, `/contes` et `/livrets`, chacun montrant **un
+  seul support** (section 3.5.3)
+- Mêmes filtres, même tri, même recherche et même grille que F2 : ce sont le
+  même écran, avec le support imposé par l'adresse plutôt que choisi par un
+  filtre
+- Le support **ne figure pas** parmi les filtres retirables de ces deux écrans :
+  il n'est pas un filtre que le lecteur a posé, c'est l'écran où il se trouve
+- Une **liste déroulante** dans la barre de navigation mène aux trois rayons.
+  Elle fonctionne sans JavaScript — une part importante du public est sur
+  connexion lente (section 2.1)
 
 #### F3. Fiche livre
 - Couverture, titre, auteur, illustrateur
@@ -543,6 +626,9 @@ Cet investissement est absorbé une seule fois : une fois la chaîne en place, l
 | origine_culturelle | texte | Pays / peuple / tradition d'origine |
 | themes | tableau | Mots-clés thématiques |
 | couverture_url | texte | Image de couverture |
+| type_document | énumération | `conte` / `livret_pedagogique` — le support (section 3.5) |
+| orientation | énumération | `portrait` / `paysage` — mise en page, déclarée au dépôt |
+| gratuit | booléen | Lisible en ligne sans compte. N'ouvre **jamais** le téléchargement |
 | inclus_abonnement | booléen | Accessible via abonnement |
 | disponible_achat | booléen | Vendu à l'unité |
 | prix | décimal | Prix de vente unitaire |
@@ -892,6 +978,8 @@ Les coûts d'infrastructure augmentent avec le trafic et le volume de stockage, 
 | 7 | Formats téléchargeables | PDF **et** EPUB |
 | 8 | Offre écoles et bibliothèques | Hors périmètre V1 ; à envisager ultérieurement (annexe A4) |
 | 9 | Application mobile | Non prévue ; le site est conçu en approche « mobile-first » |
+| 10 | Accès d'un livret pédagogique | **Modulaire, titre par titre** : offert, inclus dans l'abonnement, vendu à l'unité, ou plusieurs à la fois — voir section 3.5.2 (tranché le 2 septembre 2026) |
+| 11 | Catalogue mêlé ou séparé | **Séparé, sans rien fermer** : `/contes` et `/livrets` s'ajoutent, `/catalogue` reste le fonds entier — voir section 3.5.3 (tranché le 2 septembre 2026) |
 
 ### 16.2 Points ouverts — à trancher avant le démarrage
 
