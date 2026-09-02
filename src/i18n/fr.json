@@ -53,6 +53,7 @@
   "navigation": {
     "principal": "Navigation principale",
     "catalogue": "Boutique",
+    "toutLeCatalogue": "Tout le catalogue",
     "offres": "Offres",
     "blog": "Blog",
     "apropos": "À propos",
@@ -156,6 +157,14 @@
     "attendre": "Trop de tentatives. Réessayez dans {secondes} secondes.",
     "continuer": "Continuer",
     "allerAuCatalogue": "Parcourir le catalogue"
+  },
+  "contes": {
+    "_commentaire": "Le rayon des contes — le MÊME catalogue que `livrets`, avec l'autre valeur de `type_document`. Les deux rayons sont séparés depuis le 2 septembre 2026 : un conte se lit le soir, un livret s'imprime pour une classe, et les mêler obligeait le lecteur à poser un filtre avant de commencer.",
+    "titre": "Contes",
+    "intro": "Des histoires du patrimoine africain, illustrées, à lire en ligne ou à garder en PDF et EPUB.",
+    "compteTous": "{total} contes disponibles",
+    "compteUn": "1 conte disponible",
+    "lien": "Contes"
   },
   "livrets": {
     "_commentaire": "Le rayon des livrets pédagogiques — le MÊME catalogue avec `type_document` posé. Le compte s'y lit sur le rayon, jamais sur le catalogue entier : « 3 sur 47 » laisserait croire que 44 livrets sont cachés par un filtre.",

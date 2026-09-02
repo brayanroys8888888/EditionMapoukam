@@ -1,6 +1,11 @@
 import type { ReactNode } from 'react';
 
-import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
+import {
+  LANGUES_INTERFACE,
+  traduire,
+  type CleTraduction,
+  type LangueInterface,
+} from '@/i18n';
 import type { Utilisateur } from '@/domain/api/contract';
 import { IconeCompte, IconeLoupe, IconePanier } from '@/components/icones';
 import styles from './enveloppe.module.css';
@@ -183,6 +188,20 @@ interface ProprietesEntete extends ProprietesMenuCompte {
   requete?: string;
 }
 
+/**
+ * Les deux rayons du catalogue, et le fonds entier.
+ *
+ * La même liste que dans `v2.tsx`, dans le même ordre et sur les mêmes clés.
+ * Elle est écrite deux fois parce que les deux en-têtes sont deux composants —
+ * mais un test d'architecture échoue si les deux listes cessent de concorder :
+ * une navigation qui dépend du thème serait un second site.
+ */
+const RAYONS: { cle: CleTraduction; chemin: string }[] = [
+  { cle: 'documents.contes', chemin: 'contes' },
+  { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
+  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
+];
+
 export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntete): ReactNode {
   return (
     <header className={styles.entete}>
@@ -199,7 +218,32 @@ export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntet
         <Marque langue={langue} />
 
         <nav className={styles.navigation} aria-label={traduire(langue, 'navigation.principal')}>
-          <a href={`/${langue}/catalogue`}>{traduire(langue, 'navigation.catalogue')}</a>
+          {/*
+           * ┌───────────────────────────────────────────────────────────┐
+           * │ LA MÊME LISTE DÉROULANTE QU'EN V2, PARCE QUE C'EST LE MÊME SITE. │
+           * │                                                              │
+           * │ Le thème est commutable : les deux enveloppes doivent mener   │
+           * │ aux mêmes écrans, sans quoi `NEXT_PUBLIC_DESIGN_VERSION`      │
+           * │ changerait la NAVIGATION du site et non son apparence.        │
+           * │                                                              │
+           * │ `<details>` plutôt qu'un menu scripTé : il s'ouvre au clavier, │
+           * │ annonce son état, et fonctionne sans JavaScript.              │
+           * └───────────────────────────────────────────────────────────┘
+           */}
+          <details className={styles.rayons}>
+            <summary className={styles.rayonsResume}>
+              {traduire(langue, 'navigation.catalogue')}
+            </summary>
+
+            <ul className={styles.rayonsListe}>
+              {RAYONS.map((rayon) => (
+                <li key={rayon.chemin}>
+                  <a href={`/${langue}/${rayon.chemin}`}>{traduire(langue, rayon.cle)}</a>
+                </li>
+              ))}
+            </ul>
+          </details>
+
           <a href={`/${langue}/offres`}>{traduire(langue, 'navigation.offres')}</a>
           <a href={`/${langue}/a-propos`}>{traduire(langue, 'navigation.apropos')}</a>
         </nav>

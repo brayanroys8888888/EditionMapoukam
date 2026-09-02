@@ -4,26 +4,29 @@ import { langueValide, traduire } from '@/i18n';
 import { Rayon, aplatirRequete, type ClesRayon } from '../rayon';
 
 /**
- * LIVRETS PÉDAGOGIQUES — le catalogue, vu par un seul type de support.
+ * CONTES — le rayon des histoires, séparé de celui des livrets.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ CE N'EST PAS UN SECOND CATALOGUE. C'EST LE MÊME, AVEC UN FILTRE POSÉ.    │
+ * │ POURQUOI CET ÉCRAN EXISTE, ALORS QUE `/catalogue` MONTRAIT DÉJÀ TOUT.   │
  * │                                                                          │
- * │ Mêmes modules — `listerCatalogue`, `lireFacettes` —, même schéma de       │
- * │ validation, mêmes composants de grille, mêmes droits. Le seul écart      │
- * │ tient en un argument : `type` est IMPOSÉ, et ne peut pas être retiré.     │
+ * │ Un conte et un livret pédagogique ne se cherchent pas de la même façon : │
+ * │ l'un se lit le soir, l'autre s'imprime pour une classe. Les mêler par    │
+ * │ défaut obligeait le lecteur à poser un filtre avant de commencer.        │
  * │                                                                          │
- * │ Cet écran portait autrefois son propre corps, copié de `/catalogue`.     │
- * │ La séparation des rayons en aurait fait une troisième copie : le corps   │
- * │ vit désormais dans `../rayon`, que `/contes` appelle à l'identique.      │
+ * │ `/catalogue` demeure — il porte la recherche sur TOUT le fonds, et reste │
+ * │ la cible de la loupe, du plan de site et des liens déjà partagés. Rien   │
+ * │ de ce qui existait ne se casse ; deux portes s'ajoutent devant.          │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Tout le corps de l'écran vit dans `../rayon` : `/livrets` est le même écran
+ * avec un autre support, et il n'en existe qu'une implémentation.
  */
 
 const CLES: ClesRayon = {
-  titre: 'livrets.titre',
-  intro: 'livrets.intro',
-  compteTous: 'livrets.compteTous',
-  compteUn: 'livrets.compteUn',
+  titre: 'contes.titre',
+  intro: 'contes.intro',
+  compteTous: 'contes.compteTous',
+  compteUn: 'contes.compteUn',
 };
 
 interface Parametres {
@@ -39,15 +42,15 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
   };
 }
 
-export default async function PageLivrets({ params, searchParams }: Parametres) {
+export default async function PageContes({ params, searchParams }: Parametres) {
   const langue = langueValide((await params).langue);
 
   return (
     <Rayon
       langue={langue}
       requete={aplatirRequete(await searchParams)}
-      type="livret_pedagogique"
-      base={`/${langue}/livrets`}
+      type="conte"
+      base={`/${langue}/contes`}
       cles={CLES}
     />
   );

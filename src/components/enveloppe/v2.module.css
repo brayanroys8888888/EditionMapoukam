@@ -234,6 +234,146 @@
   font-weight: var(--graisse-forte);
 }
 
+/* ── La liste déroulante des rayons ─────────────────────────────────────── */
+
+/*
+ * ┌────────────────────────────────────────────────────────────────────────┐
+ * │ UN `<details>` POSITIONNÉ, ET RIEN DE PLUS.                            │
+ * │                                                                        │
+ * │ Toute l'ouverture est native : pas de script, pas d'état, pas de       │
+ * │ `aria-expanded` à tenir à jour. Le CSS ne fait que sortir le panneau du│
+ * │ flux pour qu'il ne pousse pas la barre vers le bas en s'ouvrant.       │
+ * └────────────────────────────────────────────────────────────────────────┘
+ */
+.rayons {
+  position: relative;
+}
+
+.rayonsResume {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--cible-min);
+  padding: 8px 14px;
+  border-radius: var(--rayon-controle);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  cursor: pointer;
+  list-style: none;
+  transition: color var(--transition-couleur);
+}
+
+/* Le triangle par défaut de `<summary>`, dans les deux familles de moteurs. */
+.rayonsResume::-webkit-details-marker {
+  display: none;
+}
+
+/* Le chevron, dessiné en CSS : une image de plus à charger pour deux traits
+   serait un aller-retour réseau sur une connexion lente. */
+.rayonsResume::before {
+  content: '';
+  order: 2;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--transition-forme);
+}
+
+.rayons[open] > .rayonsResume::before {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+/* Le même soulignement que les autres entrées : le groupe ne doit pas avoir
+   l'air d'un contrôle étranger posé dans la navigation. */
+.rayonsResume::after {
+  content: '';
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--action);
+  transform: scaleX(0);
+  transition: transform var(--transition-forme);
+}
+
+.rayonsResume:hover {
+  color: var(--v2-vert);
+}
+
+.rayonsResume:hover::after,
+.rayons[open] > .rayonsResume::after,
+.rayonsResume[aria-current='true']::after {
+  transform: scaleX(1);
+}
+
+.rayonsResume[aria-current='true'] {
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+}
+
+.rayonsListe {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 232px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  box-shadow: var(--ombre-flottante);
+}
+
+/*
+ * Les entrées du panneau sont des LIGNES, pas des onglets : le soulignement
+ * qui pousse depuis le centre n'a aucun sens à la verticale, et il traverserait
+ * la largeur du panneau à chaque survol.
+ */
+.rayonsListe a {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--rayon-controle);
+  font-size: var(--taille-m);
+  white-space: nowrap;
+}
+
+.rayonsListe a::after {
+  content: none;
+}
+
+.rayonsListe a:hover {
+  background: var(--fond-doux);
+}
+
+.rayonsListe a[aria-current='page'] {
+  background: var(--fond-doux);
+  color: var(--v2-vert);
+  font-weight: var(--graisse-forte);
+}
+
+/*
+ * En-tête POSÉ sur le hero d'accueil : le résumé suit la même inversion que
+ * les autres entrées. Le panneau, lui, garde son fond crème — il est décollé
+ * de l'image, et du texte clair sur du clair y serait illisible.
+ */
+.entetePose .rayonsResume {
+  color: var(--v2-fond);
+}
+
+.entetePose .rayonsResume:hover,
+.entetePose .rayonsResume[aria-current='true'] {
+  color: var(--action);
+}
+
 /* ── Actions ────────────────────────────────────────────────────────────── */
 
 .actions {

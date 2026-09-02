@@ -27,6 +27,8 @@ import { logger } from '@/lib/logger';
 const CHEMINS_FIXES = [
   '',
   '/catalogue',
+  '/contes',
+  '/livrets',
   '/offres',
   '/a-propos',
   '/questions-frequentes',

@@ -121,6 +121,78 @@
   color: var(--encre);
 }
 
+/* ── La liste déroulante des rayons ─────────────────────────────────────── */
+
+/*
+ * Contes et livrets pédagogiques ont chacun leur écran ; cette liste est la
+ * porte des deux. Tout est natif : `<details>` s'ouvre au clic et au clavier,
+ * annonce son état, et n'a besoin d'aucun script. Le CSS ne fait que sortir le
+ * panneau du flux, pour qu'il ne pousse pas la barre en s'ouvrant.
+ */
+.rayons {
+  position: relative;
+}
+
+.rayonsResume {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--cible-min);
+  padding: 8px 12px;
+  border-radius: var(--rayon-controle);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  cursor: pointer;
+  list-style: none;
+  transition: background var(--transition-couleur);
+}
+
+.rayonsResume::-webkit-details-marker {
+  display: none;
+}
+
+/* Deux traits plutôt qu'une image : un aller-retour réseau de moins sur une
+   connexion lente, et le chevron suit la couleur du texte sans y penser. */
+.rayonsResume::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentcolor;
+  border-bottom: 2px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+}
+
+.rayons[open] > .rayonsResume::after {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+.rayonsResume:hover,
+.rayons[open] > .rayonsResume {
+  background: var(--fond-doux);
+}
+
+.rayonsListe {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--fond);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-controle);
+  box-shadow: var(--ombre-infobulle);
+}
+
+.rayonsListe a {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+}
+
 /* ── Actions d'en-tête ──────────────────────────────────────────────────── */
 
 .actions {

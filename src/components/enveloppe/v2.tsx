@@ -88,8 +88,32 @@ interface EntreeNav {
   chemin: string;
 }
 
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════╗
+ * ║ LES DEUX RAYONS, SOUS UNE LISTE DÉROULANTE.                              ║
+ * ╠═══════════════════════════════════════════════════════════════════════╣
+ * ║ Contes et livrets pédagogiques ne se cherchent pas de la même façon :    ║
+ * ║ l'un se lit le soir, l'autre s'imprime pour une classe. Ils ont donc     ║
+ * ║ chacun leur écran, et cette liste est la porte des deux.                 ║
+ * ║                                                                          ║
+ * ║ « Tout le catalogue » reste en troisième position, et ce n'est pas une   ║
+ * ║ politesse : c'est l'adresse que portent le plan de site, la loupe, le    ║
+ * ║ pied de page et tous les liens déjà partagés. La séparation ajoute deux  ║
+ * ║ portes devant le fonds ; elle n'en ferme aucune.                         ║
+ * ╚═══════════════════════════════════════════════════════════════════════╝
+ *
+ * Les libellés des deux rayons sont ceux de `documents.*`, déjà employés par
+ * les pastilles de filtre et par le back-office. Un second jeu de clés aurait
+ * fini par appeler « Livrets » ici ce que le catalogue nomme « Livrets
+ * pédagogiques », sans qu'aucun test ne s'en aperçoive.
+ */
+const RAYONS: EntreeNav[] = [
+  { cle: 'documents.contes', chemin: 'contes' },
+  { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
+  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
+];
+
 const NAVIGATION: EntreeNav[] = [
-  { cle: 'navigation.catalogue', chemin: 'catalogue' },
   { cle: 'navigation.offres', chemin: 'offres' },
   { cle: 'navigation.blog', chemin: 'blog' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
@@ -143,6 +167,48 @@ export function EnteteV2({
         <Marque langue={langue} />
 
         <nav className={styles.navigation} aria-label={traduire(langue, 'navigation.principal')}>
+          {/*
+           * ┌───────────────────────────────────────────────────────────┐
+           * │ UN `<details>`, ET PAS UN MENU EN JAVASCRIPT.                 │
+           * │                                                              │
+           * │ Il s'ouvre au clic ET au clavier, il annonce son état aux     │
+           * │ lecteurs d'écran, et il fonctionne sans une ligne de script  │
+           * │ — la condition réelle d'une partie du public (§5.1). Le pied │
+           * │ de page emploie déjà le même élément pour ses colonnes.      │
+           * │                                                              │
+           * │ Il se referme en changeant de page, puisque la page est      │
+           * │ rechargée : aucun état à remettre à zéro, donc aucun état à  │
+           * │ oublier de remettre à zéro.                                  │
+           * └───────────────────────────────────────────────────────────┘
+           */}
+          <details className={styles.rayons}>
+            <summary
+              className={styles.rayonsResume}
+              /*
+               * `aria-current="true"`, et non `"page"` : le résumé n'est pas
+               * une page, c'est le groupe qui contient celle qu'on regarde.
+               */
+              aria-current={
+                RAYONS.some((rayon) => rayon.chemin === segment) ? 'true' : undefined
+              }
+            >
+              {traduire(langue, 'navigation.catalogue')}
+            </summary>
+
+            <ul className={styles.rayonsListe}>
+              {RAYONS.map((rayon) => (
+                <li key={rayon.chemin}>
+                  <a
+                    href={`/${langue}/${rayon.chemin}`}
+                    aria-current={rayon.chemin === segment ? 'page' : undefined}
+                  >
+                    {traduire(langue, rayon.cle)}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
+
           {NAVIGATION.map((entree) => {
             const courante = entree.chemin === segment;
             return (

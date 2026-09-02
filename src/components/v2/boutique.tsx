@@ -67,6 +67,8 @@ export function BoutiqueV2({
   lien,
   base,
   compte,
+  titre,
+  texte,
   actionAjout,
 }: {
   langue: LangueInterface;
@@ -84,6 +86,16 @@ export function BoutiqueV2({
   base: string;
   /** La phrase de compte, déjà accordée par la route. */
   compte: string;
+  /**
+   * Le titre et le texte de la bannière, DÉJÀ TRADUITS par l'écran.
+   *
+   * Absents, ce sont ceux de la boutique entière. C'est ce qui permet aux
+   * rayons — `/contes`, `/livrets` — de réutiliser cette page telle quelle :
+   * sans eux, chacun aurait fini par se dessiner sa propre bannière, et les
+   * trois écrans auraient divergé sur la seule partie qu'on voit d'abord.
+   */
+  titre?: string;
+  texte?: string;
   /** Fabrique l'action d'ajout au panier d'un titre donné. */
   actionAjout?: (
     livreId: string,
@@ -138,10 +150,10 @@ export function BoutiqueV2({
             {traduire(langue, "v2.boutiqueOeil")}
           </span>
           <h1 className={styles.banniereTitre}>
-            {traduire(langue, "v2.boutiqueTitre")}
+            {titre ?? traduire(langue, "v2.boutiqueTitre")}
           </h1>
           <p className={styles.banniereTexte}>
-            {traduire(langue, "v2.boutiqueTexte")}
+            {texte ?? traduire(langue, "v2.boutiqueTexte")}
           </p>
         </div>
       </div>

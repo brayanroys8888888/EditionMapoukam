@@ -53,6 +53,7 @@
   "navigation": {
     "principal": "Main navigation",
     "catalogue": "Shop",
+    "toutLeCatalogue": "The whole catalogue",
     "offres": "Plans",
     "blog": "Blog",
     "apropos": "About",
@@ -154,6 +155,13 @@
     "attendre": "Too many attempts. Try again in {secondes} seconds.",
     "continuer": "Continue",
     "allerAuCatalogue": "Browse the catalogue"
+  },
+  "contes": {
+    "titre": "Tales",
+    "intro": "Stories from African heritage, illustrated, to read online or keep as PDF and EPUB.",
+    "compteTous": "{total} tales available",
+    "compteUn": "1 tale available",
+    "lien": "Tales"
   },
   "livrets": {
     "_commentaire": "The learning-booklet shelf — the SAME catalogue with `type_document` applied. The count reads on the shelf, never on the whole catalogue.",

@@ -29,8 +29,20 @@ interface EntreeMenu {
   chemin: string;
 }
 
+/*
+ * Les deux rayons sont énumérés à PLAT, sans la liste déroulante de l'en-tête.
+ *
+ * Ce panneau occupe déjà tout l'écran : il n'a rien à gagner à replier trois
+ * liens derrière un quatrième, et un menu dans un menu se manipule mal au
+ * pouce. Ce qui doit rester vrai, en revanche, c'est que les MEMES écrans
+ * soient joignables ici et depuis l'en-tête large — sans quoi la largeur de la
+ * fenêtre déciderait de ce que le site contient.
+ * `tests/unit/navigation-rayons.test.ts` le vérifie.
+ */
 const ENTREES: EntreeMenu[] = [
-  { cle: 'navigation.catalogue', chemin: 'catalogue' },
+  { cle: 'documents.contes', chemin: 'contes' },
+  { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
+  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
   { cle: 'navigation.offres', chemin: 'offres' },
   { cle: 'navigation.blog', chemin: 'blog' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
