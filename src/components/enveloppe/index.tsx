@@ -203,6 +203,9 @@ const RAYONS: { cle: CleTraduction; chemin: string }[] = [
 ];
 
 export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntete): ReactNode {
+  /** Le premier segment après la langue — `/fr/catalogue` → `catalogue`. */
+  const segment = chemin.split('/')[2] ?? '';
+
   return (
     <header className={styles.entete}>
       {/*
@@ -231,14 +234,28 @@ export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntet
            * └───────────────────────────────────────────────────────────┘
            */}
           <details className={styles.rayons}>
-            <summary className={styles.rayonsResume}>
+            <summary
+              className={styles.rayonsResume}
+              /*
+               * `aria-current="true"`, et non `"page"` : le résumé n'est pas
+               * une page, c'est le groupe qui contient celle qu'on regarde.
+               */
+              aria-current={
+                RAYONS.some((rayon) => rayon.chemin === segment) ? 'true' : undefined
+              }
+            >
               {traduire(langue, 'navigation.catalogue')}
             </summary>
 
             <ul className={styles.rayonsListe}>
               {RAYONS.map((rayon) => (
                 <li key={rayon.chemin}>
-                  <a href={`/${langue}/${rayon.chemin}`}>{traduire(langue, rayon.cle)}</a>
+                  <a
+                    href={`/${langue}/${rayon.chemin}`}
+                    aria-current={rayon.chemin === segment ? 'page' : undefined}
+                  >
+                    {traduire(langue, rayon.cle)}
+                  </a>
                 </li>
               ))}
             </ul>
