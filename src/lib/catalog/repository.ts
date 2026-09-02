@@ -231,7 +231,7 @@ export async function listerCatalogue(
     ...(options.at ? { at: options.at } : {}),
   });
 
-  const affichage = await donneesDAffichage(client, identifiants, options.at);
+  const affichage = await donneesDAffichage(client, identifiants);
 
   const total = lignes[0]?.total ?? 0;
   return {
@@ -251,15 +251,18 @@ export async function listerCatalogue(
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ EN LOT, COMME LES DROITS — jamais un appel par titre.                   │
  * │                                                                          │
- * │ Deux valeurs, toutes deux calculées EN BASE et pour la même raison :     │
- * │ les recalculer ici les ferait diverger de leur autorité. La date         │
- * │ d'entrée dans l'abonnement dépend d'un réglage que l'administration      │
- * │ déplace rétroactivement ; le jeton de couverture désigne un jeu de       │
- * │ fichiers dont seul `src/lib/storage/covers.ts` connaît la convention.    │
+ * │ Ces valeurs sont LUES en base, jamais dérivées ici : le jeton de         │
+ * │ couverture désigne un jeu de fichiers dont seul                          │
+ * │ `src/lib/storage/covers.ts` connaît la convention, et le type de support │
+ * │ décide de ce que la carte annonce au lecteur.                            │
+ * │                                                                          │
+ * │ Ce lot appelait aussi `abonnement_a_partir_du`. La migration 0064 a      │
+ * │ retiré la fenêtre de vente : il n'y a plus de date à aller chercher, et  │
+ * │ la fonction elle-même a été supprimée. Un aller-retour de moins par page │
+ * │ de catalogue.                                                            │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 interface DonneesAffichage {
-  disponibleLe: string | null;
   region: EntreeCatalogue['region'];
   /**
    * Type de support et orientation. Ils voyagent ici plutôt que dans
@@ -275,34 +278,19 @@ interface DonneesAffichage {
 async function donneesDAffichage(
   client: AppSupabaseClient,
   identifiants: readonly string[],
-  at?: Date,
 ): Promise<Map<string, DonneesAffichage>> {
   const resultat = new Map<string, DonneesAffichage>();
   if (identifiants.length === 0) return resultat;
 
-  const [dates, livres] = await Promise.all([
-    client.rpc('abonnement_a_partir_du', {
-      p_books: [...identifiants],
-      ...(at ? { p_at: at.toISOString() } : {}),
-    } as never),
-    client
-      .from('books')
-      .select('id, region, type_document, orientation, couverture_jeton')
-      .in('id', [...identifiants]),
-  ]);
+  const livres = await client
+    .from('books')
+    .select('id, region, type_document, orientation, couverture_jeton')
+    .in('id', [...identifiants]);
 
-  if (dates.error) throw new Error(`Fenêtre d’abonnement illisible : ${dates.error.message}`);
   if (livres.error) throw new Error(`Couvertures illisibles : ${livres.error.message}`);
-
-  const parLivre = new Map(
-    ((dates.data ?? []) as unknown as { book_id: string; disponible_le: string | null }[]).map(
-      (d) => [d.book_id, d.disponible_le],
-    ),
-  );
 
   for (const livre of livres.data ?? []) {
     resultat.set(livre.id, {
-      disponibleLe: parLivre.get(livre.id) ?? null,
       region: livre.region,
       typeDocument: livre.type_document,
       orientation: livre.orientation,
@@ -343,7 +331,6 @@ function versEntree(
     nb_pages: ligne.nb_pages,
     langues: ligne.langues,
     publie_le: ligne.publie_le,
-    abonnement_a_partir_du: affichage?.disponibleLe ?? null,
     inclus_abonnement: ligne.inclus_abonnement,
     disponible_achat: ligne.disponible_achat,
     gratuit: ligne.gratuit,
@@ -446,10 +433,6 @@ export async function lireFiche(
     nb_pages: traduction.nb_pages,
     langues: (toutesLangues.data ?? []).map((t) => t.langue),
     publie_le: livre.publie_le,
-    // Même appel que pour la liste : la règle des trois mois n'est écrite
-    // qu'une fois, en base, et la fiche ne la recalcule pas davantage.
-    abonnement_a_partir_du:
-      (await donneesDAffichage(client, [livre.id], options.at)).get(livre.id)?.disponibleLe ?? null,
     inclus_abonnement: livre.inclus_abonnement,
     disponible_achat: livre.disponible_achat,
     gratuit: livre.gratuit,

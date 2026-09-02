@@ -62,8 +62,8 @@ describe('LA CONSOLE /dev ET L’ADMINISTRATION RESTENT SÉPARÉES (point 8)', (
 
   it('aucune route d’administration ne déplace l’horloge', () => {
     // Avancer le temps est une SIMULATION : cela déplace l'expiration des
-    // abonnements et la fenêtre de vente de 3 mois. En production, ce serait
-    // une altération de faits commerciaux.
+    // abonnements, les périodes de grâce et les fins d'essai. En production,
+    // ce serait une altération de faits commerciaux.
     const coupables = routes(ADMIN)
       .filter((r) => /DevClock|avancer|applyDevClock|clearDevClock/i.test(r.source))
       .map((r) => r.chemin);

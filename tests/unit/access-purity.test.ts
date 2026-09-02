@@ -21,9 +21,9 @@ const RACINE = process.cwd();
 /**
  * Motifs qui trahiraient une règle d'accès réimplémentée en TypeScript.
  *
- * On cherche les concepts métier du moteur — fenêtre de 3 mois, période de
- * grâce, statuts d'abonnement — et non des mots-clés génériques, pour que le
- * test n'attrape pas un commentaire de passage.
+ * On cherche les concepts métier du moteur — éligibilité à l'abonnement,
+ * période de grâce, droit de téléchargement — et non des mots-clés génériques,
+ * pour que le test n'attrape pas un commentaire de passage.
  */
 const MOTIFS_INTERDITS: readonly { motif: RegExp; explication: string }[] = [
   {
@@ -31,8 +31,12 @@ const MOTIFS_INTERDITS: readonly { motif: RegExp; explication: string }[] = [
     explication: 'décision d’éligibilité à l’abonnement',
   },
   {
+    // La fenêtre de vente de trois mois a été retirée par la migration 0064.
+    // Le motif reste : ce qu'il surveille n'est plus une duplication, c'est
+    // une RÉSURRECTION — une règle abandonnée qui repousse en TypeScript,
+    // là où plus aucune fonction SQL ne viendrait la contredire.
     motif: /NEW_RELEASE_WINDOW_DAYS|fenetre_nouveaute/,
-    explication: 'calcul de la fenêtre de vente de 3 mois',
+    explication: 'réintroduction de la fenêtre de vente, retirée en 0064',
   },
   {
     motif: /PAYMENT_GRACE_PERIOD_DAYS|periode_grace/,

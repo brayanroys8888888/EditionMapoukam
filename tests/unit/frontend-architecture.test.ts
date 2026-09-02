@@ -201,9 +201,11 @@ describe('AUCUNE RÈGLE MÉTIER RECALCULÉE CÔTÉ INTERFACE', () => {
     expect(source).toContain('expire_le');
   });
 
-  it('aucun composant ne recalcule la fenêtre de nouveauté', () => {
-    // Elle dépend de `fenetre_nouveaute_jours`, que l'administration déplace à
-    // la seconde ET rétroactivement. L'API rend `abonnement_a_partir_du`.
+  it('aucun composant ne fabrique une date d’entrée dans l’abonnement', () => {
+    // Il n'y en a plus depuis la migration 0064 : un titre publié et marqué
+    // `inclus_abonnement` y est. Un composant qui calculerait une date à
+    // partir de `publie_le` inventerait donc un délai que la base ignore —
+    // et il l'afficherait avec l'assurance d'une valeur lue.
     const coupables = sourcesInterface()
       .filter((f) =>
         /fenetre_nouveaute|90\s*\*\s*24|publie_le[\s\S]{0,80}[+-][\s\S]{0,40}jours/i.test(

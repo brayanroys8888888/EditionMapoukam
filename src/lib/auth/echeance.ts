@@ -85,7 +85,7 @@ export function echeance(jeton: string | null | undefined): number | null {
  * │ avancée de trente jours, tout jeton paraîtrait échu et l'interface       │
  * │ rafraîchirait en boucle.                                                 │
  * │                                                                          │
- * │ Partout ailleurs — dates d'abonnement, fenêtre de nouveauté, reprise de  │
+ * │ Partout ailleurs — dates d'abonnement, période de grâce, reprise de      │
  * │ lecture — c'est `GET /api/time` qui fait foi.                            │
  * └──────────────────────────────────────────────────────────────────────────┘
  */

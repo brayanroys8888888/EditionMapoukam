@@ -41,8 +41,8 @@ import { logger } from '@/lib/logger';
  * │ en `brouillon`, sa traduction aussi, et `publie_le` reste nul.           │
  * │                                                                          │
  * │ La conséquence est voulue : tant que l'éditeur n'a pas validé, le titre  │
- * │ est invisible au catalogue, et la fenêtre de vente de 3 mois — qui se    │
- * │ compte depuis `publie_le` — n'a pas commencé à courir.                   │
+ * │ est invisible au catalogue, et `publie_le` — la date qui l'ordonne       │
+ * │ dans les nouveautés — reste nulle.                                       │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
@@ -406,7 +406,7 @@ async function creerBrouillon(
         // Tout le reste est laissé à l'éditeur. En particulier :
         //   * `inclus_abonnement` et `disponible_achat` restent faux — la chaîne
         //     ne décide pas du modèle économique d'un titre (§3.2) ;
-        //   * `publie_le` reste nul — la fenêtre de 3 mois ne court pas encore.
+        //   * `publie_le` reste nul — le titre n'est pas encore une nouveauté.
         statut: 'brouillon',
         // Déclarés par le déposant, ou laissés à leurs valeurs par défaut
         // (`conte`, `portrait`). Ce sont les seuls champs métier que la chaîne

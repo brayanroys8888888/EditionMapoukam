@@ -148,37 +148,69 @@ describe('ABONNEMENT — l’accès et le comptage basculent au MÊME instant', 
   });
 });
 
-describe('FENÊTRE DE VENTE — l’accès et le catalogue basculent au MÊME instant', () => {
-  it('à `publie_le + fenêtre` exactement : le titre ENTRE dans l’abonnement', async () => {
+describe('ENTRÉE DANS L’ABONNEMENT — il n’y a plus AUCUNE borne à franchir', () => {
+  it('le verdict est le même à la publication, une seconde avant, une seconde après', async () => {
     // ┌──────────────────────────────────────────────────────────────────────┐
-    // │ `fenetre_de_vente_ecoulee` est appelée par `access_for_books` ET par  │
-    // │ `catalog_list` depuis la migration 0033 : une seule implémentation,   │
-    // │ donc un seul verdict. Ce test vérifie que la borne elle-même est du   │
-    // │ bon côté — le titre entre dans l'abonnement À l'instant où la fenêtre │
-    // │ est atteinte, pas une seconde plus tard.                              │
+    // │ CE FICHIER INTERROGE LES BORNES. CELLE-CI A ÉTÉ SUPPRIMÉE.           │
+    // │                                                                      │
+    // │ La fenêtre de vente de trois mois plaçait une bascule à              │
+    // │ `publie_le + fenêtre`, et ce test vérifiait de quel côté elle        │
+    // │ tombait. La migration 0064 l'a retirée : la bonne épreuve n'est donc │
+    // │ plus « la borne est-elle du bon côté » mais « n'y a-t-il vraiment    │
+    // │ plus de borne ». On interroge les trois mêmes instants et on exige   │
+    // │ TROIS FOIS LE MÊME VERDICT — un désaccord signalerait un délai       │
+    // │ revenu quelque part dans le moteur.                                  │
     // └──────────────────────────────────────────────────────────────────────┘
-    const fenetre = await queryOne<{ jours: number }>(
-      `select fenetre_nouveaute_jours as jours from public.business_settings where id = 1`,
+    const abonnement = await queryOne<{ id: string }>(
+      `insert into public.subscriptions
+         (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
+       values ($1, 'annuel', 'actif',
+               public.app_now() - interval '1 day',
+               public.app_now() + interval '10 years',
+               'international', 'EUR', 6900)
+       returning id`,
+      [lecteur.id],
     );
 
-    const cas = await query<{ decalage: string; ecoulee: boolean }>(
-      `with reference as (select public.app_now() as publie_le)
-       select d.decalage, public.fenetre_de_vente_ecoulee(r.publie_le, $1, d.instant) as ecoulee
-         from reference r
-         cross join lateral (values
-           (r.publie_le + make_interval(days => $1) - interval '1 second', 'juste avant'),
-           (r.publie_le + make_interval(days => $1),                       'pile'),
-           (r.publie_le + make_interval(days => $1) + interval '1 second', 'juste apres')
-         ) as d(instant, decalage)
-        order by d.instant`,
-      [fenetre!.jours],
+    // `publie_le` est ramené À MAINTENANT, puis rendu : les autres fichiers
+    // d'intégration partagent cette base, et plusieurs comptent sur la date
+    // d'origine de ce titre.
+    const origine = await queryOne<{ publie_le: string }>(
+      `select publie_le::text as publie_le from public.books where id = $1`,
+      [livreAbonnement],
     );
 
-    expect(cas.map((c) => [c.decalage, c.ecoulee])).toEqual([
-      ['juste avant', false],
-      ['pile', true],
-      ['juste apres', true],
-    ]);
+    try {
+      await query(`update public.books set publie_le = public.app_now() where id = $1`, [
+        livreAbonnement,
+      ]);
+
+      const cas = await query<{ decalage: string; can_read: boolean }>(
+        `with reference as (select publie_le from public.books where id = $2)
+         select d.decalage, a.can_read
+           from reference r
+           cross join lateral (values
+             (r.publie_le - interval '1 second', 'juste avant'),
+             (r.publie_le,                       'pile'),
+             (r.publie_le + interval '1 second', 'juste apres')
+           ) as d(instant, decalage)
+           cross join lateral public.access_for_books($1, array[$2::uuid], d.instant) a
+          order by d.instant`,
+        [lecteur.id, livreAbonnement],
+      );
+
+      expect(cas.map((c) => [c.decalage, c.can_read])).toEqual([
+        ['juste avant', true],
+        ['pile', true],
+        ['juste apres', true],
+      ]);
+    } finally {
+      await query(`update public.books set publie_le = $2::timestamptz where id = $1`, [
+        livreAbonnement,
+        origine!.publie_le,
+      ]);
+      await query(`delete from public.subscriptions where id = $1`, [abonnement!.id]);
+    }
   });
 });
 

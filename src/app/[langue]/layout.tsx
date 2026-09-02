@@ -196,8 +196,8 @@ export default async function EnveloppeLangue({
       {/*
        * L'année du bas de page vient de l'HORLOGE INJECTABLE, jamais d'une
        * lecture directe de l'heure du navigateur. La console de simulation
-       * avance le temps pour éprouver les fins de période et la fenêtre de
-       * trois mois des nouveautés ; un pied de page qui lirait l'heure du
+       * avance le temps pour éprouver les fins de période et les périodes
+       * de grâce ; un pied de page qui lirait l'heure du
        * système afficherait alors une année différente du reste du site.
        */}
       <PiedDePage

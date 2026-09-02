@@ -626,26 +626,27 @@ divergence porte sur ce que le client paie.
 affichage, periode }], jours_essai, zone }`, la zone venant du paramètre
 d'affichage comme pour le catalogue.
 
-#### M6 — La fenêtre de nouveauté n'est pas observable
+#### M6 — La fenêtre de nouveauté — ~~manque~~ **SANS OBJET depuis la migration 0064**
 
-Le catalogue rend `publie_le` et `inclus_abonnement`, mais **pas**
-`fenetre_nouveaute_jours` ni la date d'entrée dans l'abonnement. `access_for_books`
-ne rend que `can_read`, `can_download`, `reason`.
+Ce manque portait sur une règle qui n'existe plus. La fenêtre de vente exclusive
+de trois mois a été **retirée** le 2 septembre 2026 (cahier des charges §3.2) :
+le réglage `fenetre_nouveaute_jours`, la date `abonnement_a_partir_du` et la
+fonction `fenetre_de_vente_ecoulee` ont été supprimés de la base.
 
-**Ce qui casse.** Tout affichage du type « bientôt dans l'abonnement » ou « vendu
-seul jusqu'au 12 octobre ». Le calculer côté client signifierait recopier la
-règle des trois mois dans le navigateur — **la règle métier la plus mouvante du
-projet**, puisque `PATCH /api/admin/settings` la déplace à la seconde et
-rétroactivement.
+Un titre publié et marqué `inclus_abonnement` est dans l'abonnement **à
+l'instant même**. Il n'y a donc plus de date future à observer, et plus rien à
+rendre : `access_for_books` rend `can_read`, `can_download`, `reason`, et cela
+suffit à décrire entièrement l'état d'un titre.
 
-**Extension.** Ajouter `abonnement_a_partir_du: string | null` aux entrées de
-catalogue et à la fiche, calculé **en SQL** par la même fonction que le moteur de
-droits (`fenetre_de_vente_ecoulee`). `null` si le titre n'est pas
-`inclus_abonnement` ou si la fenêtre est déjà écoulée.
+**Ce qui reste à ne PAS faire.** Afficher « bientôt dans l'abonnement », sous
+quelque forme que ce soit. La mention serait fausse : rien n'est « bientôt »
+dans l'abonnement, un titre y est ou n'y est pas. Trois tests d'architecture
+— `access-purity`, `frontend-architecture` et `double-implementation` — échouent
+si la règle est réintroduite, en SQL comme dans un composant.
 
-**Corollaire, à traiter dans la même extension :** ajouter `GET /api/time` rendant
-l'instant de l'horloge métier, pour que l'interface n'ait jamais à comparer une
-date de l'API à celle du navigateur (§1.5).
+**Ce qui subsiste de l'extension.** `GET /api/time` garde tout son sens, pour la
+console de simulation et pour que l'interface ne compare jamais une date de
+l'API à celle du navigateur (§1.5). Il ne dépend pas de M6.
 
 ### DÉGRADANT — l'écran existe, mais mal
 
@@ -730,7 +731,7 @@ périmètre frontend.**
 | M3 | Favoris | **Bloquant** | `GET/POST/DELETE /api/favorites` |
 | M4 | Factures utilisateur | **Bloquant** (légal) | `GET /api/orders/{id}/invoice` |
 | M5 | Tarifs d'abonnement | **Bloquant** | `GET /api/offers` |
-| M6 | Fenêtre de nouveauté | **Bloquant** | `abonnement_a_partir_du` + `GET /api/time` |
+| M6 | ~~Fenêtre de nouveauté~~ | **Sans objet** | Règle retirée (migration 0064) ; `GET /api/time` subsiste |
 | M7 | Couvertures multi-tailles | Dégradant | `couverture: {…}` en URL absolues |
 | M8 | Facettes de filtres | Dégradant | `GET /api/catalog/facets` |
 | M9 | Titres dans l'historique | Dégradant | Jointure sur `order_items` |

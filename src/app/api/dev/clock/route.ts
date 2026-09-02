@@ -9,8 +9,8 @@ import { logger } from '@/lib/logger';
 /**
  * Avance du temps — §CLAUDE.md, console de simulation.
  *
- * Permet d'éprouver les fins de période d'abonnement et la fenêtre de 3 mois
- * des nouveautés sans attendre. Le décalage est persisté sur disque et
+ * Permet d'éprouver les fins de période d'abonnement, les périodes de grâce et
+ * les échéances de droits sans attendre. Le décalage est persisté sur disque et
  * transmis à PostgreSQL par le module `dev-clock-session` : la base et
  * l'application voient donc le même instant.
  */

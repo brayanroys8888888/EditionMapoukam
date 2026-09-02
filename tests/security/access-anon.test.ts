@@ -154,15 +154,20 @@ describe('favoris', () => {
 });
 
 describe('horloge simulée et moteur de droits', () => {
-  it('la fenêtre de 3 mois suit le décalage d’horloge appliqué à la session', async () => {
+  it('la fin de période d’abonnement suit le décalage d’horloge de la session', async () => {
     // Le pont complet : DevClock → paramètre de session → app_now() → valeur
-    // par défaut de access_for. C'est ce qui permettra à la console de
-    // simulation d'éprouver les expirations sans attendre.
+    // par défaut de access_for. C'est ce qui permet à la console de simulation
+    // d'éprouver les expirations sans attendre.
+    //
+    // Ce test s'appuyait sur la fenêtre de vente de trois mois jusqu'à la
+    // migration 0064, qui l'a retirée. Il s'appuie désormais sur la fin de
+    // période — la règle temporelle que le moteur de droits applique encore,
+    // et dont l'enjeu est plus lourd : un abonnement échu qui laisserait lire.
     const client = await getPool().connect();
     try {
-      const nouveaute =
+      const inclus =
         (await queryOne<{ id: string }>(
-          `select id from public.books where slug = 'l-oiseau-de-feu'`,
+          `select id from public.books where slug = 'le-lion-et-la-souris'`,
         ))?.id ?? '';
 
       const abonne = await createTestUser();
@@ -170,26 +175,26 @@ describe('horloge simulée et moteur de droits', () => {
         await query(
           `insert into public.subscriptions
              (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
-           values ($1, 'annuel', 'actif', public.app_now(), public.app_now() + interval '10 years',
+           values ($1, 'annuel', 'actif', public.app_now(), public.app_now() + interval '30 days',
                    'international', 'EUR', 6900)`,
           [abonne.id],
         );
 
         const avant = await client.query<{ can_read: boolean }>(
           `select (public.access_for($1, $2)).can_read`,
-          [abonne.id, nouveaute],
+          [abonne.id, inclus],
         );
-        expect(avant.rows[0]?.can_read).toBe(false);
+        expect(avant.rows[0]?.can_read).toBe(true);
 
-        // Six mois plus tard, la fenêtre de vente est écoulée.
+        // Six mois plus tard, la période payée est échue.
         const futur = new FixedClock(new Date(Date.now() + 180 * 86_400_000));
         await applyDevClock(client, futur);
 
         const apres = await client.query<{ can_read: boolean }>(
           `select (public.access_for($1, $2)).can_read`,
-          [abonne.id, nouveaute],
+          [abonne.id, inclus],
         );
-        expect(apres.rows[0]?.can_read).toBe(true);
+        expect(apres.rows[0]?.can_read).toBe(false);
       } finally {
         await clearDevClock(client);
         await deleteTestUser(abonne);

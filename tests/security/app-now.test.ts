@@ -9,7 +9,7 @@ import { applyDevClock, clearDevClock, readDatabaseNow } from '@/lib/supabase/de
  * Horloge de la base — docs/PLAN.md §2.5.
  *
  * Le décalage d'horloge est le mécanisme qui permet de tester les fins de
- * période d'abonnement et la fenêtre de 3 mois sans attendre. C'est aussi, s'il
+ * période d'abonnement et les périodes de grâce sans attendre. C'est aussi, s'il
  * était mal gardé, un moyen de faire croire à la base qu'un abonnement expiré
  * est encore valide. Ces tests vérifient les deux faces.
  */

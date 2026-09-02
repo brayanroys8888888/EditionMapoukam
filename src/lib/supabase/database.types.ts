@@ -324,7 +324,6 @@ export type Database = {
       business_settings: {
         Row: {
           abonnement_ouvert: boolean
-          fenetre_nouveaute_jours: number
           id: number
           jours_essai: number
           maj_le: string
@@ -335,7 +334,6 @@ export type Database = {
         }
         Insert: {
           abonnement_ouvert?: boolean
-          fenetre_nouveaute_jours?: number
           id?: number
           jours_essai?: number
           maj_le?: string
@@ -346,7 +344,6 @@ export type Database = {
         }
         Update: {
           abonnement_ouvert?: boolean
-          fenetre_nouveaute_jours?: number
           id?: number
           jours_essai?: number
           maj_le?: string
@@ -1535,13 +1532,6 @@ export type Database = {
       }
     }
     Functions: {
-      abonnement_a_partir_du: {
-        Args: { p_at?: string; p_books: string[] }
-        Returns: {
-          book_id: string
-          disponible_le: string
-        }[]
-      }
       abonnements_en_anomalie: {
         Args: { p_at?: string }
         Returns: {
@@ -1887,7 +1877,6 @@ export type Database = {
         Args: {
           p_abonnement_ouvert?: boolean
           p_acteur: string
-          p_fenetre_nouveaute_jours?: number
           p_jours_essai?: number
           p_periode_grace_jours?: number
           p_retention_copies_mois?: number
@@ -1895,7 +1884,6 @@ export type Database = {
         }
         Returns: {
           abonnement_ouvert: boolean
-          fenetre_nouveaute_jours: number
           id: number
           jours_essai: number
           maj_le: string
@@ -2148,10 +2136,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      fenetre_de_vente_ecoulee: {
-        Args: { p_at: string; p_fenetre_jours: number; p_publie_le: string }
-        Returns: boolean
-      }
       fulfill_order: {
         Args: {
           p_order_id: string
@@ -2381,13 +2365,6 @@ export type Database = {
           }
       taille_page_admin: { Args: { p_demandee: number }; Returns: number }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
-      titres_impactes_par_fenetre: {
-        Args: { p_at?: string; p_nouvelle_fenetre: number }
-        Returns: {
-          entrent_dans_abonnement: number
-          sortent_de_l_abonnement: number
-        }[]
-      }
       titres_publies: { Args: never; Returns: number }
     }
     Enums: {

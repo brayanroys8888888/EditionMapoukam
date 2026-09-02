@@ -111,9 +111,23 @@ Trois principes, à appliquer systématiquement :
 
 1. **Le téléchargement n'est jamais inclus dans l'abonnement.** L'abonnement donne accès à la lecture en ligne, rien d'autre. C'est la séparation nette qui empêche les deux flux de se cannibaliser.
 2. **Tous les titres rejoignent l'abonnement à terme.** Réserver une partie du catalogue à la vente exclusive viderait l'offre d'abonnement de sa substance, d'autant plus qu'elle démarre avec un fonds réduit.
-3. **Les nouveautés sont vendues à l'unité pendant 3 mois**, puis basculent automatiquement dans l'abonnement (modèle de « fenêtre » classique en édition et dans l'audiovisuel).
+3. **L'entrée d'un titre dans l'abonnement est une décision éditoriale, jamais un délai.** Elle se pose titre par titre, sur le champ `inclus_abonnement`, et prend effet immédiatement.
 
-Cette règle donne une raison d'acheter (disposer du titre immédiatement et le conserver) et une raison de rester abonné (le fonds s'enrichit chaque mois). Elle est directement supportée par les champs `inclus_abonnement`, `disponible_achat` et `publie_le` du modèle de données (section 8).
+Cette règle donne une raison d'acheter (disposer du titre immédiatement, le télécharger et le conserver) et une raison de rester abonné (le fonds s'enrichit chaque mois). Elle est directement supportée par les champs `inclus_abonnement`, `disponible_achat` et `gratuit` du modèle de données (section 8), qui sont **indépendants** : un même titre peut être inclus dans l'abonnement, vendu à l'unité, les deux, ou offert.
+
+> **Modification du 2 septembre 2026 — retrait de la fenêtre de vente exclusive.**
+>
+> Le principe 3 disait jusqu'ici : « les nouveautés sont vendues à l'unité
+> pendant 3 mois, puis basculent automatiquement dans l'abonnement ». Ce délai
+> est **retiré** à la demande de l'éditeur : la migration `0064` a supprimé le
+> réglage `fenetre_nouveaute_jours`, l'écran d'administration qui le portait, et
+> les fonctions SQL qui le calculaient.
+>
+> Ce qui disparaît est un **délai**, pas la frontière entre les deux modèles
+> économiques : le téléchargement reste hors de l'abonnement (principe 1), et un
+> titre non marqué `inclus_abonnement` reste hors de l'abonnement quel que soit
+> le temps écoulé. Ce qui était automatique et global devient explicite et par
+> titre — le levier est plus fin, et il est entre les mains de l'éditeur.
 
 ### 3.3 Grille tarifaire
 
@@ -854,7 +868,7 @@ Les coûts d'infrastructure augmentent avec le trafic et le volume de stockage, 
 |---|---|---|---|---|
 | R1 | Catalogue insuffisant au lancement, rendant l'abonnement peu attractif | Élevée | Élevé | Lancer d'abord la vente à l'unité ; n'ouvrir l'abonnement qu'à partir d'un seuil de titres |
 | R2 | Droits sur les textes ou illustrations non sécurisés | **Élevée** | Très élevé | Exiger les justificatifs titre par titre avant toute mise en ligne. À ce jour non documenté (section 16.2) |
-| R3 | Cannibalisation entre abonnement et vente unitaire | Élevée | Moyen | Traité : le téléchargement est exclu de l'abonnement et les nouveautés font l'objet d'une fenêtre de vente exclusive (section 3.2) |
+| R3 | Cannibalisation entre abonnement et vente unitaire | Élevée | Moyen | Traité : le téléchargement est exclu de l'abonnement, et l'inclusion d'un titre dans l'abonnement se décide titre par titre (section 3.2) |
 | R4 | Coût des traductions sous-estimé | Élevée | Élevé | Traité : périmètre limité à deux langues en V1. Chiffrer la traduction avant engagement |
 | R5 | Partage massif des fichiers téléchargés | Moyenne | Moyen | Filigrane personnalisé + journalisation |
 | R6 | Complexité de la TVA internationale | Moyenne | Moyen | Traité : le recours à un prestataire agissant comme revendeur officiel transfère cette charge (section 7.3.3) |
@@ -874,7 +888,7 @@ Les coûts d'infrastructure augmentent avec le trafic et le volume de stockage, 
 | 1 | Formats du contenu existant | Les titres existent au format PDF |
 | 2 | Langues de la V1 | Français et anglais |
 | 3 | Grille tarifaire | Arrêtée, deux zones — voir section 3.3 |
-| 4 | Répartition abonnement / vente | Stratégie de fenêtre — voir section 3.2 |
+| 4 | Répartition abonnement / vente | Décision éditoriale par titre — voir section 3.2 (la fenêtre de 3 mois a été retirée le 2 septembre 2026) |
 | 7 | Formats téléchargeables | PDF **et** EPUB |
 | 8 | Offre écoles et bibliothèques | Hors périmètre V1 ; à envisager ultérieurement (annexe A4) |
 | 9 | Application mobile | Non prévue ; le site est conçu en approche « mobile-first » |

@@ -131,7 +131,7 @@ describe('JOURNAL D’AUDIT — qui, quoi, quand, avant, après', () => {
     expect(trace?.nouvelle_valeur).toMatchObject({ periode_grace_jours: 9 });
     // La ligne complète, et non le seul champ modifié : ces paramètres
     // interagissent, et relire un état vaut mieux que recomposer des deltas.
-    expect(trace?.nouvelle_valeur).toHaveProperty('fenetre_nouveaute_jours');
+    expect(trace?.nouvelle_valeur).toHaveProperty('jours_essai');
 
     await admin.modifierParametres(editeur.id, {
       periodeGraceJours: Number((trace?.ancienne_valeur as { periode_grace_jours: number })
@@ -386,12 +386,12 @@ describe('PUBLICATION EN LOT — quarante titres ne contournent rien', () => {
 
   it('ne RÉÉCRIT PAS `publie_le` d’un titre republié', async () => {
     // ┌──────────────────────────────────────────────────────────────────────┐
-    // │ `publie_le` FAIT COURIR LA FENÊTRE DE VENTE DE 3 MOIS (§3.2).        │
+    // │ `publie_le` EST LA DATE D'ENTRÉE DANS LES NOUVEAUTÉS.                │
     // │                                                                      │
-    // │ Le remettre à jour à chaque republication rouvrirait la fenêtre d'un  │
-    // │ titre déjà entré dans l'abonnement : les abonnés perdraient l'accès à │
-    // │ un titre qu'ils lisaient la veille, sans qu'aucune décision           │
-    // │ commerciale n'ait été prise.                                          │
+    // │ Le remettre à jour à chaque republication ferait remonter en tête     │
+    // │ du catalogue un titre de deux ans, déclasserait les vraies            │
+    // │ nouveautés, et fausserait tout tri chronologique — sans qu'aucune     │
+    // │ décision éditoriale n'ait été prise.                                  │
     // └──────────────────────────────────────────────────────────────────────┘
     // `la-hyene-qui-voulait-changer` est le titre ARCHIVÉ du jeu de
     // démonstration, et plusieurs autres fichiers s'appuient sur ce fait. Son

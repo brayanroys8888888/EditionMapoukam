@@ -79,7 +79,6 @@ const BASE: EntreeCatalogue = {
   nb_pages: 24,
   langues: ['fr'],
   publie_le: '2026-01-15T00:00:00.000Z',
-  abonnement_a_partir_du: null,
   inclus_abonnement: false,
   disponible_achat: true,
   gratuit: false,

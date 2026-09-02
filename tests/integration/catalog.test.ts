@@ -97,9 +97,21 @@ describe('liste', () => {
     const inclus = page.entrees.find((e) => e.slug === 'le-lion-et-la-souris');
     expect(inclus?.acces).toEqual({ canRead: true, canDownload: false, reason: 'subscription' });
 
-    // Encore dans sa fenêtre de vente : l'abonnement ne l'ouvre pas.
+    // La nouveauté la plus récente est ouverte elle aussi : depuis la
+    // migration 0064, il n'y a plus de délai entre la publication et
+    // l'entrée dans l'abonnement.
     const nouveaute = page.entrees.find((e) => e.slug === 'l-oiseau-de-feu');
-    expect(nouveaute?.acces.reason).toBe('preview');
+    expect(nouveaute?.acces).toEqual({
+      canRead: true,
+      canDownload: false,
+      reason: 'subscription',
+    });
+
+    // Ce qui reste fermé l'est pour la seule raison qui vaille encore :
+    // `inclus_abonnement` y vaut faux. Le retrait de la fenêtre a supprimé
+    // un délai, pas la frontière entre les deux modèles.
+    const horsAbonnement = page.entrees.find((e) => e.slug === 'la-tortue-et-le-lapin');
+    expect(horsAbonnement?.acces.reason).toBe('preview');
   });
 });
 
@@ -138,14 +150,18 @@ describe('filtres', () => {
   });
 
   it('filtre les titres réellement accessibles par abonnement', async () => {
-    // « Accessible par abonnement » signifie accessible MAINTENANT : un titre
-    // encore dans sa fenêtre de vente ne l'est pas, même s'il est marqué inclus.
+    // « Accessible par abonnement » signifie toujours accessible MAINTENANT.
+    // Ce que la migration 0064 a changé, c'est qu'un titre publié et marqué
+    // inclus l'est déjà : le filtre suit `inclus_abonnement`, sans délai.
     const page = await corpsJson<PageCatalogue>(await catalogue(params({ acces: 'abonnement' })));
 
     const slugs = page.entrees.map((e) => e.slug);
     expect(slugs).toContain('le-lion-et-la-souris');
-    expect(slugs).not.toContain('l-oiseau-de-feu');
-    expect(slugs).not.toContain('la-riviere-qui-parlait');
+    expect(slugs).toContain('l-oiseau-de-feu');
+
+    // La séparation des deux modèles, elle, tient : ce titre est vendu à
+    // l'unité et n'est pas inclus. Le filtre doit continuer de l'exclure.
+    expect(slugs).not.toContain('la-tortue-et-le-lapin');
   });
 
   it('filtre les titres vendus à l’unité', async () => {

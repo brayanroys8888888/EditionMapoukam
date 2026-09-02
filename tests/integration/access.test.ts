@@ -159,18 +159,35 @@ describe('matrice obligatoire', () => {
     });
   });
 
-  it('titre publié il y a moins de 3 mois → hors abonnement, même pour un abonné actif', async () => {
-    // La fenêtre de vente exclusive (§3.2) : c'est elle qui donne une raison
-    // d'acheter plutôt que d'attendre.
-    expect(await acces(abonneActif.id, 'l-oiseau-de-feu')).toEqual({
+  it('titre NON inclus dans l’abonnement → hors abonnement, même pour un abonné actif', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ CE QUI DONNE ENCORE UNE RAISON D'ACHETER PLUTÔT QUE DE S'ABONNER.    │
+    // │                                                                      │
+    // │ Ce test portait sur la fenêtre de vente exclusive de trois mois,     │
+    // │ retirée par la migration 0064. La frontière qui reste n'est plus une │
+    // │ date : c'est `inclus_abonnement`, et l'éditeur la pose titre par     │
+    // │ titre. Le retrait de la fenêtre a supprimé un DÉLAI, pas la          │
+    // │ séparation entre les deux modèles économiques.                       │
+    // └──────────────────────────────────────────────────────────────────────┘
+    expect(await acces(abonneActif.id, 'la-tortue-et-le-lapin')).toEqual({
       can_read: false,
       can_download: false,
       reason: 'preview',
     });
   });
 
-  it('titre publié il y a plus de 3 mois → inclus dans l’abonnement', async () => {
+  it('titre inclus dans l’abonnement → lisible, quelle que soit sa date de publication', async () => {
+    // Un titre de longue date…
     expect(await acces(abonneActif.id, 'anansi-l-araignee-maligne')).toEqual({
+      can_read: true,
+      can_download: false,
+      reason: 'subscription',
+    });
+
+    // …et la nouveauté la plus récente du corpus, publiée il y a un mois.
+    // Avant la 0064, celle-ci répondait « preview » pendant quatre-vingt-dix
+    // jours. C'est l'assertion exactement inverse, et elle est le sujet.
+    expect(await acces(abonneActif.id, 'l-oiseau-de-feu')).toEqual({
       can_read: true,
       can_download: false,
       reason: 'subscription',
@@ -221,10 +238,11 @@ describe('titres gratuits', () => {
     });
   });
 
-  it('restent lisibles À L’INTÉRIEUR de leur fenêtre de vente de 3 mois', async () => {
+  it('restent lisibles par un visiteur SANS aucun abonnement', async () => {
     // `gratuit` prime sur les règles automatiques d'éligibilité (D3 point 1).
-    // « la-riviere-qui-parlait » est publiée il y a 2 mois : sans ce
-    // dépassement, elle serait hors abonnement ET illisible.
+    // « la-riviere-qui-parlait » est aussi vendue à l'unité : c'est le titre
+    // où la gratuité doit l'emporter sur le reste, sans quoi elle serait
+    // illisible pour qui n'a ni compte ni abonnement.
     expect(await acces(null, 'la-riviere-qui-parlait')).toEqual({
       can_read: true,
       can_download: false,
@@ -259,8 +277,8 @@ describe('titres gratuits', () => {
   });
 
   it('renvoient « subscription » quand l’abonnement ouvre aussi le droit', async () => {
-    // « petit-baobab » est gratuit ET inclus ET hors fenêtre : l'abonnement est
-    // un titre plus fort que la gratuité (D5).
+    // « petit-baobab » est gratuit ET inclus dans l'abonnement : l'abonnement
+    // est un titre plus fort que la gratuité (D5).
     expect(await acces(abonneActif.id, 'petit-baobab')).toEqual({
       can_read: true,
       can_download: false,
@@ -269,13 +287,26 @@ describe('titres gratuits', () => {
   });
 
   it('renvoient « free » à un abonné quand l’abonnement n’ouvre pas le droit', async () => {
-    // « la-riviere-qui-parlait » est encore dans sa fenêtre de vente : seule la
-    // gratuité ouvre l'accès.
-    expect(await acces(abonneActif.id, 'la-riviere-qui-parlait')).toEqual({
-      can_read: true,
-      can_download: false,
-      reason: 'free',
-    });
+    // Il faut pour cela un titre gratuit et NON inclus dans l'abonnement.
+    // « la-riviere-qui-parlait » tenait ce rôle parce qu'elle était encore
+    // dans sa fenêtre de vente ; depuis la 0064 elle est incluse, et répond
+    // « subscription ». On fabrique donc le cas, et on le défait.
+    const cobaye = await queryOne<{ id: string }>(
+      `select id from public.books where slug = 'la-riviere-qui-parlait'`,
+    );
+    try {
+      await query(`update public.books set inclus_abonnement = false where id = $1`, [
+        cobaye!.id,
+      ]);
+
+      expect(await acces(abonneActif.id, 'la-riviere-qui-parlait')).toEqual({
+        can_read: true,
+        can_download: false,
+        reason: 'free',
+      });
+    } finally {
+      await query(`update public.books set inclus_abonnement = true where id = $1`, [cobaye!.id]);
+    }
   });
 });
 
@@ -376,14 +407,22 @@ describe('états de l’abonnement', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Fenêtre de vente et déplacement du temps
+// L'entrée dans l'abonnement ne dépend plus du temps (migration 0064)
 // ---------------------------------------------------------------------------
 
-describe('fenêtre de vente de 3 mois', () => {
-  it('s’ouvre exactement au terme des 90 jours', async () => {
-    // Abonnement de longue durée : déplacer l'instant au-delà de la fenêtre
-    // dépasserait sinon la fin de période de l'abonné, et le test échouerait
-    // pour une raison qui n'a rien à voir avec la fenêtre de vente.
+describe('entrée dans l’abonnement', () => {
+  it('ne dépend d’AUCUN délai depuis la publication', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ CE TEST VÉRIFIAIT QUE LA FENÊTRE S'OUVRAIT AU TERME DES 90 JOURS.    │
+    // │                                                                      │
+    // │ Il balaie maintenant le même axe pour prouver l'inverse : le verdict │
+    // │ est LE MÊME à chaque instant. Un délai réintroduit — quatre-vingt-dix│
+    // │ jours ou un seul — ferait diverger l'un de ces quatre points.        │
+    // │                                                                      │
+    // │ L'abonnement est de longue durée à dessein : sur une échéance        │
+    // │ ordinaire, le dernier point échouerait pour une raison qui n'a rien  │
+    // │ à voir avec le sujet.                                                │
+    // └──────────────────────────────────────────────────────────────────────┘
     const abonneLongue = await createTestUser();
     try {
       await donnerAbonnement(abonneLongue, 'actif', { finDansJours: 3650 });
@@ -396,15 +435,15 @@ describe('fenêtre de vente de 3 mois', () => {
         return acces(abonneLongue.id, 'l-oiseau-de-feu', instant?.t);
       };
 
-      // Publié il y a un mois : la fenêtre court encore une soixantaine de jours.
-      expect((await dans(30)).can_read).toBe(false);
-      expect((await dans(70)).can_read).toBe(true);
+      for (const jours of [0, 30, 70, 365]) {
+        expect((await dans(jours)).can_read, `à J+${jours}`).toBe(true);
+      }
     } finally {
       await deleteTestUser(abonneLongue);
     }
   });
 
-  it('ne s’applique pas à un titre non inclus dans l’abonnement', async () => {
+  it('n’ouvre jamais un titre non inclus, si loin qu’on porte l’instant', async () => {
     const loin = await queryOne<{ t: string }>(
       `select (public.app_now() + interval '5 years')::text as t`,
     );
@@ -592,13 +631,13 @@ describe('version unitaire et version par lot', () => {
 
 describe('paramètres métier', () => {
   it('la base porte les valeurs de la spécification', async () => {
-    const parametres = await queryOne<{ fenetre: number; grace: number }>(
-      `select fenetre_nouveaute_jours as fenetre, periode_grace_jours as grace
+    const parametres = await queryOne<{ grace: number; essai: number }>(
+      `select periode_grace_jours as grace, jours_essai as essai
        from public.business_settings where id = 1`,
     );
 
-    // §3.2 : trois mois de vente exclusive. §9.1 : période de grâce.
-    expect(parametres).toEqual({ fenetre: 90, grace: 7 });
+    // §9.1 : période de grâce, et durée de l'essai gratuit.
+    expect(parametres).toEqual({ grace: 7, essai: 7 });
   });
 
 });

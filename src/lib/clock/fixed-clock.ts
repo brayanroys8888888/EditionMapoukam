@@ -5,8 +5,8 @@ import { MILLISECONDS_PER_DAY } from './clock';
  * Horloge de test : entièrement déterministe, en mémoire.
  *
  * Tous les scénarios temporels (fin de période d'abonnement, période de grâce,
- * fenêtre de 3 mois des nouveautés) sont testés en avançant cette horloge,
- * jamais en attendant.
+ * échéance d'un droit offert) sont testés en avançant cette horloge, jamais en
+ * attendant.
  */
 export class FixedClock implements MutableClock {
   #current: Date;

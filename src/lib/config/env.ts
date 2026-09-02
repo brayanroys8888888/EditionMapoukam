@@ -93,7 +93,7 @@ const serverSchema = z.object({
   ),
 
   /**
-   * La fenêtre de vente exclusive et la période de grâce NE SONT PAS ici.
+   * La période de grâce et la durée d'essai NE SONT PAS ici.
    *
    * Elles vivent dans la table `business_settings`, source unique. Une
    * politique RLS ne peut pas lire l'environnement du processus : les garder

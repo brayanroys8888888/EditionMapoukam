@@ -140,23 +140,17 @@ export interface EntreeCatalogue {
   nb_pages: number | null;
   langues: string[];
   publie_le: string | null;
-  /**
-   * Date d'entrée dans l'abonnement, ou `null`.
+  /*
+   * Il n'y a PAS de date d'entrée dans l'abonnement.
    *
-   * ┌────────────────────────────────────────────────────────────────────────┐
-   * │ CALCULÉE EN BASE, JAMAIS PAR L'INTERFACE.                              │
-   * │                                                                        │
-   * │ Elle dépend de `fenetre_nouveaute_jours`, que l'administration déplace │
-   * │ À LA SECONDE et rétroactivement. Recopier la règle des trois mois dans │
-   * │ le navigateur garantirait qu'un jour le catalogue annonce une date que │
-   * │ le moteur de droits contredit.                                         │
-   * └────────────────────────────────────────────────────────────────────────┘
+   * `abonnement_a_partir_du` vivait ici jusqu'à la migration 0064, qui a
+   * retiré la fenêtre de vente exclusive de trois mois. Un titre marqué
+   * `inclus_abonnement` y est dès sa publication : la seule question qui
+   * restait — « à partir de quand ? » — n'a plus de réponse à donner.
    *
-   * `null` couvre trois cas distincts, et l'interface n'a pas à les
-   * distinguer : le titre y est déjà, il n'y entrera jamais, ou il n'est pas
-   * publié.
+   * `inclus_abonnement` suffit donc à l'interface, et c'est un booléen LU,
+   * jamais dérivé.
    */
-  abonnement_a_partir_du: string | null;
   inclus_abonnement: boolean;
   disponible_achat: boolean;
   gratuit: boolean;

@@ -204,8 +204,8 @@ describe('critère d’acceptation de l’étape 7', () => {
     );
 
     expect(livre?.statut).toBe('brouillon');
-    // `publie_le` nul : la fenêtre de vente de 3 mois (§3.2) ne court pas
-    // encore, puisqu'elle se compte depuis cette date.
+    // `publie_le` nul : le titre n'est pas encore une nouveauté, puisque
+    // c'est cette date qui l'ordonne dans le catalogue.
     expect(livre?.publie_le).toBeNull();
 
     // La conclusion utile n'est pas « le slug vaut petit-baobab » : le jeu de

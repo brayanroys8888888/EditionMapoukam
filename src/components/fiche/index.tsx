@@ -340,20 +340,13 @@ export function ActionsFiche({
       ) : null}
 
       {/*
-        « Bientôt dans l'abonnement » — piloté par `abonnement_a_partir_du`,
-        calculé en base. La date est FORMATÉE ici, jamais calculée : la fenêtre
-        dépend d'un réglage que l'administration déplace à la seconde et
-        rétroactivement.
-      */}
-      {fiche.abonnement_a_partir_du ? (
-        <p className={styles.actionNote}>
-          {traduire(langue, 'fiche.bientotAbonnement').replace(
-            '{date}',
-            new Date(fiche.abonnement_a_partir_du).toLocaleDateString(langue),
-          )}
-        </p>
-      ) : null}
+        Il n'y a plus de « Bientôt dans l'abonnement ».
 
+        Cette note annonçait la date à laquelle la fenêtre de vente exclusive
+        s'achevait. La migration 0064 a retiré la fenêtre : un titre inclus
+        dans l'abonnement y est dès sa publication, et il n'existe plus d'état
+        intermédiaire à annoncer au lecteur.
+      */}
       {!canRead && !fiche.prix && !fiche.achat_hors_zone ? (
         <p className={styles.actionNote}>{traduire(langue, 'fiche.indisponible')}</p>
       ) : null}

@@ -11,19 +11,21 @@ import { getClock } from '@/lib/clock';
  * différentes, et un test de concordance ne ferait que constater la divergence
  * une fois installée.
  *
- * L'application n'en a besoin que pour l'affichage — « disponible dans 12
- * jours », écran d'administration. Le moteur de droits, lui, les lit
- * directement en SQL et ne passe jamais par ce module.
+ * L'application n'en a besoin que pour l'affichage et pour l'écran
+ * d'administration. Le moteur de droits, lui, les lit directement en SQL et ne
+ * passe jamais par ce module.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ EFFET RÉTROACTIF. Modifier la fenêtre de nouveauté change À LA SECONDE   │
- * │ l'accès à tous les titres concernés, sans migration ni déploiement.      │
- * │ Toute écriture doit passer par `updateBusinessSettings`, qui invalide le │
- * │ cache et exige d'avoir consulté le nombre de titres impactés.            │
+ * │ EFFET RÉTROACTIF. Allonger `periodeGraceJours` maintient à la seconde    │
+ * │ l'accès de comptes impayés, sans migration ni déploiement. Toute         │
+ * │ écriture doit passer par `updateBusinessSettings`, qui invalide le cache.│
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * `fenetreNouveauteJours` a vécu ici jusqu'à la migration 0064, qui a retiré
+ * la fenêtre de vente exclusive de trois mois. Le réglage n'existe plus en
+ * base : un titre inclus dans l'abonnement y entre à sa publication.
  */
 export interface BusinessSettings {
-  fenetreNouveauteJours: number;
   periodeGraceJours: number;
   /**
    * Durée d'essai accordée aux NOUVELLES souscriptions (§3.4).
@@ -60,11 +62,6 @@ export interface BusinessSettings {
   majLe: Date;
 }
 
-export interface ImpactFenetre {
-  entrentDansAbonnement: number;
-  sortentDeLAbonnement: number;
-}
-
 /**
  * Durée du cache, en millisecondes.
  *
@@ -87,20 +84,19 @@ export async function getBusinessSettings(
   const client = options.client ?? createServiceClient();
   const { data, error } = await client
     .from('business_settings')
-    .select('fenetre_nouveaute_jours, periode_grace_jours, jours_essai, tolerance_renouvellement_heures, abonnement_ouvert, maj_le')
+    .select('periode_grace_jours, jours_essai, tolerance_renouvellement_heures, abonnement_ouvert, maj_le')
     .eq('id', 1)
     .maybeSingle();
 
   if (error || !data) {
-    // Pas de valeur de repli : appliquer une fenêtre inventée reviendrait à
-    // ouvrir ou fermer l'abonnement sur des titres au hasard.
+    // Pas de valeur de repli : appliquer une période de grâce inventée
+    // reviendrait à ouvrir ou fermer l'accès de comptes impayés au hasard.
     throw new Error(
       `Paramètres métier illisibles : ${error?.message ?? 'aucune ligne dans business_settings'}`,
     );
   }
 
   const valeur: BusinessSettings = {
-    fenetreNouveauteJours: data.fenetre_nouveaute_jours,
     periodeGraceJours: data.periode_grace_jours,
     joursEssai: data.jours_essai,
     toleranceRenouvellementHeures: data.tolerance_renouvellement_heures,
@@ -109,32 +105,6 @@ export async function getBusinessSettings(
   };
   cache = { valeur, expireA: maintenant + DUREE_CACHE_MS };
   return valeur;
-}
-
-/**
- * Nombre de titres qui basculeraient si la fenêtre prenait cette valeur.
- *
- * À présenter à l'administrateur AVANT validation : sans ce chiffre, il
- * modifie une règle commerciale à l'aveugle.
- */
-export async function simulerChangementDeFenetre(
-  nouvelleFenetreJours: number,
-  options: { client?: AppSupabaseClient } = {},
-): Promise<ImpactFenetre> {
-  const client = options.client ?? createServiceClient();
-  const { data, error } = await client.rpc('titres_impactes_par_fenetre', {
-    p_nouvelle_fenetre: nouvelleFenetreJours,
-  });
-
-  if (error) {
-    throw new Error(`Simulation impossible : ${error.message}`);
-  }
-
-  const ligne = (data as { entrent_dans_abonnement: number; sortent_de_l_abonnement: number }[])[0];
-  return {
-    entrentDansAbonnement: ligne?.entrent_dans_abonnement ?? 0,
-    sortentDeLAbonnement: ligne?.sortent_de_l_abonnement ?? 0,
-  };
 }
 
 /**
@@ -147,13 +117,7 @@ export async function simulerChangementDeFenetre(
  */
 export async function updateBusinessSettings(
   modifications: Partial<
-    Pick<
-      BusinessSettings,
-      | 'fenetreNouveauteJours'
-      | 'periodeGraceJours'
-      | 'joursEssai'
-      | 'toleranceRenouvellementHeures'
-    >
+    Pick<BusinessSettings, 'periodeGraceJours' | 'joursEssai' | 'toleranceRenouvellementHeures'>
   >,
   auteurId: string,
   options: { client?: AppSupabaseClient } = {},
@@ -163,9 +127,6 @@ export async function updateBusinessSettings(
   const { error } = await client
     .from('business_settings')
     .update({
-      ...(modifications.fenetreNouveauteJours !== undefined
-        ? { fenetre_nouveaute_jours: modifications.fenetreNouveauteJours }
-        : {}),
       ...(modifications.periodeGraceJours !== undefined
         ? { periode_grace_jours: modifications.periodeGraceJours }
         : {}),

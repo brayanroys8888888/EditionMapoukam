@@ -162,7 +162,7 @@ RPC aux fonctions réellement présentes dans le type généré. Une fonction aj
 en SQL et non régénérée **ne compile pas** — ce qui est le comportement voulu.
 
 Les migrations sont numérotées et **jamais modifiées après application** : on
-ajoute une migration corrective. Le dépôt en est à la **0060**.
+ajoute une migration corrective. Le dépôt en est à la **0064**.
 
 ## Architecture — les quatre couches, et ce qui les sépare
 
@@ -303,7 +303,7 @@ tout ce qui viendrait normalement d'un service externe :
 - simuler une annulation
 - simuler l'expiration d'un abonnement
 - **avancer le temps** d'un nombre de jours donné, pour tester les fins de période
-  et la fenêtre de 3 mois des nouveautés sans attendre
+  et les périodes de grâce sans attendre
 - consulter les emails envoyés
 
 Chaque action de cette console émet un vrai événement signé vers le vrai
@@ -347,8 +347,23 @@ gestionnaire de webhooks. Elle ne modifie jamais la base de données directement
   jamais par un abonnement.
 - Un titre peut être simultanément inclus dans l'abonnement et vendu à l'unité.
   Les champs `inclus_abonnement` et `disponible_achat` sont indépendants.
-- Les nouveautés sont vendues seules pendant 3 mois avant d'entrer dans
-  l'abonnement. Cette règle s'applique par comparaison avec `publie_le`.
+- **Il n'y a AUCUN délai entre la publication et l'entrée dans l'abonnement.**
+  Un titre publié et marqué `inclus_abonnement` est lisible par un abonné à
+  l'instant même. `publie_le` ordonne le catalogue ; elle n'ouvre et ne ferme
+  aucun droit.
+
+  Ce fichier a longtemps porté « les nouveautés sont vendues seules pendant
+  3 mois ». La règle a été retirée le 2 septembre 2026 sur décision de
+  l'éditeur : la migration `0064` a supprimé `fenetre_nouveaute_jours`,
+  `abonnement_a_partir_du` et `fenetre_de_vente_ecoulee`. Le cahier des charges
+  §3.2 porte la décision et sa raison. Ce qui a disparu est un **délai** ; la
+  frontière entre les deux modèles, elle, tient toujours — c'est
+  `inclus_abonnement`, posé titre par titre.
+
+  Trois tests d'architecture empêchent la résurrection de la règle :
+  `access-purity`, `frontend-architecture` et `double-implementation`. Ne pas
+  les contourner : les désarmer, c'est rouvrir la porte à une règle écrite
+  deux fois.
 
 ## Conventions de code
 
@@ -370,7 +385,7 @@ gestionnaire de webhooks. Elle ne modifie jamais la base de données directement
 Chaque étape livre ses tests en même temps que son code. Une étape sans test n'est
 pas terminée.
 
-- **Unitaires** — logique métier pure : calcul des droits, fenêtre de 3 mois,
+- **Unitaires** — logique métier pure : calcul des droits, périodes de grâce,
   transitions d'état d'abonnement.
 - **Intégration** — routes API contre la base locale réelle, pas de mock de base.
 - **Sécurité** — pour chaque table, un test qui vérifie qu'un utilisateur A ne peut
@@ -394,7 +409,7 @@ un objectif WCAG 2.1 AA qui n'a de sens que sur une interface.
 **Ce qui ne change pas :** les sept règles de sécurité ci-dessus s'appliquent
 intégralement à l'interface. En particulier, **le frontend ne recalcule jamais
 une règle métier** — il lit `canRead`, `canDownload`, `prix.affichage`,
-`abonnement_a_partir_du`, jamais une valeur qu'il aurait dérivée lui-même. Un
+`reason`, jamais une valeur qu'il aurait dérivée lui-même. Un
 test d'architecture l'impose.
 
 Les maquettes de référence sont décrites dans `docs/maquettes/`. Elles sont une
@@ -420,7 +435,7 @@ ce qui a tout l'air du dessin voulu. C'est le logo, et ça a déjà trompé.
 
 | Fichier | Ce qu'il porte |
 | --- | --- |
-| `docs/cahier-des-charges.md` | **la spécification, elle fait foi** — ne pas la modifier |
+| `docs/cahier-des-charges.md` | **la spécification, elle fait foi** — ne pas la modifier sans instruction explicite du propriétaire |
 | `docs/PLAN.md` | les seize étapes du backend, et leurs arbitrages numérotés |
 | `docs/PLAN-FRONTEND.md` | le chantier d'interface en cours |
 | `docs/API-CONTRAT.md` | le contrat des routes |
@@ -437,4 +452,5 @@ porte ce qui est en cours, alors que celui-ci porte ce qui est permanent.
 - N'invente pas de règle métier absente de la spécification — pose-moi la question.
 - Ne passe pas à l'étape suivante si `npm run verify` échoue.
 - Ne désactive pas un test pour faire passer la suite.
-- Ne modifie pas `docs/cahier-des-charges.md`.
+- Ne modifie pas `docs/cahier-des-charges.md` — sauf si je te le demande
+  expressément, et alors dis dans le texte ce qui change et pourquoi.

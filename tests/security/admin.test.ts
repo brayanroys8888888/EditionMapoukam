@@ -120,7 +120,7 @@ function requete(route: RouteAdmin, methode: Methode, jeton?: string): Request {
       valeur: 10,
       id: UUID,
       gratuit: true,
-      fenetre_nouveaute_jours: 90,
+      periode_grace_jours: 7,
     }),
   });
 }

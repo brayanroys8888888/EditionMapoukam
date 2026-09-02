@@ -89,7 +89,7 @@ describe('getServerEnv', () => {
     expect(env.INVOICE_RETENTION_YEARS).toBe(10);
   });
 
-  it('ne porte plus la fenêtre de nouveauté ni la période de grâce', () => {
+  it('ne porte aucun réglage métier, même proposé par l’environnement', () => {
     // Source unique : la table `business_settings`. Les garder ici en aurait
     // fait une seconde source, vouée à diverger — et un test de concordance
     // n'aurait fait que constater la divergence une fois installée.

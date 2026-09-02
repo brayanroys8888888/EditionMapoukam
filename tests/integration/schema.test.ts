@@ -188,14 +188,15 @@ describe('jeu de démonstration', () => {
 
     expect(rows).toHaveLength(10);
 
-    // Publié il y a plus de 3 mois et inclus : entrera dans l'abonnement.
+    // Publié de longue date et inclus : lisible par un abonné.
     expect(par('le-lion-et-la-souris')).toMatchObject({
       statut: 'publie',
       inclus_abonnement: true,
     });
     expect(par('le-lion-et-la-souris')?.mois).toBeGreaterThan(3);
 
-    // Publié il y a moins de 3 mois : encore dans la fenêtre de vente.
+    // La nouveauté du corpus. Elle est dans l'abonnement comme les autres
+    // depuis la migration 0064 ; sa fraîcheur ne sert plus qu'au tri.
     expect(par('l-oiseau-de-feu')?.mois).toBeLessThan(3);
     expect(par('l-oiseau-de-feu')?.inclus_abonnement).toBe(true);
 
@@ -208,8 +209,8 @@ describe('jeu de démonstration', () => {
     // Gratuit et non vendu.
     expect(par('petit-baobab')).toMatchObject({ gratuit: true, disponible_achat: false });
 
-    // Le titre d'appel : gratuit ET vendu, et encore dans sa fenêtre de vente.
-    // C'est le cas qui prouve que `gratuit` prime sur la fenêtre de 3 mois.
+    // Le titre d'appel : gratuit ET vendu à l'unité. C'est le cas qui prouve
+    // que `gratuit` et `disponible_achat` ne s'excluent pas.
     expect(par('la-riviere-qui-parlait')).toMatchObject({
       gratuit: true,
       disponible_achat: true,
@@ -350,8 +351,8 @@ describe('idempotence garantie par la base (docs/PLAN.md D1 point 8)', () => {
 
 describe('intégrité du catalogue', () => {
   it('refuse un livre publié sans date de publication', async () => {
-    // La fenêtre de 3 mois se calcule sur publie_le : un titre publié sans
-    // date rendrait la règle inapplicable.
+    // `publie_le` ordonne les nouveautés et date le catalogue : un titre
+    // publié sans date serait introuvable dans tout tri chronologique.
     await expect(
       query(
         `insert into public.books (slug, auteur, statut, publie_le)

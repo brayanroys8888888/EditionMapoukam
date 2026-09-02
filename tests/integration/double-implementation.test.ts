@@ -254,13 +254,20 @@ describe('LONGUEUR D’UNE VERSION — trois modules, une seule autorité', () =
   });
 });
 
-describe('FENÊTRE DE VENTE DE 3 MOIS — deux appelantes, une seule règle', () => {
+describe('ÉLIGIBILITÉ À L’ABONNEMENT — deux appelantes, une seule règle', () => {
   /**
    * `access_for_books` décide si un abonné peut ouvrir le titre ; `catalog_list`
    * décide si le titre s'affiche sous le filtre « accessible par abonnement ».
-   * La règle §3.2 est la même — elle était écrite deux fois.
+   * La règle est la même — elle a été écrite deux fois, et c'est ce qui avait
+   * justifié `fenetre_de_vente_ecoulee` à la migration 0033.
+   *
+   * La migration 0064 a retiré la fenêtre, donc la fonction commune. La règle
+   * qui reste — publié ET `inclus_abonnement` — est de nouveau écrite des deux
+   * côtés, cette fois parce qu'elle tient en deux prédicats. Ce `describe` est
+   * ce qui l'empêche de diverger : il ne lit plus un appel partagé, il compare
+   * les VERDICTS.
    */
-  it('les deux appelantes invoquent la fonction commune, jamais leur propre calcul', async () => {
+  it('aucune des deux ne réintroduit un calcul de délai depuis `publie_le`', async () => {
     const sources = await query<{ nom: string; corps: string }>(
       `select p.proname as nom, pg_get_functiondef(p.oid) as corps
          from pg_proc p
@@ -274,59 +281,85 @@ describe('FENÊTRE DE VENTE DE 3 MOIS — deux appelantes, une seule règle', ()
     const coupables = sources
       .filter(
         (s) =>
-          !s.corps.includes('fenetre_de_vente_ecoulee') ||
           // Le calcul en clair : ce qui traduisait la règle avant qu'elle ait
-          // un nom. Sa réapparition signalerait une duplication qui repousse.
-          /publie_le\s*\+\s*make_interval/.test(s.corps),
+          // un nom, et ce qui la ferait repousser maintenant qu'elle n'en a
+          // plus. Aucune des deux ne doit dater l'entrée dans l'abonnement.
+          /publie_le\s*\+\s*make_interval/.test(s.corps) ||
+          /fenetre_nouveaute|fenetre_de_vente_ecoulee/.test(s.corps),
       )
       .map((s) => s.nom);
 
     expect(coupables).toEqual([]);
   });
 
-  it('rendent le MÊME verdict sur un titre à la frontière de sa fenêtre', async () => {
+  it('rendent la MÊME liste de titres accessibles par abonnement', async () => {
     // ┌──────────────────────────────────────────────────────────────────────┐
-    // │ La comparaison qui compte : à la seconde près, un titre est dans sa  │
-    // │ fenêtre ou il n'y est plus. Un `<=` corrigé en `<` d'un seul côté    │
-    // │ afficherait au catalogue un titre que l'accès refuse ensuite — un    │
-    // │ abonné à qui l'on montre une porte fermée.                           │
+    // │ LA COMPARAISON QUI COMPTE, MAINTENANT QUE LA RÈGLE N'A PLUS DE NOM.  │
+    // │                                                                      │
+    // │ Un prédicat corrigé d'un seul côté afficherait au catalogue un titre │
+    // │ que l'accès refuse ensuite — un abonné à qui l'on montre une porte   │
+    // │ fermée — ou l'inverse : un titre lisible que le rayon ne montre pas. │
+    // │ On n'interroge donc pas le texte des fonctions, on les fait parler.  │
     // └──────────────────────────────────────────────────────────────────────┘
-    const fenetre = await queryOne<{ jours: number }>(
-      `select fenetre_nouveaute_jours as jours from public.business_settings where id = 1`,
-    );
-    const jours = fenetre!.jours;
+    const abonne = await createTestUser();
+    try {
+      await query(
+        `insert into public.subscriptions
+           (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
+         values ($1, 'annuel', 'actif', public.app_now(), public.app_now() + interval '1 year',
+                 'international', 'EUR', 6900)`,
+        [abonne.id],
+      );
 
-    const cas = await query<{ ecoulee: boolean; instant: string; decalage: string }>(
-      `with reference as (select public.app_now() as publie_le)
-       select public.fenetre_de_vente_ecoulee(r.publie_le, $1, d.instant) as ecoulee,
-              d.instant::text, d.decalage
-         from reference r
-         cross join (values
-           (public.app_now() + make_interval(days => $1) - interval '1 second', 'juste avant'),
-           (public.app_now() + make_interval(days => $1),                       'pile'),
-           (public.app_now() + make_interval(days => $1) + interval '1 second', 'juste apres')
-         ) as d(instant, decalage)
-        order by d.instant`,
-      [jours],
-    );
+      const parLAcces = await query<{ slug: string }>(
+        `select b.slug
+           from public.books b
+          where b.statut = 'publie'
+            and (public.access_for($1, b.id)).reason = 'subscription'
+          order by b.slug`,
+        [abonne.id],
+      );
 
-    // `<=` : le titre entre dans l'abonnement À l'instant où la fenêtre est
-    // atteinte, pas une seconde plus tard.
-    expect(cas.map((c) => [c.decalage, c.ecoulee])).toEqual([
-      ['juste avant', false],
-      ['pile', true],
-      ['juste apres', true],
-    ]);
+      const parLeCatalogue = await query<{ slug: string }>(
+        `select slug from public.catalog_list(p_acces => 'abonnement', p_taille => 100)
+          order by slug`,
+      );
+
+      expect(parLAcces.length).toBeGreaterThan(0);
+      expect(parLAcces.map((l) => l.slug)).toEqual(parLeCatalogue.map((l) => l.slug));
+    } finally {
+      await deleteTestUser(abonne);
+    }
   });
 
-  it('traite un titre jamais publié comme une fenêtre NON écoulée', async () => {
-    // `publie_le` nul ne doit pas rendre `null` : l'un des appelants le
-    // traiterait comme faux, l'autre verrait son `and` entier s'annuler.
-    const resultat = await queryOne<{ ecoulee: boolean | null }>(
-      `select public.fenetre_de_vente_ecoulee(null, 90, public.app_now()) as ecoulee`,
-    );
+  it('traitent un titre jamais publié comme HORS abonnement, toutes deux', async () => {
+    // `le-lievre-et-la-tortue` est en brouillon avec `inclus_abonnement` vrai :
+    // le seul titre du corpus où le second prédicat ne suffit pas. Il ne doit
+    // apparaître ni à l'accès ni au catalogue.
+    const abonne = await createTestUser();
+    try {
+      await query(
+        `insert into public.subscriptions
+           (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
+         values ($1, 'annuel', 'actif', public.app_now(), public.app_now() + interval '1 year',
+                 'international', 'EUR', 6900)`,
+        [abonne.id],
+      );
 
-    expect(resultat?.ecoulee).toBe(false);
+      const brouillon = await queryOne<{ can_read: boolean }>(
+        `select (public.access_for($1, b.id)).can_read
+           from public.books b where b.slug = 'le-lievre-et-la-tortue'`,
+        [abonne.id],
+      );
+      expect(brouillon?.can_read).toBe(false);
+
+      const catalogue = await query<{ slug: string }>(
+        `select slug from public.catalog_list(p_acces => 'abonnement', p_taille => 100)`,
+      );
+      expect(catalogue.map((l) => l.slug)).not.toContain('le-lievre-et-la-tortue');
+    } finally {
+      await deleteTestUser(abonne);
+    }
   });
 });
 

@@ -181,10 +181,10 @@ raison.
 
 **Fichiers produits**
 
-- `supabase/migrations/…_catalogue_fenetre_abonnement.sql` — ajoute
-  `abonnement_a_partir_du` à `access_for_books` et `catalog_list`, calculé par
-  `fenetre_de_vente_ecoulee`, **la fonction du moteur de droits**, pas une copie.
-  Redéclarations par **extraction verbatim** (§5 decies), diff produit.
+- ~~`supabase/migrations/…_catalogue_fenetre_abonnement.sql`~~ — **abandonnée.**
+  Elle devait exposer `abonnement_a_partir_du`. La fenêtre de vente de trois mois
+  a été retirée le 2 septembre 2026 (migration `0064`, cahier des charges §3.2) :
+  il n'y a plus de date d'entrée à calculer ni à rendre.
 - `supabase/migrations/…_facettes_catalogue.sql` — `catalog_facets()`.
 - `supabase/migrations/…_bibliotheque.sql` — `library_for_user()`, droits résolus
   **en lot**.
@@ -216,9 +216,12 @@ npm run diff:sql               # une redéclaration = un diff lisible, aucune li
 - Un test prouve que `POST /api/auth/refresh` **échoue** sans cookie de
   rafraîchissement — le contre-test du cas nominal.
 - Un test prouve que `GET /api/library` de A ne rend **jamais** un titre de B.
-- Un test prouve qu'`abonnement_a_partir_du` et le moteur de droits **s'accordent
-  sur les mêmes entrées** : c'est le format imposé par §5 quinquies pour toute
-  règle présente à deux endroits.
+- Un test prouve que le moteur de droits et `catalog_list(p_acces => 'abonnement')`
+  **s'accordent sur les mêmes entrées** : c'est le format imposé par §5 quinquies
+  pour toute règle présente à deux endroits. (Il portait sur
+  `abonnement_a_partir_du` avant le retrait de la fenêtre de vente ;
+  `tests/integration/double-implementation.test.ts` le tient désormais sur
+  l'éligibilité à l'abonnement elle-même.)
 - `GET /api/orders/{id}/invoice` répond **404** sur la facture d'autrui, jamais
   403.
 
@@ -502,8 +505,9 @@ npm run verify
   titre voit le bouton.
 - Un test d'architecture échoue si un composant de fiche **dérive** un droit de
   `reason` au lieu de lire `canDownload`.
-- `abonnement_a_partir_du` (M6) pilote « bientôt dans l'abonnement ». Aucun
-  calcul de date dans le composant.
+- Aucune mention « bientôt dans l'abonnement » : depuis le retrait de la fenêtre
+  de vente (migration `0064`), un titre est dans l'abonnement ou n'y est pas. La
+  fiche lit `canRead` / `canDownload`, et ne calcule aucune date.
 
 ---
 

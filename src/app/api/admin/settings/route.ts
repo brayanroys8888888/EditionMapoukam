@@ -12,21 +12,23 @@ import { createServiceClient } from '@/lib/supabase/clients';
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ CES VALEURS DÉPLACENT LES RÈGLES ELLES-MÊMES.                           │
  * │                                                                          │
- * │ Réduire `fenetre_nouveaute_jours` fait entrer d'un coup dans              │
- * │ l'abonnement des titres qui étaient vendus seuls ; l'allonger les en       │
- * │ ressort. Allonger `periode_grace_jours` maintient l'accès de comptes       │
- * │ impayés. Ce sont des leviers commerciaux, et le journal d'audit enregistre │
- * │ la ligne ENTIÈRE avant et après : ces paramètres interagissent, et relire  │
- * │ l'état complet à une date donnée vaut mieux que recomposer une suite de    │
+ * │ Allonger `periode_grace_jours` maintient l'accès de comptes impayés ;     │
+ * │ `jours_essai` engage la plateforme sur chaque nouvelle souscription.      │
+ * │ Ce sont des leviers commerciaux, et le journal d'audit enregistre la      │
+ * │ ligne ENTIÈRE avant et après : ces paramètres interagissent, et relire    │
+ * │ l'état complet à une date donnée vaut mieux que recomposer une suite de   │
  * │ deltas.                                                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
+ * `fenetre_nouveaute_jours` a disparu de ce schéma avec la migration 0064.
+ * Le laisser en `optional()` aurait été pire qu'inutile : la route aurait
+ * accepté le champ, puis l'aurait ignoré en silence.
+ *
  * Les bornes ci-dessous sont volontairement larges : elles empêchent l'absurde
- * — une fenêtre de dix ans, une tolérance négative — sans se substituer à une
+ * — une tolérance négative, un essai d'un an — sans se substituer à une
  * décision commerciale. Le vrai garde-fou est la trace.
  */
 const corpsSchema = z.object({
-  fenetre_nouveaute_jours: z.int().min(0).max(3650).optional(),
   periode_grace_jours: z.int().min(0).max(365).optional(),
   jours_essai: z.int().min(0).max(365).optional(),
   tolerance_renouvellement_heures: z.int().min(0).max(8760).optional(),
@@ -53,9 +55,6 @@ export async function PATCH(request: Request): Promise<Response> {
   }
 
   const resultat = await modifierParametres(garde.acteur.id, {
-    ...(corps.data.fenetre_nouveaute_jours !== undefined
-      ? { fenetreNouveauteJours: corps.data.fenetre_nouveaute_jours }
-      : {}),
     ...(corps.data.periode_grace_jours !== undefined
       ? { periodeGraceJours: corps.data.periode_grace_jours }
       : {}),

@@ -430,7 +430,6 @@ export async function changerPublication(
 export async function modifierParametres(
   acteur: ActeurId,
   champs: {
-    fenetreNouveauteJours?: number;
     periodeGraceJours?: number;
     joursEssai?: number;
     toleranceRenouvellementHeures?: number;
@@ -442,7 +441,6 @@ export async function modifierParametres(
   const client = options.client ?? createServiceClient();
   return await appeler<unknown>(client, 'admin_modifier_parametres', {
     p_acteur: acteur,
-    p_fenetre_nouveaute_jours: champs.fenetreNouveauteJours ?? null,
     p_periode_grace_jours: champs.periodeGraceJours ?? null,
     p_jours_essai: champs.joursEssai ?? null,
     p_tolerance_renouvellement_heures: champs.toleranceRenouvellementHeures ?? null,
