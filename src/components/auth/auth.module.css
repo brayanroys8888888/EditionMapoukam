@@ -14,6 +14,79 @@
   border-radius: var(--rayon-panneau);
 }
 
+.cadreAuth {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.05fr);
+  gap: clamp(1.5rem, 3vw, 3rem);
+  align-items: center;
+  max-width: 1100px;
+  min-height: calc(100vh - 2rem);
+  margin: 0 auto;
+  padding: clamp(0.5rem, 2vw, 1rem);
+}
+
+.illustration {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  height: min(74vh, 560px);
+  padding: clamp(1.2rem, 2vw, 2rem);
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(118, 178, 171, 0.28), rgba(118, 178, 171, 0.44));
+  border: 1px solid rgba(31, 77, 46, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.illustration::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(135deg, rgba(31, 77, 46, 0.08) 0%, rgba(31, 77, 46, 0.08) 50%, transparent 50%, transparent 100%);
+  background-size: 18px 18px;
+  opacity: 0.9;
+}
+
+.marque,
+.illustrationTexte {
+  position: relative;
+  z-index: 1;
+}
+
+.marqueAuth {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-family: var(--police-titre);
+  font-size: clamp(1.1rem, 1.8vw, 1.7rem);
+  font-weight: var(--graisse-forte);
+  line-height: 1.1;
+  color: var(--v2-vert);
+}
+
+.marqueAuth .sceau {
+  width: 20px;
+  height: 20px;
+}
+
+.illustrationTexte {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(2rem, 3vw, 3.2rem);
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  color: var(--encre);
+  max-width: 12ch;
+}
+
+.contenu {
+  width: min(100%, 32rem);
+  margin-left: auto;
+  padding: clamp(0.5rem, 1vw, 1rem) 0;
+}
+
 /*
  * `font-variation-settings` est écrit ICI en plus de la réinitialisation
  * globale, et ce n'est pas une redite inutile : cette classe se pose sur un
@@ -209,34 +282,125 @@
  * l'impression d'un formulaire d'administration. Ici il devient une carte.
  */
 :global(:root[data-design='v2']) .panneau {
+  position: relative;
   max-width: 30rem;
   margin: clamp(40px, 6vw, 72px) auto;
   padding: clamp(28px, 4vw, 40px);
-  border: 1.5px solid var(--bordure);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(251, 247, 239, 0.96));
+  border: 1.5px solid rgba(31, 77, 46, 0.12);
   border-radius: var(--rayon-panneau);
-  box-shadow: var(--ombre-carte);
+  box-shadow: var(--ombre-carte), 0 18px 40px rgb(31 77 46 / 10%);
+  overflow: hidden;
 }
 
-/* Un filet ocre en tête de carte — le même accent que les boutons. */
-:global(:root[data-design='v2']) .panneau::before {
-  content: '';
-  display: block;
-  width: 56px;
-  height: 5px;
-  border-radius: var(--rayon-pastille);
-  background: var(--action);
-  margin-bottom: 22px;
+:global(:root[data-design='v2']) .cadreAuth {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(340px, 1.1fr);
+  gap: clamp(1.5rem, 2.5vw, 3rem);
+  align-items: center;
+  max-width: 1120px;
+}
+
+:global(:root[data-design='v2']) .illustration {
+  min-height: 540px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(127, 192, 176, 0.92), rgba(127, 192, 176, 0.92));
+  border: 1px solid rgba(31, 77, 46, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+:global(:root[data-design='v2']) .illustration::before {
+  opacity: 1;
+  background-image: linear-gradient(135deg, rgba(31, 77, 46, 0.12) 0%, rgba(31, 77, 46, 0.12) 50%, transparent 50%, transparent 100%);
+  background-size: 16px 16px;
+}
+
+:global(:root[data-design='v2']) .marque {
+  color: var(--v2-vert);
+  font-family: var(--police-titre);
+  font-size: clamp(1.05rem, 1.6vw, 1.7rem);
+  letter-spacing: -0.03em;
+}
+
+:global(:root[data-design='v2']) .logoPetit {
+  width: 18px;
+  height: 18px;
+  background: var(--v2-ocre);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+:global(:root[data-design='v2']) .illustrationTexte {
+  color: var(--v2-vert);
+  max-width: 11ch;
+}
+
+:global(:root[data-design='v2']) .contenu {
+  width: min(100%, 34rem);
 }
 
 :global(:root[data-design='v2']) .titre {
-  font-size: clamp(28px, 3.2vw, 36px);
-  letter-spacing: -0.025em;
-  margin-bottom: var(--espace-3);
+  font-size: clamp(2.3rem, 3vw, 3.4rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  margin-bottom: 1rem;
 }
 
 :global(:root[data-design='v2']) .intro {
+  font-size: clamp(1.08rem, 1.4vw, 1.3rem);
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+}
+
+:global(:root[data-design='v2']) .formulaire {
+  gap: 1.1rem;
+}
+
+:global(:root[data-design='v2']) .liens {
+  margin-top: 1.5rem;
+}
+
+:global(:root[data-design='v2']) .panneau::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--v2-vert) 0%, var(--v2-vert-clair) 35%, var(--v2-ocre) 100%);
+}
+
+:global(:root[data-design='v2']) .panneau::after {
+  content: '';
+  position: absolute;
+  top: -52px;
+  right: -48px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(31 77 46 / 12%), transparent 70%);
+  pointer-events: none;
+}
+
+:global(:root[data-design='v2']) .titre {
+  position: relative;
+  z-index: 1;
+  font-size: clamp(28px, 3.2vw, 36px);
+  letter-spacing: -0.025em;
+  margin-bottom: var(--espace-3);
+  color: var(--v2-vert);
+}
+
+:global(:root[data-design='v2']) .intro {
+  position: relative;
+  z-index: 1;
   font-size: var(--taille-l);
   line-height: 1.6;
+  color: var(--v2-encre-douce);
+}
+
+:global(:root[data-design='v2']) .formulaire {
+  position: relative;
+  z-index: 1;
+  gap: var(--espace-4);
 }
 
 /*
@@ -246,13 +410,22 @@
  * « créer un compte ». Les laisser en gris les rendrait invisibles au moment
  * précis où ils comptent.
  */
+:global(:root[data-design='v2']) .liens {
+  position: relative;
+  z-index: 1;
+  padding-top: var(--espace-5);
+  gap: var(--espace-2);
+}
+
 :global(:root[data-design='v2']) .liens a {
   color: var(--v2-vert);
   font-weight: var(--graisse-demi);
+  text-decoration: none;
 }
 
 :global(:root[data-design='v2']) .liens a:hover {
   color: var(--v2-vert-clair);
+  text-decoration: underline;
 }
 
 :global(:root[data-design='v2']) .lienSecondaire {

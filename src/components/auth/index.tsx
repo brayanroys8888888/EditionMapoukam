@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { messageErreur, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
+import { Marque } from '@/components/v2/marque';
 import styles from './auth.module.css';
 
 export { FormulaireInscription, ForceMotDePasse } from './inscription';
@@ -160,66 +161,75 @@ export function FormulaireConnexion({
   const bloque = attente !== undefined && attente > 0;
 
   return (
-    <div className={styles.panneau}>
-      <h1 className={styles.titre}>{traduire(langue, 'auth.connexionTitre')}</h1>
-
-      {/* Compte tout juste créé, et immédiatement utilisable. */}
-      {inscrit ? (
-        <div className={styles.message}>
-          <p className={styles.messageTexte}>{traduire(langue, 'auth.comptePret')}</p>
-        </div>
-      ) : null}
-
-      {/* Le motif de révocation est distinct d'une erreur de saisie : il
-          n'appelle pas à corriger un champ, mais à changer son mot de passe. */}
-      {motif ? (
-        <p className={styles.avertissement} role="alert">
-          {messageErreur(langue, motif)}
+    <div className={styles.cadreAuth}>
+      <aside className={styles.illustration} aria-hidden="true">
+        <Marque langue={langue} petite className={styles.marqueAuth} />
+        <p className={styles.illustrationTexte}>
+          {traduire(langue, 'auth.illustrationConnexion')}
         </p>
-      ) : null}
+      </aside>
 
-      <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
+      <div className={styles.contenu}>
+        <h1 className={styles.titre}>{traduire(langue, 'auth.connexionTitre')}</h1>
 
-      <form action={action} className={styles.formulaire} noValidate>
-        <Champ
-          id="connexion-email"
-          name="email"
-          type="email"
-          libelle={traduire(langue, 'auth.email')}
-          autoComplete="email"
-          required
-        />
-        <Champ
-          id="connexion-motdepasse"
-          name="password"
-          type="password"
-          libelle={traduire(langue, 'auth.motDePasse')}
-          autoComplete="current-password"
-          required
-        />
+        {/* Compte tout juste créé, et immédiatement utilisable. */}
+        {inscrit ? (
+          <div className={styles.message}>
+            <p className={styles.messageTexte}>{traduire(langue, 'auth.comptePret')}</p>
+          </div>
+        ) : null}
 
-        <Bouton type="submit" disabled={bloque}>
-          {traduire(langue, 'auth.connexionSoumettre')}
-        </Bouton>
-      </form>
+        {/* Le motif de révocation est distinct d'une erreur de saisie : il
+            n'appelle pas à corriger un champ, mais à changer son mot de passe. */}
+        {motif ? (
+          <p className={styles.avertissement} role="alert">
+            {messageErreur(langue, motif)}
+          </p>
+        ) : null}
 
-      {/* Proposé UNIQUEMENT sur `email_non_verifie` : ailleurs, ce bouton
-          confirmerait l'existence du compte à qui essaie une adresse au hasard. */}
-      {erreur === 'email_non_verifie' && actionRenvoi ? (
-        <form action={actionRenvoi} className={styles.formulaireSecondaire}>
-          <Bouton type="submit" variante="secondaire">
-            {traduire(langue, 'auth.emailNonVerifieAction')}
+        <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
+
+        <form action={action} className={styles.formulaire} noValidate>
+          <Champ
+            id="connexion-email"
+            name="email"
+            type="email"
+            libelle={traduire(langue, 'auth.email')}
+            autoComplete="email"
+            required
+          />
+          <Champ
+            id="connexion-motdepasse"
+            name="password"
+            type="password"
+            libelle={traduire(langue, 'auth.motDePasse')}
+            autoComplete="current-password"
+            required
+          />
+
+          <Bouton type="submit" disabled={bloque}>
+            {traduire(langue, 'auth.connexionSoumettre')}
           </Bouton>
         </form>
-      ) : null}
 
-      <nav className={styles.liens} aria-label={traduire(langue, 'auth.connexionTitre')}>
-        <a href={`/${langue}/mot-de-passe-oublie`}>{traduire(langue, 'auth.motDePasseOublie')}</a>
-        <span className={styles.lienSecondaire}>
-          {traduire(langue, 'auth.pasDeCompte')}{' '}
-          <a href={`/${langue}/inscription`}>{traduire(langue, 'auth.creerUnCompte')}</a>
-        </span>
-      </nav>
+        {/* Proposé UNIQUEMENT sur `email_non_verifie` : ailleurs, ce bouton
+            confirmerait l'existence du compte à qui essaie une adresse au hasard. */}
+        {erreur === 'email_non_verifie' && actionRenvoi ? (
+          <form action={actionRenvoi} className={styles.formulaireSecondaire}>
+            <Bouton type="submit" variante="secondaire">
+              {traduire(langue, 'auth.emailNonVerifieAction')}
+            </Bouton>
+          </form>
+        ) : null}
+
+        <nav className={styles.liens} aria-label={traduire(langue, 'auth.connexionTitre')}>
+          <a href={`/${langue}/mot-de-passe-oublie`}>{traduire(langue, 'auth.motDePasseOublie')}</a>
+          <span className={styles.lienSecondaire}>
+            {traduire(langue, 'auth.pasDeCompte')}{' '}
+            <a href={`/${langue}/inscription`}>{traduire(langue, 'auth.creerUnCompte')}</a>
+          </span>
+        </nav>
+      </div>
     </div>
   );
 }
@@ -239,25 +249,35 @@ export function FormulaireOubli({ langue, action, erreur, attente }: EtatFormula
   const bloque = attente !== undefined && attente > 0;
 
   return (
-    <div className={styles.panneau}>
-      <h1 className={styles.titre}>{traduire(langue, 'auth.oubliTitre')}</h1>
-      <p className={styles.intro}>{traduire(langue, 'auth.oubliIntro')}</p>
+    <div className={styles.cadreAuth}>
+      <aside className={styles.illustration} aria-hidden="true">
+        <Marque langue={langue} petite className={styles.marqueAuth} />
+        <p className={styles.illustrationTexte}>
+          Ça arrive, deux minutes et vous<br />
+          retrouvez vos contes.
+        </p>
+      </aside>
 
-      <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
+      <div className={styles.contenu}>
+        <h1 className={styles.titre}>{traduire(langue, 'auth.oubliTitre')}</h1>
+        <p className={styles.intro}>{traduire(langue, 'auth.oubliIntro')}</p>
 
-      <form action={action} className={styles.formulaire} noValidate>
-        <Champ
-          id="oubli-email"
-          name="email"
-          type="email"
-          libelle={traduire(langue, 'auth.email')}
-          autoComplete="email"
-          required
-        />
-        <Bouton type="submit" disabled={bloque}>
-          {traduire(langue, 'auth.oubliSoumettre')}
-        </Bouton>
-      </form>
+        <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
+
+        <form action={action} className={styles.formulaire} noValidate>
+          <Champ
+            id="oubli-email"
+            name="email"
+            type="email"
+            libelle={traduire(langue, 'auth.email')}
+            autoComplete="email"
+            required
+          />
+          <Bouton type="submit" disabled={bloque}>
+            {traduire(langue, 'auth.oubliSoumettre')}
+          </Bouton>
+        </form>
+      </div>
     </div>
   );
 }
@@ -305,52 +325,62 @@ export function FormulaireCode({
   const bloque = attente !== undefined && attente > 0;
 
   return (
-    <div className={styles.panneau}>
-      <h1 className={styles.titre}>{traduire(langue, titre)}</h1>
-      <p className={styles.intro}>{traduire(langue, intro)}</p>
+    <div className={styles.cadreAuth}>
+      <aside className={styles.illustration} aria-hidden="true">
+        <Marque langue={langue} petite className={styles.marqueAuth} />
+        <p className={styles.illustrationTexte}>
+          Un clic dans votre boîte mail,<br />
+          et la lecture est ouverte.
+        </p>
+      </aside>
 
-      <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
+      <div className={styles.contenu}>
+        <h1 className={styles.titre}>{traduire(langue, titre)}</h1>
+        <p className={styles.intro}>{traduire(langue, intro)}</p>
 
-      <form action={action} className={styles.formulaire} noValidate>
-        <Champ
-          id="code-email"
-          name="email"
-          type="email"
-          libelle={traduire(langue, 'auth.email')}
-          autoComplete="email"
-          defaultValue={email}
-          required
-        />
-        <Champ
-          id="code-valeur"
-          name="code"
-          // `text` et non `number` : un `number` retire les zéros de tête et
-          // affiche des flèches d'incrément qui n'ont aucun sens sur un code.
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          libelle={traduire(langue, 'auth.code')}
-          aide={traduire(langue, 'auth.codeAide')}
-          autoComplete="one-time-code"
-          required
-        />
+        <ErreurFormulaire langue={langue} erreur={erreur} attente={attente} />
 
-        {avecMotDePasse ? (
+        <form action={action} className={styles.formulaire} noValidate>
           <Champ
-            id="code-motdepasse"
-            name="password"
-            type="password"
-            libelle={traduire(langue, 'auth.nouveauMotDePasse')}
-            autoComplete="new-password"
+            id="code-email"
+            name="email"
+            type="email"
+            libelle={traduire(langue, 'auth.email')}
+            autoComplete="email"
+            defaultValue={email}
             required
           />
-        ) : null}
+          <Champ
+            id="code-valeur"
+            name="code"
+            // `text` et non `number` : un `number` retire les zéros de tête et
+            // affiche des flèches d'incrément qui n'ont aucun sens sur un code.
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            libelle={traduire(langue, 'auth.code')}
+            aide={traduire(langue, 'auth.codeAide')}
+            autoComplete="one-time-code"
+            required
+          />
 
-        <Bouton type="submit" disabled={bloque}>
-          {traduire(langue, soumettre)}
-        </Bouton>
-      </form>
+          {avecMotDePasse ? (
+            <Champ
+              id="code-motdepasse"
+              name="password"
+              type="password"
+              libelle={traduire(langue, 'auth.nouveauMotDePasse')}
+              autoComplete="new-password"
+              required
+            />
+          ) : null}
+
+          <Bouton type="submit" disabled={bloque}>
+            {traduire(langue, soumettre)}
+          </Bouton>
+        </form>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 
 import { messageErreur, traduire, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
+import { Marque } from '@/components/v2/marque';
 import { LONGUEUR_MOT_DE_PASSE_MIN } from '@/lib/auth/schemas';
 import styles from './auth.module.css';
 
@@ -126,60 +127,69 @@ export function FormulaireInscription({
       : messageErreur(langue, erreur);
 
   return (
-    <div className={styles.panneau}>
-      <h1 className={styles.titre}>{traduire(langue, 'auth.inscriptionTitre')}</h1>
-
-      {texteErreur ? (
-        <p className={styles.erreurFormulaire} role="alert">
-          {texteErreur}
+    <div className={styles.cadreAuth}>
+      <aside className={styles.illustration} aria-hidden="true">
+        <Marque langue={langue} petite className={styles.marqueAuth} />
+        <p className={styles.illustrationTexte}>
+          {traduire(langue, 'auth.illustrationInscription')}
         </p>
-      ) : null}
+      </aside>
 
-      <form action={action} className={styles.formulaire} noValidate>
-        <Champ
-          id="inscription-email"
-          name="email"
-          type="email"
-          libelle={traduire(langue, 'auth.email')}
-          autoComplete="email"
-          required
-        />
-        <Champ
-          id="inscription-nom"
-          name="nom_complet"
-          type="text"
-          libelle={traduire(langue, 'auth.nomComplet')}
-          aide={traduire(langue, 'auth.nomCompletAide')}
-          autoComplete="name"
-        />
-        <Champ
-          id="inscription-motdepasse"
-          name="password"
-          type="password"
-          libelle={traduire(langue, 'auth.motDePasse')}
-          autoComplete="new-password"
-          required
-          value={motDePasse}
-          onChange={(evenement) => {
-            setMotDePasse(evenement.target.value);
-          }}
-        />
+      <div className={styles.contenu}>
+        <h1 className={styles.titre}>{traduire(langue, 'auth.inscriptionTitre')}</h1>
 
-        <ForceMotDePasse langue={langue} valeur={motDePasse} />
+        {texteErreur ? (
+          <p className={styles.erreurFormulaire} role="alert">
+            {texteErreur}
+          </p>
+        ) : null}
 
-        <p className={styles.mention}>{traduire(langue, 'auth.aucuneDonneeEnfant')}</p>
+        <form action={action} className={styles.formulaire} noValidate>
+          <Champ
+            id="inscription-email"
+            name="email"
+            type="email"
+            libelle={traduire(langue, 'auth.email')}
+            autoComplete="email"
+            required
+          />
+          <Champ
+            id="inscription-nom"
+            name="nom_complet"
+            type="text"
+            libelle={traduire(langue, 'auth.nomComplet')}
+            aide={traduire(langue, 'auth.nomCompletAide')}
+            autoComplete="name"
+          />
+          <Champ
+            id="inscription-motdepasse"
+            name="password"
+            type="password"
+            libelle={traduire(langue, 'auth.motDePasse')}
+            autoComplete="new-password"
+            required
+            value={motDePasse}
+            onChange={(evenement) => {
+              setMotDePasse(evenement.target.value);
+            }}
+          />
 
-        <Bouton type="submit" disabled={bloque}>
-          {traduire(langue, 'auth.inscriptionSoumettre')}
-        </Bouton>
-      </form>
+          <ForceMotDePasse langue={langue} valeur={motDePasse} />
 
-      <nav className={styles.liens} aria-label={traduire(langue, 'auth.inscriptionTitre')}>
-        <span className={styles.lienSecondaire}>
-          {traduire(langue, 'auth.dejaUnCompte')}{' '}
-          <a href={`/${langue}/connexion`}>{traduire(langue, 'auth.seConnecter')}</a>
-        </span>
-      </nav>
+          <p className={styles.mention}>{traduire(langue, 'auth.aucuneDonneeEnfant')}</p>
+
+          <Bouton type="submit" disabled={bloque}>
+            {traduire(langue, 'auth.inscriptionSoumettre')}
+          </Bouton>
+        </form>
+
+        <nav className={styles.liens} aria-label={traduire(langue, 'auth.inscriptionTitre')}>
+          <span className={styles.lienSecondaire}>
+            {traduire(langue, 'auth.dejaUnCompte')}{' '}
+            <a href={`/${langue}/connexion`}>{traduire(langue, 'auth.seConnecter')}</a>
+          </span>
+        </nav>
+      </div>
     </div>
   );
 }
