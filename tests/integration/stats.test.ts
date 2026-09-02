@@ -27,6 +27,8 @@ const T0 = new Date('2026-08-15T12:00:00.000Z');
 /** Les faits precedent toujours la requete qui les agrege. Voir la convention
  *  d'intervalle semi-ouvert, eprouvee plus bas. */
 const AVANT = new Date(T0.getTime() - 3_600_000);
+/** Un jour, en millisecondes — pour situer une periode par rapport a T0. */
+const JOUR = 86_400_000;
 const horloge = new FixedClock(T0.toISOString());
 
 let editeur: TestUser;
@@ -197,12 +199,14 @@ describe('ABONNÉS — statut EFFECTIF, jamais statut stocké (point 2)', () => 
     const anomalie = await queryOne<{ id: string; statut: string }>(
       `insert into public.subscriptions
          (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
-       values ($1, 'mensuel', 'actif',
-               public.app_now() - interval '40 days',
-               public.app_now() - interval '10 days',
+       values ($1, 'mensuel', 'actif', $2, $3,
                'international', 'EUR', 799)
        returning id, statut`,
-      [acheteurEur.id],
+      [
+        acheteurEur.id,
+        new Date(T0.getTime() - 40 * JOUR).toISOString(),
+        new Date(T0.getTime() - 10 * JOUR).toISOString(),
+      ],
     );
 
     // Le statut STOCKÉ vaut bien « actif » : sans cette vérification, le test
@@ -234,10 +238,13 @@ describe('ABONNÉS — statut EFFECTIF, jamais statut stocké (point 2)', () => 
     const sain = await queryOne<{ id: string }>(
       `insert into public.subscriptions
          (user_id, offre, statut, debut_periode, fin_periode, zone, devise, montant)
-       values ($1, 'annuel', 'actif', public.app_now(),
-               public.app_now() + interval '1 year', 'international', 'EUR', 6900)
+       values ($1, 'annuel', 'actif', $2, $3, 'international', 'EUR', 6900)
        returning id`,
-      [acheteurEur.id],
+      [
+        acheteurEur.id,
+        AVANT.toISOString(),
+        new Date(T0.getTime() + 365 * JOUR).toISOString(),
+      ],
     );
 
     const resultat = await stats.abonnes({ clock: horloge });
@@ -419,9 +426,9 @@ describe('SURFACE DE LECTURE — bornes et anonymat (point 4)', () => {
     const lecteur = await createTestUser();
     try {
       await query(
-        `insert into public.reading_progress (user_id, book_id, langue, derniere_page)
-         values ($1, $2, 'fr', 3)`,
-        [lecteur.id, livreId],
+        `insert into public.reading_progress (user_id, book_id, langue, derniere_page, maj_le)
+         values ($1, $2, 'fr', 3, $3)`,
+        [lecteur.id, livreId, AVANT.toISOString()],
       );
 
       const resultat = await stats.titresLus(
@@ -454,9 +461,9 @@ describe('SURFACE DE LECTURE — bornes et anonymat (point 4)', () => {
         const lecteur = await createTestUser();
         lecteurs.push(lecteur);
         await query(
-          `insert into public.reading_progress (user_id, book_id, langue, derniere_page)
-           values ($1, $2, 'fr', $3)`,
-          [lecteur.id, livreId, i + 2],
+          `insert into public.reading_progress (user_id, book_id, langue, derniere_page, maj_le)
+           values ($1, $2, 'fr', $3, $4)`,
+          [lecteur.id, livreId, i + 2, AVANT.toISOString()],
         );
       }
 
