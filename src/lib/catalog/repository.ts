@@ -207,6 +207,7 @@ export async function listerCatalogue(
     p_themes: query.themes ?? null,
     p_origine: query.origine ?? null,
     p_region: query.region ?? null,
+    p_type_document: query.type ?? null,
     p_acces: query.acces ?? null,
     p_zone: query.zone,
     p_tri: query.tri,
@@ -260,6 +261,14 @@ export async function listerCatalogue(
 interface DonneesAffichage {
   disponibleLe: string | null;
   region: EntreeCatalogue['region'];
+  /**
+   * Type de support et orientation. Ils voyagent ici plutôt que dans
+   * `catalog_list` parce que la liste rend déjà vingt-deux colonnes et que ces
+   * deux-là ne servent qu'à l'affichage : la SÉLECTION, elle, se fait en SQL
+   * par `p_type_document`, et non en triant ce tableau après coup.
+   */
+  typeDocument: EntreeCatalogue['type_document'];
+  orientation: EntreeCatalogue['orientation'];
   jetonCouverture: string | null;
 }
 
@@ -276,7 +285,10 @@ async function donneesDAffichage(
       p_books: [...identifiants],
       ...(at ? { p_at: at.toISOString() } : {}),
     } as never),
-    client.from('books').select('id, region, couverture_jeton').in('id', [...identifiants]),
+    client
+      .from('books')
+      .select('id, region, type_document, orientation, couverture_jeton')
+      .in('id', [...identifiants]),
   ]);
 
   if (dates.error) throw new Error(`Fenêtre d’abonnement illisible : ${dates.error.message}`);
@@ -292,6 +304,8 @@ async function donneesDAffichage(
     resultat.set(livre.id, {
       disponibleLe: parLivre.get(livre.id) ?? null,
       region: livre.region,
+      typeDocument: livre.type_document,
+      orientation: livre.orientation,
       jetonCouverture: livre.couverture_jeton,
     });
   }
@@ -320,6 +334,10 @@ function versEntree(
     origine_culturelle: ligne.origine_culturelle,
     themes: ligne.themes,
     region: affichage?.region ?? null,
+    // Le repli sur « conte » ne couvre qu'un cas : la ligne d'affichage
+    // introuvable. La colonne, elle, est NOT NULL — le titre en a toujours un.
+    type_document: affichage?.typeDocument ?? 'conte',
+    orientation: affichage?.orientation ?? 'portrait',
     couverture_url: ligne.couverture_url,
     couverture: urlsCouverture(affichage?.jetonCouverture ?? null),
     nb_pages: ligne.nb_pages,
@@ -357,7 +375,7 @@ export async function lireFiche(
     .from('books')
     .select(
       `id, slug, auteur, illustrateur, age_min, age_max, origine_culturelle, themes,
-       region, couverture_url, couverture_jeton,
+       region, type_document, orientation, couverture_url, couverture_jeton,
        inclus_abonnement, disponible_achat, gratuit, nb_pages_extrait,
        publie_le, statut,
        book_translations!inner(langue, titre, resume, nb_pages, statut),
@@ -421,6 +439,8 @@ export async function lireFiche(
     origine_culturelle: livre.origine_culturelle,
     themes: livre.themes,
     region: livre.region,
+    type_document: livre.type_document,
+    orientation: livre.orientation,
     couverture_url: livre.couverture_url,
     couverture: urlsCouverture(livre.couverture_jeton),
     nb_pages: traduction.nb_pages,

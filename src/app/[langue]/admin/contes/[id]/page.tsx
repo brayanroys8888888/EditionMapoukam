@@ -2,7 +2,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
-import { lireLivre, type RegionConte } from '@/lib/admin/service';
+import {
+  lireLivre,
+  type OrientationPage,
+  type RegionConte,
+  type TypeDocument,
+} from '@/lib/admin/service';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, BoutonSoumission, stylesAdmin as styles } from '@/components/admin';
 
@@ -89,6 +94,13 @@ interface Conte {
    * et le premier enregistrement l'aurait écrasée.
    */
   region: RegionConte | null;
+  /*
+   * Le TYPE DE SUPPORT et l'ORIENTATION, créés par la migration 0061 et
+   * lisibles depuis la 0062. Non nuls en base — d'où l'absence de `| null` :
+   * tout titre en porte un, ne serait-ce que par défaut.
+   */
+  type_document: TypeDocument;
+  orientation: OrientationPage;
   age_min: number | null;
   age_max: number | null;
   themes: string[];
@@ -166,6 +178,19 @@ const REGIONS = [
   'afrique_australe',
   'afrique_est',
 ] as const satisfies readonly RegionConte[];
+
+/**
+ * Les deux types de support, dans l'ordre de l'énumération `document_type`.
+ *
+ * Leurs libellés vivent sous `documents.*` — au même titre que `regions.*` —
+ * parce que le catalogue public les affiche AUSSI. En écrire un jeu sous
+ * `admin.*` aurait fait deux vérités pour le même mot, et c'est la seconde qui
+ * aurait cessé d'être relue.
+ */
+const TYPES_DOCUMENT = ['conte', 'livret_pedagogique'] as const satisfies readonly TypeDocument[];
+
+/** Les deux orientations, dans l'ordre de l'énumération `page_orientation`. */
+const ORIENTATIONS = ['paysage', 'portrait'] as const satisfies readonly OrientationPage[];
 
 /**
  * Les trois leviers d'accès, leurs libellés et leur explication.
@@ -359,6 +384,69 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               <p className={styles.aide} id="conte-region-aide">
                 {traduire(langue, 'admin.conteRegionAide')}
               </p>
+            </div>
+
+            {/*
+              ┌──────────────────────────────────────────────────────────────┐
+              │ LE SUPPORT ET SON ORIENTATION — LE MÊME DÉFAUT QUE LA RÉGION,│
+              │ MAIS MUET.                                                   │
+              │                                                              │
+              │ La migration 0061 a créé les deux colonnes ; aucune fonction  │
+              │ `admin_*` ne permettait de les poser avant la 0062. La        │
+              │ différence avec `region` tient à leurs valeurs par défaut :   │
+              │ `conte` et `portrait` étant non nulles, « Publier » ne restait │
+              │ pas éteint. Rien ne protestait — un livret déposé serait      │
+              │ simplement resté un conte, en portrait, pour toujours.        │
+              │                                                              │
+              │ Pas de choix vide, contrairement à la région : la colonne     │
+              │ n'admet pas de nul, et proposer « aucun » offrirait un état   │
+              │ que la base refuse.                                          │
+              └──────────────────────────────────────────────────────────────┘
+            */}
+            <div className={styles.rangee}>
+              <div className={styles.champ}>
+                <label className={styles.libelle} htmlFor="conte-type-document">
+                  {traduire(langue, 'admin.conteTypeDocument')}
+                </label>
+                <select
+                  className={styles.saisie}
+                  id="conte-type-document"
+                  name="type_document"
+                  defaultValue={conte.type_document}
+                  aria-describedby="conte-type-document-aide"
+                >
+                  {TYPES_DOCUMENT.map((type) => (
+                    <option key={type} value={type}>
+                      {traduire(langue, `documents.${type}` as CleTraduction)}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.aide} id="conte-type-document-aide">
+                  {traduire(langue, 'admin.conteTypeDocumentAide')}
+                </p>
+              </div>
+
+              <div className={styles.champ}>
+                <label className={styles.libelle} htmlFor="conte-orientation">
+                  {traduire(langue, 'admin.conteOrientation')}
+                </label>
+                <select
+                  className={styles.saisie}
+                  id="conte-orientation"
+                  name="orientation"
+                  defaultValue={conte.orientation}
+                  aria-describedby="conte-orientation-aide"
+                >
+                  {ORIENTATIONS.map((orientation) => (
+                    <option key={orientation} value={orientation}>
+                      {traduire(langue, `orientations.${orientation}` as CleTraduction)}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.aide} id="conte-orientation-aide">
+                  {traduire(langue, 'admin.conteOrientationAide')}
+                </p>
+              </div>
             </div>
 
             <div className={styles.rangee}>

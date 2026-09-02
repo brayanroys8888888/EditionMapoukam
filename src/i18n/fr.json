@@ -79,6 +79,18 @@
     "afrique_australe": "Afrique australe",
     "afrique_est": "Afrique de l'Est"
   },
+  "documents": {
+    "_commentaire": "Les clés viennent de l'énumération `document_type` de la base (migration 0061). Les libellés sont ici, et ici seulement : le catalogue public ET le back-office les lisent au même endroit, comme `regions.*`.",
+    "conte": "Conte",
+    "livret_pedagogique": "Livret pédagogique",
+    "contes": "Contes",
+    "livrets_pedagogiques": "Livrets pédagogiques"
+  },
+  "orientations": {
+    "_commentaire": "Les clés viennent de l'énumération `page_orientation` de la base (migration 0061).",
+    "paysage": "Paysage",
+    "portrait": "Portrait"
+  },
   "acces": {
     "_commentaire": "Piloté par `acces.reason`, jamais déduit d'un prix ni d'un drapeau. `purchase` et `granted` prennent le pas sur tout le reste : ni un prix ni « avec l'abonnement » ne conviennent à qui détient déjà le titre.",
     "purchase": "Dans votre bibliothèque",
@@ -96,6 +108,8 @@
   "auth": {
     "_commentaire": "TROIS MESSAGES SONT DÉLIBÉRÉMENT INDIFFÉRENCIÉS, et c'est le critère principal de l'étape F3 : `inscriptionEnvoyee` est le même que l'adresse soit connue ou non, `oubliEnvoye` est affiché sans condition, et l'échec de connexion ne nomme jamais lequel des deux champs est faux. Les nuancer par bonne intention rendrait la plateforme énumérable, une adresse à la fois.",
     "connexionTitre": "Se connecter",
+    "illustrationConnexion": "Vos contes reprennent à la page où la lecture s'est arrêtée.",
+    "illustrationInscription": "Des contes du patrimoine africain, illustrés pour les 4–10 ans.",
     "connexionSoumettre": "Se connecter",
     "email": "Adresse email",
     "motDePasse": "Mot de passe",
@@ -143,6 +157,14 @@
     "continuer": "Continuer",
     "allerAuCatalogue": "Parcourir le catalogue"
   },
+  "livrets": {
+    "_commentaire": "Le rayon des livrets pédagogiques — le MÊME catalogue avec `type_document` posé. Le compte s'y lit sur le rayon, jamais sur le catalogue entier : « 3 sur 47 » laisserait croire que 44 livrets sont cachés par un filtre.",
+    "titre": "Livrets pédagogiques",
+    "intro": "Des supports d'activités à imprimer ou à projeter, tirés des contes du catalogue.",
+    "compteTous": "{total} livrets pédagogiques disponibles",
+    "compteUn": "1 livret pédagogique disponible",
+    "lien": "Livrets pédagogiques"
+  },
   "catalogue": {
     "_commentaire": "La carte porte TROIS lignes d'accès, pas deux : la maquette n'en prévoyait qu'un prix ou « Avec l'abonnement », et tous deux invitent à obtenir ce qu'on détient déjà. La troisième vit dans `acces.purchase` / `acces.granted`, et prend le pas sur les autres. Elle est pilotée par `acces.reason` — qui décrit L'UTILISATEUR — jamais par `prix` ni `inclus_abonnement`, qui décrivent LE TITRE.",
     "titre": "Tous les contes",
@@ -162,6 +184,7 @@
     "retirerFiltre": "Retirer ce filtre",
     "retirerTousFiltres": "Retirer tous les filtres",
     "region": "Région",
+    "typeDocument": "Type de support",
     "themes": "Thèmes",
     "origine": "Origine",
     "age": "Âge",
@@ -672,6 +695,11 @@
     "conteTitreImposeAide": "Laissez vide pour reprendre celui du PDF.",
     "conteAuteurDepot": "Auteur",
     "conteDeposer": "Déposer et créer le brouillon",
+    "livretNouveau": "Ajouter un livret pédagogique",
+    "livretNouveauSousTitre": "Même chaîne que pour un conte : le PDF produit un brouillon, le type est posé d’avance.",
+    "livretFichierAide": "Cent mégaoctets au plus. Le titre et le nombre de pages sont lus dedans.",
+    "livretOrientationAide": "Déclarée au dépôt, corrigeable ensuite. Un livret d’activités est le plus souvent en paysage.",
+    "livretDeposer": "Déposer et créer le livret",
     "conteRetourListe": "Retour au catalogue",
     "conteEditer": "Modifier",
     "conteEditionSousTitre": "Les champs métier, les prix par zone, et la publication.",
@@ -689,6 +717,10 @@
     "conteRegion": "Région du catalogue",
     "conteRegionAide": "Exigée pour publier, et distincte de l'origine culturelle : celle-ci est un texte libre, celle-là l'une des cinq régions sur lesquelles le catalogue filtre.",
     "conteRegionAucune": "— non renseignée —",
+    "conteTypeDocument": "Type de support",
+    "conteTypeDocumentAide": "Un conte est un récit ; un livret pédagogique est un support d'apprentissage. Le catalogue les présente séparément.",
+    "conteOrientation": "Orientation des pages",
+    "conteOrientationAide": "Elle n'est pas déduite du fichier : un livret porte souvent une couverture portrait devant des planches paysage.",
     "conteAgeMin": "Âge minimum",
     "conteAgeMax": "Âge maximum",
     "contePagesExtrait": "Pages de l'extrait",

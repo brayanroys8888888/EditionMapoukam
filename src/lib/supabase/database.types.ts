@@ -261,6 +261,7 @@ export type Database = {
           inclus_abonnement: boolean
           maj_le: string
           nb_pages_extrait: number | null
+          orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string | null
           publie_le: string | null
           recherche: unknown
@@ -268,6 +269,7 @@ export type Database = {
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
+          type_document: Database["public"]["Enums"]["document_type"]
         }
         Insert: {
           age_max?: number | null
@@ -283,6 +285,7 @@ export type Database = {
           inclus_abonnement?: boolean
           maj_le?: string
           nb_pages_extrait?: number | null
+          orientation?: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle?: string | null
           publie_le?: string | null
           recherche?: unknown
@@ -290,6 +293,7 @@ export type Database = {
           slug: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
+          type_document?: Database["public"]["Enums"]["document_type"]
         }
         Update: {
           age_max?: number | null
@@ -305,6 +309,7 @@ export type Database = {
           inclus_abonnement?: boolean
           maj_le?: string
           nb_pages_extrait?: number | null
+          orientation?: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle?: string | null
           publie_le?: string | null
           recherche?: unknown
@@ -312,6 +317,7 @@ export type Database = {
           slug?: string
           statut?: Database["public"]["Enums"]["book_status"]
           themes?: string[]
+          type_document?: Database["public"]["Enums"]["document_type"]
         }
         Relationships: []
       }
@@ -1701,6 +1707,7 @@ export type Database = {
           inclus_abonnement: boolean
           manques: string[]
           nb_pages_extrait: number
+          orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string
           prix: Json
           publiable: boolean
@@ -1710,6 +1717,7 @@ export type Database = {
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
           traductions: Json
+          type_document: Database["public"]["Enums"]["document_type"]
         }[]
       }
       admin_lister_abonnements: {
@@ -1839,8 +1847,10 @@ export type Database = {
           p_illustrateur?: string
           p_inclus_abonnement?: boolean
           p_nb_pages_extrait?: number
+          p_orientation?: Database["public"]["Enums"]["page_orientation"]
           p_origine_culturelle?: string
           p_region?: Database["public"]["Enums"]["region_conte"]
+          p_type_document?: Database["public"]["Enums"]["document_type"]
         }
         Returns: {
           age_max: number | null
@@ -1856,6 +1866,7 @@ export type Database = {
           inclus_abonnement: boolean
           maj_le: string
           nb_pages_extrait: number | null
+          orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string | null
           publie_le: string | null
           recherche: unknown
@@ -1863,6 +1874,7 @@ export type Database = {
           slug: string
           statut: Database["public"]["Enums"]["book_status"]
           themes: string[]
+          type_document: Database["public"]["Enums"]["document_type"]
         }
         SetofOptions: {
           from: "*"
@@ -2007,6 +2019,7 @@ export type Database = {
           p_taille?: number
           p_themes?: string[]
           p_tri?: string
+          p_type_document?: Database["public"]["Enums"]["document_type"]
           p_zone?: Database["public"]["Enums"]["price_zone"]
         }
         Returns: {
@@ -2386,11 +2399,13 @@ export type Database = {
         | "preview"
         | "none"
       book_status: "brouillon" | "publie" | "archive"
+      document_type: "conte" | "livret_pedagogique"
       download_format: "pdf" | "epub"
       email_statut: "en_attente" | "envoye" | "echoue"
       entitlement_type: "achat" | "offert"
       ingestion_status: "en_attente" | "en_cours" | "termine" | "echoue"
       order_status: "en_attente" | "paye" | "rembourse" | "echoue"
+      page_orientation: "paysage" | "portrait"
       price_zone: "international" | "afrique"
       promo_type: "montant" | "pourcentage"
       region_conte:
@@ -2565,11 +2580,13 @@ export const Constants = {
         "none",
       ],
       book_status: ["brouillon", "publie", "archive"],
+      document_type: ["conte", "livret_pedagogique"],
       download_format: ["pdf", "epub"],
       email_statut: ["en_attente", "envoye", "echoue"],
       entitlement_type: ["achat", "offert"],
       ingestion_status: ["en_attente", "en_cours", "termine", "echoue"],
       order_status: ["en_attente", "paye", "rembourse", "echoue"],
+      page_orientation: ["paysage", "portrait"],
       price_zone: ["international", "afrique"],
       promo_type: ["montant", "pourcentage"],
       region_conte: [

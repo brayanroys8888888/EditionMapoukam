@@ -71,6 +71,29 @@ export interface DemandeIngestion {
    * └────────────────────────────────────────────────────────────────────────┘
    */
   bookId?: string;
+  /**
+   * Type de support et orientation, DÉCLARÉS AU DÉPÔT.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ POURQUOI ICI ET PAS SEULEMENT DANS L'ÉCRAN D'ÉDITION.                 │
+   * │                                                                        │
+   * │ Ils y sont modifiables — c'est la migration 0062 — mais un livret      │
+   * │ déposé naîtrait alors « conte », en portrait, et le resterait jusqu'à  │
+   * │ ce que quelqu'un pense à le corriger. Le déposant SAIT ce qu'il        │
+   * │ dépose : le lui demander au moment où il le sait vaut mieux que de     │
+   * │ compter sur une correction ultérieure.                                 │
+   * │                                                                        │
+   * │ L'orientation n'est PAS déduite des dimensions des pages, que          │
+   * │ l'analyse connaît pourtant : un livret porte souvent une couverture    │
+   * │ portrait devant des planches paysage, et un conte peut contenir une    │
+   * │ double page. Une déduction se tromperait sans le dire.                 │
+   * └────────────────────────────────────────────────────────────────────────┘
+   *
+   * Sans effet quand `bookId` est fourni : ajouter une version linguistique ne
+   * change rien du titre parent, pas plus que son slug ou son auteur.
+   */
+  typeDocument?: 'conte' | 'livret_pedagogique';
+  orientation?: 'paysage' | 'portrait';
 }
 
 export interface ResultatIngestion {
@@ -385,6 +408,14 @@ async function creerBrouillon(
         //     ne décide pas du modèle économique d'un titre (§3.2) ;
         //   * `publie_le` reste nul — la fenêtre de 3 mois ne court pas encore.
         statut: 'brouillon',
+        // Déclarés par le déposant, ou laissés à leurs valeurs par défaut
+        // (`conte`, `portrait`). Ce sont les seuls champs métier que la chaîne
+        // écrit, et pour une raison précise : le déposant les connaît, et le
+        // catalogue ne peut pas les deviner sans se tromper.
+        ...(contexte.demande.typeDocument
+          ? { type_document: contexte.demande.typeDocument }
+          : {}),
+        ...(contexte.demande.orientation ? { orientation: contexte.demande.orientation } : {}),
       })
       .select('id')
       .single();

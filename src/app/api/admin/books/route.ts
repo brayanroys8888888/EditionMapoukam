@@ -73,6 +73,21 @@ const modificationSchema = z
     region: z
       .enum(['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'])
       .optional(),
+    /*
+     * LE TYPE DE SUPPORT ET L'ORIENTATION, créés par la migration 0061.
+     *
+     * Ils n'ont pas été posables avant la 0062, et leur symptôme était MUET :
+     * `conte` et `portrait` étant des valeurs par défaut non nulles, la
+     * publication ne s'en plaignait pas. Un livret déposé serait simplement
+     * resté un conte, en portrait, dans un catalogue qui ne saurait pas le
+     * distinguer.
+     *
+     * L'orientation n'est pas déduite du fichier : l'ingestion connaît les
+     * dimensions des pages, mais un livret porte souvent une couverture
+     * portrait devant des planches paysage.
+     */
+    type_document: z.enum(['conte', 'livret_pedagogique']).optional(),
+    orientation: z.enum(['paysage', 'portrait']).optional(),
     age_min: z.int().min(0).max(18).optional(),
     age_max: z.int().min(0).max(18).optional(),
     nb_pages_extrait: z.int().min(1).max(100).optional(),
@@ -108,6 +123,8 @@ export async function PATCH(request: Request): Promise<Response> {
       ? { origineCulturelle: champs.origine_culturelle }
       : {}),
     ...(champs.region !== undefined ? { region: champs.region } : {}),
+    ...(champs.type_document !== undefined ? { typeDocument: champs.type_document } : {}),
+    ...(champs.orientation !== undefined ? { orientation: champs.orientation } : {}),
     ...(champs.age_min !== undefined ? { ageMin: champs.age_min } : {}),
     ...(champs.age_max !== undefined ? { ageMax: champs.age_max } : {}),
     ...(champs.nb_pages_extrait !== undefined

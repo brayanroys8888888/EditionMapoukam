@@ -14,6 +14,7 @@ import {
   FiltresActifs,
   GrilleCatalogue,
   SelecteurTri,
+  clePluriel,
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
@@ -124,6 +125,7 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
   const filtres: FiltresCatalogue = {
     q: parametres.q,
     region: parametres.region,
+    ...(parametres.type ? { type: parametres.type } : {}),
     themes: parametres.themes,
     origine: parametres.origine,
     age_min: parametres.age_min,
@@ -151,6 +153,14 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
       libelle: traduire(langue, `regions.${filtres.region}`),
       region: filtres.region,
       retrait: lien({ region: undefined, page: undefined }),
+    });
+  }
+
+  if (filtres.type) {
+    poses.push({
+      cle: `type:${filtres.type}`,
+      libelle: traduire(langue, clePluriel(filtres.type)),
+      retrait: lien({ type: undefined, page: undefined }),
     });
   }
 

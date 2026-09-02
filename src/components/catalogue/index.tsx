@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 import { messageErreur, traduire, type LangueInterface } from '@/i18n';
-import type { EntreeCatalogue, RegionConte } from '@/domain/catalog/types';
+import type { EntreeCatalogue, RegionConte, TypeDocument } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import { TRIS } from '@/domain/catalog/schemas';
 import { Motif } from '@/components/motif';
@@ -28,6 +28,8 @@ import styles from './catalogue.module.css';
 export interface FiltresCatalogue {
   q?: string;
   region?: RegionConte;
+  /** Contes, livrets pédagogiques, ou absent — c'est-à-dire les deux. */
+  type?: TypeDocument;
   themes?: string[];
   origine?: string;
   age_min?: number;
@@ -44,6 +46,18 @@ export interface FiltresCatalogue {
  * fabriquent jamais d'URL : ils demandent celle d'une modification.
  */
 export type Lien = (modification: Record<string, string | number | undefined>) => string;
+
+/**
+ * La clé de traduction d'un type de support, AU PLURIEL.
+ *
+ * Une pastille de filtre nomme un RAYON, pas un exemplaire : « Contes (7) » se
+ * lit, « Conte (7) » se relit. Le singulier existe aussi — il sert à qualifier
+ * un titre sur sa fiche — d'où ces deux jeux de clés et cette fonction, pour
+ * qu'aucun écran n'ait à se rappeler lequel des deux il lui faut.
+ */
+export function clePluriel(type: TypeDocument): 'documents.contes' | 'documents.livrets_pedagogiques' {
+  return type === 'conte' ? 'documents.contes' : 'documents.livrets_pedagogiques';
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // LA LIGNE D'ACCÈS — LE CŒUR DE CET ÉCRAN
@@ -282,6 +296,12 @@ export function CarteLivre({
       )}
 
       <div className={styles.carteCorps}>
+        {entree.type_document === 'livret_pedagogique' ? (
+          <p className={styles.marqueSupport}>
+            {traduire(langue, 'documents.livret_pedagogique')}
+          </p>
+        ) : null}
+
         {entree.region ? (
           <p className={styles.origine}>
             <span className={styles.puce} aria-hidden="true" />
@@ -485,16 +505,48 @@ export function BarreFiltres({
   facettes,
   filtres,
   lien,
+  typeModifiable = true,
 }: {
   langue: LangueInterface;
   facettes: ReponseFacettes;
   filtres: FiltresCatalogue;
   lien: Lien;
+  /**
+   * Faux sur un écran dont le type de support EST le sujet — `/livrets`.
+   *
+   * Y afficher la pastille « Contes » offrirait une porte qui fait sortir de
+   * l'écran qu'on vient d'ouvrir : le lecteur croirait filtrer, il changerait
+   * de rayon. Le catalogue général, lui, la montre — c'est là qu'on choisit.
+   */
+  typeModifiable?: boolean;
 }): ReactNode {
   const themesPoses = new Set(filtres.themes ?? []);
 
   return (
     <nav className={styles.filtres} aria-label={traduire(langue, 'catalogue.filtres')}>
+      {/*
+        Une seule valeur au catalogue ne fait pas un filtre : proposer
+        « Contes (10) » quand il n'y a que des contes ne trie rien et occupe
+        une ligne. La pastille apparaît le jour où un livret est publié.
+      */}
+      {typeModifiable && facettes.types.length > 1 ? (
+        <GroupeFiltre titre={traduire(langue, 'catalogue.typeDocument')}>
+          {facettes.types.map((facette) => {
+            const valeur = facette.valeur as TypeDocument;
+            const actif = filtres.type === valeur;
+            return (
+              <PastilleFiltre
+                key={valeur}
+                href={lien({ type: actif ? undefined : valeur, page: undefined })}
+                actif={actif}
+              >
+                {traduire(langue, clePluriel(valeur))} ({facette.nombre})
+              </PastilleFiltre>
+            );
+          })}
+        </GroupeFiltre>
+      ) : null}
+
       {facettes.regions.length > 0 ? (
         <GroupeFiltre titre={traduire(langue, 'catalogue.region')}>
           {facettes.regions.map((facette) => {
@@ -631,6 +683,9 @@ export function ChampRecherche({
 }): ReactNode {
   const caches: [string, string][] = [];
   if (filtres.region) caches.push(['region', filtres.region]);
+  // Sans lui, chercher « lion » depuis un rayon filtré ramènerait tout le
+  // catalogue : le filtre serait perdu au moment précis où on l'affine.
+  if (filtres.type) caches.push(['type', filtres.type]);
   if (filtres.acces) caches.push(['acces', filtres.acces]);
   if (filtres.origine) caches.push(['origine', filtres.origine]);
   if (filtres.age_min !== undefined) caches.push(['age_min', String(filtres.age_min)]);

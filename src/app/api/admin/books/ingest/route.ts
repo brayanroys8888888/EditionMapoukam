@@ -130,6 +130,18 @@ const champsSchema = z.object({
    * l'anglais.
    */
   livre_id: z.uuid().optional(),
+  /**
+   * Type de support et orientation, déclarés au dépôt.
+   *
+   * L'écran d'édition les modifie aussi (migration 0062), mais un livret déposé
+   * naîtrait alors « conte », en portrait, et le resterait jusqu'à ce que
+   * quelqu'un pense à le corriger. Le déposant sait ce qu'il dépose.
+   *
+   * Sans effet avec `livre_id` : ajouter une version linguistique ne change
+   * rien du titre parent.
+   */
+  type_document: z.enum(['conte', 'livret_pedagogique']).optional(),
+  orientation: z.enum(['paysage', 'portrait']).optional(),
 });
 
 /**
@@ -201,6 +213,8 @@ export async function POST(request: Request): Promise<Response> {
     titre: renseigne(formulaire, 'titre'),
     auteur: renseigne(formulaire, 'auteur'),
     livre_id: renseigne(formulaire, 'livre_id'),
+    type_document: renseigne(formulaire, 'type_document'),
+    orientation: renseigne(formulaire, 'orientation'),
   });
   if (!champs.success) {
     return errors.validation(
@@ -237,6 +251,10 @@ export async function POST(request: Request): Promise<Response> {
             ...(champs.data.titre ? { titre: champs.data.titre } : {}),
             ...(champs.data.auteur ? { auteur: champs.data.auteur } : {}),
             ...(champs.data.livre_id ? { bookId: champs.data.livre_id } : {}),
+            ...(champs.data.type_document
+              ? { typeDocument: champs.data.type_document }
+              : {}),
+            ...(champs.data.orientation ? { orientation: champs.data.orientation } : {}),
           }),
         ),
       DELAI_ATTENTE_MS,

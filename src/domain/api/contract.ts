@@ -62,6 +62,14 @@ export interface Facette {
 
 export interface ReponseFacettes {
   regions: Facette[];
+  /**
+   * Contes et livrets pédagogiques, avec leur effectif RÉEL au catalogue.
+   *
+   * Une pastille « Livrets pédagogiques » écrite en dur serait une porte sur
+   * une pièce vide tant qu'aucun n'est publié. Elle vient donc de la base,
+   * comme les régions et les thèmes.
+   */
+  types: Facette[];
   themes: Facette[];
   origines: Facette[];
   age: { min: number | null; max: number | null };

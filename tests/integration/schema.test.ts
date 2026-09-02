@@ -97,6 +97,38 @@ describe('écarts assumés avec la spécification §8', () => {
     expect(rows.map((r) => r.column_name)).toEqual(['gratuit', 'nb_pages_extrait']);
   });
 
+  it('books supporte le type de document et l’orientation des livrets pédagogiques', async () => {
+    const colonnes = await query<{ column_name: string }>(`
+      select column_name
+      from information_schema.columns
+      where table_schema = 'public' and table_name = 'books'
+        and column_name in ('type_document', 'orientation')
+      order by column_name
+    `);
+
+    expect(colonnes.map((r) => r.column_name)).toEqual(['orientation', 'type_document']);
+
+    const typeDocument = await query<{ enumlabel: string }>(`
+      select enumlabel
+      from pg_type t
+      join pg_enum e on e.enumtypid = t.oid
+      where t.typname = 'document_type'
+      order by e.enumsortorder
+    `);
+
+    expect(typeDocument.map((r) => r.enumlabel)).toEqual(['conte', 'livret_pedagogique']);
+
+    const orientation = await query<{ enumlabel: string }>(`
+      select enumlabel
+      from pg_type t
+      join pg_enum e on e.enumtypid = t.oid
+      where t.typname = 'page_orientation'
+      order by e.enumsortorder
+    `);
+
+    expect(orientation.map((r) => r.enumlabel)).toEqual(['paysage', 'portrait']);
+  });
+
   it('book_prices n’a aucune dimension linguistique', async () => {
     // docs/PLAN.md D2 point 5 : le prix ne dépend jamais de la langue.
     const colonne = await queryOne(`

@@ -207,6 +207,7 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
     origine =
       (await queryOne(
         `select auteur, illustrateur, origine_culturelle, region::text as region,
+                type_document::text as type_document, orientation::text as orientation,
                 age_min, age_max, nb_pages_extrait,
                 gratuit, inclus_abonnement, disponible_achat
            from public.books where id = $1`,
@@ -226,7 +227,9 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
         `update public.books set auteur = $2, origine_culturelle = $3, age_min = $4,
                 age_max = $5, nb_pages_extrait = $6, gratuit = $7,
                 inclus_abonnement = $8, disponible_achat = $9,
-                region = $10::public.region_conte, illustrateur = $11
+                region = $10::public.region_conte, illustrateur = $11,
+                type_document = $12::public.document_type,
+                orientation = $13::public.page_orientation
           where id = $1`,
         [
           livreId,
@@ -240,6 +243,8 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
           origine['disponible_achat'],
           origine['region'],
           origine['illustrateur'],
+          origine['type_document'],
+          origine['orientation'],
         ],
       );
     }
@@ -385,6 +390,58 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
     expect(relu.ok).toBe(true);
     if (!relu.ok) return;
     expect(relu.donnees['illustrateur']).toBe('Koffi Mensah');
+  });
+
+  it('pose le TYPE DE SUPPORT et l’ORIENTATION, que la 0061 avait créés sans les rendre posables', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE MÊME DÉFAUT QUE LA RÉGION, MAIS MUET.                           │
+    // │                                                                    │
+    // │ La migration 0061 a créé `type_document` et `orientation` ; aucune  │
+    // │ fonction `admin_*` ne permettait de les poser avant la 0062. Sur la │
+    // │ région, la publication protestait — le manque était nommé. Ici, les │
+    // │ deux colonnes sont NON NULLES avec des valeurs par défaut : rien ne │
+    // │ protestait, et tout le catalogue serait simplement resté « conte » │
+    // │ et « portrait » pour toujours.                                     │
+    // │                                                                    │
+    // │ Les deux moitiés sont vérifiées, comme pour la région : l'écriture  │
+    // │ PASSE, et la lecture la REND. Sans la seconde, l'écran d'édition    │
+    // │ afficherait « conte » sur un livret et l'écraserait au premier      │
+    // │ enregistrement des champs métier.                                  │
+    // └────────────────────────────────────────────────────────────────────┘
+    const modification = await modifierLivre(editeur.id, livreId, {
+      typeDocument: 'livret_pedagogique',
+      orientation: 'paysage',
+    });
+    expect(modification.ok).toBe(true);
+
+    const relu = await lireLivre(livreId);
+    expect(relu.ok).toBe(true);
+    if (!relu.ok) return;
+
+    expect(relu.donnees['type_document']).toBe('livret_pedagogique');
+    expect(relu.donnees['orientation']).toBe('paysage');
+  });
+
+  it('ne touche PAS au type de support quand la modification ne le nomme pas', async () => {
+    // Le pendant du test précédent, et le vrai risque des colonnes non nulles :
+    // `coalesce` y garde son sens de « ne touche pas ». Un enregistrement des
+    // seuls âges ne doit pas ramener un livret au rang de conte — ce que ferait
+    // un `set type_document = p_type_document` écrit sans réfléchir.
+    await modifierLivre(editeur.id, livreId, {
+      typeDocument: 'livret_pedagogique',
+      orientation: 'paysage',
+    });
+
+    const modification = await modifierLivre(editeur.id, livreId, { ageMin: 5 });
+    expect(modification.ok).toBe(true);
+
+    const relu = await lireLivre(livreId);
+    expect(relu.ok).toBe(true);
+    if (!relu.ok) return;
+
+    expect(relu.donnees['type_document']).toBe('livret_pedagogique');
+    expect(relu.donnees['orientation']).toBe('paysage');
+    expect(relu.donnees['age_min']).toBe(5);
   });
 });
 

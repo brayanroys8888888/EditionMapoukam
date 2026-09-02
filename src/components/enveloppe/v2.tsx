@@ -330,6 +330,15 @@ export function PiedDePageV2({
               {traduire(langue, 'catalogue.accesGratuit')}
             </a>
           </li>
+          {/*
+            Le rayon des livrets est atteignable d'ICI et par la pastille de
+            filtre du catalogue — laquelle n'apparaît que si un livret est
+            publié. Un lien de pied, lui, ne dépend d'aucune donnée : c'est
+            l'entrée qui ne disparaît pas.
+          */}
+          <li>
+            <a href={`/${langue}/livrets`}>{traduire(langue, 'livrets.lien')}</a>
+          </li>
         </ColonnePied>
 
         <ColonnePied titre={traduire(langue, 'pied.colonneOffres')}>

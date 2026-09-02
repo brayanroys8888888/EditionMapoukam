@@ -32,6 +32,35 @@ export const REGIONS_CONTE = [
 export type RegionConte = (typeof REGIONS_CONTE)[number];
 
 /**
+ * Le TYPE DE SUPPORT — l'énumération `document_type` de la base (migration 0061).
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE COLONNE, PAS UNE SECONDE TABLE — ET DONC PAS UN SECOND CATALOGUE.   │
+ * │                                                                          │
+ * │ Un livret pédagogique partage TOUT avec un conte : les droits, les prix, │
+ * │ l'ingestion, la lecture en ligne, le téléchargement, les versions        │
+ * │ linguistiques. Ce qui les sépare tient en un mot — ce qu'on vient y      │
+ * │ chercher. Le catalogue les range donc ensemble et sait les séparer sur   │
+ * │ demande ; il ne les range pas dans deux endroits qui divergeraient.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export const TYPES_DOCUMENT = ['conte', 'livret_pedagogique'] as const;
+
+export type TypeDocument = (typeof TYPES_DOCUMENT)[number];
+
+/**
+ * L'ORIENTATION de la mise en page — `page_orientation` (migration 0061).
+ *
+ * Elle pilote le format des vignettes et de la liseuse, rien d'autre. Elle est
+ * DÉCLARÉE au dépôt et jamais déduite du fichier : un livret porte souvent une
+ * couverture portrait devant des planches paysage, et une page double d'album
+ * mesurerait « paysage » sur un conte qui n'en est pas un.
+ */
+export const ORIENTATIONS_PAGE = ['paysage', 'portrait'] as const;
+
+export type OrientationPage = (typeof ORIENTATIONS_PAGE)[number];
+
+/**
  * Représentations renvoyées par l'API du catalogue.
  *
  * Ce que ces types NE contiennent pas est aussi important que ce qu'ils
@@ -92,6 +121,13 @@ export interface EntreeCatalogue {
    * La couleur se choisit sur `region` ; le texte s'affiche depuis l'autre.
    */
   region: RegionConte | null;
+  /**
+   * Conte ou livret pédagogique. JAMAIS `null` : la colonne est NOT NULL avec
+   * un défaut depuis la migration 0061, si bien qu'un titre en a toujours un.
+   */
+  type_document: TypeDocument;
+  /** Orientation de la mise en page. NOT NULL elle aussi. */
+  orientation: OrientationPage;
   /** @deprecated Une seule taille, sous forme de chemin. Lire `couverture`. */
   couverture_url: string | null;
   /**

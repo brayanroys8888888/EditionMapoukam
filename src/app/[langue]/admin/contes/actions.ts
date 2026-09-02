@@ -144,7 +144,7 @@ export async function deposerConte(langueBrute: string, donnees: FormData): Prom
 
   const propreData = new FormData();
   propreData.append('fichier', new Blob([await file.arrayBuffer()]), file.name);
-  for (const champ of ['langue', 'titre', 'auteur', 'livre_id']) {
+  for (const champ of ['langue', 'titre', 'auteur', 'livre_id', 'type_document', 'orientation']) {
     const val = donnees.get(champ);
     if (typeof val === 'string') propreData.append(champ, val);
   }
@@ -171,6 +171,65 @@ export async function deposerConte(langueBrute: string, donnees: FormData): Prom
   // auquel il manque toujours quelque chose — auteur, origine, âge, prix — et
   // le déposer sans mener à ces champs laisserait un brouillon inerte.
   redirect(`${base}/${identifiant}?depose=1`);
+}
+
+/**
+ * Dépose un LIVRET PÉDAGOGIQUE.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ MÊME CHAÎNE, MÊME ROUTE, MÊME ÉCRAN D'ÉDITION — UN SEUL CHAMP CHANGE.  │
+ * │                                                                          │
+ * │ Un livret est une ligne de `books` comme une autre : mêmes droits, même  │
+ * │ ingestion, même lecture en ligne, même écran d'édition. C'est            │
+ * │ précisément pourquoi `type_document` est une COLONNE et non une seconde  │
+ * │ table — et pourquoi cette action ne duplique rien d'autre que le choix   │
+ * │ du type, imposé ici plutôt que laissé à un `<select>` qu'on oublierait.  │
+ * │                                                                          │
+ * │ Seul le retour en cas d'échec diffère : il ramène sur l'écran de dépôt   │
+ * │ des livrets, et non sur celui des contes.                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export async function deposerLivret(langueBrute: string, donnees: FormData): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const depot = `/${langue}/admin/livrets/nouveau`;
+
+  const file = donnees.get('fichier');
+  if (!(file instanceof File)) {
+    redirect(`${depot}?erreur=validation`);
+  }
+
+  const propreData = new FormData();
+  propreData.append('fichier', new Blob([await file.arrayBuffer()]), file.name);
+  // Le type est IMPOSÉ par l'écran, pas choisi dans le formulaire : c'est ce
+  // qui distingue ce dépôt de l'autre, et le laisser modifiable en ferait un
+  // second écran de dépôt de contes.
+  propreData.append('type_document', 'livret_pedagogique');
+  for (const champ of ['langue', 'titre', 'auteur', 'orientation']) {
+    const val = donnees.get(champ);
+    if (typeof val === 'string') propreData.append(champ, val);
+  }
+
+  const req = new Request(`${getServerEnv().NEXT_PUBLIC_APP_URL}/api/admin/books/ingest`, {
+    method: 'POST',
+    headers: { cookie: await enteteCookie() },
+    body: propreData,
+  });
+
+  const reponse = await ingererRoute(req);
+  const corps = (await reponse.json().catch(() => null)) as Record<string, unknown> | null;
+
+  if (reponse.status !== 201) redirect(`${depot}?erreur=${codeErreur(corps)}`);
+
+  const identifiant = corps?.['livre_id'];
+  if (typeof identifiant !== 'string') redirect(`${depot}?erreur=erreur_interne`);
+
+  const catalogue = `/${langue}/admin/contes`;
+  revalidatePath(catalogue);
+
+  // L'écran d'édition est CELUI DES CONTES, et c'est voulu : un livret y a les
+  // mêmes champs métier, les mêmes prix, les mêmes versions linguistiques. En
+  // dupliquer un second n'aurait fait diverger que la copie.
+  redirect(`${catalogue}/${identifiant}?depose=1`);
 }
 
 /** Modifie les champs métier d'un titre. */
@@ -208,6 +267,24 @@ export async function modifierConte(
      * qui décide du filtre du catalogue.
      */
     ...(texte(donnees, 'region') !== undefined ? { region: texte(donnees, 'region') } : {}),
+    /*
+     * LE TYPE DE SUPPORT ET L'ORIENTATION.
+     *
+     * Ils sont NON NULS en base, avec `conte` et `portrait` pour défauts. Leurs
+     * `<select>` proposent donc toujours une valeur réelle, sans choix vide :
+     * il n'y a rien à « ne pas toucher », et un vide y serait un état que la
+     * colonne n'admet pas.
+     *
+     * Ils passent quand même par `texte()`, comme les autres champs métier :
+     * un formulaire tronqué — champ retiré, requête forgée — n'écrase alors
+     * rien plutôt que d'écrire une valeur inventée.
+     */
+    ...(texte(donnees, 'type_document') !== undefined
+      ? { type_document: texte(donnees, 'type_document') }
+      : {}),
+    ...(texte(donnees, 'orientation') !== undefined
+      ? { orientation: texte(donnees, 'orientation') }
+      : {}),
     ...(nombre(donnees, 'age_min') !== undefined ? { age_min: nombre(donnees, 'age_min') } : {}),
     ...(nombre(donnees, 'age_max') !== undefined ? { age_max: nombre(donnees, 'age_max') } : {}),
     ...(nombre(donnees, 'nb_pages_extrait') !== undefined

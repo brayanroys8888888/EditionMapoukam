@@ -68,6 +68,8 @@ const BASE: EntreeCatalogue = {
   origine_culturelle: 'conte akan — Ghana',
   themes: ['ruse'],
   region: 'afrique_ouest',
+  type_document: 'conte',
+  orientation: 'portrait',
   couverture_url: null,
   couverture: {
     vignette: 'https://exemple.test/storage/covers/abc/vignette.webp',
@@ -409,6 +411,10 @@ const FACETTES: ReponseFacettes = {
   regions: [
     { valeur: 'afrique_ouest', nombre: 3 },
     { valeur: 'sahel', nombre: 1 },
+  ],
+  types: [
+    { valeur: 'conte', nombre: 6 },
+    { valeur: 'livret_pedagogique', nombre: 2 },
   ],
   themes: [
     { valeur: 'ruse', nombre: 4 },

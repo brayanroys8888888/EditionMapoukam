@@ -135,6 +135,31 @@
   color: var(--carte-encre);
 }
 
+/*
+ * MARQUE DE SUPPORT — visible SEULEMENT sur un livret pédagogique.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE MARQUE SUR UN CONTE, ET C'EST LE POINT.                          │
+ * │                                                                          │
+ * │ Étiqueter les deux types remplirait le catalogue d'un mot que le lecteur │
+ * │ lit vingt fois pour rien : la quasi-totalité des titres sont des contes, │
+ * │ c'est l'attendu. Seul l'écart mérite d'être signalé — sans quoi, dans le │
+ * │ catalogue mêlé, un livret d'activités est indiscernable d'un récit.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.marqueSupport {
+  display: inline-block;
+  margin-bottom: var(--espace-2);
+  padding: 2px 8px;
+  border: 1px solid var(--carte-bordure);
+  border-radius: 999px;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--carte-encre);
+}
+
 .puce {
   width: 8px;
   height: 8px;

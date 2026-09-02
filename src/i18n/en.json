@@ -79,6 +79,16 @@
     "afrique_australe": "Southern Africa",
     "afrique_est": "East Africa"
   },
+  "documents": {
+    "conte": "Tale",
+    "livret_pedagogique": "Learning booklet",
+    "contes": "Tales",
+    "livrets_pedagogiques": "Learning booklets"
+  },
+  "orientations": {
+    "paysage": "Landscape",
+    "portrait": "Portrait"
+  },
   "acces": {
     "_commentaire": "Driven by `acces.reason`, never inferred from a price or a flag. `purchase` and `granted` take precedence over everything else: neither a price nor « with your subscription » suits someone who already owns the title.",
     "purchase": "In your library",
@@ -96,6 +106,8 @@
   "auth": {
     "_commentaire": "THREE MESSAGES ARE DELIBERATELY UNDIFFERENTIATED — see the French dictionary, which carries the reasoning. Translating them apart would defeat the point.",
     "connexionTitre": "Sign in",
+    "illustrationConnexion": "Your stories pick up on the page where you left off.",
+    "illustrationInscription": "Tales of African heritage, illustrated for ages 4–10.",
     "connexionSoumettre": "Sign in",
     "email": "Email address",
     "motDePasse": "Password",
@@ -143,6 +155,14 @@
     "continuer": "Continue",
     "allerAuCatalogue": "Browse the catalogue"
   },
+  "livrets": {
+    "_commentaire": "The learning-booklet shelf — the SAME catalogue with `type_document` applied. The count reads on the shelf, never on the whole catalogue.",
+    "titre": "Learning booklets",
+    "intro": "Activity material to print or project, drawn from the tales in the catalogue.",
+    "compteTous": "{total} learning booklets available",
+    "compteUn": "1 learning booklet available",
+    "lien": "Learning booklets"
+  },
   "catalogue": {
     "_commentaire": "The card carries THREE access lines, not two — see the French dictionary, which carries the reasoning.",
     "titre": "All the tales",
@@ -162,6 +182,7 @@
     "retirerFiltre": "Remove this filter",
     "retirerTousFiltres": "Remove all filters",
     "region": "Region",
+    "typeDocument": "Format",
     "themes": "Themes",
     "origine": "Origin",
     "age": "Age",
@@ -670,6 +691,11 @@
     "conteTitreImposeAide": "Leave empty to keep the PDF's own title.",
     "conteAuteurDepot": "Author",
     "conteDeposer": "Upload and create the draft",
+    "livretNouveau": "Add a learning booklet",
+    "livretNouveauSousTitre": "Same pipeline as a tale: the PDF creates a draft, the type is set up front.",
+    "livretFichierAide": "One hundred megabytes at most. Title and page count are read from it.",
+    "livretOrientationAide": "Declared on upload, editable afterwards. An activity booklet is usually landscape.",
+    "livretDeposer": "Upload and create the booklet",
     "conteRetourListe": "Back to the catalogue",
     "conteEditer": "Edit",
     "conteEditionSousTitre": "Business fields, prices per zone, and publication.",
@@ -687,6 +713,10 @@
     "conteRegion": "Catalogue region",
     "conteRegionAide": "Required to publish, and distinct from the cultural origin: that one is free text, this one is one of the five regions the catalogue filters on.",
     "conteRegionAucune": "— not set —",
+    "conteTypeDocument": "Document type",
+    "conteTypeDocumentAide": "A tale is a story; a learning booklet is teaching material. The catalogue presents them separately.",
+    "conteOrientation": "Page orientation",
+    "conteOrientationAide": "It is not inferred from the file: a booklet often has a portrait cover in front of landscape plates.",
     "conteAgeMin": "Minimum age",
     "conteAgeMax": "Maximum age",
     "contePagesExtrait": "Excerpt pages",

@@ -98,9 +98,18 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
       titre={traduire(langue, 'admin.contes')}
       sousTitre={traduire(langue, 'admin.contesSousTitre')}
       actions={
-        <a className={styles.boutonPrimaire} href={`${base}/nouveau`}>
-          {traduire(langue, 'admin.conteNouveau')}
-        </a>
+        <>
+          {/*
+            Deux portes vers la MÊME chaîne d'ingestion. Le type de document
+            n'est pas une case à cocher qu'on oublie : il se choisit en entrant.
+          */}
+          <a className={styles.boutonDiscret} href={`/${langue}/admin/livrets/nouveau`}>
+            {traduire(langue, 'admin.livretNouveau')}
+          </a>
+          <a className={styles.boutonPrimaire} href={`${base}/nouveau`}>
+            {traduire(langue, 'admin.conteNouveau')}
+          </a>
+        </>
       }
     >
       {/*

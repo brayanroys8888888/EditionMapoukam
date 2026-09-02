@@ -274,6 +274,25 @@ export type RegionConte =
   | 'afrique_australe'
   | 'afrique_est';
 
+/**
+ * Le TYPE DE SUPPORT, créé par la migration 0061.
+ *
+ * Un conte est un récit ; un livret pédagogique est un support d'apprentissage.
+ * Les deux vivent dans `books` et partagent tout le reste — droits, prix,
+ * ingestion, lecture en ligne — ce qui est précisément pourquoi il s'agit d'une
+ * colonne et non d'une seconde table.
+ */
+export type TypeDocument = 'conte' | 'livret_pedagogique';
+
+/**
+ * L'ORIENTATION de la mise en page, créée par la migration 0061.
+ *
+ * Elle n'est pas déduite du fichier déposé : un livret porte souvent une
+ * couverture portrait devant des planches paysage. Une déduction se tromperait
+ * sans le dire, sur le champ qui décide de la mise en page.
+ */
+export type OrientationPage = 'paysage' | 'portrait';
+
 export async function modifierLivre(
   acteur: ActeurId,
   bookId: string,
@@ -285,6 +304,8 @@ export async function modifierLivre(
     illustrateur?: string;
     origineCulturelle?: string;
     region?: RegionConte;
+    typeDocument?: TypeDocument;
+    orientation?: OrientationPage;
     ageMin?: number;
     ageMax?: number;
     nbPagesExtrait?: number;
@@ -307,6 +328,12 @@ export async function modifierLivre(
     // jusqu'au 5 août 2026 : un conte déposé restait impubliable.
     p_region: champs.region ?? null,
     p_illustrateur: champs.illustrateur ?? null,
+    // Créés par la migration 0061, posables depuis la 0062 seulement. Entre les
+    // deux, tout le catalogue serait resté « conte » et « portrait » — le même
+    // défaut que `region`, mais MUET, puisque leurs valeurs par défaut ne sont
+    // pas nulles et ne retiennent donc pas la publication.
+    p_type_document: champs.typeDocument ?? null,
+    p_orientation: champs.orientation ?? null,
   });
 }
 

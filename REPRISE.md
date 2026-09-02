@@ -5,6 +5,25 @@
 
 ---
 
+## 0 bis. Livrets pédagogiques — livré, avec UNE question ouverte
+
+> Écrit le 2 septembre 2026.
+
+Le support « livret pédagogique » traverse maintenant toute la chaîne :
+migrations **0061** (colonnes), **0062** (les poser et les relire depuis
+l'administration), **0063** (les filtrer au catalogue public). Deux écrans
+neufs : `/{langue}/admin/livrets/nouveau` pour le dépôt, `/{langue}/livrets`
+pour le rayon public.
+
+⚠️ **Le mot « livret » n'apparaît PAS une fois dans
+`docs/cahier-des-charges.md`**, qui fait foi. Aucune règle métier n'a été
+inventée pour autant — un livret suit exactement les règles d'un conte — mais
+trois arbitrages restent à rendre : abonnement, fenêtre de trois mois, et
+défaut du catalogue. Ils sont écrits en fin de
+`docs/ajout-livret-pedagogique-2026-09-02.md`, sous « Point 2 ».
+
+---
+
 ## 0. Les huit corrections — TOUTES FAITES, porte verte
 
 > Écrit le 5 août 2026, complété le 6. Cette section portait un chantier

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { REGIONS_CONTE } from '@/domain/catalog/types';
+import { REGIONS_CONTE, TYPES_DOCUMENT } from '@/domain/catalog/types';
 
 /**
  * Validation des entrées du catalogue.
@@ -52,6 +52,16 @@ export const catalogQuerySchema = z.object({
    * ignoré en silence, ce qui est le pire des deux.
    */
   region: z.enum(REGIONS_CONTE).optional(),
+
+  /**
+   * Type de support — contes, livrets pédagogiques, ou les deux.
+   *
+   * Absent, il ne filtre RIEN : le catalogue reste ce qu'il était, les deux
+   * types mêlés. Un défaut à « conte » aurait fait disparaître les livrets de
+   * la recherche, du plan de site et des suggestions sans qu'un seul appelant
+   * ait changé — le tri se demande, il ne s'impose pas.
+   */
+  type: z.enum(TYPES_DOCUMENT).optional(),
 
   acces: z.enum(TYPES_ACCES).optional(),
 
