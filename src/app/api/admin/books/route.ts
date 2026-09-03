@@ -62,17 +62,25 @@ const modificationSchema = z
     illustrateur: z.string().trim().min(1).max(200).optional(),
     origine_culturelle: z.string().trim().min(1).max(200).optional(),
     /*
-     * La RÉGION, exigée à la publication depuis la migration 0044.
+     * LES THÈMES ONT PRIS LA PLACE DE LA RÉGION.
      *
-     * Elle n'est pas déduite de `origine_culturelle` : `region_depuis_origine`
-     * sait le faire, mais son commentaire est formel — « amorçage et reprise
-     * de données uniquement ; en exploitation, l'éditeur pose la région à la
-     * main ». Une déduction se tromperait sans le dire, sur le champ même qui
-     * décide du filtre du catalogue.
+     * La région rangeait les contes par tradition d'origine. Elle ne disait
+     * rien d'une fiche d'activités, qui n'en a pas — et depuis que le
+     * catalogue porte deux supports, elle en cachait la moitié derrière un
+     * filtre qui ne pouvait pas les décrire. Les thèmes valent pour les deux :
+     * « ruse », « amitié », « saisons » se posent sur un conte comme sur un
+     * livret.
+     *
+     * Ils sont en SAISIE LIBRE, et rien ne les énumère ici : les pastilles du
+     * catalogue viennent des facettes, c'est-à-dire de ce que le catalogue
+     * porte vraiment. Une liste fermée aurait à être rouverte à chaque idée.
+     *
+     * Un TABLEAU VIDE efface les thèmes — c'est ainsi que l'éditeur retire le
+     * dernier. `undefined` les laisse intacts. Le nettoyage — vides retirés,
+     * doublons fondus, ordre alphabétique — est fait EN BASE par
+     * `admin_modifier_livre`, une seule fois, plutôt qu'à chaque appelant.
      */
-    region: z
-      .enum(['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'])
-      .optional(),
+    themes: z.array(z.string().trim().min(1).max(60)).max(12).optional(),
     /*
      * LE TYPE DE SUPPORT ET L'ORIENTATION, créés par la migration 0061.
      *
@@ -122,7 +130,7 @@ export async function PATCH(request: Request): Promise<Response> {
     ...(champs.origine_culturelle !== undefined
       ? { origineCulturelle: champs.origine_culturelle }
       : {}),
-    ...(champs.region !== undefined ? { region: champs.region } : {}),
+    ...(champs.themes !== undefined ? { themes: champs.themes } : {}),
     ...(champs.type_document !== undefined ? { typeDocument: champs.type_document } : {}),
     ...(champs.orientation !== undefined ? { orientation: champs.orientation } : {}),
     ...(champs.age_min !== undefined ? { ageMin: champs.age_min } : {}),

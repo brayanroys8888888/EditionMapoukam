@@ -8,6 +8,7 @@ import { getPaymentProvider } from '@/adapters/registry';
 import { FakePaymentProvider } from '@/adapters/payment/fake/fake-payment-provider';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { preparerSouscription } from '@/lib/subscriptions/souscription';
+import { lireOffreParCode } from '@/lib/offers/service';
 import { logger } from '@/lib/logger';
 
 /**
@@ -53,7 +54,8 @@ import { logger } from '@/lib/logger';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 const demandeSchema = z.object({
-  offre: z.enum(['mensuel', 'annuel']),
+  /** Le CODE d'une formule, ex. `association-annuel` — voir `/api/subscriptions`. */
+  offre: z.string().min(1).max(64),
   issue: z.enum(['reussi', 'echoue']),
 });
 
@@ -73,7 +75,25 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const client = createServiceClient();
-  const courant = await abonnementCourant(garde.appelant.id, { client });
+
+  const zone = (
+    await preparerSouscription(
+      { userId: garde.appelant.id, email: garde.appelant.email },
+      'lecture',
+      { client },
+    )
+  ).zone;
+
+  const offre = await lireOffreParCode(corps.data.offre, zone, { client });
+
+  if (!offre) {
+    return fail(404, {
+      code: 'offre_indisponible',
+      message: 'Cette formule n’est pas disponible.',
+    });
+  }
+
+  const courant = await abonnementCourant(garde.appelant.id, offre.domaine, { client });
 
   if (courant && courant.statut !== 'expire') {
     return fail(409, {
@@ -103,6 +123,7 @@ export async function POST(request: Request): Promise<Response> {
 
   const preparation = await preparerSouscription(
     { userId: garde.appelant.id, email: garde.appelant.email },
+    offre.domaine,
     { client },
   );
 
@@ -110,18 +131,18 @@ export async function POST(request: Request): Promise<Response> {
     // Le gestionnaire de webhooks reconnaît l'abonné par `userId` : aucune
     // ligne n'existe encore, c'est cet événement qui la crée.
     userId: garde.appelant.id,
-    offre: corps.data.offre,
-    montant: {
-      montant: preparation.montants[corps.data.offre],
-      devise: preparation.devise,
-    },
+    offre: offre.periode,
+    domaine: offre.domaine,
+    planId: offre.id,
+    montant: { montant: offre.montant, devise: offre.devise },
     zone: preparation.zone,
     joursEssai: preparation.joursEssai,
   });
 
   logger.info('Souscription simulée émise', {
     userId: garde.appelant.id,
-    offre: corps.data.offre,
+    offre: offre.code,
+    domaine: offre.domaine,
     zone: preparation.zone,
     statut: resultat.statut,
   });

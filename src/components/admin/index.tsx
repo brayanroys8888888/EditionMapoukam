@@ -34,6 +34,12 @@ import styles from './admin.module.css';
  * qui porte les trois leviers ; un filtre, lui, se perd à chaque retour sur
  * l'écran, ne se met pas en favori, et rien dans ce rail ne disait qu'il
  * existait.
+ *
+ * « Offres » et « Association Dave » ont été ajoutés le 3 septembre 2026, avec
+ * §3.6 et §4.3 F12 bis. Les deux sont en BAS du rail, après les promos : ce
+ * sont des écrans de réglage, ouverts quelques fois par an, quand ceux du
+ * dessus sont ouverts tous les jours. Les mettre en tête aurait déplacé les
+ * écrans quotidiens sous une liste qu'on ne consulte presque jamais.
  */
 const SECTIONS = [
   { cle: 'admin.tableauDeBord', chemin: '' },
@@ -43,6 +49,10 @@ const SECTIONS = [
   { cle: 'admin.abonnements', chemin: '/abonnements' },
   { cle: 'admin.utilisateurs', chemin: '/utilisateurs' },
   { cle: 'admin.promos', chemin: '/promos' },
+  { cle: 'admin.offres', chemin: '/offres' },
+  { cle: 'admin.association', chemin: '/association' },
+  { cle: 'admin.avis', chemin: '/avis' },
+  { cle: 'admin.temoignages', chemin: '/temoignages' },
 ] as const;
 
 export type SectionAdmin = (typeof SECTIONS)[number]['chemin'];

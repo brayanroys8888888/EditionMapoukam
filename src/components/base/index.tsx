@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
-import type { RegionConte } from '@/domain/catalog/types';
+import type { Palette } from '@/components/motif';
 import styles from './base.module.css';
 
 /**
@@ -137,8 +137,14 @@ export function Champ({
 
 interface ProprietesPastille {
   children: ReactNode;
-  /** Colore la pastille aux couleurs d'une région. */
-  region?: RegionConte | null;
+  /**
+   * Colore la pastille aux couleurs d'une palette.
+   *
+   * La prop portait le nom `region` tant que la couleur venait de
+   * `books.region` ; la migration 0071 l'a retirée du catalogue public, et la
+   * palette se déduit désormais d'un thème — `teinteDuTheme`.
+   */
+  teinte?: Palette | null;
   /** Filtre actif — l'état est porté par `aria-pressed`, pas par la couleur. */
   actif?: boolean;
   onClick?: () => void;
@@ -155,16 +161,19 @@ interface ProprietesPastille {
  */
 export function Pastille({
   children,
-  region,
+  teinte,
   actif = false,
   onClick,
   retrait,
 }: ProprietesPastille): ReactNode {
-  const style = region
+  // Les jetons gardent leur nom `--region-*` : ce sont des EMPLACEMENTS de
+  // palette, et les renommer toucherait le test de contraste de la palette
+  // pour un gain purement lexical.
+  const style = teinte
     ? ({
-        '--pastille-fond': `var(--region-${region}-fond)`,
-        '--pastille-bordure': `var(--region-${region}-bordure)`,
-        '--pastille-encre': `var(--region-${region}-encre)`,
+        '--pastille-fond': `var(--region-${teinte}-fond)`,
+        '--pastille-bordure': `var(--region-${teinte}-bordure)`,
+        '--pastille-encre': `var(--region-${teinte}-encre)`,
       } as React.CSSProperties)
     : undefined;
 

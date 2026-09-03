@@ -102,6 +102,27 @@ function texteOuVide(donnees: FormData, nom: string): string {
 }
 
 /**
+ * Une LIGNE de thèmes séparés par des virgules, rendue en tableau.
+ *
+ * Le champ est unique et libre — « ruse, animaux, saisons » — plutôt qu'une
+ * liste de cases : les thèmes ne sont pas une énumération, et une liste fermée
+ * aurait à être rouverte à chaque idée éditoriale.
+ *
+ * Rend TOUJOURS un tableau, vide compris : le vide efface les thèmes, comme le
+ * vide efface un résumé. Les entrées blanches disparaissent ici pour que
+ * « ruse, , animaux » ne pose pas un thème sans nom ; le reste du nettoyage —
+ * doublons, ordre — est fait en base, à un seul endroit.
+ */
+function themes(donnees: FormData, nom: string): string[] {
+  const valeur = donnees.get(nom);
+  if (typeof valeur !== 'string') return [];
+  return valeur
+    .split(',')
+    .map((theme) => theme.trim())
+    .filter((theme) => theme.length > 0);
+}
+
+/**
  * Une case à cocher NON cochée n'est pas envoyée par le navigateur.
  *
  * C'est le piège classique des formulaires à interrupteurs : sans champ témoin,
@@ -255,18 +276,17 @@ export async function modifierConte(
       ? { origine_culturelle: texte(donnees, 'origine_culturelle') }
       : {}),
     /*
-     * LA RÉGION, ET POURQUOI ELLE N'EST PAS DÉDUITE DE L'ORIGINE.
+     * LES THÈMES, saisis sur UNE ligne et séparés par des virgules.
      *
-     * Elle est exigée à la publication depuis la migration 0044, et rien ne
-     * permettait de la poser avant la 0057 : un conte déposé restait
-     * impubliable, avec un manque nommé `region` qu'aucun champ ne satisfaisait.
+     * Ils sont TOUJOURS envoyés, tableau vide compris : c'est la seule manière
+     * de retirer le dernier thème d'un titre. Les omettre quand le champ est
+     * vide — comme on omet un champ métier vide — rendrait un thème
+     * indéboulonnable une fois posé.
      *
-     * `region_depuis_origine` sait la deviner d'après l'origine culturelle,
-     * mais son commentaire est formel — « amorçage et reprise de données
-     * UNIQUEMENT ». Une déduction se tromperait sans le dire, sur le champ même
-     * qui décide du filtre du catalogue.
+     * Le découpage est fait ici parce qu'il appartient à l'ÉCRAN : c'est une
+     * commodité de saisie, pas une règle. Le nettoyage, lui, est en base.
      */
-    ...(texte(donnees, 'region') !== undefined ? { region: texte(donnees, 'region') } : {}),
+    themes: themes(donnees, 'themes'),
     /*
      * LE TYPE DE SUPPORT ET L'ORIENTATION.
      *
@@ -402,6 +422,8 @@ export async function modifierVersionConte(
      * fois écrit.
      */
     resume: texteOuVide(donnees, 'resume'),
+    // Même raison, même convention : la chaîne vide efface la description.
+    description: texteOuVide(donnees, 'description'),
   });
 
   if (reponse.statut !== 200) redirect(`${ecran}?erreur=${codeErreur(reponse.corps)}`);

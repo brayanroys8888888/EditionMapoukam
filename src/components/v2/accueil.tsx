@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
-import type { EntreeCatalogue, RegionConte } from '@/domain/catalog/types';
+import type { EntreeCatalogue } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
+import type { Temoignage } from '@/lib/site/temoignages';
 import { Carrousel } from './carrousel';
 import { CarteConteV2 } from './carte-conte';
 import { Revele } from './revele';
@@ -20,31 +21,26 @@ import styles from './accueil.module.css';
  * │ recopié serait celui que le client lit AVANT de payer l'autre.          │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
- * Les avis, eux, sont de la copie éditoriale et vivent dans le dictionnaire.
- * Ce sont des témoignages du site actuel, repris mot pour mot.
+ * Les témoignages ne sont plus de la copie non plus : ils vivent en base
+ * depuis la migration 0073, traduits et ordonnés par l'éditeur, et arrivent ici
+ * par une prop. Ils étaient figés aux clés `v2.avis1` à `v2.avis3`, où en
+ * changer un demandait un déploiement.
  */
 
-/** Ordre d'affichage des traditions — d'ouest en est. */
-const ORDRE_REGIONS: RegionConte[] = [
-  'afrique_ouest',
-  'sahel',
-  'afrique_centrale',
-  'afrique_australe',
-  'afrique_est',
-];
+/**
+ * Combien de THÈMES la vitrine met en avant.
+ *
+ * La section montrait les cinq traditions, dans un ordre écrit ici. Les thèmes
+ * viennent des facettes, déjà ordonnés par effectif : il ne reste qu'à décider
+ * combien de tuiles tiennent sur une ligne. Cinq, comme avant.
+ */
+const NOMBRE_THEMES_VITRINE = 5;
 
 /** Les trois gages de la bande de réassurance. */
 const GAGES = [
   { titre: 'v2.gage1Titre', corps: 'v2.gage1Corps' },
   { titre: 'v2.gage2Titre', corps: 'v2.gage2Corps' },
   { titre: 'v2.gage3Titre', corps: 'v2.gage3Corps' },
-] as const;
-
-/** Les trois avis, repris du site actuel. */
-const AVIS = [
-  { texte: 'v2.avis1', auteur: 'v2.avis1Auteur', role: 'v2.avis1Role' },
-  { texte: 'v2.avis2', auteur: 'v2.avis2Auteur', role: 'v2.avis2Role' },
-  { texte: 'v2.avis3', auteur: 'v2.avis3Auteur', role: 'v2.avis3Role' },
 ] as const;
 
 function IconeGage({ rang }: { rang: number }): ReactNode {
@@ -93,19 +89,25 @@ export function AccueilV2({
   langue,
   nouveautes,
   facettes,
+  temoignages,
   actionAjout,
 }: {
   langue: LangueInterface;
   /** `null` quand la base tousse : la vitrine s'affiche quand même. */
   nouveautes: { entrees: EntreeCatalogue[]; total: number } | null;
   facettes: ReponseFacettes | null;
+  /**
+   * Les témoignages publiés. Vide fait disparaître la section — une vitrine
+   * sans témoignages vaut mieux qu'une section de citations vides.
+   */
+  temoignages: readonly Temoignage[];
   /** Fabrique l'action d'ajout au panier d'un titre donné. */
   actionAjout?: (livreId: string) => (donnees: FormData) => void | Promise<void>;
 }): ReactNode {
-  const traditions = ORDRE_REGIONS.map((region) => ({
-    region,
-    nombre: facettes?.regions.find((facette) => facette.valeur === region)?.nombre ?? 0,
-  })).filter((tradition) => tradition.nombre > 0);
+  // Les facettes ne rendent que ce que le catalogue porte vraiment : un thème
+  // sans titre publié n'y figure pas, et la vitrine ne peut donc pas proposer
+  // une tuile qui mènerait à une page vide.
+  const themesVitrine = (facettes?.themes ?? []).slice(0, NOMBRE_THEMES_VITRINE);
 
   return (
     <div className={styles.page}>
@@ -237,43 +239,57 @@ export function AccueilV2({
         </div>
       </section>
 
-      {/* ══ LES CINQ TRADITIONS ══════════════════════════════════════════ */}
-      {traditions.length > 0 ? (
+      {/* ══ LES THÈMES ═══════════════════════════════════════════════════ */}
+      {themesVitrine.length > 0 ? (
         <section className={styles.section} aria-labelledby="titre-traditions">
           <div className={styles.interieur}>
             <div className={styles.enteteSection}>
               <div>
-                <span className={styles.oeil}>{traduire(langue, 'v2.traditionsOeil')}</span>
+                <span className={styles.oeil}>{traduire(langue, 'v2.themesOeil')}</span>
                 <h2 id="titre-traditions" className={styles.titreSection}>
-                  {traduire(langue, 'accueil.traditionsTitre')}
+                  {traduire(langue, 'accueil.themesTitre')}
                 </h2>
                 <p className={styles.sousTitreSection}>
-                  {traduire(langue, 'accueil.traditionsIntro')}
+                  {traduire(langue, 'accueil.themesIntro')}
                 </p>
               </div>
             </div>
 
             <ul className={styles.traditions}>
-              {traditions.map(({ region, nombre }, rang) => {
+              {themesVitrine.map((facette, rang) => {
                 const imgIndex = (rang % 4) + 1;
                 return (
-                  <li key={region}>
+                  <li key={facette.valeur}>
                     <Revele rang={rang}>
-                      <a className={styles.tradition} href={`/${langue}/catalogue?region=${region}`}>
+                      {/*
+                        `encodeURIComponent` : un thème est de la saisie libre,
+                        et une espace ou une esperluette y casserait la requête.
+                      */}
+                      <a
+                        className={styles.tradition}
+                        href={`/${langue}/catalogue?themes=${encodeURIComponent(facette.valeur)}`}
+                      >
                         <div style={{ width: '100%', height: '110px', borderRadius: 'var(--rayon-image)', overflow: 'hidden', marginBottom: '14px' }}>
+                          {/*
+                            L'illustration est DÉCORATIVE : elle tourne sur
+                            quatre visuels sans rapport avec le thème nommé
+                            juste en dessous. Un `alt` la décrivant affirmerait
+                            un lien qui n'existe pas ; il est donc vide, et
+                            l'image est ignorée par les lecteurs d'écran.
+                          */}
                           <img
                             src={`/images/tradition-${imgIndex}.jpg`}
-                            alt={traduire(langue, `regions.${region}`)}
+                            alt=""
                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                           />
                         </div>
-                        <p className={styles.traditionNom}>{traduire(langue, `regions.${region}`)}</p>
+                        <p className={styles.traditionNom}>{facette.valeur}</p>
                         <p className={styles.traditionCompte}>
-                          {nombre === 1
-                            ? traduire(langue, 'accueil.traditionsCompteUn')
-                            : traduire(langue, 'accueil.traditionsCompte').replace(
+                          {facette.nombre === 1
+                            ? traduire(langue, 'accueil.themesCompteUn')
+                            : traduire(langue, 'accueil.themesCompte').replace(
                                 '{nombre}',
-                                String(nombre),
+                                String(facette.nombre),
                               )}
                         </p>
                       </a>
@@ -286,40 +302,50 @@ export function AccueilV2({
         </section>
       ) : null}
 
-      {/* ══ AVIS ═════════════════════════════════════════════════════════ */}
-      <section className={`${styles.section} ${styles.sectionDouce}`} aria-labelledby="titre-avis">
-        <div className={styles.interieur}>
-          <div className={styles.enteteSection}>
-            <div>
-              <span className={styles.oeil}>{traduire(langue, 'v2.avisOeil')}</span>
-              <h2 id="titre-avis" className={styles.titreSection}>
-                {traduire(langue, 'v2.avisTitre')}
-              </h2>
+      {/* ══ TÉMOIGNAGES ══════════════════════════════════════════════════ */}
+      {temoignages.length > 0 ? (
+        <section
+          className={`${styles.section} ${styles.sectionDouce}`}
+          aria-labelledby="titre-avis"
+        >
+          <div className={styles.interieur}>
+            <div className={styles.enteteSection}>
+              <div>
+                <span className={styles.oeil}>{traduire(langue, 'v2.avisOeil')}</span>
+                <h2 id="titre-avis" className={styles.titreSection}>
+                  {traduire(langue, 'v2.avisTitre')}
+                </h2>
+              </div>
             </div>
-          </div>
 
-          <ul className={styles.avis}>
-            {AVIS.map((avis, rang) => (
-              <li key={avis.auteur}>
-                <Revele rang={rang}>
-                  <figure className={styles.avisCarte}>
-                    <span className={styles.avisGuillemet} aria-hidden="true">
-                      &laquo;
-                    </span>
-                    <blockquote className={styles.avisTexte}>
-                      {traduire(langue, avis.texte)}
-                    </blockquote>
-                    <figcaption className={styles.avisAuteur}>
-                      {traduire(langue, avis.auteur)}
-                      <span className={styles.avisRole}>{traduire(langue, avis.role)}</span>
-                    </figcaption>
-                  </figure>
-                </Revele>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+            <ul className={styles.avis}>
+              {temoignages.map((temoignage, rang) => (
+                <li key={temoignage.id}>
+                  <Revele rang={rang}>
+                    <figure className={styles.avisCarte}>
+                      <span className={styles.avisGuillemet} aria-hidden="true">
+                        &laquo;
+                      </span>
+                      <blockquote className={styles.avisTexte}>{temoignage.texte}</blockquote>
+                      <figcaption className={styles.avisAuteur}>
+                        {temoignage.auteur}
+                        {/*
+                          Le rôle est facultatif : un témoignage signé du seul
+                          prénom reste un témoignage. Une ligne vide y aurait
+                          laissé un blanc que l'œil lit comme un défaut.
+                        */}
+                        {temoignage.role ? (
+                          <span className={styles.avisRole}>{temoignage.role}</span>
+                        ) : null}
+                      </figcaption>
+                    </figure>
+                  </Revele>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {/* ══ APPEL FINAL ══════════════════════════════════════════════════ */}
       <section className={styles.appel}>

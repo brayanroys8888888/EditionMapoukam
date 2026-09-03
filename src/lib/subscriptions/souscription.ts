@@ -1,25 +1,27 @@
 import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import { getPaymentProvider } from '@/adapters/registry';
 import { getBusinessSettings } from '@/lib/settings/business-settings';
-import { getServerEnv } from '@/lib/config/env';
 import { zonePourPays } from '@/domain/orders/zones';
 import type { Zone } from '@/domain/orders/types';
+import type { DomaineAbonnement } from '@/domain/subscriptions/domaines';
 
 /**
  * Ce qu'il faut savoir avant d'ouvrir une souscription.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ EXTRAIT POUR QU'IL N'Y AIT QU'UNE SEULE RÉPONSE À « COMBIEN ? ».        │
+ * │ LE PRIX N'EST PLUS ICI : IL EST DANS `lireOffreParCode`.                │
  * │                                                                          │
- * │ Deux routes ont besoin de ce calcul : celle qui ouvre la souscription    │
- * │ chez le prestataire, et celle qui simule l'événement signé du            │
- * │ prestataire. Elles doivent trouver le MÊME montant, la MÊME devise et la │
- * │ MÊME zone — sans quoi un abonnement serait ouvert à un prix et créé à un │
- * │ autre, et personne ne verrait l'écart avant la première facture.         │
+ * │ Ce module portait les deux montants, lus dans l'environnement. Depuis la │
+ * │ migration 0068, les formules sont administrées et tarifées en base, et   │
+ * │ la question « combien coûte cette formule dans cette zone ? » a une      │
+ * │ seule réponse : la fonction SQL `offre_par_code`, appelée par            │
+ * │ `lireOffreParCode`. Deux routes s'en servent — celle qui ouvre la        │
+ * │ souscription chez le prestataire et celle qui simule l'événement signé — │
+ * │ et elles trouvent donc forcément le même montant.                        │
  * │                                                                          │
- * │ Trois fois dans ce projet, une règle écrite deux fois a rendu deux        │
- * │ verdicts opposés (docs/PLAN.md §5 quinquies). Celle-ci n'est écrite       │
- * │ qu'ici.                                                                  │
+ * │ Trois fois dans ce projet, une règle écrite deux fois a rendu deux       │
+ * │ verdicts opposés (docs/PLAN.md §5 quinquies). Celle-ci n'est écrite      │
+ * │ qu'une fois, et en SQL.                                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -37,19 +39,31 @@ import type { Zone } from '@/domain/orders/types';
 export interface PreparationSouscription {
   zone: Zone;
   devise: string;
-  /** Montant de chaque formule, dans la plus petite unité de la devise. */
-  montants: Record<'mensuel' | 'annuel', number>;
   /** Durée de l'essai gratuit, en jours (§3.4). Zéro pour aucun essai. */
   joursEssai: number;
   /** L'abonnement est-il ouvert à la souscription (§3.3) ? */
   ouvert: boolean;
 }
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ESSAI GRATUIT EST CELUI DU CATALOGUE, ET DE LUI SEUL.                 │
+ * │                                                                          │
+ * │ §3.4 décrit un essai gratuit pour l'abonnement de LECTURE : c'est une    │
+ * │ décision commerciale prise sur ce produit-là. L'étendre en silence à     │
+ * │ l'abonnement associatif inventerait une règle que personne n'a prise —   │
+ * │ et offrirait le contenu de l'association pendant la durée de l'essai.    │
+ * │                                                                          │
+ * │ Le domaine `association` reçoit donc zéro jour d'essai. Le jour où       │
+ * │ l'éditeur en voudra un, ce sera une décision écrite, pas un effet de     │
+ * │ bord.                                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 export async function preparerSouscription(
   client: { userId: string; email: string },
+  domaine: DomaineAbonnement,
   options: { client?: AppSupabaseClient } = {},
 ): Promise<PreparationSouscription> {
-  const env = getServerEnv();
   const reglages = await getBusinessSettings(options.client ? { client: options.client } : {});
 
   const zone = zonePourPays(
@@ -62,13 +76,12 @@ export async function preparerSouscription(
   return {
     zone,
     devise: zone === 'afrique' ? 'XAF' : 'EUR',
-    montants: {
-      mensuel: env.PRICE_SUBSCRIPTION_MONTHLY,
-      annuel: env.PRICE_SUBSCRIPTION_YEARLY,
-    },
     // La durée d'essai est lue MAINTENANT et sera figée sur l'abonnement : un
     // changement de réglage ne doit jamais raccourcir un essai en cours.
-    joursEssai: reglages.joursEssai,
-    ouvert: reglages.abonnementOuvert,
+    joursEssai: domaine === 'lecture' ? reglages.joursEssai : 0,
+    // `abonnementOuvert` est l'interrupteur du CATALOGUE (§3.3). Pour
+    // l'association, l'interrupteur est ailleurs et il est plus simple : une
+    // formule associative active existe, ou il n'y a rien à souscrire.
+    ouvert: domaine === 'lecture' ? reglages.abonnementOuvert : true,
   };
 }

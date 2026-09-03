@@ -263,7 +263,17 @@ describe('routes publiques', () => {
       achat_unite: { a_partir_de: number; donne_telechargement: boolean };
     }>(reponse);
 
-    expect(corps.abonnement.offres.map((o) => o.code).sort()).toEqual(['annuel', 'mensuel']);
+    /*
+     * Les codes portent leur DOMAINE depuis la migration 0068 : la route ne
+     * rend que les formules de `lecture`, et une adhésion associative n'a
+     * rien à faire sur la page des offres du catalogue. Les vérifier ici,
+     * plutôt que de compter deux lignes, est ce qui ferait tomber ce test le
+     * jour où `association-annuel` se glisserait dans la réponse.
+     */
+    expect(corps.abonnement.offres.map((o) => o.code).sort()).toEqual([
+      'lecture-annuel',
+      'lecture-mensuel',
+    ]);
     expect(corps.abonnement.offres.every((o) => o.montant > 0)).toBe(true);
 
     // LA règle métier centrale, rendue explicitement pour qu'aucune interface
@@ -296,24 +306,34 @@ describe('routes publiques', () => {
     expect(reponse.status).toBe(200);
 
     const corps = await corpsJson<{
-      regions: { valeur: string; nombre: number }[];
-      themes: { valeur: string }[];
+      regions?: unknown;
+      themes: { valeur: string; nombre: number }[];
       total: number;
     }>(reponse);
 
     expect(corps.total).toBeGreaterThan(0);
-    expect(corps.regions.length).toBeGreaterThan(0);
     expect(corps.themes.length).toBeGreaterThan(0);
 
-    // Les régions sont les clés fermées, jamais des libellés d'affichage.
-    const connues = ['afrique_ouest', 'sahel', 'afrique_centrale', 'afrique_australe', 'afrique_est'];
-    for (const region of corps.regions) {
-      expect(connues, `région inconnue : ${region.valeur}`).toContain(region.valeur);
-    }
+    // La facette « régions » a quitté la réponse — migration 0071. Elle ne
+    // rangeait que les contes, et cliquer une région faisait disparaître d'un
+    // coup tous les livrets pédagogiques, sans rien annoncer.
+    expect(corps.regions).toBeUndefined();
 
-    // Le total des facettes régionales ne dépasse pas le catalogue publié.
-    const somme = corps.regions.reduce((acc, r) => acc + r.nombre, 0);
-    expect(somme).toBeLessThanOrEqual(corps.total);
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ CE QUE CE TEST GARDE, ET QUI N'A PAS CHANGÉ DE NATURE.             │
+    // │                                                                    │
+    // │ Une facette compte des titres. Si elle en comptait plus que le      │
+    // │ catalogue publié n'en contient, c'est qu'elle aurait vu des         │
+    // │ brouillons — une fuite de catalogue, par un chemin que personne ne  │
+    // │ regarde. L'assertion portait sur les régions ; elle porte           │
+    // │ maintenant sur les thèmes, seul rangement qui subsiste.             │
+    // └────────────────────────────────────────────────────────────────────┘
+    for (const theme of corps.themes) {
+      expect(theme.nombre, `thème vide : ${theme.valeur}`).toBeGreaterThan(0);
+      expect(theme.nombre, `thème hors catalogue : ${theme.valeur}`).toBeLessThanOrEqual(
+        corps.total,
+      );
+    }
   });
 
   it('l’instant vient de l’horloge MÉTIER, jamais du navigateur', async () => {

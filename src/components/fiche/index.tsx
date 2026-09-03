@@ -2,9 +2,11 @@ import type { ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
 import type { FicheLivre } from '@/domain/catalog/types';
-import { teintesRegion } from '@/components/catalogue';
+import { teintesTheme } from '@/components/catalogue';
 import { Couverture, SubstitutCouverture } from '@/components/catalogue/couverture';
-import { Motif } from '@/components/motif';
+import { Motif, teinteDepuisThemes } from '@/components/motif';
+import type { AvisDuLivre } from '@/lib/catalog/avis';
+import { SectionAvis } from './avis';
 import styles from './fiche.module.css';
 
 /**
@@ -26,12 +28,12 @@ import styles from './fiche.module.css';
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ TOUTE LA PAGE PORTE LA COULEUR DE LA TRADITION DU CONTE.                │
+ * │ TOUTE LA PAGE PORTE LA COULEUR DU PREMIER THÈME DU TITRE.               │
  * │                                                                          │
- * │ Les quatre variables `--carte-*` sont posées une fois, sur le conteneur  │
- * │ de page, par `teintesRegion`. Aucun bloc ne choisit sa couleur : ils la  │
+ * │ Les cinq variables `--carte-*` sont posées une fois, sur le conteneur    │
+ * │ de page, par `teintesTheme`. Aucun bloc ne choisit sa couleur : ils la   │
  * │ lisent tous. C'est ce qui garantit qu'un conte du Sahel ne présente      │
- * │ jamais un bouton vert d'Afrique de l'Ouest.                              │
+ * │ lisent tous. C'est ce qui garantit qu'une fiche n'ait jamais deux        │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
@@ -50,16 +52,24 @@ export function FilAriane({
     <nav className={styles.ariane} aria-label={traduire(langue, 'catalogue.titre')}>
       <a href={`/${langue}/catalogue`}>{traduire(langue, 'navigation.catalogue')}</a>
 
-      {fiche.region ? (
+      {fiche.themes[0] !== undefined ? (
         <>
           <span aria-hidden="true">›</span>
           {/*
-           * La tradition est le seul lien coloré du fil, et c'est délibéré :
-           * c'est le filtre qu'un lecteur venu d'un conte veut le plus
-           * souvent poser ensuite.
+           * Le thème est le seul lien coloré du fil, et c'est délibéré : c'est
+           * le filtre qu'un lecteur venu d'un titre veut le plus souvent poser
+           * ensuite. Il remplace la tradition, retirée du catalogue public par
+           * la migration 0071 — et il a l'avantage de valoir aussi pour les
+           * livrets pédagogiques.
+           *
+           * `encodeURIComponent` : un thème est de la saisie libre, et une
+           * espace ou une esperluette y casserait la requête.
            */}
-          <a className={styles.arianeRegion} href={`/${langue}/catalogue?region=${fiche.region}`}>
-            {traduire(langue, `regions.${fiche.region}`)}
+          <a
+            className={styles.arianeRegion}
+            href={`/${langue}/catalogue?themes=${encodeURIComponent(fiche.themes[0])}`}
+          >
+            {fiche.themes[0]}
           </a>
         </>
       ) : null}
@@ -96,14 +106,14 @@ export function ColonneCouverture({
           largeur={800}
           hauteur={1200}
           tailles="(max-width: 820px) 90vw, 380px"
-          region={fiche.region}
+          teinte={teinteDepuisThemes(fiche.themes)}
           // Le titre est écrit en `h1` juste à côté : le répéter dans l'`alt`
           // ferait entendre deux fois la même phrase.
           alt=""
           classeImage={styles.couverture}
         />
       ) : (
-        <SubstitutCouverture langue={langue} region={fiche.region} />
+        <SubstitutCouverture langue={langue} teinte={teinteDepuisThemes(fiche.themes)} />
       )}
 
       {/*
@@ -137,14 +147,19 @@ export function EnteteFiche({
   return (
     <header>
       {/*
-       * La pastille dit l'ORIGINE ÉDITORIALE — « conte akan — Ghana » — quand
-       * elle existe, et la région sinon. Les deux champs sont distincts :
-       * `origine_culturelle` porte la finesse, `region` porte la couleur.
+       * La pastille dit l'ORIGINE ÉDITORIALE — « conte akan — Ghana ».
+       *
+       * Elle se repliait sur le libellé de la région quand ce texte manquait.
+       * La migration 0071 ayant retiré la région du catalogue public, il n'y a
+       * plus de repli : sans origine renseignée, la pastille disparaît. Y
+       * mettre le thème à la place ferait dire « Ruse » à une ligne qui
+       * annonce une provenance — le thème a sa place au fil d'Ariane et dans
+       * l'encart des détails, pas ici.
        */}
-      {fiche.region ? (
+      {fiche.origine_culturelle ? (
         <p className={styles.pastilleOrigine}>
           <span className={styles.puceOrigine} aria-hidden="true" />
-          {fiche.origine_culturelle ?? traduire(langue, `regions.${fiche.region}`)}
+          {fiche.origine_culturelle}
         </p>
       ) : null}
 
@@ -381,6 +396,63 @@ export function BandeauExtrait({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LA DESCRIPTION LONGUE
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Le texte de présentation du titre — colonne créée par la migration 0070.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX TEXTES, ET DEUX RÔLES QU'IL NE FAUT PAS CONFONDRE.                 │
+ * │                                                                          │
+ * │ `resume` est la phrase d'accroche : elle s'affiche dans les cartes du     │
+ * │ catalogue, dans la balise `description` et dans le partage social. Trois  │
+ * │ paragraphes y seraient tronqués au milieu d'un mot.                      │
+ * │                                                                          │
+ * │ `description` est le texte de la fiche produit, celui qu'on lit avant     │
+ * │ d'acheter. Les fondre en un seul champ obligerait à choisir entre une     │
+ * │ carte illisible et une fiche vide.                                       │
+ * │                                                                          │
+ * │ Le bloc DISPARAÎT s'il n'y a rien à dire : un titre déposé avant la       │
+ * │ migration 0070 n'en a pas, et une section vide se lit comme un défaut.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Les paragraphes sont découpés sur les lignes vides, comme les saisit
+ * l'éditeur. Le texte n'est jamais interprété comme du balisage : il vient
+ * d'une saisie libre, et il est rendu en texte pur.
+ */
+export function DescriptionFiche({
+  langue,
+  fiche,
+}: {
+  langue: LangueInterface;
+  fiche: FicheLivre;
+}): ReactNode {
+  if (!fiche.description) return null;
+
+  const paragraphes = fiche.description
+    .split(/\n\s*\n/)
+    .map((bloc) => bloc.trim())
+    .filter((bloc) => bloc.length > 0);
+
+  return (
+    <section className={styles.description} aria-labelledby="titre-description">
+      <h2 id="titre-description" className={styles.encartTitre}>
+        {traduire(langue, 'fiche.descriptionTitre')}
+      </h2>
+
+      {paragraphes.map((bloc, rang) => (
+        // Le rang suffit comme clé : la liste est rendue une fois, elle n'est
+        // ni triée ni filtrée, et deux paragraphes identiques sont possibles.
+        <p key={rang} className={styles.descriptionTexte}>
+          {bloc}
+        </p>
+      ))}
+    </section>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // ENCART DE PROVENANCE
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -413,7 +485,7 @@ export function EncartProvenance({
         <section className={styles.encart}>
           {/* L'ornement en tête d'encart : 56 px, découpé par l'`overflow` du
               parent — d'où le rayon nul. */}
-          <Motif region={fiche.region} place="encart" rayon="0" />
+          <Motif teinte={teinteDepuisThemes(fiche.themes)} place="encart" rayon="0" />
 
           <div className={styles.encartCorps}>
             <h2 className={styles.encartTitre}>{traduire(langue, 'fiche.provenance')}</h2>
@@ -469,10 +541,10 @@ export function Suggestions({
       <div className={styles.suggestionsEntete}>
         <h2 className={styles.suggestionsTitre}>{traduire(langue, 'fiche.suggestions')}</h2>
 
-        {fiche.region ? (
+        {fiche.themes[0] !== undefined ? (
           <a
             className={styles.suggestionsLien}
-            href={`/${langue}/catalogue?region=${fiche.region}`}
+            href={`/${langue}/catalogue?themes=${encodeURIComponent(fiche.themes[0])}`}
           >
             {traduire(langue, 'fiche.suggestionsToute')}
           </a>
@@ -483,9 +555,9 @@ export function Suggestions({
         {fiche.suggestions.map((suggestion) => (
           <li key={suggestion.id}>
             {/*
-             * Les suggestions partagent la tradition du conte courant — c'est
-             * ce que la section annonce. Elles héritent donc de ses teintes,
-             * posées sur le conteneur de page.
+             * Les suggestions sont proches du titre courant — c'est ce que
+             * la section annonce. Elles héritent donc de ses teintes, posées
+             * sur le conteneur de page.
              */}
             <a className={styles.suggestion} href={`/${langue}/contes/${suggestion.slug}`}>
               {/*
@@ -523,24 +595,38 @@ export function Suggestions({
 /**
  * Assemble les blocs, et pose LA couleur de la page.
  *
- * `teintesRegion` n'est appelée qu'ICI : tous les blocs lisent les quatre
+ * `teintesTheme` n'est appelée qu'ICI : tous les blocs lisent les cinq
  * variables qu'elle pose. Un bloc qui les poserait à son tour pourrait
  * diverger — et c'est exactement ce qui produit une fiche à deux couleurs.
  */
 export function PageFicheLivre({
   langue,
   fiche,
+  avis,
+  connecte = false,
   actionAjout,
+  actionAvis,
+  actionRetraitAvis,
   children,
 }: {
   langue: LangueInterface;
   fiche: FicheLivre;
+  /**
+   * Les avis du titre. `undefined` fait disparaître la section entière —
+   * c'est ainsi qu'un écran qui ne les a pas chargés reste cohérent plutôt
+   * que d'afficher « aucun avis » sur un titre qui en a.
+   */
+  avis?: AvisDuLivre;
+  /** L'appelant a une session. Distinct du droit d'écrire : il faut les deux. */
+  connecte?: boolean;
   actionAjout?: (donnees: FormData) => void | Promise<void>;
+  actionAvis?: (donnees: FormData) => void | Promise<void>;
+  actionRetraitAvis?: () => void | Promise<void>;
   /** Les données structurées, injectées par la route. */
   children?: ReactNode;
 }): ReactNode {
   return (
-    <div className={styles.page} style={teintesRegion(fiche.region)}>
+    <div className={styles.page} style={teintesTheme(fiche.themes)}>
       {children}
 
       <FilAriane langue={langue} fiche={fiche} />
@@ -555,7 +641,20 @@ export function PageFicheLivre({
         </div>
       </div>
 
+      <DescriptionFiche langue={langue} fiche={fiche} />
       <EncartProvenance langue={langue} fiche={fiche} />
+
+      {avis ? (
+        <SectionAvis
+          langue={langue}
+          fiche={fiche}
+          avis={avis}
+          connecte={connecte}
+          {...(actionAvis ? { actionDepot: actionAvis } : {})}
+          {...(actionRetraitAvis ? { actionRetrait: actionRetraitAvis } : {})}
+        />
+      ) : null}
+
       <Suggestions langue={langue} fiche={fiche} />
 
       <a className={styles.retour} href={`/${langue}/catalogue`}>

@@ -5,12 +5,14 @@ import { notFound } from 'next/navigation';
 import { LANGUES_INTERFACE, langueValide, traduire } from '@/i18n';
 import { ficheQuerySchema } from '@/domain/catalog/schemas';
 import { lireFiche } from '@/lib/catalog/repository';
+import { lireAvis } from '@/lib/catalog/avis';
 import { identifierAppelant } from '@/lib/auth/session';
 import { getServerEnv } from '@/lib/config/env';
 import { PageFicheLivre } from '@/components/fiche';
 import { FicheV2 } from '@/components/v2/fiche';
 import { versionDesign } from '@/design/version';
 import { ajouterAuPanier } from '../../panier/actions';
+import { deposerAvis, retirerAvis } from './actions';
 
 /**
  * Fiche d'un conte — §4.1 F3.
@@ -36,14 +38,23 @@ async function charger(langueBrute: string, slug: string) {
     new Request('http://interne/', { headers: await headers() }),
   );
 
-  return lireFiche(appelant?.id ?? null, slug, query);
+  const fiche = await lireFiche(appelant?.id ?? null, slug, query);
+
+  /*
+   * L'APPELANT EST RENDU AVEC LA FICHE.
+   *
+   * `generateMetadata` et le rendu appellent tous deux `charger`, et
+   * l'identification coûte deux allers-retours. La rendre plutôt que de la
+   * refaire évite d'en payer un troisième au moment de lire les avis.
+   */
+  return { fiche, appelant };
 }
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const { langue: langueBrute, slug } = await params;
   const langue = langueValide(langueBrute);
 
-  const fiche = await charger(langueBrute, slug).catch(() => null);
+  const fiche = (await charger(langueBrute, slug).catch(() => null))?.fiche ?? null;
   if (!fiche) return { title: traduire(langue, 'pages.introuvableTitre') };
 
   const base = getServerEnv().NEXT_PUBLIC_APP_URL;
@@ -72,8 +83,34 @@ export default async function PageFiche({ params }: Parametres) {
   const { langue: langueBrute, slug } = await params;
   const langue = langueValide(langueBrute);
 
-  const fiche = await charger(langueBrute, slug);
-  if (!fiche) notFound();
+  const charge = await charger(langueBrute, slug);
+  if (!charge?.fiche) notFound();
+
+  const { fiche, appelant } = charge;
+
+  /*
+   * LES AVIS SONT LUS AVEC LE JETON DE L'APPELANT.
+   *
+   * `lireAvis` interroge `book_reviews` par le client de l'utilisateur : les
+   * deux politiques de lecture de la table s'appliquent donc — les avis
+   * publiés pour tout le monde, plus le sien quel que soit son statut. Aucun
+   * `where` écrit ici ne décide de ce qui est visible.
+   *
+   * Ne lève jamais : une fiche doit s'afficher même sans ses avis.
+   */
+  const avis = await lireAvis(
+    fiche.id,
+    appelant ? { id: appelant.id, accessToken: appelant.accessToken } : null,
+  );
+
+  /*
+   * La MÉTHODE — dépôt ou correction — est décidée ICI, sur la présence d'un
+   * avis existant, et jamais transmise par le client : un lecteur n'a qu'un
+   * avis par titre, et lui demander de savoir dans quel état il se trouve
+   * serait lui faire porter une règle qui n'est pas la sienne.
+   */
+  const actionAvis = deposerAvis.bind(null, langue, fiche.id, fiche.slug, avis.mien !== null);
+  const actionRetraitAvis = retirerAvis.bind(null, langue, fiche.id, fiche.slug);
 
   const base = getServerEnv().NEXT_PUBLIC_APP_URL;
 
@@ -115,7 +152,11 @@ export default async function PageFiche({ params }: Parametres) {
         <FicheV2
           langue={langue}
           fiche={fiche}
+          avis={avis}
+          connecte={appelant !== null}
           actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
+          actionAvis={actionAvis}
+          actionRetraitAvis={actionRetraitAvis}
         />
       </>
     );
@@ -125,7 +166,11 @@ export default async function PageFiche({ params }: Parametres) {
     <PageFicheLivre
       langue={langue}
       fiche={fiche}
+      avis={avis}
+      connecte={appelant !== null}
       actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
+      actionAvis={actionAvis}
+      actionRetraitAvis={actionRetraitAvis}
     >
       {structurees}
     </PageFicheLivre>

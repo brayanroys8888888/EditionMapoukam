@@ -24,7 +24,7 @@ export async function GET(): Promise<Response> {
       .limit(25),
     client
       .from('subscriptions')
-      .select('id, user_id, offre, statut, debut_periode, fin_periode, zone')
+      .select('id, user_id, domaine, offre, statut, debut_periode, fin_periode, zone')
       .order('cree_le', { ascending: false })
       .limit(25),
     client

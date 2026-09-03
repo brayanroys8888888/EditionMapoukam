@@ -143,6 +143,10 @@ describe('LA LECTURE D’UN TITRE POUR L’ÉCRAN D’ÉDITION', () => {
         // `id` est arrivé avec la migration 0059, et il n'est PAS un chemin :
         // c'est la clé primaire de la ligne, celle par laquelle
         // `admin_modifier_traduction` la désigne. Elle n'ouvre aucun fichier.
+        // `description` est arrivée avec la migration 0070 : le texte LONG de
+        // la fiche, quand le résumé n'est que l'accroche d'une carte. Elle
+        // n'ouvre pas plus de fichier que le résumé n'en ouvrait.
+        'description',
         'id',
         'langue',
         'lisible',
@@ -353,34 +357,42 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
     }
   });
 
-  it('pose la RÉGION, que rien ne permettait de poser avant la migration 0057', async () => {
+  it('pose les THÈMES, que rien ne permettait d’écrire avant la migration 0070', async () => {
     // ┌────────────────────────────────────────────────────────────────────┐
-    // │ LE DÉFAUT QUE CE TEST EMPÊCHE DE REVENIR.                          │
+    // │ LE MÊME DÉFAUT QUE CELUI DE LA RÉGION, UN CRAN PLUS TARD.          │
     // │                                                                    │
-    // │ `manques_pour_publication` a exigé `books.region` de la migration   │
-    // │ 0044 à la 0066, et AUCUNE fonction `admin_*` ne permettait de        │
-    // │ l'écrire avant la 0057 : « Publier » restait éteint sur un manque    │
-    // │ nommé `region` qu'aucun champ ne pouvait satisfaire.                 │
-    // │                                                                    │
-    // │ La 0066 a levé l'exigence, mais PAS le besoin d'écrire la région :   │
-    // │ elle donne sa teinte au titre et sa facette au catalogue. Ce test   │
-    // │ garde donc tout son objet.                                          │
+    // │ `books.themes` alimentait une facette du catalogue depuis la        │
+    // │ migration 0050, et AUCUNE fonction `admin_*` ne permettait de        │
+    // │ l'écrire : le catalogue proposait un rangement que l'administration │
+    // │ ne savait pas remplir. La 0070 a ajouté `p_themes`, et la 0071 a    │
+    // │ fait du thème le SEUL rangement du catalogue public — ce qui rend    │
+    // │ le manque décisif au lieu de simplement gênant.                      │
     // │                                                                    │
     // │ Le test vérifie les deux moitiés : l'écriture PASSE, et la lecture   │
-    // │ la REND. Sans la seconde, l'écran afficherait « non renseignée » sur │
-    // │ un titre qui a une région, et l'écraserait au premier               │
+    // │ la REND. Sans la seconde, l'écran afficherait un champ vide sur un   │
+    // │ titre qui a des thèmes, et les écraserait au premier                 │
     // │ enregistrement.                                                     │
     // └────────────────────────────────────────────────────────────────────┘
-    const modification = await modifierLivre(editeur.id, livreId, { region: 'sahel' });
+    const modification = await modifierLivre(editeur.id, livreId, {
+      themes: ['  ruse ', 'animaux', 'ruse', '   '],
+    });
     expect(modification.ok).toBe(true);
 
     const relu = await lireLivre(livreId);
     expect(relu.ok).toBe(true);
     if (!relu.ok) return;
 
-    expect(relu.donnees['region']).toBe('sahel');
-    // Et le manque a disparu de la liste que le déclencheur applique.
-    expect((relu.donnees as { manques: string[] }).manques).not.toContain('region');
+    /*
+     * RENDUS NETTOYÉS ET TRIÉS. La 0070 rogne les espaces, jette les entrées
+     * vides, dédoublonne, puis range par ordre alphabétique — le tout en un
+     * seul endroit, la fonction, plutôt que dans chaque formulaire qui écrit.
+     *
+     * Le tri n'est pas de la coquetterie : `teinteDepuisThemes` colore un
+     * titre d'après son PREMIER thème, et un ordre laissé à la saisie ferait
+     * changer la couleur d'une couverture selon l'ordre où l'éditeur a tapé
+     * ses mots.
+     */
+    expect(relu.donnees['themes']).toEqual(['animaux', 'ruse']);
   });
 
   it('pose l’ILLUSTRATEUR, l’autre champ que la 0057 a ouvert', async () => {

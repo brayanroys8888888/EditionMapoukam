@@ -12,8 +12,8 @@ import { logger } from '@/lib/logger';
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ LES PASTILLES DE FILTRE NE SE CODENT PAS EN DUR.                        │
  * │                                                                          │
- * │ Le catalogue accepte `themes`, `origine`, `region` et une tranche d'âge, │
- * │ mais rien n'énumérait les valeurs disponibles. Une liste écrite dans     │
+ * │ Le catalogue accepte `themes`, `origine` et une tranche d'âge, mais     │
+ * │ rien n'énumérait les valeurs disponibles. Une liste écrite dans         │
  * │ l'interface se désynchroniserait du catalogue au premier titre ingéré —  │
  * │ et proposerait un filtre qui ne rend rien, ou en cacherait un qui        │
  * │ existe.                                                                  │

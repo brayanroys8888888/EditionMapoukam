@@ -275,7 +275,17 @@ async function appliquer(
           // Le préfixe `abonnement.` est retiré : la machine à états raisonne
           // sur l'événement métier, pas sur le nom qu'un prestataire lui donne.
           evenement: evenement.type.slice('abonnement.'.length) as EvenementAbonnement,
+          // ┌────────────────────────────────────────────────────────────────┐
+          // │ LE DOMAINE VIENT DE L'ÉVÉNEMENT, ET RETOMBE SUR `lecture`.     │
+          // │                                                                │
+          // │ Tous les événements émis avant la migration 0067 décrivent un  │
+          // │ abonnement de lecture, puisque c'était le seul. Le repli n'est │
+          // │ donc pas un défaut prudent : c'est la lecture exacte d'un      │
+          // │ événement ancien, y compris rejoué des mois plus tard.         │
+          // └────────────────────────────────────────────────────────────────┘
+          domaine: evenement.donnees.domaine ?? 'lecture',
           ...(evenement.donnees.offre ? { offre: evenement.donnees.offre } : {}),
+          ...(evenement.donnees.planId ? { planId: evenement.donnees.planId } : {}),
           ...(evenement.donnees.montant
             ? {
                 montant: evenement.donnees.montant.montant,

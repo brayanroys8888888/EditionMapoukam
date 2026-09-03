@@ -4,6 +4,7 @@ import { traduire, type LangueInterface } from '@/i18n';
 import type { EntreeCatalogue } from '@/domain/catalog/types';
 import { ligneAcces } from '@/components/catalogue';
 import { Couverture, SubstitutCouverture } from '@/components/catalogue/couverture';
+import { teinteDepuisThemes } from '@/components/motif';
 import styles from './v2.module.css';
 
 /**
@@ -153,14 +154,14 @@ export function CarteConteV2({
             largeur={COUVERTURE_LARGEUR}
             hauteur={COUVERTURE_HAUTEUR}
             tailles="(max-width: 640px) 80vw, 260px"
-            region={entree.region}
+            teinte={teinteDepuisThemes(entree.themes)}
             // Vide, et délibérément : le titre est écrit juste en dessous, et
             // le redire ferait entendre deux fois la même phrase.
             alt=""
             classeImage={styles.couverture}
           />
         ) : (
-          <SubstitutCouverture langue={langue} region={entree.region} />
+          <SubstitutCouverture langue={langue} teinte={teinteDepuisThemes(entree.themes)} />
         )}
 
         {action ? (
@@ -176,10 +177,17 @@ export function CarteConteV2({
         )}
       </div>
 
-      {entree.region ? (
+      {/*
+        LE THÈME À LA PLACE DE LA TRADITION — migration 0071.
+
+        Le thème s'écrit tel quel : c'est de la saisie libre de l'éditeur, il
+        n'existe aucune clé de traduction à aller chercher, et une clé absente
+        afficherait son propre nom au lieu du mot attendu.
+      */}
+      {entree.themes[0] !== undefined ? (
         <span className={styles.origine}>
           <span className={styles.puce} aria-hidden="true" />
-          {traduire(langue, `regions.${entree.region}`)}
+          {entree.themes[0]}
         </span>
       ) : null}
 

@@ -334,3 +334,79 @@
 .restrictif {
   color: var(--encre-douce);
 }
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN BANDEAU, ET NON UNE TROISIÈME CARTE.                                  │
+ * │                                                                          │
+ * │ Les deux cartes du haut ont volontairement le MÊME poids visuel : ce     │
+ * │ sont deux façons d'obtenir les mêmes contes, et mettre l'une en avant    │
+ * │ ajouterait une pression commerciale sur la formule qui déçoit ensuite.   │
+ * │ L'adhésion, elle, n'est pas une troisième façon d'obtenir les contes —   │
+ * │ elle ouvre un AUTRE contenu (§3.6). La ranger en troisième colonne       │
+ * │ l'aurait fait lire comme une variante de l'abonnement, ce qu'elle n'est  │
+ * │ pas ; le bandeau la sépare sans la cacher.                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.association {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-4);
+  margin-top: 40px;
+  padding: 26px;
+  border: 1.5px solid var(--bordure-forte);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond-doux);
+}
+
+.associationTexte {
+  flex: 1 1 320px;
+}
+
+.associationTitre {
+  font-size: 26px;
+  margin-bottom: 5px;
+}
+
+.associationCorps {
+  font-size: var(--taille-base);
+  color: var(--encre-douce);
+}
+
+/* Le prix de l'adhésion, en Fraunces comme celui des deux cartes, mais d'un cran
+ * plus petit : il annonce, il ne concurrence pas. */
+.associationPrix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 30px;
+  font-weight: var(--graisse-forte);
+  letter-spacing: -0.01em;
+}
+
+.associationUnite {
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+}
+
+.associationAction {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Un lien, et non un second bouton : deux boutons côte à côte se disputent le
+ * geste, et celui-ci mène à une page qui ne demande rien. */
+.associationLien {
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+  color: var(--encre);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+

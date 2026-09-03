@@ -10,6 +10,7 @@ import {
   type StatutAbonnement,
   type StatutEffectif,
 } from '@/domain/subscriptions/state-machine';
+import type { DomaineAbonnement } from '@/domain/subscriptions/domaines';
 import { logger } from '@/lib/logger';
 
 /**
@@ -46,6 +47,8 @@ export interface AbonnementCourant {
   devise: string;
   montant: number;
   offre: 'mensuel' | 'annuel';
+  /** Ce que cet abonnement ouvre. Les deux domaines sont étanches (§3.6). */
+  domaine: DomaineAbonnement;
 }
 
 export type ResultatTransition =
@@ -62,17 +65,35 @@ interface LigneAbonnement {
   devise: string;
   montant: number;
   offre: string;
+  domaine: DomaineAbonnement;
 }
 
-/** Abonnement en cours de vie d'un utilisateur, s'il y en a un. */
+/**
+ * Abonnement en cours de vie d'un utilisateur DANS UN DOMAINE, s'il y en a un.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE DOMAINE EST OBLIGATOIRE, ET IL N'A PAS DE VALEUR PAR DÉFAUT.         │
+ * │                                                                          │
+ * │ Un compte peut détenir les deux abonnements (§3.6). Une valeur par       │
+ * │ défaut ferait rendre l'abonnement de LECTURE à un appelant qui parle de  │
+ * │ l'association — un écran d'association affichant « abonné » sur la foi   │
+ * │ d'un abonnement au catalogue, sans qu'aucune erreur ne survienne.        │
+ * │                                                                          │
+ * │ Cette fonction ne décide d'AUCUN droit : elle décrit un contrat. Le      │
+ * │ droit, lui, se demande à `abonnement_ouvre_droit` en base (0067).        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 export async function abonnementCourant(
   userId: string,
+  domaine: DomaineAbonnement,
   options: { client?: AppSupabaseClient } = {},
 ): Promise<AbonnementCourant | null> {
   const client = options.client ?? createServiceClient();
 
   // `essai`, `actif` et `impaye` sont les statuts vivants — ceux que l'index
-  // unique de la migration 0008 empêche d'avoir en double. Un abonnement
+  // unique de la migration 0067 empêche d'avoir en double POUR UN MÊME
+  // DOMAINE ; deux abonnements vivants de domaines différents, eux, sont le
+  // cumul que l'éditeur a décidé d'autoriser (§3.6). Un abonnement
   // `annule` dont la période court encore est lu aussi : il ouvre toujours le
   // droit, et un nouvel événement doit le retrouver.
   const reponse = await client
@@ -80,8 +101,9 @@ export async function abonnementCourant(
     // `statut_effectif` est une COLONNE CALCULÉE : la règle vit en base, une
     // seule fois, partagée avec les statistiques et le back-office. La
     // réécrire ici la ferait diverger de celle qui compte les abonnés.
-    .select('id, statut, statut_effectif, fin_periode, zone, devise, montant, offre')
+    .select('id, statut, statut_effectif, fin_periode, zone, devise, montant, offre, domaine')
     .eq('user_id', userId)
+    .eq('domaine', domaine)
     .in('statut', ['essai', 'actif', 'impaye', 'annule'])
     .order('cree_le', { ascending: false })
     .limit(1)
@@ -107,6 +129,7 @@ export async function abonnementCourant(
     // passerait inaperçu jusqu'à ce que quelqu'un s'étonne des comptages.
     logger.warn('Abonnement en anomalie : période échue sans événement', {
       userId,
+      domaine,
       subscriptionId: data.id,
       statutRapporte: data.statut,
       finPeriode: data.fin_periode,
@@ -122,6 +145,7 @@ export async function abonnementCourant(
     devise: data.devise,
     montant: data.montant,
     offre: data.offre as 'mensuel' | 'annuel',
+    domaine: data.domaine,
   };
 }
 
@@ -134,9 +158,19 @@ function finDePeriode(depuis: Date, offre: 'mensuel' | 'annuel'): Date {
 
 export interface DemandeTransition {
   userId: string;
+  /**
+   * Le contrat visé — §3.6. OBLIGATOIRE.
+   *
+   * Un même compte peut avoir deux abonnements vivants. Sans ce champ, un
+   * échec de prélèvement sur l'abonnement associatif ferait tomber
+   * l'abonnement de lecture, ou l'inverse.
+   */
+  domaine: DomaineAbonnement;
   evenement: EvenementAbonnement;
   /** Requis pour une souscription. Ignoré ensuite : l'offre est celle du contrat. */
   offre?: 'mensuel' | 'annuel';
+  /** Formule souscrite (`subscription_plans.id`). Conservée pour la traçabilité. */
+  planId?: string | null;
   zone?: 'international' | 'afrique';
   devise?: string;
   montant?: number;
@@ -159,7 +193,7 @@ export async function appliquerEvenement(
   const clock = options.clock ?? getClock();
   const maintenant = clock.now();
 
-  const courant = await abonnementCourant(demande.userId, { client });
+  const courant = await abonnementCourant(demande.userId, demande.domaine, { client });
 
   const transition = transitionner(courant?.statut ?? null, demande.evenement, {
     avecEssai: (demande.joursEssai ?? 0) > 0,
@@ -168,6 +202,7 @@ export async function appliquerEvenement(
   if (!transition.ok) {
     logger.info('Transition d’abonnement refusée', {
       userId: demande.userId,
+      domaine: demande.domaine,
       evenement: demande.evenement,
       statutCourant: courant?.statut ?? null,
       raison: transition.raison,
@@ -190,6 +225,7 @@ export async function appliquerEvenement(
 
   logger.info('Abonnement mis à jour', {
     userId: demande.userId,
+    domaine: demande.domaine,
     subscriptionId,
     evenement: demande.evenement,
     statut: transition.statut,
@@ -224,6 +260,10 @@ async function creer(
     .insert({
       user_id: demande.userId,
       offre,
+      // Écrit à la création et jamais modifié : un contrat ne change pas de
+      // nature. C'est ce champ que `abonnement_ouvre_droit` interroge.
+      domaine: demande.domaine,
+      plan_id: demande.planId ?? null,
       statut,
       debut_periode: maintenant.toISOString(),
       fin_periode: fin.toISOString(),

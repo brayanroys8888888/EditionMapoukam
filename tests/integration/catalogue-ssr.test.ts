@@ -109,34 +109,37 @@ describe('le HTML initial porte les titres, sans JavaScript', () => {
 });
 
 describe('les facettes décrivent le corpus réel', () => {
-  it('rendent des régions et des thèmes réellement présents', async () => {
+  it('rendent des thèmes réellement présents', async () => {
+    // La facette « régions » a quitté la réponse avec la migration 0071 : elle
+    // ne rangeait que les contes, et les livrets pédagogiques disparaissaient
+    // du catalogue au premier clic. Les thèmes valent pour les deux supports.
     const facettes = await lireFacettes('fr');
 
-    expect(facettes.regions.length).toBeGreaterThan(0);
     expect(facettes.themes.length).toBeGreaterThan(0);
     expect(facettes.total).toBeGreaterThanOrEqual(3);
 
-    for (const facette of facettes.regions) {
+    for (const facette of facettes.themes) {
       expect(facette.nombre).toBeGreaterThan(0);
     }
   });
 
-  it('chaque région annoncée FILTRE réellement le catalogue', async () => {
+  it('chaque thème annoncé FILTRE réellement le catalogue', async () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ LA FACETTE ET LE FILTRE SE RÉPONDENT — c'est le manque que F4 a    │
-    // │ trouvé. Une facette annoncée sans filtre correspondant était une    │
-    // │ pastille qui ne pouvait rien faire, et `?region=…` était ignoré en  │
-    // │ silence. Ce test échoue si l'un des deux repart sans l'autre.       │
+    // │ trouvé. Une facette annoncée sans filtre correspondant est une      │
+    // │ pastille qui ne peut rien faire. Ce test échoue si l'un des deux    │
+    // │ repart sans l'autre — et il porte désormais sur les thèmes, seul    │
+    // │ rangement que la migration 0071 laisse au catalogue public.         │
     // └────────────────────────────────────────────────────────────────────┘
     const facettes = await lireFacettes('fr');
 
-    for (const facette of facettes.regions) {
-      const query = catalogQuerySchema.parse({ langue: 'fr', region: facette.valeur });
+    for (const facette of facettes.themes) {
+      const query = catalogQuerySchema.parse({ langue: 'fr', themes: facette.valeur });
       const page = await listerCatalogue(null, query);
 
-      expect(page.total, `région ${facette.valeur}`).toBe(facette.nombre);
+      expect(page.total, `thème ${facette.valeur}`).toBe(facette.nombre);
       for (const entree of page.entrees) {
-        expect(entree.region).toBe(facette.valeur);
+        expect(entree.themes, `thème ${facette.valeur}`).toContain(facette.valeur);
       }
     }
   });

@@ -44,7 +44,8 @@ const ENTREES: EntreeMenu[] = [
   { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
   { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
   { cle: 'navigation.offres', chemin: 'offres' },
-  { cle: 'navigation.blog', chemin: 'blog' },
+  { cle: 'navigation.association', chemin: 'association' },
+  { cle: 'navigation.expertise', chemin: 'expertise' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
   { cle: 'pied.contact', chemin: 'contact' },
 ];

@@ -18,6 +18,7 @@ import {
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import { teinteDuTheme } from '@/components/motif';
 import { BoutiqueV2 } from '@/components/v2/boutique';
 import { versionDesign } from '@/design/version';
 import { ajouterAuPanier } from '../panier/actions';
@@ -124,7 +125,6 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
 
   const filtres: FiltresCatalogue = {
     q: parametres.q,
-    region: parametres.region,
     ...(parametres.type ? { type: parametres.type } : {}),
     themes: parametres.themes,
     origine: parametres.origine,
@@ -139,22 +139,13 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
   // │ LES FILTRES POSÉS, ET LE LIEN QUI RETIRE CHACUN.                      │
   // │                                                                        │
   // │ Construits depuis les paramètres BRUTS : ce sont eux que le lecteur a  │
-  // │ écrits, et retirer « région » ne doit pas au passage réécrire un tri   │
+  // │ écrits, et retirer un thème ne doit pas au passage réécrire un tri     │
   // │ par défaut dans l'URL.                                                 │
   // │                                                                        │
   // │ Les thèmes se retirent UN PAR UN, pas tous ensemble : un lecteur qui a │
   // │ croisé « ruse » et « animaux » veut le plus souvent en lâcher un seul. │
   // └────────────────────────────────────────────────────────────────────────┘
   const poses: FiltrePose[] = [];
-
-  if (filtres.region) {
-    poses.push({
-      cle: `region:${filtres.region}`,
-      libelle: traduire(langue, `regions.${filtres.region}`),
-      region: filtres.region,
-      retrait: lien({ region: undefined, page: undefined }),
-    });
-  }
 
   if (filtres.type) {
     poses.push({
@@ -169,6 +160,10 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
     poses.push({
       cle: `theme:${theme}`,
       libelle: theme,
+      // La pastille garde la couleur qu'avait celle de la région : la teinte
+      // vient maintenant du thème lui-même, par la même fonction que les
+      // couvertures, pour qu'un thème ait UNE couleur sur tout le site.
+      teinte: teinteDuTheme(theme),
       retrait: lien({
         themes: restants.length > 0 ? restants.join(',') : undefined,
         page: undefined,

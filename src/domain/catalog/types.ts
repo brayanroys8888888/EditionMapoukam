@@ -1,35 +1,27 @@
 import type { AccessDecision } from '@/domain/access/types';
 import type { UrlsCouverture } from '@/lib/storage/covers';
 
-/**
- * Régions du conte — l'énumération `region_conte` de la base, à l'identique.
- *
+/*
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ DES CLÉS ASCII, JAMAIS DES LIBELLÉS D'AFFICHAGE.                        │
+ * │ `REGIONS_CONTE` ET `RegionConte` ONT QUITTÉ CE FICHIER — migration 0071.│
  * │                                                                          │
- * │ Le défaut qui a motivé cette colonne était une APOSTROPHE : le corpus    │
- * │ écrivait « Afrique de l'Ouest » avec une apostrophe droite, un test avec │
- * │ une apostrophe typographique. Deux chaînes pour une seule région.        │
+ * │ La région ne range plus rien : elle ne valait que pour les contes, et    │
+ * │ poser le filtre faisait disparaître d'un coup tous les livrets           │
+ * │ pédagogiques. Le catalogue public, la fiche, la bibliothèque et l'écran  │
+ * │ d'administration se rangent désormais par THÈME, qui vaut pour les deux  │
+ * │ supports.                                                                │
  * │                                                                          │
- * │ `afrique_ouest` ne contient aucun caractère qui puisse s'écrire de deux  │
- * │ façons. Les libellés vivent dans les fichiers de traduction — où ils     │
- * │ diffèrent de toute façon en français et en anglais.                      │
+ * │ Ce qui subsiste, et pourquoi : la COLONNE `books.region` et l'énumération│
+ * │ `region_conte` restent en base — une migration ne jette pas une donnée   │
+ * │ que l'éditeur a saisie. Elles n'ont simplement plus de lecteur côté      │
+ * │ application, et garder ici une liste que personne ne lit en aurait fait  │
+ * │ une seconde source de vérité à tenir d'accord avec le SQL pour rien.     │
+ * │                                                                          │
+ * │ Les cinq mêmes noms survivent dans `src/components/motif/teinte.ts`,     │
+ * │ sous `PALETTES` — mais ce sont là des EMPLACEMENTS DE COULEUR, pas une   │
+ * │ donnée du titre : un thème quelconque y est projeté par empreinte.       │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-/**
- * Les cinq valeurs, à l'exécution — pour valider un paramètre de filtre et
- * énumérer les pastilles. Le type en DÉRIVE, afin qu'il n'y ait pas deux
- * listes à tenir d'accord.
- */
-export const REGIONS_CONTE = [
-  'afrique_ouest',
-  'sahel',
-  'afrique_centrale',
-  'afrique_australe',
-  'afrique_est',
-] as const;
-
-export type RegionConte = (typeof REGIONS_CONTE)[number];
 
 /**
  * Le TYPE DE SUPPORT — l'énumération `document_type` de la base (migration 0061).
@@ -112,15 +104,23 @@ export interface EntreeCatalogue {
   age_max: number | null;
   origine_culturelle: string | null;
   themes: string[];
-  /**
-   * Région du conte — énumération FERMÉE à cinq valeurs, qui pilote la couleur
-   * d'affichage et rien d'autre.
+  /*
+   * IL N'Y A PLUS DE `region` ICI.
    *
-   * À ne pas confondre avec `origine_culturelle`, qui reste du texte libre et
-   * porte la finesse éditoriale (« Bassin du Congo », « conte akan — Ghana »).
-   * La couleur se choisit sur `region` ; le texte s'affiche depuis l'autre.
+   * La migration 0071 a retiré la région du catalogue public : elle ne
+   * s'appliquait qu'aux contes, et faisait donc disparaître tous les livrets
+   * pédagogiques dès qu'on s'en servait comme filtre. La colonne et
+   * l'énumération restent en base — la donnée n'est pas détruite — mais elle
+   * ne voyage plus jusqu'à l'interface.
+   *
+   * Ce qu'elle pilotait, la COULEUR, se choisit désormais sur `themes` :
+   * `teinteDepuisThemes` dans `src/components/motif/teinte.ts`. Le thème vaut
+   * pour les deux supports, ce que la région ne pouvait pas faire.
+   *
+   * `origine_culturelle` — texte libre, « Bassin du Congo », « conte akan —
+   * Ghana » — reste intacte : c'est elle qui portait la finesse éditoriale, et
+   * elle s'affiche toujours.
    */
-  region: RegionConte | null;
   /**
    * Conte ou livret pédagogique. JAMAIS `null` : la colonne est NOT NULL avec
    * un défaut depuis la migration 0061, si bien qu'un titre en a toujours un.
@@ -173,10 +173,41 @@ export interface PageCatalogue {
 }
 
 export interface FicheLivre extends EntreeCatalogue {
+  /**
+   * LE TEXTE LONG de la fiche produit — distinct du résumé, et traduit.
+   *
+   * ┌───────────────────────────────────────────────────────────────────┐
+   * │ DEUX CHAMPS, DEUX USAGES — et c'est pour cela qu'ils sont deux.       │
+   * │                                                                        │
+   * │ `resume` est la PHRASE D'ACCROCHE : elle tient dans une carte, elle    │
+   * │ part dans les métadonnées de référencement, elle doit rester courte.   │
+   * │                                                                        │
+   * │ `description` est le TEXTE DE PRÉSENTATION : plusieurs paragraphes, lu │
+   * │ par qui est déjà sur la fiche et hésite à acheter.                    │
+   * │                                                                        │
+   * │ Un seul champ pour les deux faisait des cartes illisibles ou des      │
+   * │ fiches indigentes, selon la longueur que l'éditeur choisissait.       │
+   * └───────────────────────────────────────────────────────────────────┘
+   */
+  description: string | null;
   /** Titres proches, pour la section « suggestions » (§4.1 F3). */
   suggestions: SuggestionLivre[];
   /** Nombre de pages consultables sans droit d'accès complet. */
   pages_extrait: number;
+  /**
+   * Note moyenne et effectif des avis PUBLIÉS — lus, jamais recalculés ici.
+   *
+   * `null` quand aucun avis n'est publié : l'absence de note et la note zéro
+   * ne sont pas la même chose, et les confondre afficherait « 0/5 » sur un
+   * titre que personne n'a encore commenté.
+   */
+  avis: SyntheseAvis | null;
+}
+
+/** Synthèse des avis d'un titre, calculée par `book_review_summary`. */
+export interface SyntheseAvis {
+  moyenne: number;
+  nombre: number;
 }
 
 export interface SuggestionLivre {

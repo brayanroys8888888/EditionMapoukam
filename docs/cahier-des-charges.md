@@ -97,13 +97,16 @@ Gère le catalogue, les langues, les prix, les utilisateurs et consulte les stat
 
 ## 3. Modèle économique
 
-### 3.1 Les deux flux de revenus
+### 3.1 Les flux de revenus
 
 **Flux A — Abonnement (revenu récurrent)**
 L'utilisateur paie un abonnement mensuel ou annuel qui lui donne accès à la **lecture en ligne illimitée** du catalogue. Aucun téléchargement de fichier n'est possible via ce flux.
 
 **Flux B — Achat à l'unité (revenu ponctuel)**
 L'utilisateur achète un livre spécifique. L'achat lui donne un **droit de téléchargement permanent** du fichier (PDF et/ou EPUB), ainsi qu'un accès en lecture en ligne à ce titre, sans limite de durée.
+
+**Flux C — Adhésion à l'association (ajout du 3 septembre 2026)**
+Un troisième flux s'est ajouté aux deux ci-dessus : l'adhésion à l'Association Dave, qui ouvre un contenu distinct du catalogue et se paie séparément. Il est décrit à la **section 3.6**, où est aussi écrite la règle qui l'empêche de se confondre avec le flux A.
 
 ### 3.2 Règle de répartition entre les deux flux
 
@@ -152,6 +155,31 @@ Le positionnement éditorial attire mécaniquement deux publics au pouvoir d'ach
 | Abonnement annuel | Annuel | 22 000 FCFA | ≈ 33 € |
 
 > **Condition d'ouverture de l'abonnement.** Les plateformes établies du secteur proposent plusieurs dizaines de milliers de titres pour un tarif mensuel comparable. Un abonnement à 7,99 € adossé à un catalogue de quelques titres ne soutiendra pas la comparaison et générera surtout des résiliations. Il est donc recommandé de **développer l'abonnement dans le périmètre initial mais de ne l'ouvrir commercialement qu'à partir d'un seuil de 30 à 40 titres publiés**. La vente à l'unité, elle, est exploitable dès le premier titre.
+
+> **Modification du 3 septembre 2026 — la grille d'abonnement cesse d'être figée dans ce document.**
+>
+> Les deux tableaux ci-dessus restent la grille **de départ**, et les montants
+> qu'ils portent sont ceux qui ont été semés en base. Ils ne sont plus
+> l'autorité. Depuis la migration `0068`, les offres d'abonnement et leurs prix
+> par zone vivent dans les tables `subscription_plans` et `plan_prices` ;
+> l'éditeur les crée, les tarife, les ouvre et les ferme depuis le back-office
+> (F12 bis), sans qu'une livraison soit nécessaire.
+>
+> **Pourquoi ce changement.** Un prix corrigé ici ne changeait rien au site, et
+> un prix corrigé dans le code demandait une livraison pour un chiffre. Le jour
+> où l'éditeur ajusterait un tarif, ce document dirait autre chose que la
+> plateforme — et rien ne signalerait laquelle des deux versions a raison. Le
+> seul moyen d'éviter deux vérités était d'en désigner une : c'est la base.
+> Cette section dit désormais **ce que les offres sont** ; elle ne dit plus
+> **ce qu'elles coûtent**.
+>
+> **Ce qui ne change pas.** Les prix d'**achat à l'unité** ne sont pas
+> concernés : ils se posent titre par titre depuis F10, et l'ont toujours fait.
+> Les zones restent au nombre de deux (`international`, `afrique`) et restent
+> déterminées par le **pays de paiement**. La devise n'est jamais déduite de la
+> zone : elle est portée par le prix lui-même, avec le montant. Enfin, une
+> offre sans prix dans une zone n'y est **pas proposée** — on ne montre jamais
+> une souscription qui ne pourrait pas aboutir.
 
 ### 3.4 Périodes d'essai et promotions
 
@@ -230,6 +258,95 @@ liens déjà partagés. Le défaut inverse — un catalogue qui ne montrerait qu
 contes — ferait disparaître les livrets de la recherche et des suggestions.
 **Deux portes s'ajoutent ; aucune ne se ferme.**
 
+### 3.6 L'Association Dave, et son abonnement propre
+
+> **Ajout du 3 septembre 2026, sur décision de l'éditeur.** Cette section
+> n'existait pas. La plateforme portait une **section « blog »**, décrite nulle
+> part dans ce document et sans modèle économique : cinq articles servis depuis
+> un fichier versionné, que seule une livraison pouvait faire évoluer. Elle est
+> remplacée par l'**espace de l'Association Dave**, qui a un contenu, un
+> rédacteur et un financement.
+
+#### 3.6.1 Un troisième objet, et un troisième flux
+
+L'association n'est pas le catalogue. Ses comptes rendus d'actions, ses
+ressources d'accompagnement et ses dossiers pédagogiques ne sont pas des
+titres : ils ne s'achètent pas à l'unité, ne se téléchargent pas, n'ont ni
+couverture ni tranche d'âge, et leur valeur tient à ce qu'ils sont **suivis**
+dans la durée. Les faire entrer dans l'abonnement de lecture les aurait rendus
+gratuits pour tout abonné du catalogue — et aurait fait payer le catalogue à
+qui ne veut soutenir que l'association.
+
+**Flux C — Adhésion à l'association (revenu récurrent, distinct du flux A).**
+L'adhérent paie un abonnement mensuel ou annuel qui ouvre les **contenus
+réservés de l'espace associatif**. Rien d'autre.
+
+#### 3.6.2 Les deux abonnements sont étanches et cumulables
+
+**C'est la règle de cette section.** Les deux abonnements portent chacun un
+**domaine** (`lecture`, `association`), et un domaine n'ouvre que le sien :
+
+| Ce qui est souscrit | Ouvre | N'ouvre pas |
+|---|---|---|
+| Abonnement de **lecture** | La lecture en ligne du catalogue | Les contenus réservés de l'association |
+| Adhésion à l'**association** | Les contenus réservés de l'association | Le catalogue, et rien du catalogue |
+
+- **Étanches** : ni l'un ni l'autre ne déborde. Un adhérent qui ouvre un conte
+  se voit proposer l'abonnement de lecture, exactement comme un visiteur.
+- **Cumulables** : un même compte peut porter les deux, chacun avec sa période,
+  son offre, sa zone et sa devise. L'échéance de l'un ne touche pas l'autre.
+- **Un seul abonnement vivant par domaine et par compte** — garanti par un
+  index unique en base, non par la bonne volonté des appelants.
+- **Aucun des deux n'ouvre jamais un téléchargement.** Le principe 1 de la
+  section 3.2 vaut ici sans exception : seul un achat ouvre un fichier, et
+  l'espace associatif ne propose aucun fichier.
+
+Cette étanchéité ne se vérifie pas à l'œil : le jour où elle tomberait, aucun
+écran ne changerait d'apparence — un adhérent lirait simplement le catalogue
+entier sans l'avoir payé, et réciproquement. Elle est donc éprouvée dans les
+**deux sens séparément** par un test d'intégration dédié, comme l'est déjà
+l'abonnement expiré.
+
+#### 3.6.3 Ce que l'espace contient, et ce qu'il montre à qui n'a pas adhéré
+
+Chaque contenu porte une **catégorie** (vie associative, actions,
+accompagnement, pédagogie, culture, besoins spécifiques) et un **niveau
+d'accès** :
+
+| Niveau | Qui lit le texte |
+|---|---|
+| `libre` | Tout le monde, sans compte |
+| `abonnes` | Les adhérents de l'association seuls |
+
+Le niveau `abonnes` est le **défaut** : un contenu créé sans qu'on y pense est
+fermé, jamais ouvert. Le défaut le plus sûr est celui dont l'erreur se répare,
+et ouvrir par accident ce qui devait être réservé ne se répare pas.
+
+Un contenu réservé est **annoncé, pas caché** : son titre, son chapeau, sa
+catégorie et sa date s'affichent pour tous ; seul le corps manque, remplacé par
+l'invitation à adhérer. C'est ainsi qu'on montre ce que l'adhésion contient.
+Un **brouillon**, lui, n'existe pas pour le public — il ne figure dans aucune
+liste et son adresse répond « introuvable ».
+
+La protection du corps ne repose pas sur un filtrage : la colonne qui le porte
+n'est **accordée à personne** en dehors du serveur. Une politique mal écrite
+laisse filtrer une ligne ; un privilège absent fait échouer la requête entière,
+avec un code d'erreur, avant qu'une ligne soit lue. La différence compte : une
+réponse vide se confondrait avec un contenu sans texte, et une requête qui
+réussit finit un jour par être crue.
+
+#### 3.6.4 Les anciens articles du blog sont repris en accès libre
+
+Les cinq articles de la section « blog » deviennent la **part libre** de
+l'espace associatif : ils gardent leur texte, leur ordre et leur slug. Les
+adresses `/fr/blog` et `/fr/blog/<slug>` ont été partagées, indexées et mises
+en favori ; elles renvoient en **308** vers `/fr/association` et
+`/fr/association/<slug>`, et non vers une page d'erreur.
+
+Deux raisons de ne pas les fermer d'un coup : un espace vide n'a rien à
+montrer le jour de son ouverture, et une adhésion se demande à qui a déjà lu
+quelque chose. La part libre est ce qui donne envie de la part réservée.
+
 ---
 
 ## 4. Périmètre fonctionnel
@@ -274,6 +391,24 @@ contes — ferait disparaître les livrets de la recherche et des suggestions.
 - Conditions générales de vente et d'utilisation
 - Politique de confidentialité
 - Formulaire de contact
+
+#### F4 bis. Espace de l'Association Dave — ajout du 3 septembre 2026
+
+*Remplace la section « blog », qui n'était décrite dans aucune version de ce
+document et n'avait pas de modèle économique (section 3.6).*
+
+- **Page de présentation** `/association` : ce qu'est l'association, ce qu'elle
+  fait, et l'appel à adhérer. Son texte est **versionné avec le code** — il
+  change rarement, il n'a pas de rédacteur au quotidien, et une page de
+  présentation vide serait pire qu'une page figée
+- **Liste des contenus**, tous niveaux d'accès confondus, avec leur catégorie
+  et leur date. Les contenus réservés y figurent : c'est ainsi qu'on annonce ce
+  que l'adhésion contient
+- **Page d'un contenu** `/association/<slug>` : titre, chapeau et catégorie pour
+  tous ; le corps pour les adhérents seuls. Sinon, à la place du corps, le mur
+  d'adhésion et le lien vers les offres
+- **Aucun téléchargement, aucun fichier** : l'espace ne sert que du texte
+- Les adresses `/blog` et `/blog/<slug>` redirigent en **308**
 
 ### 4.2 Front-office — Espace utilisateur
 
@@ -320,6 +455,29 @@ contes — ferait disparaître les livrets de la recherche et des suggestions.
 - Paramétrage par livre : inclus dans l'abonnement (oui/non), disponible à l'achat (oui/non), prix, date de publication
 - Statut : brouillon / publié / archivé
 
+#### F10 bis. Rédaction des contenus de l'association — ajout du 3 septembre 2026
+
+- Création, modification et suppression d'un contenu associatif
+- Champs : slug, catégorie, niveau d'accès (`libre` / `abonnes`), ordre
+  d'affichage
+- Versions française et anglaise, chacune avec titre, chapeau et corps découpé
+  en sections
+- Publication et dépublication ; statut brouillon / publié
+
+Trois règles, en base là encore :
+
+1. **Le slug ne se modifie pas.** C'est l'adresse publique du contenu, et les
+   anciennes adresses du blog y renvoient. Le renommer casserait des liens déjà
+   partagés, sans que rien à l'écran le dise. L'interdit le plus sûr est
+   l'absence du champ.
+2. **La publication exige une version française complète** — un titre et un
+   corps non vide. C'est la règle qui vaut déjà pour un titre du catalogue, et
+   pour la même raison : un contenu publié sans corps afficherait une page
+   blanche, ici derrière un mur d'adhésion, ce qui est pire.
+3. **Dépublier n'est pas annuler.** La date de première publication est
+   conservée : le contenu retrouve sa place dans l'ordre chronologique s'il est
+   republié.
+
 #### F11. Gestion des utilisateurs
 - Liste et recherche des comptes
 - Consultation du statut d'abonnement et de l'historique d'achats
@@ -331,6 +489,40 @@ contes — ferait disparaître les livrets de la recherche et des suggestions.
 - Liste des abonnements actifs, en essai, annulés
 - Création et gestion de codes promotionnels
 - Traitement des remboursements
+
+#### F12 bis. Gestion des offres d'abonnement — ajout du 3 septembre 2026
+
+*La grille tarifaire de l'abonnement n'est plus figée dans ce document
+(section 3.3) : c'est cet écran qui la porte.*
+
+- **Création d'une offre**, dans l'un des deux domaines — `lecture` ou
+  `association` — et pour l'une des deux périodicités, mensuelle ou annuelle
+- **Prix par zone** (`international`, `afrique`), avec montant et devise. La
+  devise est saisie, jamais déduite de la zone
+- **Libellé et descriptif** en français et en anglais : ce sont eux que le
+  visiteur lit sur la page des offres
+- **Mise en vente et retrait de la vente**, sans effacer quoi que ce soit
+- **Suppression**, réservée aux offres que personne n'a jamais souscrites
+
+Quatre règles tiennent cet écran, et elles vivent en base — l'écran les lit,
+il ne les recalcule pas :
+
+1. **Une offre naît inactive.** On la crée, on la tarife, on la relit, puis on
+   l'ouvre. L'inverse mettrait en vente une offre à moitié saisie le temps de
+   la compléter.
+2. **Une offre sans prix ne s'active pas**, et le refus se présente comme une
+   règle métier — « il vous reste un geste à faire » — jamais comme une panne.
+3. **Le domaine et la périodicité ne se modifient pas.** Les changer réécrirait
+   le sens des contrats déjà souscrits : un abonné « lecture » deviendrait
+   adhérent sans l'avoir demandé ni payé. Pour changer l'un des deux, on crée
+   une autre offre et on retire celle-ci de la vente.
+4. **Une offre souscrite ne s'efface pas.** Elle se retire de la vente, et les
+   contrats en cours continuent — effacer l'offre effacerait l'histoire de ce
+   que ses abonnés ont payé.
+
+L'écran affiche, pour chaque offre, **ce qui lui manque** pour être vendable —
+comme le fait déjà l'écran de publication d'un titre, et par le même moyen : la
+liste des manques est calculée en base, en un seul endroit.
 
 #### F13. Tableau de bord statistique
 - Chiffre d'affaires par période (abonnement vs vente unitaire)
@@ -973,13 +1165,16 @@ Les coûts d'infrastructure augmentent avec le trafic et le volume de stockage, 
 |---|---|---|
 | 1 | Formats du contenu existant | Les titres existent au format PDF |
 | 2 | Langues de la V1 | Français et anglais |
-| 3 | Grille tarifaire | Arrêtée, deux zones — voir section 3.3 |
+| 3 | Grille tarifaire | Deux zones, arrêtées. Les prix d'**abonnement** ont quitté ce document le 3 septembre 2026 : ils vivent en base et se modifient depuis F12 bis — voir section 3.3 |
 | 4 | Répartition abonnement / vente | Décision éditoriale par titre — voir section 3.2 (la fenêtre de 3 mois a été retirée le 2 septembre 2026) |
 | 7 | Formats téléchargeables | PDF **et** EPUB |
 | 8 | Offre écoles et bibliothèques | Hors périmètre V1 ; à envisager ultérieurement (annexe A4) |
 | 9 | Application mobile | Non prévue ; le site est conçu en approche « mobile-first » |
 | 10 | Accès d'un livret pédagogique | **Modulaire, titre par titre** : offert, inclus dans l'abonnement, vendu à l'unité, ou plusieurs à la fois — voir section 3.5.2 (tranché le 2 septembre 2026) |
 | 11 | Catalogue mêlé ou séparé | **Séparé, sans rien fermer** : `/contes` et `/livrets` s'ajoutent, `/catalogue` reste le fonds entier — voir section 3.5.3 (tranché le 2 septembre 2026) |
+| 12 | Devenir de la section « blog » | **Remplacée par l'espace de l'Association Dave.** Ses cinq articles y sont repris en **accès libre** et leurs adresses redirigent en 308 — voir section 3.6.4 (tranché le 3 septembre 2026) |
+| 13 | Rapport entre les deux abonnements | **Étanches et cumulables** : `lecture` n'ouvre que le catalogue, `association` que l'espace associatif, un compte peut porter les deux, et aucun des deux n'ouvre de téléchargement — voir section 3.6.2 (tranché le 3 septembre 2026) |
+| 14 | Où vivent les offres et leurs prix | **En base, modifiables depuis le back-office** (F12 bis), et non plus dans ce document ni dans le code — voir section 3.3 (tranché le 3 septembre 2026) |
 
 ### 16.2 Points ouverts — à trancher avant le démarrage
 

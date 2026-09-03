@@ -4,11 +4,11 @@ import type {
   FicheLivre,
   PageCatalogue,
   PrixAffiche,
-  RegionConte,
 } from '@/domain/catalog/types';
 import type { UrlsCouverture } from '@/lib/storage/covers';
 import type { RefusLigne } from '@/domain/orders/types';
 import type { RefusPromo } from '@/domain/orders/promo';
+import type { DomaineAbonnement } from '@/domain/subscriptions/domaines';
 
 /**
  * CONTRAT D'API — enveloppes de réponse, DÉRIVÉES des types du domaine.
@@ -30,7 +30,7 @@ import type { RefusPromo } from '@/domain/orders/promo';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-export type { AccessDecision, MotifAcces, EntreeCatalogue, FicheLivre, PrixAffiche, RegionConte };
+export type { AccessDecision, MotifAcces, EntreeCatalogue, FicheLivre, PrixAffiche };
 
 /** Enveloppe d'erreur, identique sur toutes les routes. */
 export interface ErreurApi {
@@ -61,13 +61,17 @@ export interface Facette {
 }
 
 export interface ReponseFacettes {
-  regions: Facette[];
+  /*
+   * `regions` a disparu avec la migration 0071. La facette était rendue avec
+   * son effectif, mais elle ne pouvait ranger que la moitié du catalogue : une
+   * fiche d'activités n'a pas de région d'origine.
+   */
   /**
    * Contes et livrets pédagogiques, avec leur effectif RÉEL au catalogue.
    *
    * Une pastille « Livrets pédagogiques » écrite en dur serait une porte sur
    * une pièce vide tant qu'aucun n'est publié. Elle vient donc de la base,
-   * comme les régions et les thèmes.
+   * comme les thèmes.
    */
   types: Facette[];
   themes: Facette[];
@@ -124,7 +128,11 @@ export interface EntreeBibliotheque {
   livre_id: string;
   slug: string;
   titre: string;
-  region: RegionConte | null;
+  /**
+   * Les thèmes du titre. Ils décident la palette du substitut de couverture
+   * (`teinteDepuisThemes`) — rôle que tenait `region` jusqu'à la migration 0071.
+   */
+  themes: string[];
   couverture: UrlsCouverture | null;
   langues: string[];
   acces: AccessDecision;
@@ -218,13 +226,28 @@ export interface ApercuCommande {
   zone_divergente: boolean;
 }
 
+/**
+ * Une formule d'abonnement, telle que l'éditeur l'a écrite dans `/admin/offres`.
+ *
+ * `code` n'est plus `mensuel | annuel` : depuis la migration 0068, les formules
+ * sont des lignes de base, créées et tarifées par l'éditeur. La PÉRIODE de
+ * facturation reste `mensuel | annuel` — elle donne la durée — mais elle est
+ * devenue un attribut de la formule, et non son identité.
+ */
 export interface Offre {
-  code: 'mensuel' | 'annuel';
+  /** Code de la formule, ex. `lecture-mensuel`. Stable, c'est lui qu'on souscrit. */
+  code: string;
+  /** Ce que la formule ouvre. Les deux domaines sont étanches (§3.6). */
+  domaine: DomaineAbonnement;
   montant: number;
   devise: string;
   /** Déjà formaté par le serveur. L'interface l'affiche, ne le reformate pas. */
   affichage: string;
+  /** Libellé de la périodicité, déjà traduit : « mois » ou « an ». */
   periode: string;
+  /** Intitulé commercial, écrit par l'éditeur. */
+  libelle: string;
+  descriptif: string | null;
 }
 
 export interface ReponseOffres {
@@ -235,6 +258,21 @@ export interface ReponseOffres {
     jours_essai: number;
     offres: Offre[];
     /** Toujours `false`. Rendu explicitement : c'est LA confusion du domaine. */
+    donne_telechargement: false;
+  };
+  /**
+   * L'abonnement à l'Association Dave — §3.6.
+   *
+   * Séparé de `abonnement`, et non ajouté à sa liste : les deux abonnements
+   * sont ÉTANCHES, et une interface qui les afficherait dans la même grille
+   * laisserait croire qu'on choisit entre eux. On peut souscrire aux deux.
+   *
+   * `offres` est vide tant que l'éditeur n'a créé aucune formule associative :
+   * aucun tarif n'est inventé ici.
+   */
+  association: {
+    offres: Offre[];
+    /** Toujours `false` : il n'y a rien à télécharger dans l'espace associatif. */
     donne_telechargement: false;
   };
   achat_unite: {

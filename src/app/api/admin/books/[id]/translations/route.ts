@@ -40,11 +40,27 @@ const corpsSchema = z
     // Le résumé accepte la chaîne VIDE, qui le retire : c'est un champ
     // facultatif, et l'éditeur doit pouvoir effacer un texte qu'il a écrit.
     resume: z.string().trim().max(2000).optional(),
+    /*
+     * LA DESCRIPTION LONGUE — colonne créée par la migration 0070.
+     *
+     * Elle ne remplace pas le résumé, elle le complète : le résumé reste la
+     * phrase d'accroche des cartes et du référencement, la description est le
+     * texte de la fiche produit, celui qu'on lit avant d'acheter. Les
+     * confondre obligerait à choisir entre une carte illisible et une fiche
+     * vide.
+     *
+     * Même convention que le résumé : la chaîne VIDE l'efface, `undefined` la
+     * laisse intacte.
+     */
+    description: z.string().trim().max(8000).optional(),
   })
-  .refine((v) => v.titre !== undefined || v.resume !== undefined, {
-    message: 'Aucun champ à modifier.',
-    path: ['titre'],
-  });
+  .refine(
+    (v) => v.titre !== undefined || v.resume !== undefined || v.description !== undefined,
+    {
+      message: 'Aucun champ à modifier.',
+      path: ['titre'],
+    },
+  );
 
 export async function PATCH(
   request: Request,
@@ -62,6 +78,7 @@ export async function PATCH(
   const resultat = await modifierTraduction(garde.acteur.id, id, corps.data.translation_id, {
     ...(corps.data.titre !== undefined ? { titre: corps.data.titre } : {}),
     ...(corps.data.resume !== undefined ? { resume: corps.data.resume } : {}),
+    ...(corps.data.description !== undefined ? { description: corps.data.description } : {}),
   });
   if (!resultat.ok) return refusEnReponse(resultat.raison);
 

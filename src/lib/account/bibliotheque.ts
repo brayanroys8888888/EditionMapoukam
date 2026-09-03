@@ -3,7 +3,6 @@ import { createServiceClient } from '@/lib/supabase/clients';
 import { getAccessForBooks } from '@/lib/access/engine';
 import { urlsCouverture } from '@/lib/storage/covers';
 import type { ReponseBibliotheque } from '@/domain/api/contract';
-import type { RegionConte } from '@/domain/catalog/types';
 import { logger } from '@/lib/logger';
 
 /**
@@ -29,7 +28,7 @@ interface LigneBibliotheque {
   book_id: string;
   slug: string;
   titre: string;
-  region: string | null;
+  themes: string[];
   couverture_jeton: string | null;
   langues: string[];
   source: string | null;
@@ -73,7 +72,7 @@ export async function lireBibliotheque(
     livre_id: ligne.book_id,
     slug: ligne.slug,
     titre: ligne.titre,
-    region: ligne.region as RegionConte | null,
+    themes: ligne.themes,
     couverture: urlsCouverture(ligne.couverture_jeton),
     langues: ligne.langues,
     acces: acces.get(ligne.book_id) ?? {

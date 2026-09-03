@@ -4,11 +4,11 @@ import { langueValide, traduire } from '@/i18n';
 import { catalogQuerySchema } from '@/domain/catalog/schemas';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
 import { lireOffres } from '@/lib/offers/service';
+import { lireTemoignages } from '@/lib/site/temoignages';
 import { identifierAppelant } from '@/lib/auth/session';
-import type { RegionConte } from '@/domain/catalog/types';
-import { GrilleCatalogue, teintesRegion } from '@/components/catalogue';
+import { GrilleCatalogue, teintesTheme } from '@/components/catalogue';
 import { Couverture } from '@/components/catalogue/couverture';
-import { Motif } from '@/components/motif';
+import { Motif, teinteDepuisThemes, teinteDuTheme } from '@/components/motif';
 import { AccueilV2 } from '@/components/v2/accueil';
 import { versionDesign } from '@/design/version';
 import { ajouterAuPanier } from './panier/actions';
@@ -44,14 +44,15 @@ import styles from '@/components/accueil/accueil.module.css';
  */
 const NOMBRE_NOUVEAUTES = 8;
 
-/** Ordre d'affichage des traditions — celui des maquettes, d'ouest en est. */
-const ORDRE_REGIONS: RegionConte[] = [
-  'afrique_ouest',
-  'sahel',
-  'afrique_centrale',
-  'afrique_australe',
-  'afrique_est',
-];
+/**
+ * Combien de THÈMES la vitrine met en avant.
+ *
+ * La section montrait les cinq traditions, dans un ordre écrit ici. Les
+ * thèmes, eux, ne sont pas une énumération : ils viennent des facettes, déjà
+ * ordonnés par effectif décroissant, et il n'y a donc rien à ranger — juste à
+ * décider combien de tuiles tiennent sur une ligne. Cinq, comme avant.
+ */
+const NOMBRE_THEMES_VITRINE = 5;
 
 export default async function Accueil({ params }: { params: Promise<{ langue: string }> }) {
   const langue = langueValide((await params).langue);
@@ -67,11 +68,11 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
   // │ sans mise en avant. Chaque bloc absent se retire tout seul ; le hero,  │
   // │ lui, s'affiche toujours.                                               │
   // │                                                                        │
-  // │ `Promise.all` et non trois `await` de suite : les trois requêtes ne se │
-  // │ dépendent pas, et les enchaîner tripleraient le temps d'attente sur la │
-  // │ connexion lente qui est la condition réelle d'une partie du public.    │
+  // │ `Promise.all` et non quatre `await` de suite : les requêtes ne se      │
+  // │ dépendent pas, et les enchaîner quadruplerait le temps d'attente sur   │
+  // │ la connexion lente qui est la condition réelle d'une partie du public. │
   // └────────────────────────────────────────────────────────────────────────┘
-  const [nouveautes, facettes, offres] = await Promise.all([
+  const [nouveautes, facettes, offres, temoignages] = await Promise.all([
     listerCatalogue(
       appelant?.id ?? null,
       catalogQuerySchema.parse({ langue, tri: 'nouveautes', taille: NOMBRE_NOUVEAUTES }),
@@ -80,15 +81,18 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
     // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
     // paiement, depuis le pays réel du moyen de paiement.
     lireOffres('international').catch(() => null),
+    // `lireTemoignages` ne lève jamais : elle rend un tableau vide, et la
+    // section disparaît d'elle-même.
+    lireTemoignages(langue),
   ]);
 
   // ┌────────────────────────────────────────────────────────────────────────┐
   // │ LES DEUX DIRECTIONS PARTAGENT LES MÊMES DONNÉES.                      │
   // │                                                                        │
-  // │ Le chargement ci-dessus — nouveautés, facettes, offres — est fait UNE   │
-  // │ fois, avant de choisir la mise en page. C'est ce qui garantit que la   │
-  // │ V2 ne dérive pas : elle ne peut afficher que ce que la V1 affiche,     │
-  // │ puisqu'elle reçoit exactement le même objet.                           │
+  // │ Le chargement ci-dessus est fait UNE fois, avant de choisir la mise    │
+  // │ en page. C'est ce qui garantit que la V2 ne dérive pas : elle ne peut  │
+  // │ afficher que ce que la V1 affiche, puisqu'elle reçoit exactement les   │
+  // │ mêmes objets.                                                          │
   // └────────────────────────────────────────────────────────────────────────┘
   if (versionDesign() === 'v2') {
     return (
@@ -96,6 +100,7 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
         langue={langue}
         nouveautes={nouveautes}
         facettes={facettes}
+        temoignages={temoignages}
         // L'ajout au panier est une Server Action LIÉE au titre : un `GET` qui
         // modifie un panier serait rejoué par le moindre préchargement.
         actionAjout={(livreId) => ajouterAuPanier.bind(null, langue, livreId, langue)}
@@ -104,10 +109,10 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
   }
 
   const vedette = nouveautes?.entrees[0] ?? null;
-  const traditions = ORDRE_REGIONS.map((region) => ({
-    region,
-    nombre: facettes?.regions.find((facette) => facette.valeur === region)?.nombre ?? 0,
-  })).filter((tradition) => tradition.nombre > 0);
+  // Les facettes ne rendent que ce que le catalogue porte vraiment : un thème
+  // sans titre publié n'y figure pas, et la vitrine ne peut donc pas proposer
+  // une tuile qui mènerait à une page vide.
+  const themesVitrine = (facettes?.themes ?? []).slice(0, NOMBRE_THEMES_VITRINE);
 
   // La première offre d'abonnement est la mensuelle : c'est l'ordre que rend
   // `/api/offers`, et la vitrine affiche le prix d'entrée, pas la liste.
@@ -138,12 +143,13 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
           </div>
 
           {/*
-           * L'aplat porte la couleur du conte mis en avant, jamais une teinte
-           * choisie une fois pour toutes : le hero change avec le catalogue.
+           * L'aplat porte la couleur du titre mis en avant — celle de son
+           * premier thème — jamais une teinte choisie une fois pour toutes :
+           * le hero change avec le catalogue.
            */}
           <div className={styles.heroAplat}>
             <Motif
-              region={vedette?.region ?? 'afrique_ouest'}
+              teinte={teinteDepuisThemes(vedette?.themes)}
               place="plein"
               hero
               rayon="0"
@@ -157,7 +163,7 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
                 largeur={600}
                 hauteur={900}
                 tailles="(max-width: 700px) 72vw, 300px"
-                region={vedette.region}
+                teinte={teinteDepuisThemes(vedette.themes)}
                 alt={vedette.titre}
                 // La SEULE image `eager` du site : elle est au-dessus de la
                 // ligne de flottaison, et la retarder décalerait le hero.
@@ -212,39 +218,59 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
         </section>
       ) : null}
 
-      {/* ── D'où viennent ces contes ─────────────────────────────────────── */}
-      {traditions.length > 0 ? (
+      {/* ── Explorez par thème ───────────────────────────────────────────── */}
+      {themesVitrine.length > 0 ? (
         <section
           id="origines"
           className={`${styles.section} ${styles.traditions}`}
           aria-labelledby="titre-origines"
         >
+          {/*
+            LES THÈMES ONT REMPLACÉ LES TRADITIONS — migration 0071.
+
+            La section montrait les cinq régions. Elles ne rangeaient que les
+            contes : un parent venu chercher une fiche d'activités n'y trouvait
+            rien, et le catalogue filtré par région lui cachait tous les
+            livrets pédagogiques d'un coup. Le thème vaut pour les deux
+            supports.
+
+            L'ancre `#origines` et les classes CSS sont conservées : elles sont
+            citées par la navigation et par des liens partagés, et un ancrage
+            cassé est une page qui s'ouvre au mauvais endroit.
+          */}
           <h2 id="titre-origines" className={styles.titreSectionPetit}>
-            {traduire(langue, 'accueil.traditionsTitre')}
+            {traduire(langue, 'accueil.themesTitre')}
           </h2>
-          <p className={styles.sousTitreSection}>{traduire(langue, 'accueil.traditionsIntro')}</p>
+          <p className={styles.sousTitreSection}>{traduire(langue, 'accueil.themesIntro')}</p>
 
           <ul className={styles.traditionsGrille}>
-            {traditions.map(({ region, nombre }) => (
-              <li key={region}>
+            {themesVitrine.map((facette) => (
+              <li key={facette.valeur}>
                 {/*
                  * Chaque carte est un LIEN vers le catalogue filtré, jamais un
                  * bouton qui poserait un filtre en mémoire : le filtre vit
                  * dans l'URL, il se partage et il survit au rechargement.
+                 *
+                 * `encodeURIComponent` : un thème est de la saisie libre, et
+                 * une espace ou une esperluette y casserait la requête.
                  */}
                 <a
                   className={styles.tradition}
-                  href={`/${langue}/catalogue?region=${region}`}
-                  style={teintesRegion(region)}
+                  href={`/${langue}/catalogue?themes=${encodeURIComponent(facette.valeur)}`}
+                  style={teintesTheme([facette.valeur])}
                 >
-                  <Motif region={region} place="vignette" className={styles.traditionMotif} />
-                  <p className={styles.traditionNom}>{traduire(langue, `regions.${region}`)}</p>
+                  <Motif
+                    teinte={teinteDuTheme(facette.valeur)}
+                    place="vignette"
+                    className={styles.traditionMotif}
+                  />
+                  <p className={styles.traditionNom}>{facette.valeur}</p>
                   <p className={styles.traditionCompte}>
-                    {nombre === 1
-                      ? traduire(langue, 'accueil.traditionsCompteUn')
-                      : traduire(langue, 'accueil.traditionsCompte').replace(
+                    {facette.nombre === 1
+                      ? traduire(langue, 'accueil.themesCompteUn')
+                      : traduire(langue, 'accueil.themesCompte').replace(
                           '{nombre}',
-                          String(nombre),
+                          String(facette.nombre),
                         )}
                   </p>
                 </a>

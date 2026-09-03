@@ -162,7 +162,7 @@ RPC aux fonctions réellement présentes dans le type généré. Une fonction aj
 en SQL et non régénérée **ne compile pas** — ce qui est le comportement voulu.
 
 Les migrations sont numérotées et **jamais modifiées après application** : on
-ajoute une migration corrective. Le dépôt en est à la **0066**.
+ajoute une migration corrective. Le dépôt en est à la **0077**.
 
 ## Architecture — les quatre couches, et ce qui les sépare
 
@@ -358,17 +358,121 @@ gestionnaire de webhooks. Elle ne modifie jamais la base de données directement
   L'accès d'un livret est donc **modulaire, titre par titre** : offert, inclus
   dans l'abonnement, vendu à l'unité, ou plusieurs à la fois. Décision de
   l'éditeur du 2 septembre 2026, inscrite au cahier des charges §3.5.
-- **La région du catalogue ne bloque plus la publication.** Décision de
-  l'éditeur du 3 septembre 2026, migration `0066` : la branche `region` a
-  quitté `manques_pour_publication`. Une fiche d'activités n'a pas de région
-  d'origine, et la contrainte n'avait plus de sens sur la moitié du catalogue.
+- **La région a quitté le catalogue. Le THÈME a pris sa place.** Deux
+  décisions de l'éditeur, du 3 septembre 2026, dans cet ordre :
 
-  Ce qui disparaît est le pouvoir de BLOQUER, pas la donnée : la colonne,
-  l'énumération à cinq valeurs, la facette du catalogue public et le champ
-  d'administration restent. Un titre sans région s'affiche en teinte
-  `inconnue` et ne ressort sous aucun filtre de région — ce qui est exact,
-  puisqu'il n'en a pas. `manques_pour_publication` reste l'unique
-  implémentation, et ne lit toujours **jamais** `type_document`.
+  - migration `0066` — la branche `region` quitte `manques_pour_publication` :
+    la région ne BLOQUE plus une publication ;
+  - migration `0071` — le paramètre `p_region` quitte `catalog_list` et la
+    facette `regions` quitte `catalog_facets` : la région n'est plus une clé
+    de RECHERCHE, et le champ disparaît de l'écran d'administration.
+
+  La raison est la même aux deux étages : le catalogue porte deux supports
+  depuis la `0061`, et une fiche d'activités n'a pas de région d'origine. Une
+  facette qui ne s'applique qu'à la moitié d'un catalogue n'aide pas à
+  chercher — elle fait disparaître l'autre moitié dès qu'on clique dessus.
+  Le thème, lui, vaut pour les deux supports, et c'est ce qu'on cherche
+  vraiment : « le courage », « l'entraide ».
+
+  **La colonne `books.region` et l'énumération `region_conte` RESTENT**, ainsi
+  que `region_depuis_origine` et le paramètre `p_region` d'
+  `admin_modifier_livre`. Retirer une fonction n'est pas détruire une donnée :
+  les cinq régions sont renseignées sur le corpus existant, et les effacer
+  serait irréversible. Ne pas « finir le ménage » en supprimant la colonne.
+
+  Conséquence visible : la teinte d'un substitut de couverture se choisit
+  désormais sur le PREMIER thème du titre — `teinteDepuisThemes`, dans
+  `src/components/motif/teinte.ts` — et la migration `0074` a fait rendre
+  `themes` à `library_for_user` en place de `region`. Un titre sans thème
+  prend la teinte neutre `inconnue`, jamais une couleur tirée au sort.
+
+- **`themes` et `description` sont éditables depuis la `0070`.** Deux champs
+  éditoriaux de natures opposées : `themes` existait sur `books` et servait
+  déjà de facette, mais **aucune** fonction `admin_*` ne permettait de
+  l'écrire ; `description` n'existait pas du tout.
+
+  `description` vit sur `book_translations`, à côté du titre et du résumé :
+  c'est du texte destiné au lecteur, et le poser sur `books` afficherait un
+  paragraphe français sur le site anglais. `themes` vit sur `books` : c'est
+  une clé de rangement, et un regroupement qui changerait de composition
+  selon la langue consultée ne regrouperait rien.
+
+  Le `resume` et la `description` ne sont pas deux noms pour la même chose :
+  le résumé est l'accroche d'une carte, la description est le texte long
+  d'une fiche. Le résumé tenait les deux rôles, et les tenait donc mal.
+
+- **Les avis sont écrits par LES CLIENTS, jamais par l'administration.**
+  Migration `0072`, décision de l'éditeur du 3 septembre 2026. Un avis rédigé
+  au back-office n'est pas un avis, c'est une accroche publicitaire.
+
+  Trois règles, toutes en base, aucune dans une route :
+
+  - **qui peut écrire** — `access_for(...).can_read`, l'unique implémentation
+    du droit d'accès. La question avait été posée en termes d'« achat
+    vérifié » ; ce vocabulaire vient des boutiques à modèle unique et
+    exclurait ici les abonnés — le chemin de lecture MAJORITAIRE — tout en
+    interdisant l'avis sur un titre offert. `can_read` est ce que
+    l'expression voulait dire ;
+  - **la publication n'est pas à la portée de l'auteur** — un avis naît
+    `en_attente`, un client ne pose pas son `statut`, et modifier un avis
+    déjà publié le remet en attente ;
+  - **ce que le public voit** — `user_id`, `modere_par` et `motif_rejet` ne
+    sont pas lisibles par `anon` ; le motif d'un refus n'est lisible que par
+    son auteur, à qui il est destiné.
+
+  `admin_moderer_avis` n'accepte que **deux** décisions, `publie` et
+  `rejete` : remettre un avis en attente le ferait revenir indéfiniment dans
+  la file sans que rien dise pourquoi. Un rejet **exige** son motif.
+
+- **Les trois témoignages de la page d'accueil sont du CONTENU, plus des
+  traductions.** Migration `0073` : ils étaient figés dans `src/i18n/fr.json`
+  et `en.json`, ils vivent maintenant dans `testimonials` et sont éditables
+  depuis `/admin/temoignages`. Un témoignage n'est pas un avis : il parle du
+  site, pas d'un titre, et il est saisi par l'éditeur — ce sont deux tables et
+  deux écrans.
+
+  L'enregistrement prend un **bloc de versions** : une langue absente du
+  tableau est laissée intacte, une langue au texte vide est **supprimée**.
+  L'écran doit donc lire le détail de chaque témoignage, jamais la ligne de
+  liste — un formulaire construit sur la liste posterait un texte anglais vide
+  et effacerait la version anglaise.
+
+- **Il y a DEUX abonnements, et ils sont étanches.** Chaque abonnement porte un
+  **domaine** : `lecture` ouvre la lecture en ligne du catalogue, `association`
+  ouvre les contenus réservés de l'espace associatif. Aucun des deux n'ouvre
+  celui de l'autre, aucun des deux n'ouvre un téléchargement, et un même compte
+  peut porter les deux — un seul vivant par domaine, garanti par un index
+  unique. Décision de l'éditeur du 3 septembre 2026, cahier des charges §3.6,
+  migration `0067`.
+
+  L'unique implémentation est `abonnement_ouvre_droit(user, domaine, at)`, et
+  le filtre qui compte est le `and s.domaine = p_domaine`. Le jour où il
+  disparaîtrait, RIEN ne casserait : les écrans s'afficheraient, les tunnels
+  fonctionneraient, et un adhérent lirait le catalogue entier sans l'avoir
+  payé. `tests/integration/abonnements-etanches.test.ts` éprouve les **deux
+  sens séparément** — une implémentation au domaine écrit en dur passerait
+  l'un et raterait l'autre.
+
+- **Les offres d'abonnement et leurs prix vivent en BASE, plus dans le code.**
+  Migration `0068` : `subscription_plans` et `plan_prices`, éditables depuis
+  `/admin/offres`. Le cahier des charges §3.3 ne porte plus la grille
+  d'abonnement, seulement les deux zones. Quatre refus tiennent la cohérence,
+  tous en base : une offre naît inactive, une offre sans prix ne s'active pas,
+  le domaine et la périodicité ne se modifient pas, une offre souscrite ne
+  s'efface pas (elle se désactive).
+
+  `POST /api/subscriptions` reçoit désormais un **code de formule**, plus
+  `mensuel | annuel` : les prix d'abonnement ne sont plus dans
+  `PRICE_SUBSCRIPTION_*`.
+
+- **Le corps d'un contenu associatif est protégé par un PRIVILÈGE ABSENT, pas
+  par une politique.** La colonne `corps` de
+  `association_content_translations` n'est accordée ni à `anon` ni à
+  `authenticated` : une requête qui la demande **échoue**, avec un code
+  d'erreur, avant qu'une ligne soit lue. Une politique qui filtre laisserait la
+  requête réussir, et une réponse vide se confondrait avec un contenu sans
+  texte. Ne jamais « réparer » ce refus en ajoutant le privilège : le chemin
+  légitime est la fonction `association_contenu`.
 
 - **Il n'y a AUCUN délai entre la publication et l'entrée dans l'abonnement.**
   Un titre publié et marqué `inclus_abonnement` est lisible par un abonné à

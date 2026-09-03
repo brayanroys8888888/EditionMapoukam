@@ -63,7 +63,7 @@ describe('les rayons du catalogue', () => {
     // │ L'ORDRE Y EST LE MÊME, MAIS LA LISTE EST PLUS LONGUE.              │
     // │                                                                    │
     // │ Le menu étroit reprend AUSSI les entrées secondaires — offres,     │
-    // │ blog, contact — que l'en-tête large garde hors de la liste          │
+    // │ association, contact — que l'en-tête large garde hors de la liste   │
     // │ déroulante. On vérifie donc une INCLUSION en tête, pas une égalité :│
     // │ ce qui doit tenir, c'est qu'aucun rayon n'y manque.                 │
     // └────────────────────────────────────────────────────────────────────┘

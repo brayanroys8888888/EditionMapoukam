@@ -1,0 +1,180 @@
+/*
+ * LES AVIS DES LECTEURS — migration 0072.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN MODULE À PART, PARTAGÉ PAR LES DEUX THÈMES.                          │
+ * │                                                                          │
+ * │ La section s'affiche à l'identique en V1 et en V2. Elle ne lit que des    │
+ * │ jetons — `--carte-fond`, `--encre`, `--accent` — dont la valeur change    │
+ * │ sous elle selon `data-design`. La dupliquer dans les deux modules de      │
+ * │ fiche aurait fait deux vérités pour une seule section, et c'est la        │
+ * │ seconde qui aurait cessé d'être relue.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.section {
+  margin-top: 52px;
+  scroll-margin-top: 96px;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: var(--espace-3);
+}
+
+.titre {
+  font-size: 26px;
+}
+
+.synthese {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--taille-base);
+  color: var(--encre-douce);
+}
+
+.moyenne {
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+/*
+ * LES ÉTOILES SONT DÉCORATIVES.
+ *
+ * La note chiffrée est écrite à côté, en toutes lettres pour les lecteurs
+ * d'écran. Cinq caractères annoncés un par un — « étoile étoile étoile » —
+ * seraient du bruit, pas une information.
+ */
+.etoiles {
+  letter-spacing: 2px;
+  color: var(--accent);
+}
+
+.vide {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-l);
+  max-width: var(--largeur-texte);
+  color: var(--encre-douce);
+}
+
+/* ── La liste ───────────────────────────────────────────────────────────── */
+
+.liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 18px;
+  margin-top: var(--espace-3);
+}
+
+.avis {
+  background: var(--carte-fond);
+  border: 1.5px solid var(--carte-bordure);
+  border-radius: var(--rayon-carte);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avisTexte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-base);
+  line-height: var(--interligne-lecture);
+  margin: 0;
+}
+
+.avisAuteur {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+}
+
+/* ── Le formulaire, et les états qui le remplacent ──────────────────────── */
+
+.invite {
+  background: var(--fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  padding: 20px 22px;
+  margin-top: var(--espace-3);
+  font-size: var(--taille-base);
+  max-width: var(--largeur-texte);
+}
+
+.etat {
+  border-left: 3px solid var(--accent);
+  padding-left: 14px;
+  margin-bottom: var(--espace-3);
+  font-size: var(--taille-base);
+}
+
+.etatMotif {
+  color: var(--encre-douce);
+  font-size: var(--taille-s);
+  margin-top: 4px;
+}
+
+.formulaire {
+  background: var(--fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  padding: 22px;
+  margin-top: var(--espace-3);
+  max-width: var(--largeur-texte);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.libelle {
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+}
+
+.saisie {
+  font: inherit;
+  color: var(--encre);
+  background: var(--carte-fond);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-champ, 10px);
+  padding: 10px 12px;
+  min-height: var(--cible-min);
+}
+
+.zoneTexte {
+  min-height: 140px;
+  font-family: var(--police-lecture);
+  line-height: var(--interligne-lecture);
+  resize: vertical;
+}
+
+.aide {
+  font-size: var(--taille-s);
+  color: var(--encre-douce);
+}
+
+.boutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/*
+ * Le retrait est un formulaire À PART, et non un second bouton du premier :
+ * deux boutons dans un même formulaire partagent sa validation, et « Retirer »
+ * refuserait alors de partir tant que le texte est trop court — c'est-à-dire
+ * exactement quand on veut l'effacer.
+ */
+.retrait {
+  display: inline;
+}

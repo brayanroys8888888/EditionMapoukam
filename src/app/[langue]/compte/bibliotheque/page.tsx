@@ -8,7 +8,7 @@ import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { identifierAppelant } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
 import { Motif } from '@/components/motif';
-import { teintesRegion } from '@/components/catalogue';
+import { teintesTheme } from '@/components/catalogue';
 import { GabaritEspace } from '@/components/espace';
 import { BoutonTelechargement } from '@/components/espace/BoutonTelechargement';
 import espace from '@/components/espace/espace.module.css';
@@ -65,7 +65,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
   try {
     [bibliotheque, abonnement] = await Promise.all([
       lireBibliotheque(appelant.id, langue),
-      abonnementCourant(appelant.id),
+      abonnementCourant(appelant.id, 'lecture'),
     ]);
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;
@@ -142,7 +142,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
               <li
                 key={entree.livre_id}
                 className={espace.reprise}
-                style={teintesRegion(entree.region)}
+                style={teintesTheme(entree.themes)}
               >
                 {entree.couverture ? (
                   <img
@@ -219,7 +219,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
               Jamais un bloc vide : le modèle est celui du catalogue — dire ce
               qui manque, et donner une action.
             */}
-            <Motif region="vide" place="plein" rayon="14px" className={ecran.videMotif} />
+            <Motif teinte="vide" place="plein" rayon="14px" className={ecran.videMotif} />
 
             <div className={ecran.videTexte}>
               <p className={ecran.videTitre}>{traduire(langue, 'compte.achatsVide')}</p>
@@ -236,7 +236,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
               <li
                 key={entree.livre_id}
                 className={espace.achat}
-                style={teintesRegion(entree.region)}
+                style={teintesTheme(entree.themes)}
               >
                 {entree.couverture ? (
                   <img
@@ -251,10 +251,17 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                 ) : null}
 
                 <div className={espace.achatCorps}>
-                  {entree.region ? (
+                  {/*
+                    LE THÈME À LA PLACE DE LA RÉGION — migration 0071.
+
+                    La ligne portait le libellé traduit de la région. Un thème
+                    est de la saisie libre : il s'affiche tel que l'éditeur l'a
+                    écrit, sans passer par le dictionnaire.
+                  */}
+                  {entree.themes[0] !== undefined ? (
                     <p className={espace.achatOrigine}>
                       <span className={espace.achatPuce} aria-hidden="true" />
-                      {traduire(langue, `regions.${entree.region}`)}
+                      {entree.themes[0]}
                     </p>
                   ) : null}
 

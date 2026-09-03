@@ -51,7 +51,7 @@ export default async function PageAbonnement({ params }: Parametres) {
 
   let courant;
   try {
-    courant = await abonnementCourant(appelant.id);
+    courant = await abonnementCourant(appelant.id, 'lecture');
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;
   }
@@ -63,7 +63,7 @@ export default async function PageAbonnement({ params }: Parametres) {
         <p className={ecran.intro}>{traduire(langue, 'abonnement.aucun')}</p>
 
         <div className={ecran.vide}>
-          <Motif region="vide" place="plein" rayon="14px" className={ecran.videMotif} />
+          <Motif teinte="vide" place="plein" rayon="14px" className={ecran.videMotif} />
 
           <div className={ecran.videTexte}>
             <p className={ecran.videTitre}>{traduire(langue, 'offres.abonnementTitre')}</p>

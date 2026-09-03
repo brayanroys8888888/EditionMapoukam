@@ -123,6 +123,11 @@ export async function deleteTestUser(user: Pick<TestUser, 'id'>): Promise<void> 
   // test, pas le chemin de production, qui passe par `effacerCopiesDe`.
   await query(`delete from public.download_copies where user_id = $1`, [user.id]);
   await query(`delete from public.refresh_token_families where user_id = $1`, [user.id]);
+  // `book_reviews` reference `users` en `on delete restrict` (migration 0072),
+  // pour la meme raison que les deux lignes ci-dessus : un avis laisse par un
+  // compte de test bloquerait sinon sa suppression, et le message parlerait
+  // d'une contrainte plutot que d'un avis.
+  await query(`delete from public.book_reviews where user_id = $1`, [user.id]);
   await query(`delete from public.promo_redemptions where user_id = $1`, [user.id]);
   await query(`delete from public.payment_events where user_id = $1`, [user.id]);
   await query(`delete from public.invoices where user_id = $1`, [user.id]);

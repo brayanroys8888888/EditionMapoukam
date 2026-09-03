@@ -68,6 +68,7 @@ async function souscrireAvecEssai(
   return await appliquerEvenement(
     {
       userId: abonne.id,
+      domaine: 'lecture',
       evenement: 'souscrit',
       offre: 'mensuel',
       zone,
@@ -135,7 +136,7 @@ describe('essai puis activation', () => {
     await souscrireAvecEssai();
 
     const resultat = await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -147,7 +148,7 @@ describe('essai puis activation', () => {
     // accordé que par un achat, jamais par un abonnement. »
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -165,7 +166,7 @@ describe('échec de prélèvement et période de grâce', () => {
     // (business_settings.periode_grace_jours).
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -176,7 +177,7 @@ describe('échec de prélèvement et période de grâce', () => {
   it('RETIRE l’accès une fois la grâce écoulée', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -192,11 +193,11 @@ describe('échec de prélèvement et période de grâce', () => {
     // indéfiniment.
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(7)) },
     );
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(11)) },
     );
 
@@ -215,11 +216,11 @@ describe('échec de prélèvement et période de grâce', () => {
   it('referme la grâce quand le prélèvement finit par passer', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(7)) },
     );
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(9)) },
     );
 
@@ -242,11 +243,11 @@ describe('annulation', () => {
     // immédiatement.
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(7)) },
     );
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(10)) },
     );
 
@@ -259,7 +260,7 @@ describe('annulation', () => {
   it('retire l’accès une fois la période échue', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
@@ -270,13 +271,13 @@ describe('annulation', () => {
 
   it('ne déplace pas la fin de période', async () => {
     await souscrireAvecEssai();
-    const avant = await abonnementCourant(abonne.id);
+    const avant = await abonnementCourant(abonne.id, 'lecture');
 
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
-    const apres = await abonnementCourant(abonne.id);
+    const apres = await abonnementCourant(abonne.id, 'lecture');
 
     expect(apres?.finPeriode.toISOString()).toBe(avant?.finPeriode.toISOString());
   });
@@ -315,7 +316,7 @@ describe('expiration — LE BUG CLASSIQUE', () => {
 
     // Expiration.
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'expire' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'expire' },
       { clock: new FixedClock(jours(30)) },
     );
 
@@ -347,7 +348,7 @@ describe('expiration — LE BUG CLASSIQUE', () => {
 
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'expire' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'expire' },
       { clock: new FixedClock(jours(30)) },
     );
 
@@ -367,6 +368,7 @@ describe('zone figée à la souscription — D4 point 7', () => {
     await appliquerEvenement(
       {
         userId: abonne.id,
+        domaine: 'lecture',
         evenement: 'renouvele',
         // Le prestataire annonce une autre zone : elle doit être IGNORÉE.
         zone: 'international',
@@ -376,7 +378,7 @@ describe('zone figée à la souscription — D4 point 7', () => {
       { clock: new FixedClock(jours(7)) },
     );
 
-    const apres = await abonnementCourant(abonne.id);
+    const apres = await abonnementCourant(abonne.id, 'lecture');
 
     expect(apres?.zone).toBe('afrique');
     expect(apres?.devise).toBe('XAF');
@@ -387,11 +389,11 @@ describe('zone figée à la souscription — D4 point 7', () => {
     await souscrireAvecEssai();
 
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele', offre: 'annuel' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele', offre: 'annuel' },
       { clock: new FixedClock(jours(7)) },
     );
 
-    const apres = await abonnementCourant(abonne.id);
+    const apres = await abonnementCourant(abonne.id, 'lecture');
     expect(apres?.offre).toBe('mensuel');
   });
 });
@@ -400,13 +402,13 @@ describe('renouvellement et bornes de période', () => {
   it('repart de la fin de période quand elle est encore devant', async () => {
     // Repartir de « maintenant » offrirait des jours à qui renouvelle en avance.
     await souscrireAvecEssai();
-    const avant = await abonnementCourant(abonne.id);
+    const avant = await abonnementCourant(abonne.id, 'lecture');
 
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(3)) },
     );
-    const apres = await abonnementCourant(abonne.id);
+    const apres = await abonnementCourant(abonne.id, 'lecture');
 
     // Nouvelle fin = ancienne fin + 1 mois, et non « maintenant + 1 mois ».
     const attendu = new Date(avant!.finPeriode.getTime());
@@ -420,10 +422,10 @@ describe('renouvellement et bornes de période', () => {
     await souscrireAvecEssai();
 
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(40)) },
     );
-    const apres = await abonnementCourant(abonne.id);
+    const apres = await abonnementCourant(abonne.id, 'lecture');
 
     const attendu = new Date(jours(40).getTime());
     attendu.setUTCMonth(attendu.getUTCMonth() + 1);
@@ -449,7 +451,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     // de rétention (étape 14) a besoin.
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
@@ -463,7 +465,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
   it('replie « annulé » sur « expiré » une fois la période payée écoulée', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
@@ -475,7 +477,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
   it('replie « impayé » sur « expiré » une fois la grâce écoulée', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'prelevement_echoue' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'prelevement_echoue' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -495,7 +497,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     // └──────────────────────────────────────────────────────────────────────┘
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(7)) },
     );
 
@@ -527,7 +529,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     // silence qui pose problème, c'est l'absence de nouvelle.
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
@@ -591,7 +593,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     };
 
     try {
-      await abonnementCourant(abonne.id);
+      await abonnementCourant(abonne.id, 'lecture');
     } finally {
       process.stderr.write = ecrire;
     }
@@ -605,7 +607,7 @@ describe('statut effectif — les dates repliées sur le statut rapporté', () =
     // chose, sans quoi l'écran mentirait sur ce que l'utilisateur peut lire.
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
@@ -657,45 +659,45 @@ describe('la COLONNE CALCULÉE, lue par le chemin réel de l’application', () 
   it('rend « essai » pour un essai en cours', async () => {
     await poser('essai', { finDansJours: 5 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('essai');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('essai');
   });
 
   it('rend « actif » pour un abonnement actif dans sa période', async () => {
     await poser('actif', { finDansJours: 20 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('actif');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('actif');
   });
 
   it('rend « annule » tant que la période payée court', async () => {
     // §9.1 — l'accès est maintenu jusqu'au terme de la période payée.
     await poser('annule', { finDansJours: 10 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('annule');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('annule');
   });
 
   it('rend « expire » pour un annulé dont la période est échue', async () => {
     await poser('annule', { finDansJours: -5 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('expire');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('expire');
   });
 
   it('rend « impaye » pendant la période de grâce', async () => {
     // Grâce de 7 jours : deux jours après l'échec, elle court encore.
     await poser('impaye', { finDansJours: -3, impayeDepuisJours: 2 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('impaye');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('impaye');
   });
 
   it('rend « expire » pour un impayé dont la grâce est écoulée', async () => {
     await poser('impaye', { finDansJours: -30, impayeDepuisJours: 20 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('expire');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('expire');
   });
 
   it('rend « anomalie » pour un actif dont la période est échue', async () => {
     await poser('actif', { finDansJours: -10 });
 
-    expect((await abonnementCourant(abonne.id))?.statutEffectif).toBe('anomalie');
+    expect((await abonnementCourant(abonne.id, 'lecture'))?.statutEffectif).toBe('anomalie');
   });
 
   it('rend le statut rapporté À CÔTÉ du statut observé', async () => {
@@ -704,7 +706,7 @@ describe('la COLONNE CALCULÉE, lue par le chemin réel de l’application', () 
     // besoin. Confondre les deux perdrait l'information.
     await poser('annule', { finDansJours: -5 });
 
-    const courant = await abonnementCourant(abonne.id);
+    const courant = await abonnementCourant(abonne.id, 'lecture');
     expect(courant?.statut).toBe('annule');
     expect(courant?.statutEffectif).toBe('expire');
   });
@@ -765,6 +767,7 @@ describe('durée d’essai figée sur l’abonnement', () => {
     await appliquerEvenement(
       {
         userId: abonne.id,
+        domaine: 'lecture',
         evenement: 'souscrit',
         offre: 'mensuel',
         joursEssai: 0,
@@ -796,12 +799,12 @@ describe('transitions refusées', () => {
   it('refuse de renouveler un abonnement annulé', async () => {
     await souscrireAvecEssai();
     await appliquerEvenement(
-      { userId: abonne.id, evenement: 'annule' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'annule' },
       { clock: new FixedClock(jours(2)) },
     );
 
     const renouvellement = await appliquerEvenement(
-      { userId: abonne.id, evenement: 'renouvele' },
+      { userId: abonne.id, domaine: 'lecture', evenement: 'renouvele' },
       { clock: new FixedClock(jours(3)) },
     );
 
@@ -842,8 +845,12 @@ describe('routes', () => {
   it('la souscription N’ACTIVE RIEN par elle-même', async () => {
     // §9.1 — « Ne jamais activer un abonnement sur la seule base d'une
     // redirection navigateur, qui peut être falsifiée. »
+    //
+    // `lecture-mensuel`, et non `mensuel` : depuis la migration 0068 les
+    // formules vivent en base et portent leur DOMAINE dans leur code. C'est
+    // ce qui empêche une adhésion associative d'ouvrir le catalogue.
     const reponse = await souscrire(
-      postJson('/api/subscriptions', { offre: 'mensuel' }, { jeton: abonne.accessToken }),
+      postJson('/api/subscriptions', { offre: 'lecture-mensuel' }, { jeton: abonne.accessToken }),
     );
 
     expect(reponse.status).toBe(200);
@@ -859,7 +866,7 @@ describe('routes', () => {
     await souscrireAvecEssai();
 
     const reponse = await souscrire(
-      postJson('/api/subscriptions', { offre: 'mensuel' }, { jeton: abonne.accessToken }),
+      postJson('/api/subscriptions', { offre: 'lecture-mensuel' }, { jeton: abonne.accessToken }),
     );
 
     expect(reponse.status).toBe(409);

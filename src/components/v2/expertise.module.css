@@ -1,0 +1,383 @@
+/*
+ * EXPERTISE & CONSEIL — la page de Mapoukam Consulting.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE COULEUR N'EST ÉCRITE ICI, ET AUCUN REPLI NON PLUS.               │
+ * │                                                                          │
+ * │ `association.module.css` a porté pendant une journée six jetons          │
+ * │ inexistants — `--v2-accent`, `--v2-surface-douce` — chacun suivi d'une   │
+ * │ valeur de repli. C'étaient donc des couleurs en dur, celles d'aucune     │
+ * │ palette, pendant que l'en-tête du fichier affirmait le contraire. Un     │
+ * │ repli sur un jeton qui n'existe pas est la SEULE valeur qui compte.      │
+ * │                                                                          │
+ * │ Ce fichier ne lit que des jetons déclarés dans `src/design/tokens.css` : │
+ * │ --fond, --fond-doux, --encre, --encre-douce, --bordure, --bordure-forte, │
+ * │ --action, --action-encre, --v2-vert, --v2-fond, et les jetons de forme.  │
+ * │ `tests/unit/design-tokens.test.ts` refuse le moindre hexadécimal.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA GRILLE DES RÉALISATIONS EST FAITE POUR UNE CONNEXION LENTE.          │
+ * │                                                                          │
+ * │ Onze couvertures, dont dix en portrait. Chaque tuile porte un rapport    │
+ * │ d'aspect fixe (`aspect-ratio`), si bien que la place est réservée AVANT  │
+ * │ que l'image arrive. Sans cela, la page saute onze fois pendant le        │
+ * │ chargement, et le lecteur perd la ligne qu'il lisait — sur un réseau     │
+ * │ mobile d'Afrique francophone, cela dure plusieurs secondes.              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── La présentation, en tête ───────────────────────────────────────────── */
+
+.presentation {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.presentation section {
+  margin: 0 0 40px;
+}
+
+.presentation h2 {
+  margin: 0 0 12px;
+  font-family: var(--police-titre);
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.presentation p {
+  margin: 0 0 16px;
+  line-height: 1.7;
+}
+
+.presentation ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.presentation li {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 22px;
+  line-height: 1.6;
+}
+
+.presentation li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 2px;
+  background: var(--action);
+}
+
+/* ── Les titres de section ──────────────────────────────────────────────── */
+
+.sectionTitre {
+  max-width: 72ch;
+  margin: 0 auto 8px;
+  padding: 0 24px;
+  font-family: var(--police-titre);
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.sectionTexte {
+  max-width: 72ch;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+  color: var(--encre-douce);
+  line-height: 1.6;
+}
+
+/* ── Les trois prestations ──────────────────────────────────────────────── */
+
+/*
+ * Trois colonnes sur grand écran, une seule sous 720 px.
+ *
+ * `auto-fit` plutôt qu'un nombre fixe : à deux prestations comme à quatre, la
+ * rangée reste pleine. Le jour où l'éditeur en ajoute une, rien à toucher ici.
+ */
+.prestations {
+  list-style: none;
+  margin: 0 0 clamp(48px, 6vw, 72px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.prestation {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: clamp(24px, 2.6vw, 32px);
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond);
+  box-shadow: var(--ombre-carte);
+  transition: border-color var(--transition-forme), box-shadow var(--transition-forme);
+}
+
+.prestation:hover {
+  border-color: var(--v2-vert);
+  box-shadow: var(--ombre-carte-survol);
+}
+
+/* Le rang — « 1 », « 2 », « 3 » — dessiné, jamais une puce de navigateur. */
+.rang {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 14px;
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+  color: var(--v2-vert);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+}
+
+.prestationTitre {
+  margin: 0 0 14px;
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+  line-height: 1.3;
+}
+
+/*
+ * LE TARIF EST UN BLOC, PAS UNE LIGNE DE PLUS.
+ *
+ * C'est la première chose que le lecteur cherche, et la deuxième chose qu'il
+ * veut pouvoir citer. Il est donc détaché, sur son propre fond, avec sa
+ * réserve juste dessous — jamais entre parenthèses au milieu d'une phrase, où
+ * elle se perd et où l'on retient le seul chiffre.
+ */
+.tarif {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border-radius: var(--rayon-encart);
+  background: var(--fond-doux);
+}
+
+.tarifMontant {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 1.15rem;
+  line-height: 1.25;
+  color: var(--v2-vert);
+}
+
+.tarifPrecision {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--taille-m);
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+.gainsTitre {
+  margin: 0 0 8px;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.gains {
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+}
+
+.gains li {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 22px;
+  line-height: 1.6;
+}
+
+.gains li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 2px;
+  background: var(--action);
+}
+
+/*
+ * `margin-top: auto` colle cette phrase au bas de la carte : les trois
+ * cartes n'ont pas la même hauteur de contenu, et sans cela les trois
+ * conclusions flotteraient à trois hauteurs différentes.
+ */
+.pourquoi {
+  margin: auto 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--separateur);
+  font-size: var(--taille-l);
+  font-style: italic;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+/* ── Les réalisations ───────────────────────────────────────────────────── */
+
+.realisations {
+  list-style: none;
+  margin: 0 0 clamp(48px, 6vw, 72px);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+}
+
+.figure {
+  margin: 0;
+}
+
+.realisation {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond);
+}
+
+/*
+ * Le rapport d'aspect est le MÊME pour toutes les tuiles, alors que les
+ * fichiers ne l'ont pas : dix portraits et une planche à l'italienne. Une
+ * grille au rapport libre ferait onze hauteurs différentes, c'est-à-dire une
+ * mosaïque. `object-fit: cover` recadre ; le sujet de ces couvertures est
+ * toujours au centre haut, donc `object-position` remonte le cadrage.
+ */
+.visuel {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center top;
+  background: var(--fond-doux);
+}
+
+.legende {
+  padding: 12px 14px 14px;
+  font-size: var(--taille-m);
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+/* ── La vidéo ───────────────────────────────────────────────────────────── */
+
+.video {
+  margin: 0 0 clamp(48px, 6vw, 72px);
+}
+
+/*
+ * `max-width` en pixels plutôt qu'en pourcentage : la vidéo est tournée à la
+ * verticale, et étirée sur toute la largeur d'un écran de bureau elle
+ * dépasserait la hauteur de la fenêtre.
+ */
+.lecteur {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond-doux);
+}
+
+.videoLegende {
+  margin: 12px auto 0;
+  max-width: 420px;
+  font-size: var(--taille-m);
+  line-height: 1.5;
+  color: var(--encre-douce);
+  text-align: center;
+}
+
+/* ── L'appel au contact ─────────────────────────────────────────────────── */
+
+.appel {
+  margin: 0;
+  padding: clamp(28px, 4vw, 44px);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond-doux);
+  text-align: center;
+}
+
+.appelTitre {
+  margin: 0 0 12px;
+  font-family: var(--police-titre);
+  font-size: 1.5rem;
+  line-height: 1.3;
+}
+
+.appelTexte {
+  margin: 0 auto 24px;
+  max-width: 56ch;
+  color: var(--encre-douce);
+  line-height: 1.6;
+}
+
+.appelActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/*
+ * Les deux boutons lisent les mêmes jetons que ceux de la boutique et de
+ * l'espace associatif : ils ne PEUVENT pas diverger de la charte, puisqu'ils
+ * n'ont aucune valeur à eux.
+ */
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 12px 24px;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: 0.95rem;
+  font-weight: var(--graisse-demi);
+  text-decoration: none;
+  transition: opacity var(--transition-couleur);
+}
+
+.bouton:hover {
+  opacity: 0.88;
+}
+
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 12px 24px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: var(--graisse-demi);
+  text-decoration: none;
+}
+
+.boutonSecondaire:hover {
+  border-color: currentcolor;
+}

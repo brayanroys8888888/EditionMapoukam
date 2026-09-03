@@ -1,17 +1,27 @@
 /*
- * BLOG — DIRECTION V2.
+ * L'ESPACE DE L'ASSOCIATION — DIRECTION V2.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ « LE BLOG NE VA PAS AVEC LE RESTE DU SITE. »                            │
+ * │ CE FICHIER A ÉTÉ CELUI DU BLOG, ET IL EST REPRIS PLUTÔT QUE RÉÉCRIT.    │
  * │                                                                          │
- * │ C'est le reproche le plus facile à vérifier, et le plus facile à         │
- * │ corriger : le blog actuel est bleu nuit et orange vif, quand le reste du │
- * │ site est vert et crème. Deux chartes, deux typographies, deux formes de  │
- * │ bouton — un visiteur croit changer de site.                              │
+ * │ L'espace associatif remplace le blog (§3.6) et affiche exactement les    │
+ * │ mêmes objets : une liste de cartes, une vedette, un article. Repartir    │
+ * │ d'une feuille blanche aurait produit une seconde mise en page pour le    │
+ * │ même dessin — et c'est ainsi qu'on obtient deux chartes.                 │
  * │                                                                          │
  * │ Ce fichier n'écrit AUCUNE couleur. Il lit les mêmes jetons que la        │
  * │ boutique et l'accueil, donc il ne PEUT PAS diverger. C'était le vrai     │
- * │ défaut : un blog stylé à part finit toujours par partir ailleurs.        │
+ * │ défaut du blog d'origine : stylé à part, il finissait par partir         │
+ * │ ailleurs.                                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE CADENAS EST UN ÉTAT DE LA CARTE, PAS UNE CARTE À PART.               │
+ * │                                                                          │
+ * │ Un contenu réservé garde son titre, son chapeau et son image : c'est ce  │
+ * │ qui donne envie d'adhérer. Seul le corps manque. Lui donner une carte    │
+ * │ grise et muette le rendrait invisible, et l'espace n'aurait plus l'air   │
+ * │ de contenir quoi que ce soit.                                            │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
@@ -264,4 +274,184 @@
 
 .retour:hover {
   color: var(--v2-vert-clair);
+}
+
+/* ── CE QUI EST RÉSERVÉ ────────────────────────────────────────────────── */
+
+/*
+ * La pastille « Réservé », posée sur la carte.
+ *
+ * Elle est rendue à partir de `peutLire`, que la BASE a calculé — jamais à
+ * partir d'une comparaison faite ici entre `acces` et l'état d'un abonnement.
+ */
+.reserve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--v2-fond-doux);
+  color: var(--encre-douce);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cadenas {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+/*
+ * LE MUR — ce qui remplace le corps d'un contenu verrouillé.
+ *
+ * Il vient APRÈS le chapeau, jamais à sa place : le lecteur doit savoir ce
+ * qu'il n'a pas encore lu avant qu'on lui propose d'adhérer.
+ */
+.mur {
+  margin: 40px 0 0;
+  padding: 32px;
+  border: 1px solid var(--bordure);
+  border-radius: 16px;
+  background: var(--fond-doux);
+  text-align: center;
+}
+
+.murTitre {
+  margin: 0 0 12px;
+  font-family: var(--police-titre);
+  font-size: 1.35rem;
+  line-height: 1.3;
+}
+
+.murTexte {
+  margin: 0 auto 24px;
+  max-width: 46ch;
+  color: var(--encre-douce);
+  line-height: 1.6;
+}
+
+.murActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+}
+
+/* ── LA PRÉSENTATION, EN TÊTE DE L'ESPACE ──────────────────────────────── */
+
+.presentation {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.presentation section {
+  margin: 0 0 40px;
+}
+
+.presentation h2 {
+  margin: 0 0 12px;
+  font-family: var(--police-titre);
+  font-size: 1.5rem;
+  line-height: 1.25;
+}
+
+.presentation p {
+  margin: 0 0 16px;
+  line-height: 1.7;
+}
+
+.presentation ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.presentation li {
+  position: relative;
+  margin: 0 0 10px;
+  padding-left: 22px;
+  line-height: 1.6;
+}
+
+.presentation li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 2px;
+  background: var(--action);
+}
+
+/* Le titre de la section des contenus, sous la présentation. */
+.sectionTitre {
+  max-width: 72ch;
+  margin: 0 auto 8px;
+  padding: 0 24px;
+  font-family: var(--police-titre);
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+
+.sectionTexte {
+  max-width: 72ch;
+  margin: 0 auto 32px;
+  padding: 0 24px;
+  color: var(--encre-douce);
+  line-height: 1.6;
+}
+
+/*
+ * Le bouton de l'espace associatif.
+ *
+ * Il lit les mêmes jetons que le reste de la direction V2 : aucune couleur
+ * n'est écrite ici, donc il ne peut pas diverger du bouton de la boutique.
+ *
+ * Ce commentaire a été FAUX pendant une journée. Le bouton lisait un jeton
+ * `--v2-accent` qui n'existe dans aucun fichier, suivi d'un repli : c'est donc
+ * un vert écrit en dur, celui d'aucune palette, qui s'affichait. Un repli est une
+ * seconde valeur : il ne se voit pas tant que le jeton existe, et devient la
+ * seule qui compte le jour où il n'existe pas. `tests/unit/design-tokens.test.ts`
+ * l'a trouvé ; il n'y a plus un seul littéral dans ce fichier.
+ */
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 24px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 160ms ease;
+}
+
+.bouton:hover {
+  opacity: 0.88;
+}
+
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 12px 24px;
+  border: 1px solid var(--bordure-forte);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.boutonSecondaire:hover {
+  border-color: currentColor;
 }

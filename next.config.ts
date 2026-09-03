@@ -136,6 +136,50 @@ const nextConfig: NextConfig = {
     proxyClientMaxBodySize: '100mb',
   },
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE BLOG A DÉMÉNAGÉ — §3.6, DÉCISION DU 3 SEPTEMBRE 2026.             │
+   * │                                                                      │
+   * │ La section « blog » est devenue l'espace de l'Association Dave, et    │
+   * │ ses articles y sont repris en accès libre. Les adresses `/fr/blog` et │
+   * │ `/fr/blog/<slug>` ont été partagées, indexées et mises en favori : les│
+   * │ laisser tomber en 404 perdrait tout ce référencement, et un lecteur   │
+   * │ qui revient sur un article ne comprendrait pas ce qui a disparu.      │
+   * │                                                                      │
+   * │ `permanent: true` — un 308, et non un 307. La ressource a bien changé │
+   * │ d'adresse pour de bon ; un moteur qui reçoit un 307 garde l'ancienne  │
+   * │ URL dans son index et continue de l'offrir.                           │
+   * │                                                                      │
+   * │ Le slug est CONSERVÉ, parce que les contenus le conservent : le jeu   │
+   * │ de démonstration reprend les articles sous les mêmes slugs. Un slug   │
+   * │ qui n'existerait pas de l'autre côté aboutit à un 404 sur            │
+   * │ `/association/<slug>`, ce qui reste la bonne réponse.                 │
+   * │                                                                      │
+   * │ Ici et non dans le middleware : celui-ci gère le préfixe de langue et │
+   * │ la session, et `tests/unit/middleware.test.ts` exige que chaque       │
+   * │ entrée le traverse SANS redirection. Une redirection d'adresse est un │
+   * │ réglage de routage, pas une décision de session.                      │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  redirects() {
+    return Promise.resolve([
+      {
+        source: '/:langue(fr|en)/blog',
+        destination: '/:langue/association',
+        permanent: true,
+      },
+      {
+        source: '/:langue(fr|en)/blog/:slug',
+        destination: '/:langue/association/:slug',
+        permanent: true,
+      },
+      // Sans préfixe de langue : le middleware l'aurait ajouté, mais il ne
+      // voit plus une adresse que cette redirection a déjà consommée.
+      { source: '/blog', destination: '/fr/association', permanent: true },
+      { source: '/blog/:slug', destination: '/fr/association/:slug', permanent: true },
+    ]);
+  },
+
   headers() {
     return Promise.resolve([
       {

@@ -139,9 +139,13 @@ describe('Pastille', () => {
   it('sans gestionnaire, c’est une étiquette et non un bouton', () => {
     // Un élément annoncé « bouton » mais qui ne fait rien envoie l'utilisateur
     // au clavier sur une impasse.
-    render(<Pastille region="afrique_ouest">Afrique de l’Ouest</Pastille>);
+    // `teinte` remplace l'ancienne prop `region` — migration 0071. Les valeurs
+    // de palette gardent leurs noms de tradition : ce sont des EMPLACEMENTS de
+    // couleur, pas une donnée du titre, et les renommer toucherait le test de
+    // contraste de la palette pour un gain purement lexical.
+    render(<Pastille teinte="afrique_ouest">Ruse</Pastille>);
     expect(screen.queryByRole('button')).toBeNull();
-    expect(screen.getByText('Afrique de l’Ouest')).toBeDefined();
+    expect(screen.getByText('Ruse')).toBeDefined();
   });
 });
 

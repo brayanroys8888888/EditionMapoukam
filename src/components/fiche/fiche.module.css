@@ -537,3 +537,27 @@
 .retour:hover {
   text-decoration-color: var(--encre);
 }
+
+/* ── Description longue ─────────────────────────────────────────────────── */
+
+/*
+ * LITERATA, ET LA MÊME LARGEUR QUE LE RÉSUMÉ.
+ *
+ * C'est le second texte long de la page, et il se lit dans la foulée du
+ * premier. Une largeur différente ferait sauter l'œil d'une colonne à l'autre
+ * au milieu d'une même lecture.
+ */
+.description {
+  margin-top: 52px;
+  max-width: var(--largeur-texte);
+}
+
+.descriptionTexte {
+  font-family: var(--police-lecture);
+  font-size: var(--taille-l);
+  line-height: var(--interligne-lecture);
+}
+
+.descriptionTexte + .descriptionTexte {
+  margin-top: var(--espace-3);
+}

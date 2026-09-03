@@ -20,7 +20,7 @@ const PAGES = [
   { nom: 'accueil', chemin: '/fr' },
   { nom: 'boutique', chemin: '/fr/catalogue' },
   { nom: 'fiche', chemin: '/fr/contes/anansi-l-araignee-maligne' },
-  { nom: 'blog', chemin: '/fr/blog' },
+  { nom: 'association', chemin: '/fr/association' },
   { nom: 'à propos', chemin: '/fr/a-propos' },
   { nom: 'contact', chemin: '/fr/contact' },
   { nom: 'connexion', chemin: '/fr/connexion' },

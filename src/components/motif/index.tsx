@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 
-import type { RegionConte } from '@/domain/catalog/types';
+import type { TeinteMotif } from './teinte';
 import styles from './motif.module.css';
 
 /**
@@ -42,16 +42,23 @@ const HAUTEURS: Record<PlaceMotif, string> = {
 };
 
 /**
- * `'vide'` — le seul motif jaune du produit, celui de l'état « aucun résultat ».
- *
- * Il n'appartient à aucune tradition, et c'est délibéré : un catalogue vide
- * n'a pas d'origine. Lui donner la couleur d'une région ferait croire que le
- * filtre régional est en cause, ce qui est faux quatre fois sur cinq.
+ * La teinte et son vocabulaire vivent dans `./teinte`, ré-exportés ici pour
+ * que les appelants n'aient qu'un seul chemin à connaître.
  */
-export type TeinteMotif = RegionConte | 'vide' | null;
+export type { TeinteMotif, Palette } from './teinte';
+export { PALETTES, teinteDepuisThemes, teinteDuTheme } from './teinte';
 
 interface ProprietesMotif {
-  region: TeinteMotif;
+  /**
+   * L'EMPLACEMENT DE PALETTE, pas une donnée du titre.
+   *
+   * La prop s'appelait `region` tant que la couleur venait de `books.region`.
+   * Depuis la migration 0071 elle vient du premier thème, via
+   * `teinteDepuisThemes` — et le nom `teinte` dit ce que la valeur est
+   * réellement : un choix de palette, jamais une affirmation sur l'origine
+   * d'un conte.
+   */
+  teinte: TeinteMotif;
   place: PlaceMotif;
   /**
    * La variante douce du motif de l'Ouest, réservée à l'aplat du hero.
@@ -66,11 +73,11 @@ interface ProprietesMotif {
   className?: string;
 }
 
-export function Motif({ region, place, hero = false, rayon, className }: ProprietesMotif): ReactNode {
-  // Une région absente ne doit jamais se produire — elle est exigée à la
-  // publication. Le repli est neutre plutôt que coloré : inventer une couleur
-  // ferait prétendre une origine au conte.
-  const cle = region ?? 'inconnue';
+export function Motif({ teinte, place, hero = false, rayon, className }: ProprietesMotif): ReactNode {
+  // Un titre sans thème prend la teinte neutre plutôt qu'une couleur tirée au
+  // sort : inventer une palette laisserait croire à un rangement qui n'existe
+  // pas.
+  const cle = teinte ?? 'inconnue';
   const variante = hero && cle === 'afrique_ouest' ? '-hero' : '';
 
   const style = {

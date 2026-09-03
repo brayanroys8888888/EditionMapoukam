@@ -2,12 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
-import {
-  lireLivre,
-  type OrientationPage,
-  type RegionConte,
-  type TypeDocument,
-} from '@/lib/admin/service';
+import { lireLivre, type OrientationPage, type TypeDocument } from '@/lib/admin/service';
 import { Erreur } from '@/components/etats';
 import {
   GabaritAdmin,
@@ -93,13 +88,6 @@ interface Conte {
   illustrateur: string | null;
   origine_culturelle: string | null;
   /*
-   * La RÉGION, exigée à la publication depuis la migration 0044 et lisible
-   * depuis la 0059 seulement. Entre les deux, l'écran ne pouvait pas la
-   * préremplir : il aurait montré « non renseignée » sur un titre qui en a une,
-   * et le premier enregistrement l'aurait écrasée.
-   */
-  region: RegionConte | null;
-  /*
    * Le TYPE DE SUPPORT et l'ORIENTATION, créés par la migration 0061 et
    * lisibles depuis la 0062. Non nuls en base — d'où l'absence de `| null` :
    * tout titre en porte un, ne serait-ce que par défaut.
@@ -130,6 +118,13 @@ interface Conte {
     langue: string;
     titre: string;
     resume: string | null;
+    /*
+     * La DESCRIPTION LONGUE, colonne créée par la migration 0070.
+     *
+     * Elle ne remplace pas le résumé : le résumé est la phrase d'accroche des
+     * cartes, la description est le texte de la fiche produit.
+     */
+    description: string | null;
     statut: string;
     nb_pages: number | null;
     /*
@@ -154,13 +149,6 @@ const DEVISES = ['EUR', 'XAF', 'XOF'] as const;
 const LANGUES_FICHIER = ['fr', 'en'] as const;
 
 /**
- * Les cinq régions, dans l'ordre de l'énumération `region_conte`.
- *
- * Leurs libellés vivent sous `regions.*`, où le catalogue public les lit déjà.
- * En écrire un second jeu sous `admin.*` aurait fait deux vérités pour le même
- * mot, et c'est la seconde qui aurait cessé d'être relue.
- */
-/**
  * Ce que chaque enregistrement réussi annonce.
  *
  * Une table plutôt qu'une cascade de ternaires : cinq formulaires reviennent
@@ -175,14 +163,6 @@ const MESSAGES_SUCCES: Record<string, CleTraduction> = {
   version: 'admin.conteEnregistreVersion',
   version_ajoutee: 'admin.conteVersionAjoutee',
 };
-
-const REGIONS = [
-  'afrique_ouest',
-  'sahel',
-  'afrique_centrale',
-  'afrique_australe',
-  'afrique_est',
-] as const satisfies readonly RegionConte[];
 
 /**
  * Les deux types de support, dans l'ordre de l'énumération `document_type`.
@@ -413,54 +393,50 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
 
             {/*
               ┌──────────────────────────────────────────────────────────────┐
-              │ LA RÉGION — FACULTATIVE DEPUIS LE 3 SEPTEMBRE 2026.         │
+              │ LES THÈMES ONT REMPLACÉ LA RÉGION — 3 septembre 2026.        │
               │                                                              │
-              │ Elle a bloqué la publication de la migration 0044 à la 0066 : │
-              │ `manques_pour_publication` l'exigeait, et « Publier » restait │
-              │ éteint sans elle. La 0066 a retiré cette branche — une fiche  │
-              │ d'activités n'a pas de région d'origine, et la contrainte      │
-              │ n'avait plus de sens sur la moitié du catalogue.              │
+              │ Ce champ était un `<select>` de cinq régions. La région       │
+              │ rangeait les contes par tradition d'origine ; elle ne disait  │
+              │ rien d'une fiche d'activités, qui n'en a pas, et depuis que   │
+              │ le catalogue porte deux supports elle en cachait la moitié    │
+              │ derrière un filtre incapable de les décrire.                  │
               │                                                              │
-              │ Le champ RESTE, et ce n'est pas de la timidité : c'est lui    │
-              │ qui donne sa teinte au titre et la facette au catalogue        │
-              │ public. Sans lui, le titre s'affiche en teinte `inconnue` et   │
-              │ ne ressort sous aucun filtre de région — ce qui est exact,    │
-              │ puisqu'il n'en a pas.                                         │
+              │ La colonne `region` n'est pas effacée pour autant : elle est  │
+              │ seulement retirée de l'écran et du catalogue public, et       │
+              │ `modifierLivre` envoie `p_region: null`, qui vaut « ne touche │
+              │ pas ». Les données déjà saisies sont donc PRÉSERVÉES.         │
               │                                                              │
-              │ Elle n'est PAS l'origine culturelle, qui est juste au-dessus  │
-              │ et reste un texte libre (« conte akan — Ghana »). Celle-ci    │
-              │ est l'une de cinq valeurs, et c'est sur elle que le catalogue │
-              │ filtre. `region_depuis_origine` sait deviner la seconde       │
-              │ depuis la première, mais son commentaire est formel :         │
-              │ amorçage et reprise de données UNIQUEMENT.                    │
+              │ Le thème n'est PAS l'origine culturelle, juste au-dessus :    │
+              │ celle-ci dit d'où vient l'histoire (« conte akan — Ghana »),  │
+              │ celui-là de quoi elle parle (« ruse », « amitié »). Les deux  │
+              │ sont libres, mais seuls les thèmes filtrent le catalogue.     │
               │                                                              │
-              │ Le choix vide vaut « ne touche pas » et non « efface »,      │
-              │ comme tous les champs métier de ce formulaire. Effacer une     │
-              │ région déjà posée demande donc de passer par la base — c'est  │
-              │ assumé : la retirer par inadvertance décolorerait un titre     │
-              │ sans que rien ne le signale.                                  │
+              │ Une SEULE ligne, séparée par des virgules, et non des cases : │
+              │ les thèmes ne sont pas une énumération, et une liste fermée   │
+              │ aurait à être rouverte à chaque idée éditoriale. Les          │
+              │ pastilles du catalogue viennent des facettes, c'est-à-dire de │
+              │ ce que le catalogue porte vraiment.                           │
+              │                                                              │
+              │ Contrairement aux autres champs métier, le VIDE efface ici :  │
+              │ c'est la seule manière de retirer le dernier thème d'un       │
+              │ titre. Le nettoyage — blancs, doublons, ordre — est fait en   │
+              │ base par `admin_modifier_livre`, à un seul endroit.           │
               └──────────────────────────────────────────────────────────────┘
             */}
             <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="conte-region">
-                {traduire(langue, 'admin.conteRegion')}
+              <label className={styles.libelle} htmlFor="conte-themes">
+                {traduire(langue, 'admin.conteThemes')}
               </label>
-              <select
+              <input
                 className={styles.saisie}
-                id="conte-region"
-                name="region"
-                defaultValue={conte.region ?? ''}
-                aria-describedby="conte-region-aide"
-              >
-                <option value="">{traduire(langue, 'admin.conteRegionAucune')}</option>
-                {REGIONS.map((region) => (
-                  <option key={region} value={region}>
-                    {traduire(langue, `regions.${region}` as CleTraduction)}
-                  </option>
-                ))}
-              </select>
-              <p className={styles.aide} id="conte-region-aide">
-                {traduire(langue, 'admin.conteRegionAide')}
+                id="conte-themes"
+                name="themes"
+                maxLength={400}
+                defaultValue={conte.themes.join(', ')}
+                aria-describedby="conte-themes-aide"
+              />
+              <p className={styles.aide} id="conte-themes-aide">
+                {traduire(langue, 'admin.conteThemesAide')}
               </p>
             </div>
 
@@ -903,6 +879,41 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
                       />
                       <p className={styles.aide} id={`version-${version.id}-resume-aide`}>
                         {traduire(langue, 'admin.conteVersionResumeAide')}
+                      </p>
+                    </div>
+
+                    {/*
+                      LA DESCRIPTION LONGUE — migration 0070.
+
+                      Un second champ plutôt qu'un résumé rallongé : le résumé
+                      s'affiche dans les cartes du catalogue et dans les
+                      métadonnées de référencement, où trois paragraphes
+                      seraient illisibles. La description est le texte de la
+                      fiche produit, celui qu'on lit avant d'acheter. Les
+                      confondre obligerait à choisir entre une carte illisible
+                      et une fiche vide.
+
+                      Comme le résumé, elle est TOUJOURS envoyée, vide compris :
+                      c'est la seule manière de l'effacer une fois écrite.
+                    */}
+                    <div className={styles.champ}>
+                      <label
+                        className={styles.libelle}
+                        htmlFor={`version-${version.id}-description`}
+                      >
+                        {traduire(langue, 'admin.conteVersionDescription')}
+                      </label>
+                      <textarea
+                        className={`${styles.saisie} ${styles.zoneTexte}`}
+                        id={`version-${version.id}-description`}
+                        name="description"
+                        maxLength={8000}
+                        rows={8}
+                        defaultValue={version.description ?? ''}
+                        aria-describedby={`version-${version.id}-description-aide`}
+                      />
+                      <p className={styles.aide} id={`version-${version.id}-description-aide`}>
+                        {traduire(langue, 'admin.conteVersionDescriptionAide')}
                       </p>
                     </div>
 

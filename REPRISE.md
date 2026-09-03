@@ -5,6 +5,305 @@
 
 ---
 
+## 0 sexies. Expertise & conseil — Mapoukam Consulting
+
+> Écrit le 4 septembre 2026. **La porte est verte : 1539 tests, 91 fichiers.**
+
+### La demande
+
+> « ton objectif est de créer une nouvelle section pour le site
+> (Expertise & consulting) ; dans le dossier `New section/expertise & consulting`
+> tu trouveras les éléments pour remplir cette section. »
+
+Un fichier de texte commercial, onze visuels et une vidéo de présentation.
+
+### Ce qui a été construit
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `src/content/consulting.ts` | tout le texte, en français et en anglais, les onze réalisations et leurs dimensions |
+| `src/app/[langue]/expertise/page.tsx` | l'écran — aucune requête, aucun droit à vérifier |
+| `src/components/v2/expertise.module.css` | la mise en page, jetons seuls, zéro hexadécimal |
+| `public/images/expertise/` | onze JPEG et `presentation.mp4` |
+| `tests/unit/expertise-contenu.test.ts` | douze tests — parité FR/EN, visuels présents, tarifs non recopiés, écran joignable |
+
+Le raccordement touche cinq fichiers : les deux dictionnaires
+(`navigation.expertise`), l'en-tête V2, le menu plein écran, le pied V1 et
+`sitemap.ts`.
+
+### Les trois arbitrages, à ne pas rejouer
+
+| Question | Réponse | Pourquoi |
+| --- | --- | --- |
+| Les tarifs vont-ils dans `plan_prices` ? | **Non — texte éditorial** | La règle des prix en base porte sur ce qui S'ACHÈTE : zone d'encaissement, tunnel, `entitlement`. Rien de cela ici. Ce sont des montants d'appel, « à partir de », en une seule monnaie. Les mettre en base aurait créé des **offres achetables** pour des services qui ne le sont pas |
+| Un formulaire de devis ? | **Non — deux boutons** | Aucune route ne reçoit un message, et `FileMailer` écrit dans `.mails/`. « Demande envoyée » à un prospect que personne ne rappelle est le plus coûteux des faux positifs sur une page de vente. Le premier bouton mène à `/contact`, le second compose le numéro |
+| Où loger les visuels ? | **`public/images/expertise/`** | `/images` est déjà dans `HORS_PERIMETRE`. Un `public/videos/` neuf aurait exigé une entrée de plus **et** une ligne au `matcher` — et `tests/unit/middleware.test.ts` lit `public/` sur le disque |
+
+### Le piège qui a coûté une exécution complète
+
+Le test « aucun montant ailleurs que dans `consulting.ts` » cherchait la chaîne
+`FCFA` dans les dictionnaires. Or ils la portent déjà — deux fois, dans les
+textes d'aide du back-office qui expliquent comment **saisir** un montant
+(`contePrixAide`, `offrePrixAide`). Le test attrapait une monnaie sans rapport
+avec le consulting.
+
+Il cherche désormais les **tarifs eux-mêmes**, lus depuis le contenu :
+« À partir de 75 000 FCFA ». C'est la seule copie qui pourrait diverger de celle
+que la page affiche. Un test qui attrape autre chose que ce qu'il défend finit
+toujours par être désarmé.
+
+### Ce qui reste à décider
+
+`docs/cahier-des-charges.md` **n'a pas été touché** — la consigne l'interdit
+sans demande expresse. Une section publique de plus mériterait normalement son
+paragraphe au §4.1 (les écrans du front-office). À arbitrer par le propriétaire.
+
+---
+
+## 0 quinquies. Le thème à la place de la région, les descriptions, les avis
+
+> Écrit le 3 septembre 2026.
+
+### La demande
+
+> « masque le champ "région du catalogue" dans l'admin, on va plutôt utiliser le
+> champ "thème" ; change-le aussi dans les cartes ; ajoute des champs afin de
+> pouvoir ajouter des descriptions et des avis. »
+
+### Les quatre arbitrages, à ne pas rejouer
+
+| Question | Réponse | Conséquence |
+| --- | --- | --- |
+| Qui écrit les avis ? | **Les clients, depuis leur compte** | Table `book_reviews`, RLS, modération avant publication — jamais une saisie du back-office |
+| Sur quoi portent-ils ? | **Les deux** | Un avis porte sur un TITRE (`book_reviews`) ; les trois témoignages de l'accueil portent sur le SITE (`testimonials`) — deux tables, deux écrans |
+| La description ? | **Un champ long, en plus du résumé** | Sur `book_translations`, traduite ; le résumé reste l'accroche d'une carte |
+| La région ? | **Retirée partout, filtre public compris** | La 0071 la sort de `catalog_list` et de `catalog_facets` ; la **colonne reste** |
+
+**« Achat vérifié » a été écarté, et c'est le seul endroit où la réponse ne suit
+pas la lettre de la question.** Le vocabulaire vient des boutiques à modèle
+unique. Ici il exclurait les abonnés — le chemin de lecture majoritaire — et
+interdirait l'avis sur un titre offert. La règle écrite est
+`access_for(...).can_read`, l'unique implémentation du droit d'accès : celui qui
+a pu lire peut dire ce qu'il en a pensé. La raison est écrite trois fois, dans
+la 0072, dans `src/components/fiche/avis.tsx` et dans
+`tests/security/avis.test.ts`.
+
+### Ce qui a été construit
+
+| N° | Ce qu'elle pose |
+| --- | --- |
+| `0070` | `book_translations.description` ; `themes` devient éditable — nettoyé, dédoublonné, **trié** |
+| `0071` | `p_region` quitte `catalog_list`, la facette `regions` quitte `catalog_facets` |
+| `0072` | `book_reviews` — les avis des lecteurs, leur RLS et leur modération |
+| `0073` | `testimonials` — les trois témoignages quittent `fr.json` et `en.json` |
+| `0074` | `library_for_user` rend `themes` en place de `region` |
+| `0076` | **correctif** : publier un témoignage ne publiait rien (voir plus bas) |
+| `0077` | **correctif** : l'écran d'édition avait perdu le support et l'orientation |
+
+La teinte d'un substitut de couverture se choisit désormais sur le **premier**
+thème du titre — `teinteDepuisThemes`, dans `src/components/motif/teinte.ts`,
+éprouvé par `tests/unit/teinte.test.ts`. C'est pourquoi la 0070 **trie** les
+thèmes : laissé à l'ordre de saisie, le premier thème changerait selon l'ordre
+où l'éditeur a tapé ses mots, et la couverture changerait de couleur sans que
+rien n'ait changé du titre.
+
+### Le piège : le même défaut de type, revenu par copie
+
+La 0073 écrivait, dans `admin_publier_temoignage` :
+
+```sql
+set statut = case when p_publie then 'publie' else 'brouillon' end
+```
+
+C'est **mot pour mot** le défaut de la 0069 décrit à la section 0 quater : un
+`case` à branches non typées rend du `text`, `statut` est de type
+`public.translation_status`, PostgreSQL refuse en **42804** à l'exécution et non
+à la création. La migration s'est appliquée sans un mot, et **aucun témoignage
+n'a jamais pu être publié ni dépublié** — le refus remontant en `indisponible`,
+« Réessayez dans un instant ». La 0076 le corrige comme la 0075 : la conversion
+est écrite sur le `case` ENTIER, pas sur chaque branche.
+
+La leçon n'est pas le type, c'est la **copie** : la 0073 a été écrite en
+reprenant la forme d'une fonction voisine, et a repris son défaut avec.
+
+### Le second piège : une copie prise une version trop tôt
+
+La 0070 devait ajouter `description` aux versions rendues par
+`admin_lire_livre`. Changer une colonne de sortie impose `drop` puis `create` :
+elle a donc réécrit la fonction entière, en reprenant « VERBATIM » le corps de
+la **0059**. Or la 0062 avait ajouté `type_document` et `orientation` à cette
+même fonction deux jours plus tôt.
+
+Elles ont donc disparu de la sortie — sans que rien ne proteste en base : la
+colonne est restée `not null`, l'écriture a continué de marcher.
+`src/app/[langue]/admin/contes/[id]/page.tsx` choisit ses libellés avec
+`MOTS[conte.type_document]` : la fiche d'édition de **n'importe quel** titre
+tombait en erreur. Plus sournois si elle avait survécu : la liste déroulante
+serait repartie sur sa première option, et enregistrer un livret l'aurait
+retourné en conte. La 0077 les remet à leur place.
+
+**Une réécriture de fonction se copie depuis la version APPLIQUÉE la plus
+récente**, jamais depuis celle dont on se souvient.
+
+### Le troisième piège : un repli qui rendait la charte inutile
+
+`src/components/v2/association.module.css` lisait six jetons —
+`--v2-accent`, `--v2-texte-secondaire`, `--v2-surface-douce`… — qui n'existent
+dans **aucun** fichier. Chacun était suivi d'une valeur de repli : ce sont donc
+des couleurs écrites en dur, celles d'aucune palette, qui s'affichaient, pendant
+que le commentaire du fichier affirmait le contraire. `design-tokens` les a
+trouvées en interdisant les littéraux hexadécimaux. Un repli sur un jeton qui
+existe est une seconde valeur qui attend son heure ; sur un jeton qui n'existe
+pas, c'est la seule qui compte.
+
+### À savoir avant de reprendre
+
+- La porte est **verte** : 1527 tests, 90 fichiers, aucun ignoré.
+- `subscription_plans` porte une formule d'essai laissée par un test manuel —
+  code `409173`, domaine `association`, `actif = false`. Inactive, elle ne
+  casse rien et n'apparaît nulle part ; l'effacer est sans risque.
+- La règle des contes d'essai vaut toujours : un titre déposé à la main compte
+  dans le jeu de démonstration, et `access` / `schema` / `catalog` échouent sur
+  onze livres sans qu'aucun message ne parle d'administration.
+
+---
+
+## 0 quater. L'Association Dave, son abonnement, et les offres éditables
+
+> Écrit le 3 septembre 2026.
+
+Trois demandes, et quatre arbitrages rendus avant d'écrire une ligne.
+
+### La demande
+
+1. à la place de la section **blog**, une section **Association Dave** ;
+2. son contenu derrière un abonnement **spécifique**, différent de celui qui
+   ouvre la lecture des livres en ligne ;
+3. dans l'administration, la possibilité de **créer des offres**, pour les deux
+   abonnements.
+
+### Les quatre arbitrages, à ne pas rejouer
+
+| Question | Réponse | Conséquence |
+| --- | --- | --- |
+| Où vit le contenu ? | **Les deux** | La présentation est versionnée (`src/content/association.ts`), les contenus sont en base et se publient depuis `/admin/association` |
+| Les articles du blog ? | **Repris en accès libre** | Ils forment la moitié gratuite de l'espace ; `/blog` et `/blog/<slug>` redirigent en **308** |
+| Les deux abonnements ? | **Étanches, cumulables** | `lecture` n'ouvre pas l'association, `association` n'ouvre pas le catalogue, un compte peut porter les deux, **aucun** ne donne le téléchargement |
+| Le cahier des charges ? | **À modifier** | §3.6 ajouté, §3.3 amendé, §4.1 F4 bis, §4.3 F10 bis et F12 bis, §16.1 complété |
+
+Le troisième est le plus coûteux à revenir dessus : il est inscrit dans la
+signature de `abonnement_ouvre_droit(user, domaine, at)` et dans un index unique
+partiel `(user_id, domaine)`.
+
+### Ce qui a été construit
+
+**Quatre migrations**, plus une corrective :
+
+| N° | Ce qu'elle pose |
+| --- | --- |
+| `0067` | `subscriptions.domaine`, `abonnement_ouvre_droit`, l'index unique par domaine |
+| `0068` | `subscription_plans` / `plan_prices` / `offres_publiques` — la grille tarifaire quitte le code |
+| `0069` | `association_contents`, `association_content_translations`, `access_for_association`, `association_contenu` |
+| `0075` | **correctif** : la publication d'un contenu associatif ne marchait pas (voir plus bas) |
+
+**Les écrans** : `/fr/association` et `/fr/association/<slug>` côté public,
+`/admin/association` et `/admin/offres` côté back-office. La page `/fr/offres`
+porte désormais, sous le comparatif, un **bandeau d'adhésion** — et non une
+troisième colonne : l'adhésion n'est pas une troisième façon d'obtenir les
+contes, elle ouvre un autre contenu. Le bandeau n'apparaît que si une offre
+`association` existe **avec un prix dans la zone**, faute de quoi le bouton
+mènerait à un tunnel qui refuse.
+
+**Le corps réservé est protégé par un privilège ABSENT, pas par une politique.**
+`grant select (id, content_id, langue, titre, chapeau, maj_le)` — `corps` n'y
+figure pas, ni pour `anon` ni pour `authenticated`. Une politique mal écrite
+laisse filtrer une ligne ; un privilège absent fait échouer la requête entière,
+avec un code d'erreur, avant qu'une ligne soit lue. **Ne jamais « réparer » ce
+refus en accordant la colonne** : le chemin légitime est `association_contenu`.
+
+Un contenu créé sans qu'on le dise est `abonnes` : le défaut protège, et
+l'ouverture est un geste. Un contenu réservé est **annoncé, pas caché** — titre
+et chapeau se lisent, le corps non ; c'est ainsi qu'on dit ce que l'adhésion
+contient.
+
+### Le piège : une publication qui ne publiait rien
+
+La 0069 écrivait, dans `admin_publier_contenu_association` :
+
+```sql
+set statut = case when p_publie then 'publie' else 'brouillon' end
+```
+
+Un `case` dont les deux branches sont des littéraux non typés rend du `text`, et
+`statut` est de type `public.translation_status`. PostgreSQL refuse — **42804** —
+à l'EXÉCUTION, jamais à la création de la fonction : la migration s'est donc
+appliquée sans un mot, et **aucun contenu associatif n'a jamais pu être publié
+ni dépublié**. Le refus remontait en `indisponible` — « Réessayez dans un
+instant » — par la table de `traduire()` dans `src/lib/admin/service.ts`, ce qui
+envoie chercher une panne là où il y a un défaut de type.
+
+C'est `tests/integration/admin-association.test.ts` qui l'a trouvé, en exigeant
+que la publication **réussisse** après avoir vérifié qu'elle échoue à bon droit
+sans version française. Le refus attendu masquait le refus subi. La 0075 corrige
+en écrivant la conversion **sur le `case` entier**. La même faute existait dans
+la 0073, pour les témoignages ; la **0076** la corrige de même.
+
+### Le piège : le numéro d'une migration corrective
+
+La corrective a d'abord été numérotée `0070` — déjà pris. `npm run db:migrate` a
+répondu `LegacyMigrationMissingRemoteError`, message qui ne nomme pas le
+coupable. **Lire `supabase migration list --local` avant de numéroter**, jamais
+se fier à la mémoire de la conversation.
+
+### Les tests
+
+Quatre fichiers, quarante-quatre tests :
+
+| Fichier | Ce qu'il verrouille |
+| --- | --- |
+| `tests/integration/abonnements-etanches.test.ts` | l'étanchéité, **dans les deux sens séparément**, et le cumul |
+| `tests/integration/association-acces.test.ts` | libre / réservé / brouillon, et le REFUS de la requête sur `corps` |
+| `tests/integration/admin-offres.test.ts` | offre née inactive, pas d'activation sans prix, pas de suppression si souscrite |
+| `tests/integration/admin-association.test.ts` | publication impossible sans version française complète, slug immuable |
+
+`tests/security/admin.test.ts` couvre les nouvelles routes d'administration
+**sans avoir été touché** : il les découvre sur le disque et exige 404 pour un
+non-administrateur.
+
+### La porte, et les trois pannes qui n'étaient pas du code
+
+`npm run verify` sort en **0** : 1527 tests, 90 fichiers, aucun ignoré, effectif
+inchangé — les quatre nouveaux fichiers y sont inscrits.
+
+Il avait d'abord rendu treize échecs, et **aucun** ne venait du code livré :
+
+| Symptôme | Cause réelle |
+| --- | --- |
+| `expected 11 to be 10` dans `access.test.ts` et `schema.test.ts`, neuf titres publiés au lieu de huit dans `catalog.test.ts` | un conte d'essai `prince` déposé à la main et laissé en base — le piège que CLAUDE.md nomme déjà |
+| `i18n.test.ts` : « couvre TOUS les codes que l'API peut rendre » | `offre_indisponible`, le refus que `POST /api/subscriptions` rend depuis la 0068, n'avait pas sa traduction dans les deux dictionnaires |
+| `404` là où `subscriptions.test.ts` attend `200` puis `409` | la grille tarifaire était en cours de saisie pendant l'exécution. `offre_par_code('lecture-mensuel', 'international')` rend bien la ligne à 799 EUR, et les cinquante tests du fichier passent |
+
+Aucune de ces trois causes n'est un défaut de conception, et c'est ce qui les
+rend coûteuses : elles ressemblent toutes à un bug du code qu'on vient
+d'écrire. La règle de CLAUDE.md — « est-ce seulement le code ? » — vaut
+aussi pour les DONNÉES laissées par un essai manuel.
+
+Une offre `409173`, née d'un essai dans `/admin/offres`, a donc été effacée pour
+la même raison qu'on efface un conte d'essai : inactive et sans souscription,
+elle n'aurait rien cassé — jusqu'au jour où elle aurait faussé un compte.
+
+### Ce qui reste
+
+- Relire les deux écrans d'administration à l'œil, dans un navigateur.
+- Décider la grille tarifaire réelle de l'adhésion : la base porte des offres,
+  mais les montants sont ceux du jeu de démonstration.
+- **Il n'existe pas d'offre `association-mensuel`.** Le bandeau de la page des
+  offres montre donc l'adhésion annuelle, et c'est exact : il n'affiche que ce
+  qui est réellement vendable. La créer, si elle est voulue, se fait depuis
+  `/admin/offres`.
+
+---
+
 ## 0 ter. L'onglet des livrets, et la région rendue facultative
 
 > Écrit le 3 septembre 2026.

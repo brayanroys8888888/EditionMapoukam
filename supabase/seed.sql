@@ -334,3 +334,244 @@ where b.id = j.id;
 update public.books
    set region = public.region_depuis_origine(origine_culturelle)
  where region is null;
+
+-- ---------------------------------------------------------------------------
+-- Offres d'adhésion à l'association (§3.6)
+--
+-- ┌────────────────────────────────────────────────────────────────────────────┐
+-- │ POURQUOI ICI, ET PAS DANS LA MIGRATION 0068.                             │
+-- │                                                                            │
+-- │ La migration sème les deux offres de LECTURE, dont la grille figurait au    │
+-- │ cahier des charges §3.3 : ce sont des données arrêtées. Le prix de          │
+-- │ l'adhésion, lui, n'est pas encore fixé — c'est une décision commerciale du  │
+-- │ propriétaire, et l'écran d'administration existe précisément pour qu'il la  │
+-- │ prenne sans migration.                                                     │
+-- │                                                                            │
+-- │ Les montants ci-dessous sont donc FICTIFS, comme ceux des maquettes. Ils    │
+-- │ existent pour que le tunnel associatif soit éprouvable de bout en bout —    │
+-- │ une base de production ne rejoue pas les seeds et n'en verra jamais rien.   │
+-- └────────────────────────────────────────────────────────────────────────────┘
+-- ---------------------------------------------------------------------------
+
+insert into public.subscription_plans
+  (code, domaine, periode, libelle_fr, libelle_en, descriptif_fr, descriptif_en, actif, ordre)
+values
+  ('association-mensuel', 'association', 'mensuel',
+   'Adhésion mensuelle', 'Monthly membership',
+   'Accès aux contenus réservés de l''association. Sans engagement.',
+   'Access to the association''s members-only contents. Cancel anytime.',
+   true, 10),
+  ('association-annuel', 'association', 'annuel',
+   'Adhésion annuelle', 'Yearly membership',
+   'Accès aux contenus réservés de l''association, deux mois offerts.',
+   'Access to the association''s members-only contents, two months free.',
+   true, 20)
+on conflict (code) do update set
+  libelle_fr = excluded.libelle_fr,
+  libelle_en = excluded.libelle_en,
+  descriptif_fr = excluded.descriptif_fr,
+  descriptif_en = excluded.descriptif_en,
+  actif = excluded.actif,
+  ordre = excluded.ordre;
+
+-- Montants dans la plus petite unité de leur devise : 400 = 4,00 € ;
+-- 1500 = 1 500 FCFA (le franc CFA n'a pas de sous-unité).
+insert into public.plan_prices (plan_id, zone, montant, devise)
+select p.id, z.zone, z.montant, z.devise
+from public.subscription_plans p
+join (values
+  ('association-mensuel', 'international'::public.price_zone, 400::bigint,   'EUR'),
+  ('association-mensuel', 'afrique'::public.price_zone,       1500::bigint,  'XAF'),
+  ('association-annuel',  'international'::public.price_zone, 4000::bigint,  'EUR'),
+  ('association-annuel',  'afrique'::public.price_zone,       15000::bigint, 'XAF')
+) as z(code, zone, montant, devise) on z.code = p.code
+on conflict (plan_id, zone) do update set
+  montant = excluded.montant,
+  devise = excluded.devise;
+
+-- ---------------------------------------------------------------------------
+-- Contenus de l'espace associatif (§3.6, §4.1 F4 bis)
+--
+-- ┌────────────────────────────────────────────────────────────────────────────┐
+-- │ CE SONT LES CINQ ARTICLES DE L'ANCIEN BLOG, REPRIS EN ACCÈS LIBRE.        │
+-- │                                                                            │
+-- │ Décision du propriétaire, 3 septembre 2026 : le blog devient l'espace de    │
+-- │ l'association, ses articles en forment la part ouverte, et les contenus     │
+-- │ nouveaux sont réservés aux adhérents. Ils gardent donc leurs slugs — les    │
+-- │ redirections 308 de `next.config.ts` renvoient `/blog/<slug>` vers          │
+-- │ `/association/<slug>`, et un lien partagé il y a un mois doit encore        │
+-- │ arriver sur le texte qu'il annonçait.                                       │
+-- │                                                                            │
+-- │ Aucun d'eux n'est `abonnes` : un contenu déjà lu librement qui se           │
+-- │ refermerait derrière un paiement serait un reniement, pas une évolution.    │
+-- │ Le jeu de test des contenus RÉSERVÉS est fabriqué par les tests eux-mêmes,  │
+-- │ qui le défont ensuite.                                                      │
+-- └────────────────────────────────────────────────────────────────────────────┘
+--
+-- Les dates sont écrites en absolu et non relativement à `app_now()` : ce sont
+-- des dates ÉDITORIALES, celles auxquelles ces textes ont paru. Les faire
+-- glisser avec l'horloge simulée les rendrait futures dès qu'un test avance le
+-- temps de six mois.
+-- ---------------------------------------------------------------------------
+
+insert into public.association_contents
+  (slug, categorie, acces, statut, publie_le, minutes, vedette, ordre)
+values
+  ('lire-a-voix-haute', 'accompagnement', 'libre', 'publie',
+   timestamptz '2026-07-28 09:00:00+00', 6, true, 0),
+  ('choisir-selon-l-age', 'pedagogie', 'libre', 'publie',
+   timestamptz '2026-07-21 09:00:00+00', 5, false, 0),
+  ('anansi-et-les-histoires-du-monde', 'culture', 'libre', 'publie',
+   timestamptz '2026-07-14 09:00:00+00', 7, false, 0),
+  ('contes-en-classe', 'pedagogie', 'libre', 'publie',
+   timestamptz '2026-07-07 09:00:00+00', 8, false, 0),
+  ('accompagner-enfants-besoins-specifiques', 'besoins-specifiques', 'libre', 'publie',
+   timestamptz '2026-06-30 09:00:00+00', 9, false, 0)
+on conflict (slug) do update set
+  categorie = excluded.categorie,
+  acces = excluded.acces,
+  statut = excluded.statut,
+  publie_le = excluded.publie_le,
+  minutes = excluded.minutes,
+  vedette = excluded.vedette,
+  ordre = excluded.ordre,
+  maj_le = public.app_now();
+
+-- ---------------------------------------------------------------------------
+-- Les textes, en français
+--
+-- Une seule langue, et c'est représentatif : la version française fait foi, et
+-- l'anglaise se replie sur elle tant qu'elle n'existe pas. Un jeu de données où
+-- tout serait traduit n'éprouverait jamais ce repli.
+-- ---------------------------------------------------------------------------
+
+insert into public.association_content_translations (content_id, langue, titre, chapeau, corps)
+select c.id, 'fr', v.titre, v.chapeau, v.corps
+from public.association_contents c
+join (values
+  ('lire-a-voix-haute',
+   'Lire à voix haute, même quand on n’est pas conteur',
+   'On croit qu’il faut savoir raconter. Il faut surtout accepter de lire mal, et de recommencer le lendemain.',
+   $json$[
+     {
+       "titre": "Le trac des parents",
+       "paragraphes": [
+         "Beaucoup de parents renoncent à la lecture du soir parce qu’ils se trouvent mauvais. Ils lisent trop vite, butent sur les noms, ne savent pas faire les voix. Ils comparent leur lecture à celle d’un comédien, et concluent qu’ils desservent l’histoire.",
+         "Un enfant n’entend rien de tout cela. Ce qu’il entend, c’est une voix qu’il connaît, à une heure qu’il attend, dans un livre qu’il a choisi. La qualité de la diction arrive très loin derrière ces trois choses."
+       ]
+     },
+     {
+       "titre": "Trois appuis qui changent tout",
+       "points": [
+         "Ralentir davantage que ce qui paraît naturel — un enfant fabrique les images pendant les silences, pas pendant les phrases.",
+         "S’arrêter sur une illustration et demander ce qui va arriver, plutôt que de vérifier ce qui a été compris.",
+         "Accepter de relire le même conte vingt soirs de suite : la répétition n’est pas de l’ennui, c’est la façon dont l’histoire s’installe."
+       ]
+     },
+     {
+       "titre": "Et quand on n’a pas le temps",
+       "paragraphes": [
+         "Une page suffit. Un conte peut se lire en cinq soirs, et l’attente entre deux soirs fait partie du plaisir — c’est même ainsi que ces histoires circulaient à l’origine, une veillée après l’autre."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('choisir-selon-l-age',
+   'Choisir un conte selon l’âge, sans se tromper',
+   'Deux âges figurent sur chaque conte, et ils ne disent pas la même chose : l’un pour écouter, l’autre pour lire seul.',
+   $json$[
+     {
+       "titre": "Écouter et lire ne s’acquièrent pas ensemble",
+       "paragraphes": [
+         "Un enfant comprend, à l’oreille, des histoires bien plus complexes que celles qu’il peut déchiffrer. L’écart est de deux à trois ans, et il est normal : décoder des lettres occupe toute l’attention, il n’en reste plus pour l’intrigue.",
+         "C’est pourquoi chaque conte porte deux mentions — « à écouter dès 5 ans », « à lire seul dès 7 ans ». Prendre la seconde pour la première, c’est priver un enfant de trois ans d’histoires qu’il aurait adorées."
+       ]
+     },
+     {
+       "titre": "Ce qui compte plus que l’âge",
+       "points": [
+         "La longueur : un conte de quarante pages en une fois décourage, le même en quatre soirs enchante.",
+         "La densité des illustrations : elles sont des points de repos, pas de la décoration.",
+         "Le sujet : la ruse, l’amitié et la peur ne se rencontrent pas au même moment selon les enfants."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('anansi-et-les-histoires-du-monde',
+   'Anansi, l’araignée qui possédait toutes les histoires',
+   'Un même personnage, trois continents : comment les contes akan ont voyagé jusqu’aux Caraïbes.',
+   $json$[
+     {
+       "titre": "Les anansesem",
+       "paragraphes": [
+         "Chez les Akan, au Ghana et dans l’est de la Côte d’Ivoire, les contes portent un nom qui dit déjà tout : les anansesem, « les histoires d’Anansi ». Ils se racontent le soir, après le travail, quand les enfants ont fini de manger.",
+         "Anansi n’est pas un héros fort. Elle est petite, souvent gourmande, parfois prise à son propre piège. Les enfants apprennent avec elle que l’intelligence vaut mieux que la force — et qu’elle a ses limites."
+       ]
+     },
+     {
+       "titre": "Un voyage qu’on n’a pas choisi",
+       "paragraphes": [
+         "Déportés aux Caraïbes, les Akan ont emmené leurs histoires : c’était ce qu’on ne pouvait pas leur prendre. Anansi y est devenue Anancy en Jamaïque, Ti Malice à Haïti.",
+         "Raconter Anansi à un enfant aujourd’hui, ce n’est donc pas seulement lui raconter une ruse d’araignée. C’est lui montrer qu’une histoire peut survivre à tout, et continuer de faire rire trois siècles plus tard."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('contes-en-classe',
+   'Utiliser un conte africain en classe : ce qui marche',
+   'Retours d’enseignants de maternelle et de cycle 2, et les écueils qu’ils signalent tous.',
+   $json$[
+     {
+       "titre": "Commencer par l’histoire, jamais par le pays",
+       "paragraphes": [
+         "L’erreur la plus fréquente est d’ouvrir sur une carte. L’enfant reçoit alors le conte comme une leçon de géographie, et l’écoute comme telle. Les enseignants qui lisent d’abord l’histoire, et ne situent qu’après, décrivent une attention tout autre."
+       ]
+     },
+     {
+       "titre": "Ce que les enfants retiennent",
+       "points": [
+         "Les personnages avant les lieux — Anansi bien avant le Ghana.",
+         "Les répétitions et les formules, qu’ils reprennent en chœur dès la deuxième lecture.",
+         "Les motifs des illustrations, qu’ils reconnaissent d’un livre à l’autre."
+       ]
+     },
+     {
+       "titre": "Prolonger sans alourdir",
+       "paragraphes": [
+         "Une question ouverte suffit : « Anansi a trompé le python pour l’attraper. Est-ce que c’était juste ? » Il n’y a pas de bonne réponse, et c’est précisément ce qui fait parler une classe entière."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('accompagner-enfants-besoins-specifiques',
+   'Accompagner un enfant à besoins spécifiques dans la lecture',
+   'Troubles de l’attention, difficultés de déchiffrage : des aménagements simples, et ce qu’ils changent.',
+   $json$[
+     {
+       "titre": "Ce qui bloque, souvent",
+       "paragraphes": [
+         "Un enfant qui refuse de lire ne refuse presque jamais l’histoire. Il refuse l’effort de déchiffrage, la page trop dense, la honte de buter devant quelqu’un. Distinguer les deux change entièrement la réponse."
+       ]
+     },
+     {
+       "titre": "Des aménagements qui coûtent peu",
+       "points": [
+         "Lire à deux voix, en alternant les paragraphes : l’enfant garde le fil sans porter tout l’effort.",
+         "Agrandir le texte et augmenter l’interligne — sur un fichier, c’est immédiat.",
+         "Autoriser l’écoute seule certains soirs, sans en faire un échec.",
+         "Choisir des contes courts, à illustrations nombreuses, quitte à revenir plus tard aux longs."
+       ]
+     },
+     {
+       "titre": "Se faire aider",
+       "paragraphes": [
+         "Les associations de parents et les professionnels de l’enfance connaissent des dispositifs que les familles découvrent souvent trop tard. Écrire, poser la question, demander qui contacter : c’est le pas qui débloque le reste."
+       ]
+     }
+   ]$json$::jsonb)
+) as v(slug, titre, chapeau, corps) on v.slug = c.slug
+on conflict (content_id, langue) do update set
+  titre = excluded.titre,
+  chapeau = excluded.chapeau,
+  corps = excluded.corps,
+  maj_le = public.app_now();

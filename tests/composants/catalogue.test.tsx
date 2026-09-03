@@ -26,8 +26,6 @@ import { messageErreur, traduire } from '@/i18n';
 const POSSEDE = traduire('fr', 'acces.purchase');
 const ABONNEMENT = traduire('fr', 'acces.inclusAbonnement');
 const GRATUIT = traduire('fr', 'acces.free');
-const REGION_OUEST = traduire('fr', 'regions.afrique_ouest');
-const REGION_SAHEL = traduire('fr', 'regions.sahel');
 const HORS_ZONE_FR = messageErreur('fr', 'hors_zone');
 const HORS_ZONE_EN = messageErreur('en', 'hors_zone');
 
@@ -67,7 +65,6 @@ const BASE: EntreeCatalogue = {
   age_max: 9,
   origine_culturelle: 'conte akan — Ghana',
   themes: ['ruse'],
-  region: 'afrique_ouest',
   type_document: 'conte',
   orientation: 'portrait',
   couverture_url: null,
@@ -406,11 +403,15 @@ describe('les trois états du catalogue', () => {
 // LES FILTRES VIVENT DANS L'URL
 // ═══════════════════════════════════════════════════════════════════════════
 
+/*
+ * PLUS DE FACETTE « RÉGION » — migration 0071.
+ *
+ * Elle ne rangeait que les contes : cliquer « Sahel » faisait disparaître
+ * d'un coup tous les livrets pédagogiques, sans rien annoncer. Les thèmes
+ * valent pour les deux supports, et ce sont eux que ces tests éprouvent
+ * désormais — ils ont hérité de la couleur qu'avaient les régions.
+ */
 const FACETTES: ReponseFacettes = {
-  regions: [
-    { valeur: 'afrique_ouest', nombre: 3 },
-    { valeur: 'sahel', nombre: 1 },
-  ],
   types: [
     { valeur: 'conte', nombre: 6 },
     { valeur: 'livret_pedagogique', nombre: 2 },
@@ -426,15 +427,15 @@ const FACETTES: ReponseFacettes = {
 };
 
 describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
-  it('une pastille de région est un lien qui pose le filtre', () => {
+  it('une pastille de thème est un lien qui pose le filtre', () => {
     // Des boutons mutant un état en mémoire perdraient le partage, le
     // rechargement, et l'accès des moteurs aux pages filtrées (§5.4).
     render(
       <BarreFiltres langue="fr" facettes={FACETTES} filtres={FILTRES_VIDES} lien={LIEN} />,
     );
 
-    const lien = screen.getByRole('link', { name: motif(REGION_OUEST) });
-    expect(lien.getAttribute('href')).toContain('region=afrique_ouest');
+    const lien = screen.getByRole('link', { name: /ruse/ });
+    expect(lien.getAttribute('href')).toContain('themes=ruse');
   });
 
   it('la pastille ACTIVE porte `aria-current` et son lien RETIRE le filtre', () => {
@@ -451,14 +452,14 @@ describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
       <BarreFiltres
         langue="fr"
         facettes={FACETTES}
-        filtres={{ ...FILTRES_VIDES, region: 'afrique_ouest' }}
+        filtres={{ ...FILTRES_VIDES, themes: ['ruse'] }}
         lien={LIEN}
       />,
     );
 
-    const lien = screen.getByRole('link', { name: motif(REGION_OUEST) });
+    const lien = screen.getByRole('link', { name: /ruse/ });
     expect(lien.getAttribute('aria-current')).toBe('true');
-    expect(lien.getAttribute('href')).not.toContain('region=');
+    expect(lien.getAttribute('href')).not.toContain('themes=');
   });
 
   it('une pastille inactive ne porte pas `aria-current` — le contre-test', () => {
@@ -466,12 +467,12 @@ describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
       <BarreFiltres
         langue="fr"
         facettes={FACETTES}
-        filtres={{ ...FILTRES_VIDES, region: 'afrique_ouest' }}
+        filtres={{ ...FILTRES_VIDES, themes: ['ruse'] }}
         lien={LIEN}
       />,
     );
 
-    expect(screen.getByRole('link', { name: motif(REGION_SAHEL) }).getAttribute('aria-current')).toBeNull();
+    expect(screen.getByRole('link', { name: /animaux/ }).getAttribute('aria-current')).toBeNull();
   });
 
   it('les pastilles annoncent l’EFFECTIF de chaque valeur', () => {
@@ -481,10 +482,10 @@ describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
       <BarreFiltres langue="fr" facettes={FACETTES} filtres={FILTRES_VIDES} lien={LIEN} />,
     );
 
-    expect(screen.getByRole('link', { name: motif(`${REGION_OUEST} (3)`) })).toBeDefined();
+    expect(screen.getByRole('link', { name: motif('ruse (4)') })).toBeDefined();
   });
 
-  it('les thèmes se CUMULENT, contrairement à la région', () => {
+  it('les thèmes se CUMULENT, contrairement à la région qu’ils remplacent', () => {
     // On cherche « ruse ET animaux », pas l'un puis l'autre.
     render(
       <BarreFiltres
@@ -515,7 +516,7 @@ describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
       />,
     );
 
-    expect(screen.getByRole('link', { name: motif(REGION_SAHEL) }).getAttribute('href')).not.toContain('page=');
+    expect(screen.getByRole('link', { name: /animaux/ }).getAttribute('href')).not.toContain('page=');
   });
 });
 
@@ -548,14 +549,14 @@ describe('tri et recherche', () => {
     // │ LE DÉFAUT LE PLUS COURANT DES CATALOGUES FILTRABLES.               │
     // │                                                                    │
     // │ Un formulaire `GET` n'envoie que ses propres champs : sans report   │
-    // │ en champs cachés, lancer une recherche remettrait la région et les  │
-    // │ thèmes à zéro, silencieusement.                                    │
+    // │ en champs cachés, lancer une recherche remettrait les thèmes et    │
+    // │ l'accès à zéro, silencieusement.                                   │
     // └────────────────────────────────────────────────────────────────────┘
     const { container } = render(
       <ChampRecherche
         langue="fr"
         action="/fr/catalogue"
-        filtres={{ ...FILTRES_VIDES, region: 'sahel', themes: ['ruse', 'animaux'], acces: 'gratuit' }}
+        filtres={{ ...FILTRES_VIDES, themes: ['ruse', 'animaux'], acces: 'gratuit' }}
       />,
     );
 
@@ -564,7 +565,6 @@ describe('tri et recherche', () => {
       champ.getAttribute('value'),
     ]);
 
-    expect(caches).toContainEqual(['region', 'sahel']);
     expect(caches).toContainEqual(['acces', 'gratuit']);
     // Une seule entrée, séparée par des virgules : des champs répétés
     // seraient lus comme la seule dernière valeur par le schéma du catalogue.

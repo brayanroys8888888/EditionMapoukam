@@ -3,6 +3,9 @@ import type { ReactNode } from 'react';
 import { traduire, type LangueInterface } from '@/i18n';
 import type { FicheLivre } from '@/domain/catalog/types';
 import { Couverture, SubstitutCouverture } from '@/components/catalogue/couverture';
+import { teinteDepuisThemes } from '@/components/motif';
+import type { AvisDuLivre } from '@/lib/catalog/avis';
+import { SectionAvis } from '@/components/fiche/avis';
 import { Revele } from './revele';
 import styles from './boutique.module.css';
 import accueil from './accueil.module.css';
@@ -50,10 +53,22 @@ function Reponse({ intitule, valeur }: { intitule: string; valeur: string | null
 export function FicheV2({
   langue,
   fiche,
+  avis,
+  connecte = false,
   actionAjout,
+  actionAvis,
+  actionRetraitAvis,
 }: {
   langue: LangueInterface;
   fiche: FicheLivre;
+  /**
+   * Les avis du titre. `undefined` fait disparaître la section : un écran qui
+   * ne les a pas chargés reste cohérent, plutôt que d'annoncer « aucun avis »
+   * sur un titre qui en a.
+   */
+  avis?: AvisDuLivre;
+  /** L'appelant a une session. Distinct du droit d'écrire : il faut les deux. */
+  connecte?: boolean;
   /**
    * Ajout au panier — une Server Action, jamais un lien.
    *
@@ -61,6 +76,8 @@ export function FicheV2({
    * navigateur, et par tout robot qui suit les liens de la page.
    */
   actionAjout?: (donnees: FormData) => void | Promise<void>;
+  actionAvis?: (donnees: FormData) => void | Promise<void>;
+  actionRetraitAvis?: () => void | Promise<void>;
 }): ReactNode {
   const { canRead, canDownload } = fiche.acces;
   const achetable = Boolean(fiche.prix) && !canDownload && actionAjout !== undefined;
@@ -85,11 +102,20 @@ export function FicheV2({
             <a href={`/${langue}/catalogue`} style={{ color: 'inherit' }}>
               {traduire(langue, 'navigation.catalogue')}
             </a>
-            {fiche.region ? (
+            {/*
+              LE THÈME À LA PLACE DE LA TRADITION — migration 0071.
+
+              `encodeURIComponent` : un thème est de la saisie libre, et une
+              espace ou une esperluette y casserait la requête.
+            */}
+            {fiche.themes[0] !== undefined ? (
               <>
                 {' · '}
-                <a href={`/${langue}/catalogue?region=${fiche.region}`} style={{ color: 'inherit' }}>
-                  {traduire(langue, `regions.${fiche.region}`)}
+                <a
+                  href={`/${langue}/catalogue?themes=${encodeURIComponent(fiche.themes[0])}`}
+                  style={{ color: 'inherit' }}
+                >
+                  {fiche.themes[0]}
                 </a>
               </>
             ) : null}
@@ -115,7 +141,7 @@ export function FicheV2({
                 largeur={800}
                 hauteur={1200}
                 tailles="(max-width: 820px) 88vw, 360px"
-                region={fiche.region}
+                teinte={teinteDepuisThemes(fiche.themes)}
                 eager={true}
                 // Le titre est en `h1` juste à côté : le répéter ferait
                 // entendre deux fois la même phrase.
@@ -123,16 +149,24 @@ export function FicheV2({
                 classeImage={styles.ficheCouverture}
               />
             ) : (
-              <SubstitutCouverture langue={langue} region={fiche.region} />
+              <SubstitutCouverture langue={langue} teinte={teinteDepuisThemes(fiche.themes)} />
             )}
           </div>
 
           {/* ── Colonne d'achat ─────────────────────────────────────────── */}
           <div>
-            {fiche.region ? (
+            {/*
+              L'ORIGINE ÉDITORIALE, sans repli.
+
+              Cette ligne se repliait sur le libellé de la région quand
+              `origine_culturelle` manquait ; la région ayant quitté le
+              catalogue public, il n'y a plus de repli. Y mettre le thème
+              ferait dire « Ruse » à une ligne qui annonce une provenance.
+            */}
+            {fiche.origine_culturelle ? (
               <p className={styles.ficheOrigine}>
                 <span className={styles.fichePuce} aria-hidden="true" />
-                {fiche.origine_culturelle ?? traduire(langue, `regions.${fiche.region}`)}
+                {fiche.origine_culturelle}
               </p>
             ) : null}
 
@@ -257,6 +291,37 @@ export function FicheV2({
           </div>
         </div>
 
+        {/*
+          ── À propos de ce titre ────────────────────────────────────────
+
+          La DESCRIPTION LONGUE, colonne créée par la migration 0070. Elle ne
+          remplace pas le résumé : le résumé est la phrase d'accroche des
+          cartes et du référencement, celle-ci est le texte qu'on lit avant
+          d'acheter. Le bloc disparaît quand elle est vide — un titre déposé
+          avant la migration n'en a pas, et une section vide se lit comme un
+          défaut.
+
+          Les paragraphes sont découpés sur les lignes vides, comme les saisit
+          l'éditeur, et rendus en TEXTE PUR : la description est de la saisie
+          libre, et elle n'est jamais interprétée comme du balisage.
+        */}
+        {fiche.description ? (
+          <Revele>
+            <section className={styles.bloc}>
+              <h2 className={styles.blocTitre}>{traduire(langue, 'fiche.descriptionTitre')}</h2>
+              {fiche.description
+                .split(/\n\s*\n/)
+                .map((bloc) => bloc.trim())
+                .filter((bloc) => bloc.length > 0)
+                .map((bloc, rang) => (
+                  <p key={rang} className={styles.blocTexte}>
+                    {bloc}
+                  </p>
+                ))}
+            </section>
+          </Revele>
+        ) : null}
+
         {/* ── D'où vient ce conte ─────────────────────────────────────── */}
         {fiche.origine_culturelle ? (
           <Revele>
@@ -265,6 +330,25 @@ export function FicheV2({
               <p className={styles.blocTexte}>{fiche.origine_culturelle}</p>
             </section>
           </Revele>
+        ) : null}
+
+        {/*
+          ── Les avis des lecteurs ───────────────────────────────────────
+
+          Le MÊME composant qu'en V1, et non une seconde copie : la section ne
+          lit que des jetons de couleur, dont la valeur change sous elle selon
+          `data-design`. Deux copies auraient divergé au premier ajout de
+          champ.
+        */}
+        {avis ? (
+          <SectionAvis
+            langue={langue}
+            fiche={fiche}
+            avis={avis}
+            connecte={connecte}
+            {...(actionAvis ? { actionDepot: actionAvis } : {})}
+            {...(actionRetraitAvis ? { actionRetrait: actionRetraitAvis } : {})}
+          />
         ) : null}
 
         {/* ── Dans la même tradition ──────────────────────────────────── */}

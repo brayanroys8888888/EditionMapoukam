@@ -287,7 +287,10 @@ describe('LE CONTRAT D’API NE REDÉCLARE AUCUN CHAMP MÉTIER', () => {
     // └────────────────────────────────────────────────────────────────────┘
     const contrat = readFileSync(join(RACINE, 'src', 'domain', 'api', 'contract.ts'), 'utf8');
 
-    for (const type of ['EntreeCatalogue', 'AccessDecision', 'PrixAffiche', 'RegionConte']) {
+    // `RegionConte` figurait dans cette liste ; la migration 0071 l'a retiré du
+    // domaine avec le filtre de région. `FicheLivre` le remplace : c'est l'autre
+    // type que le contrat réexporte, et il porte la description et les avis.
+    for (const type of ['EntreeCatalogue', 'AccessDecision', 'PrixAffiche', 'FicheLivre']) {
       expect(contrat, `${type} doit être importé, jamais redéclaré`).not.toMatch(
         new RegExp(`interface\\s+${type}\\b`),
       );

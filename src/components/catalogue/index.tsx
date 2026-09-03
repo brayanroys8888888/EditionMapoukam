@@ -1,10 +1,10 @@
 import type { CSSProperties, ReactNode } from 'react';
 
 import { messageErreur, traduire, type LangueInterface } from '@/i18n';
-import type { EntreeCatalogue, RegionConte, TypeDocument } from '@/domain/catalog/types';
+import type { EntreeCatalogue, TypeDocument } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import { TRIS } from '@/domain/catalog/schemas';
-import { Motif } from '@/components/motif';
+import { Motif, teinteDepuisThemes, teinteDuTheme, type Palette } from '@/components/motif';
 import { Couverture, SubstitutCouverture } from './couverture';
 import styles from './catalogue.module.css';
 
@@ -27,7 +27,14 @@ import styles from './catalogue.module.css';
 /** Les filtres tels qu'ils vivent dans l'URL. */
 export interface FiltresCatalogue {
   q?: string;
-  region?: RegionConte;
+  /*
+   * IL N'Y A PLUS DE FILTRE `region` — migration 0071.
+   *
+   * Une vieille adresse `?region=sahel` mise en favori n'échoue pas : le
+   * schéma Zod du catalogue écarte les clés qu'il ne connaît pas, et la page
+   * rend ses résultats sans ce filtre. Une page de résultats vaut mieux
+   * qu'une erreur sur un lien partagé il y a six mois.
+   */
   /** Contes, livrets pédagogiques, ou absent — c'est-à-dire les deux. */
   type?: TypeDocument;
   themes?: string[];
@@ -169,21 +176,25 @@ const COUVERTURE_LARGEUR = 320;
 const COUVERTURE_HAUTEUR = 480;
 
 /**
- * Les quatre teintes d'une carte, posées depuis la région du conte.
+ * Les cinq teintes d'une carte, posées depuis un EMPLACEMENT DE PALETTE.
  *
- * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ LA COULEUR SE CHOISIT SUR `region`, JAMAIS SUR `origine_culturelle`.    │
+ * ┌───────────────────────────────────────────────────────────────────────┐
+ * │ LA COULEUR SE CHOISIT SUR `themes`, JAMAIS SUR `origine_culturelle`.     │
  * │                                                                          │
- * │ `region` est une énumération FERMÉE à cinq valeurs, garantie par la      │
- * │ base. `origine_culturelle` est du texte libre — « conte akan — Ghana »,  │
- * │ « Bassin du Congo » — et deux orthographes de la même région y ont déjà  │
- * │ coexisté dans ce dépôt, à une apostrophe près. Indexer une couleur sur   │
- * │ du texte libre, c'est accepter qu'un conte s'affiche un jour sans        │
- * │ couleur, ou pire, dans celle d'une autre tradition.                      │
- * └──────────────────────────────────────────────────────────────────────────┘
+ * │ Elle se choisissait sur `region` jusqu'à la migration 0071. La région    │
+ * │ ne rangeait que les contes : continuer à colorer d'après elle aurait     │
+ * │ laissé tous les livrets pédagogiques en gris `inconnue`.                  │
+ * │                                                                          │
+ * │ Ce qui n'a pas changé : `origine_culturelle` reste HORS de ce choix.     │
+ * │ C'est du texte libre — « conte akan — Ghana », « Bassin du Congo » —   │
+ * │ et deux orthographes d'une même région y ont déjà coexisté dans ce       │
+ * │ dépôt, à une apostrophe près. Les thèmes, eux, sont nettoyés à           │
+ * │ l'enregistrement par la migration 0070, et `teinteDepuisThemes`          │
+ * │ neutralise en plus la casse et les accents.                              │
+ * └───────────────────────────────────────────────────────────────────────┘
  */
-export function teintesRegion(region: RegionConte | null): CSSProperties {
-  const cle = region ?? 'inconnue';
+export function teintesPalette(teinte: Palette | null): CSSProperties {
+  const cle = teinte ?? 'inconnue';
   return {
     '--carte-fond': `var(--region-${cle}-fond)`,
     '--carte-bordure': `var(--region-${cle}-bordure)`,
@@ -194,6 +205,11 @@ export function teintesRegion(region: RegionConte | null): CSSProperties {
     // indiscernable du remplissage.
     '--carte-motif': `var(--region-${cle}-motif)`,
   } as CSSProperties;
+}
+
+/** Les teintes d'un titre, d'après ses thèmes. */
+export function teintesTheme(themes: readonly string[]): CSSProperties {
+  return teintesPalette(teinteDepuisThemes(themes));
 }
 
 /** « 5–8 ans » — la tranche d'âge seule, telle que la maquette l'écrit. */
@@ -235,7 +251,7 @@ function metaConte(langue: LangueInterface, entree: EntreeCatalogue): string {
  * │ basse de la carte — celle où se trouve le prix, donc celle qu'on         │
  * │ regarde — ne répondait pas au doigt.                                    │
  * │                                                                          │
- * │ Ce qui est annoncé reste court et utile : tradition, titre, âge,         │
+ * │ Ce qui est annoncé reste court et utile : thème, titre, âge,             │
  * │ pagination, accès. C'est exactement ce qu'un voyant lit avant de         │
  * │ cliquer.                                                                 │
  * └──────────────────────────────────────────────────────────────────────────┘
@@ -264,7 +280,7 @@ export function CarteLivre({
     <a
       className={dense ? `${styles.carte} ${styles.carteCompacte}` : styles.carte}
       href={`/${langue}/contes/${entree.slug}`}
-      style={teintesRegion(entree.region)}
+      style={teintesTheme(entree.themes)}
     >
       {entree.couverture ? (
         // ┌──────────────────────────────────────────────────────────────┐
@@ -286,13 +302,13 @@ export function CarteLivre({
           largeur={COUVERTURE_LARGEUR}
           hauteur={COUVERTURE_HAUTEUR}
           tailles="(max-width: 640px) 45vw, 200px"
-          region={entree.region}
+          teinte={teinteDepuisThemes(entree.themes)}
           // Vide, et c'est délibéré : le titre est écrit juste en dessous, et
           // le décrire à nouveau ferait entendre deux fois la même phrase.
           alt=""
         />
       ) : (
-        <SubstitutCouverture langue={langue} region={entree.region} />
+        <SubstitutCouverture langue={langue} teinte={teinteDepuisThemes(entree.themes)} />
       )}
 
       <div className={styles.carteCorps}>
@@ -302,10 +318,20 @@ export function CarteLivre({
           </p>
         ) : null}
 
-        {entree.region ? (
+        {/*
+          LE THÈME À LA PLACE DE LA TRADITION.
+
+          Cette ligne portait la région ; elle porte le PREMIER thème depuis la
+          migration 0071. Le thème s'écrit tel quel, sans passer par les
+          traductions : c'est de la saisie libre de l'éditeur, il n'existe
+          aucune clé à aller chercher, et une clé absente afficherait son propre
+          nom. La puce reprend la teinte de la carte, déduite du même thème —
+          les deux disent donc la même chose.
+        */}
+        {entree.themes[0] !== undefined ? (
           <p className={styles.origine}>
             <span className={styles.puce} aria-hidden="true" />
-            {traduire(langue, `regions.${entree.region}`)}
+            {entree.themes[0]}
           </p>
         ) : null}
 
@@ -378,12 +404,13 @@ export function GrilleCatalogue({
 export function PastilleFiltre({
   href,
   actif,
-  region,
+  teinte,
   children,
 }: {
   href: string;
   actif: boolean;
-  region?: RegionConte;
+  /** Palette de la pastille. Absente, la pastille reste neutre. */
+  teinte?: Palette | null;
   children: ReactNode;
 }): ReactNode {
   return (
@@ -391,21 +418,21 @@ export function PastilleFiltre({
       href={href}
       className={[
         styles.pastilleFiltre,
-        region ? styles.pastilleRegion : null,
+        teinte ? styles.pastilleRegion : null,
         actif ? styles.pastilleActive : null,
       ]
         .filter(Boolean)
         .join(' ')}
       aria-current={actif ? 'true' : undefined}
-      style={region ? teintesRegion(region) : undefined}
+      style={teinte ? teintesPalette(teinte) : undefined}
     >
       {/*
-       * La puce de tradition, dans la couleur PLEINE — la seule place où elle
-       * s'emploie hors des cartes. Elle n'apparaît que pour les groupes qui
-       * ont une couleur : l'âge et l'accès n'en ont pas, et leur en donner une
-       * ferait croire à une origine.
+       * La puce colorée, dans la couleur PLEINE — la seule place où elle
+       * s'emploie hors des cartes. Elle n'apparaît que pour les groupes qui en
+       * ont une : l'âge, le support et l'accès n'en ont pas, et leur en donner
+       * une ferait croire à un rangement qui n'existe pas.
        */}
-      {region ? <span className={styles.puce} aria-hidden="true" /> : null}
+      {teinte ? <span className={styles.puce} aria-hidden="true" /> : null}
       {children}
     </a>
   );
@@ -419,7 +446,8 @@ export function PastilleFiltre({
 export interface FiltrePose {
   cle: string;
   libelle: string;
-  region?: RegionConte;
+  /** Palette de la pastille, quand le filtre en porte une — un thème. */
+  teinte?: Palette | null;
   /** URL du catalogue SANS ce filtre. */
   retrait: string;
 }
@@ -430,7 +458,7 @@ export interface FiltrePose {
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ CHAQUE PASTILLE DIT CE QUE SON CLIC FAIT.                               │
  * │                                                                          │
- * │ Le `aria-label` porte « Retirer le filtre Sahel », jamais « × ». Une     │
+ * │ Le `aria-label` porte « Retirer le filtre Ruse », jamais « × ». Une      │
  * │ croix seule est annoncée « lien » et rien d'autre : quelqu'un qui écoute │
  * │ la page entendrait quatre liens identiques et n'aurait aucun moyen de    │
  * │ savoir lequel retire quoi.                                               │
@@ -456,7 +484,7 @@ export function FiltresActifs({
           key={pose.cle}
           className={styles.pastilleRetirable}
           href={pose.retrait}
-          style={pose.region ? teintesRegion(pose.region) : undefined}
+          style={pose.teinte ? teintesPalette(pose.teinte) : undefined}
           aria-label={`${traduire(langue, 'catalogue.retirerFiltre')} : ${pose.libelle}`}
         >
           {pose.libelle}
@@ -494,7 +522,7 @@ function GroupeFiltre({
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ AUCUNE VALEUR N'EST ÉCRITE EN DUR ICI.                                  │
  * │                                                                          │
- * │ Les régions, thèmes et origines viennent de `catalog_facets`, avec leur  │
+ * │ Les thèmes, supports et origines viennent de `catalog_facets`, avec      │
  * │ effectif. Une liste figée dans l'interface se désynchroniserait du       │
  * │ catalogue au premier titre ingéré — et proposerait un filtre qui ne rend │
  * │ rien, ou en cacherait un qui existe.                                     │
@@ -547,33 +575,26 @@ export function BarreFiltres({
         </GroupeFiltre>
       ) : null}
 
-      {facettes.regions.length > 0 ? (
-        <GroupeFiltre titre={traduire(langue, 'catalogue.region')}>
-          {facettes.regions.map((facette) => {
-            const actif = filtres.region === facette.valeur;
-            return (
-              <PastilleFiltre
-                key={facette.valeur}
-                // Cliquer un filtre actif le RETIRE : c'est la seule façon de
-                // revenir en arrière sans chercher une croix minuscule.
-                href={lien({ region: actif ? undefined : facette.valeur, page: undefined })}
-                actif={actif}
-                region={facette.valeur as RegionConte}
-              >
-                {traduire(langue, `regions.${facette.valeur as RegionConte}`)} ({facette.nombre})
-              </PastilleFiltre>
-            );
-          })}
-        </GroupeFiltre>
-      ) : null}
+      {/*
+        LE GROUPE « RÉGION » A DISPARU — migration 0071.
 
+        Il ne rangeait que les contes : cliquer « Sahel » faisait disparaître
+        d'un coup tous les livrets pédagogiques, sans rien annoncer. Les
+        THÈMES, juste en dessous, valent pour les deux supports — et ils
+        reçoivent désormais la couleur que portaient les régions.
+      */}
       {facettes.themes.length > 0 ? (
         <GroupeFiltre titre={traduire(langue, 'catalogue.themes')}>
           {facettes.themes.map((facette) => {
             const actif = themesPoses.has(facette.valeur);
-            // Les thèmes se CUMULENT, contrairement à la région : on cherche
-            // « ruse ET animaux », pas l'un puis l'autre. La pastille active
-            // se retire de la liste, les autres s'y ajoutent.
+            // Les thèmes se CUMULENT DANS L'URL : plusieurs restent posés en
+            // même temps, ce que la région — énumération à valeur unique — ne
+            // savait pas faire. Le filtre lui-même est un OU : `catalog_list`
+            // teste `b.themes && p_themes`, le recouvrement. « ruse, animaux »
+            // rend donc les titres qui portent l'un OU l'autre, et élargit la
+            // liste au lieu de la restreindre.
+            // Cliquer un filtre actif le RETIRE : c'est la seule façon de
+            // revenir en arrière sans chercher une croix minuscule.
             const apres = actif
               ? [...themesPoses].filter((theme) => theme !== facette.valeur)
               : [...themesPoses, facette.valeur];
@@ -586,6 +607,7 @@ export function BarreFiltres({
                   page: undefined,
                 })}
                 actif={actif}
+                teinte={teinteDuTheme(facette.valeur)}
               >
                 {facette.valeur} ({facette.nombre})
               </PastilleFiltre>
@@ -669,7 +691,7 @@ export function SelecteurTri({
  * Recherche — un formulaire `GET`, qui écrit dans l'URL.
  *
  * Les autres filtres sont reportés en champs cachés : sans eux, chercher
- * effacerait la région et les thèmes déjà posés, ce qui est le défaut le plus
+ * effacerait le support et les thèmes déjà posés, ce qui est le défaut le plus
  * courant des catalogues filtrables.
  */
 export function ChampRecherche({
@@ -682,7 +704,6 @@ export function ChampRecherche({
   filtres: FiltresCatalogue;
 }): ReactNode {
   const caches: [string, string][] = [];
-  if (filtres.region) caches.push(['region', filtres.region]);
   // Sans lui, chercher « lion » depuis un rayon filtré ramènerait tout le
   // catalogue : le filtre serait perdu au moment précis où on l'affine.
   if (filtres.type) caches.push(['type', filtres.type]);
@@ -744,12 +765,12 @@ export function CatalogueVide({
   return (
     <section className={styles.vide}>
       {/*
-       * Le seul motif jaune du produit. Il ne porte AUCUNE couleur de
-       * tradition : un catalogue vide n'a pas d'origine, et en lui en donnant
-       * une on ferait croire que c'est le filtre régional qui est en cause —
-       * ce qui est faux quatre fois sur cinq.
+       * Le seul motif jaune du produit. Il ne porte AUCUNE couleur de palette :
+       * un catalogue vide n'a pas de thème, et lui en donner un ferait croire
+       * que c'est le filtre par thème qui est en cause — ce qui est faux la
+       * plupart du temps.
        */}
-      <Motif region="vide" place="plein" rayon="16px" className={styles.videMotif} />
+      <Motif teinte="vide" place="plein" rayon="16px" className={styles.videMotif} />
 
       <div className={styles.videTexte}>
         <h2 className={styles.videTitre}>{traduire(langue, 'catalogue.videTitre')}</h2>

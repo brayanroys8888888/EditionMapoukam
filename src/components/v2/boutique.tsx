@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { traduire, type LangueInterface } from "@/i18n";
-import type { EntreeCatalogue, RegionConte } from "@/domain/catalog/types";
+import type { EntreeCatalogue } from "@/domain/catalog/types";
 import type { ReponseFacettes } from "@/domain/api/contract";
 import { TRIS } from "@/domain/catalog/schemas";
 import type { FiltrePose, FiltresCatalogue, Lien } from "@/components/catalogue";
@@ -224,43 +224,14 @@ export function BoutiqueV2({
                   className={styles.filtres}
                   aria-label={traduire(langue, "catalogue.filtres")}
                 >
-                  {facettes.regions.length > 0 ? (
-                    <section className={styles.groupe}>
-                      <h3 className={styles.groupeTitre}>
-                        {traduire(langue, "catalogue.region")}
-                      </h3>
-                      <div className={styles.pastilles}>
-                        {facettes.regions.map((facette) => {
-                          const actif = filtres.region === facette.valeur;
-                          return (
-                            <a
-                              key={facette.valeur}
-                              className={
-                                actif
-                                  ? `${styles.pastille} ${styles.pastilleActive}`
-                                  : styles.pastille
-                              }
-                              // Cliquer un filtre actif le RETIRE : c'est la
-                              // seule façon de revenir en arrière sans avoir à
-                              // chercher une croix.
-                              href={lienFeuille({
-                                region: actif ? undefined : facette.valeur,
-                                page: undefined,
-                              })}
-                              aria-current={actif ? "true" : undefined}
-                            >
-                              {traduire(
-                                langue,
-                                `regions.${facette.valeur as RegionConte}`,
-                              )}{" "}
-                              ({facette.nombre})
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  ) : null}
+                  {/*
+                    LE GROUPE « RÉGION » A DISPARU — migration 0071.
 
+                    Il ne rangeait que les contes : cliquer « Sahel » faisait
+                    disparaître d'un coup tous les livrets pédagogiques, sans
+                    rien annoncer. Les THÈMES, juste en dessous, valent pour
+                    les deux supports.
+                  */}
                   {facettes.themes.length > 0 ? (
                     <section className={styles.groupe}>
                       <h3 className={styles.groupeTitre}>
@@ -269,9 +240,10 @@ export function BoutiqueV2({
                       <div className={styles.pastilles}>
                         {facettes.themes.map((facette) => {
                           const actif = themesPoses.has(facette.valeur);
-                          // Les thèmes se CUMULENT, contrairement à la région :
-                          // on cherche « ruse ET animaux », pas l'un puis
-                          // l'autre.
+                          // Les thèmes se CUMULENT : on cherche « ruse ET
+                          // animaux », pas l'un puis l'autre. Cliquer un filtre
+                          // actif le RETIRE — la seule façon de revenir en
+                          // arrière sans avoir à chercher une croix.
                           const apres = actif
                             ? [...themesPoses].filter(
                                 (theme) => theme !== facette.valeur,

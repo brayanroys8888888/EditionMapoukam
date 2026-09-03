@@ -44,7 +44,14 @@ export interface SessionCheckout {
 
 export interface DemandeAbonnement {
   subscriptionId: string;
+  /** Périodicité de facturation. C'est elle qui donne la durée d'une période. */
   offre: 'mensuel' | 'annuel';
+  /** Ce que l'abonnement ouvrira — `lecture` ou `association` (§3.6). */
+  domaine: 'lecture' | 'association';
+  /** Code de la formule souscrite, ex. `lecture-mensuel`. */
+  codeOffre: string;
+  /** Formule souscrite (`subscription_plans.id`). */
+  planId: string;
   montant: Montant;
   zone: 'international' | 'afrique';
   client: ClientPaiement;
@@ -90,6 +97,17 @@ export interface DonneesEvenement {
   referencePaiement?: string;
   montant?: Montant;
   offre?: 'mensuel' | 'annuel';
+  /**
+   * Domaine de l'abonnement concerné — §3.6.
+   *
+   * Porté par CHAQUE événement d'abonnement, et non déduit du compte : un même
+   * compte peut détenir les deux abonnements, et un échec de prélèvement doit
+   * atteindre le contrat qui a échoué, pas l'autre. Absent = `lecture`, ce que
+   * décrivent tous les événements émis avant la migration 0067.
+   */
+  domaine?: 'lecture' | 'association';
+  /** Formule souscrite (`subscription_plans.id`), pour la traçabilité. */
+  planId?: string;
   /**
    * Zone tarifaire de l'abonnement, figée à la souscription (D4 point 7).
    *

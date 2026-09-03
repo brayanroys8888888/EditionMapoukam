@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 
 import { LANGUES_INTERFACE } from '@/i18n';
 import { slugsPublies } from '@/lib/catalog/repository';
+import { lireContenusAssociatifs } from '@/lib/association/service';
 import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
 
@@ -30,6 +31,8 @@ const CHEMINS_FIXES = [
   '/contes',
   '/livrets',
   '/offres',
+  '/association',
+  '/expertise',
   '/a-propos',
   '/questions-frequentes',
   '/conditions-generales',
@@ -80,6 +83,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         ...(titre.publie_le ? { lastModified: new Date(titre.publie_le) } : {}),
         alternates: alternates(base, `/contes/${titre.slug}`),
       });
+    }
+  }
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LES CONTENUS DE L'ASSOCIATION, TOUS — Y COMPRIS LES RÉSERVÉS.        │
+   * │                                                                      │
+   * │ Un contenu réservé a bien une page publique : titre, chapeau et un    │
+   * │ mur d'adhésion. Elle répond 200, elle est indexable, et c'est par     │
+   * │ elle qu'on découvre ce que l'association publie. L'exclure du plan de │
+   * │ site rendrait invisible la moitié de l'espace.                        │
+   * │                                                                      │
+   * │ Ce qui reste hors de portée d'un moteur, c'est le CORPS — que la base │
+   * │ ne rend pas à un visiteur, et dont la colonne n'est accordée à aucun  │
+   * │ rôle de navigateur. Le référencement ne l'atteint pas davantage.      │
+   * └──────────────────────────────────────────────────────────────────────┘
+   *
+   * L'appel se fait EN VISITEUR (`null`) : un plan de site n'a pas de lecteur
+   * connecté, et la liste des contenus publiés ne dépend pas du droit d'y lire.
+   */
+  for (const langue of LANGUES_INTERFACE) {
+    try {
+      for (const contenu of await lireContenusAssociatifs(null, { langue })) {
+        entrees.push({
+          url: `${base}/${langue}/association/${contenu.slug}`,
+          ...(contenu.publieLe ? { lastModified: new Date(contenu.publieLe) } : {}),
+          alternates: alternates(base, `/association/${contenu.slug}`),
+        });
+      }
+    } catch (erreur) {
+      logger.warn('Plan de site sans les contenus de l’association', { langue, detail: erreur });
     }
   }
 

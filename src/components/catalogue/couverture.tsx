@@ -3,8 +3,7 @@
 import { useState, type ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
-import type { RegionConte } from '@/domain/catalog/types';
-import { Motif } from '@/components/motif';
+import { Motif, type TeinteMotif } from '@/components/motif';
 import styles from './catalogue.module.css';
 
 /**
@@ -38,7 +37,7 @@ export function Couverture({
   largeur,
   hauteur,
   tailles,
-  region,
+  teinte,
   alt,
   eager = false,
   classeImage,
@@ -48,8 +47,11 @@ export function Couverture({
   largeur: number;
   hauteur: number;
   tailles: string;
-  /** Décide la couleur du substitut : jamais une teinte choisie au hasard. */
-  region: RegionConte | null;
+  /**
+   * Palette du substitut. Elle vient du premier thème du titre
+   * (`teinteDepuisThemes`) depuis la migration 0071, et non plus de sa région.
+   */
+  teinte: TeinteMotif;
   /**
    * Descriptif du CONTENU de l'illustration.
    *
@@ -65,7 +67,7 @@ export function Couverture({
 }): ReactNode {
   const [manquante, setManquante] = useState(false);
 
-  if (manquante) return <SubstitutCouverture langue={langue} region={region} />;
+  if (manquante) return <SubstitutCouverture langue={langue} teinte={teinte} />;
 
   return (
     <img
@@ -95,15 +97,15 @@ export function Couverture({
  */
 export function SubstitutCouverture({
   langue,
-  region,
+  teinte,
 }: {
   langue: LangueInterface;
-  region: RegionConte | null;
+  teinte: TeinteMotif;
 }): ReactNode {
   return (
     <span className={styles.couvertureAbsente}>
       <Motif
-        region={region}
+        teinte={teinte}
         place="plein"
         rayon="0"
         className={styles.couvertureAbsenteMotif}

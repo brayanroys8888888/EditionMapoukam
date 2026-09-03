@@ -184,6 +184,11 @@ est atteignable par une pagination automatique un peu vive.
 
 ## 2. Inventaire — 55 opérations sur 42 fichiers de route
 
+> Ce compte est celui de l'audit initial. Les tables ci-dessous ont été
+> étendues depuis — offres et contenus associatifs le 3 septembre 2026 — et le
+> chiffre du titre n'a pas été recalculé : il date l'audit, il ne décrit plus le
+> dépôt.
+
 Légende de la colonne **Accès** : `public` = ouverte au visiteur ; `session` =
 compte connecté et actif ; `admin` = rôle `admin` relu en base à chaque requête ;
 `dev` = fermée si `NODE_ENV === 'production'` ; `signature` = authentifiée par
@@ -324,15 +329,42 @@ panne.
 > personne ne croie l'inverse. La page de confirmation doit **interroger la
 > commande**, pas se fier à l'URL de succès.
 
-### 2.4 Abonnement
+### 2.4 Offres et abonnement
 
 | Opération | Accès | Entrée | Sortie |
 |---|---|---|---|
-| `GET /api/subscriptions` | session | — | `{ abonnement: {...}\|null, donne_telechargement: false }` |
-| `POST /api/subscriptions` | session | `offre` (`mensuel`\|`annuel`) | `{ url, expire_le, jours_essai, statut: 'en_attente_paiement' }` |
-| `DELETE /api/subscriptions` | session | — | `{ demande: true, acces_maintenu_jusqu_au, statut: 'annulation_demandee' }` |
+| `GET /api/offers` | public | `zone` (`international`\|`afrique`) | `{ zone, devise, abonnement: {...}, association: {...}, achat_unite: {...} }` |
+| `GET /api/subscriptions` | session | — | `{ abonnement: {...}\|null, association: {...}\|null, donne_telechargement: false }` |
+| `POST /api/subscriptions` | session | `offre` (**le code d'une formule**, ex. `lecture-mensuel`) | `{ url, expire_le, jours_essai, statut: 'en_attente_paiement' }` |
+| `DELETE /api/subscriptions` | session | `domaine` en query (`lecture`\|`association`, défaut `lecture`) | `{ demande: true, acces_maintenu_jusqu_au, statut: 'annulation_demandee' }` |
 
-L'objet `abonnement` porte **deux statuts, à ne jamais confondre** :
+**`GET /api/offers`** rend les deux vitrines séparément, jamais mêlées :
+
+- `abonnement` : `{ ouvert, jours_essai, offres[], donne_telechargement: false }`
+- `association` : `{ offres[], donne_telechargement: false }`
+- `achat_unite` : `{ a_partir_de, devise, affichage, donne_telechargement: true }`
+
+Une **offre** est `{ code, domaine, montant, devise, affichage, periode, libelle,
+descriptif }`. `affichage` et `periode` sont **formatés par le serveur** :
+l'interface ne recompose pas « 7,99 €/mois », elle l'affiche.
+
+`ouvert` est un **interrupteur commercial**, pas un compte de titres (§3.3) :
+l'interface le lit, elle ne compte pas les livres publiés pour en déduire quoi
+que ce soit. La liste `association.offres` est **vide** tant que l'éditeur n'a
+créé aucune formule associative — aucun prix n'est inventé à sa place.
+
+Les listes ne contiennent que les formules **actives ayant un prix dans la zone
+demandée**. Une formule sans prix dans une zone n'y est pas proposée : on ne
+montre jamais une souscription qui ne pourrait pas aboutir.
+
+**`GET /api/subscriptions` rend DEUX champs, et non une liste.** Les deux
+abonnements sont étanches et cumulables (cahier des charges §3.6) : les rendre
+dans une liste indifférenciée obligerait chaque écran à retrouver le bon par son
+domaine, et le jour où l'un l'oublierait, il afficherait « abonné » pour le
+mauvais contrat. Chaque objet porte en plus son `domaine`, pour que le contrat
+reste lisible seul.
+
+Chaque objet d'abonnement porte **deux statuts, à ne jamais confondre** :
 
 | Champ | Sens |
 |---|---|
@@ -342,9 +374,24 @@ L'objet `abonnement` porte **deux statuts, à ne jamais confondre** :
 `anomalie` = période échue sans événement, presque toujours un webhook perdu. Il
 n'est **ni actif ni expiré** : il a sa propre ligne partout.
 
-`donne_telechargement: false` est rendu en dur par l'API. Ce n'est pas un
-remplissage : c'est la confusion la plus coûteuse du projet, écrite dans la
-réponse pour qu'aucune interface ne suppose le contraire.
+`donne_telechargement: false` est rendu en dur par l'API, sur `/api/offers`
+comme sur `/api/subscriptions`. Ce n'est pas un remplissage : c'est la confusion
+la plus coûteuse du projet, écrite dans la réponse pour qu'aucune interface ne
+suppose le contraire. **L'adhésion à l'association ne fait pas exception** — elle
+n'ouvre aucun fichier, et l'espace associatif n'en sert aucun.
+
+**Sur `POST` :** l'entrée est le **code** d'une formule, plus `mensuel|annuel`.
+Depuis la migration `0068` les formules sont créées par l'éditeur, si bien que
+Zod ne peut plus énumérer les valeurs possibles ; la validation qui compte est
+en base, et elle est plus forte — un code inconnu, une formule désactivée ou une
+formule sans prix dans la zone d'encaissement donnent le **même** `404
+offre_indisponible`. Les distinguer renseignerait sur ce qui existe en coulisse
+sans rien apporter au client. C'est le code qui détermine le **domaine** : on ne
+le transmet jamais dans le corps.
+
+Un abonnement vivant **dans le domaine visé** refuse un second : `409
+abonnement_deja_actif`. Un abonnement de lecture, lui, n'empêche pas de
+rejoindre l'association.
 
 **Aucune de ces routes ne change un statut.** Souscrire ouvre une session,
 annuler transmet la demande. C'est l'événement signé qui suit qui fait évoluer
@@ -421,6 +468,18 @@ plafonnée**, indissociables.
 | `GET /api/admin/promos` | `page`, `taille` | `{ codes[], page }` |
 | `POST /api/admin/promos` | `code`, `type`, `valeur`, `devise?`, `zone?`, `expire_le?`, `usage_max?`, `actif?` | `201` |
 | `PATCH /api/admin/settings` | 5 paramètres métier, tous optionnels | Réglages |
+| `GET /api/admin/offers` | — | `{ offres[] }`, chacune avec ses prix par zone, son nombre d'abonnés et ses `manques[]` |
+| `POST /api/admin/offers` | `code`, `domaine` (`lecture`\|`association`), `periode` (`mensuel`\|`annuel`), `libelle_fr`, `libelle_en`, `descriptif_fr?`, `descriptif_en?`, `ordre?` | `201` — offre **inactive** |
+| `PATCH /api/admin/offers/{id}` | `libelle_fr?`, `libelle_en?`, `descriptif_fr?`, `descriptif_en?`, `ordre?`, `actif?` | Offre modifiée |
+| `DELETE /api/admin/offers/{id}` | — | `204`, ou `422` si l'offre est souscrite |
+| `PUT /api/admin/offers/{id}/prices` | `zone`, `montant`, `devise` | Prix enregistré |
+| `GET /api/admin/association` | `statut?` | `{ contenus[] }` — brouillons compris |
+| `POST /api/admin/association` | `slug`, `categorie`, `titre`, `chapeau?`, `acces?` (défaut `abonnes`), `minutes?`, `image_url?` | `201` — contenu **brouillon**, version `fr` créée |
+| `GET /api/admin/association/{id}` | — | Contenu et **toutes** ses versions, corps compris |
+| `PATCH /api/admin/association/{id}` | `categorie?`, `acces?`, `minutes?`, `image_url?`, `vedette?`, `ordre?` | Contenu modifié — **ni `slug` ni `statut`** |
+| `DELETE /api/admin/association/{id}` | — | `204` |
+| `PUT /api/admin/association/{id}/versions` | `langue` (`fr`\|`en`), `titre`, `chapeau?`, `corps?` (sections : `titre`, `paragraphes[]?`, `points[]?`) | Version enregistrée |
+| `PUT /api/admin/association/{id}/publication` | `publie` (booléen) | Contenu publié ou dépublié |
 | `GET /api/admin/audit` | `action?`, `cible_id?`, `page`, `taille` | `{ entrees[], page }` |
 | `GET /api/admin/stats` | `agregat`, `debut?`, `fin?`, `page`, `taille` | `{ agregat, donnees[] }` |
 | `POST /api/admin/maintenance/purge-copies` | — | Rapport de purge |
@@ -466,6 +525,34 @@ maquette :**
    toutes deux refusées côté serveur. Le formulaire doit basculer entre les deux
    formes, sinon on créera des codes inutilisables — « 5 € de réduction » sur un
    panier en FCFA retirerait cinq francs.
+
+**Sur les offres (`/api/admin/offers`) — quatre refus qui viennent de la base,
+et que la route ne recopie pas :**
+
+- une offre **naît inactive** : la création n'accepte même pas de champ `actif` ;
+- une offre **sans prix ne s'active pas** — `422`, jamais `500` : il reste un
+  geste à faire, ce n'est pas une panne ;
+- le **domaine** et la **périodicité** ne figurent pas parmi les champs
+  modifiables. Les changer réécrirait le sens des contrats déjà souscrits ; la
+  fonction SQL ne peut pas refuser ce qu'elle ne reçoit pas ;
+- une offre **souscrite ne se supprime pas** — `422`, jamais `404` : l'offre
+  existe, et le geste que cherche l'éditeur est la désactivation.
+
+`manques[]` est **lu**, comme pour la publication d'un titre : l'écran ne
+recompte pas les zones sans prix.
+
+**Sur les contenus associatifs (`/api/admin/association`) — trois de même :**
+
+- le **slug** n'est pas modifiable : c'est l'adresse publique du contenu, et les
+  anciennes adresses du blog y renvoient en 308 ;
+- le **statut** ne se change que par `…/publication`, qui exige une version
+  **française complète** — titre et corps non vide — et refuse en `422` sinon ;
+- **dépublier n'est pas annuler** : `publie_le` est conservée.
+
+`GET /api/admin/association/{id}` rend le **corps** de toutes les versions, sans
+verdict d'accès, y compris sur un brouillon réservé : un rédacteur relit ce
+qu'il écrit. C'est précisément pourquoi la garde d'administration est
+obligatoire sur cette route comme sur les autres.
 
 **Agrégats de `GET /api/admin/stats`** — tous ventilés, aucun consolidé :
 
@@ -622,9 +709,16 @@ Ce serait une seconde source de prix — exactement ce que la décision D4 a
 supprimé pour les livres, et pour la même raison : deux sources divergent, et la
 divergence porte sur ce que le client paie.
 
-**Extension.** `GET /api/offers` → `{ offres: [{ code, montant, devise,
-affichage, periode }], jours_essai, zone }`, la zone venant du paramètre
-d'affichage comme pour le catalogue.
+**Extension — servie, et élargie depuis.** `GET /api/offers` existe. Sa forme
+n'est plus celle proposée ici : elle rend **deux vitrines séparées**,
+`abonnement` et `association`, parce que les deux abonnements sont étanches
+(cahier des charges §3.6) et qu’une liste unique aurait fait afficher l'une
+pour l'autre. Voir la section 2.4 pour le contrat exact.
+
+Les montants, eux, ne viennent plus de `PRICE_SUBSCRIPTION_*` : depuis la
+migration `0068` ils vivent dans `plan_prices` et l'éditeur les modifie depuis
+`/admin/offres` (F12 bis). Le manque est clos, et sa cause avec lui — il n'y a
+plus de prix d'abonnement dans le code.
 
 #### M6 — La fenêtre de nouveauté — ~~manque~~ **SANS OBJET depuis la migration 0064**
 
@@ -730,7 +824,7 @@ périmètre frontend.**
 | M2 | Bibliothèque | **Bloquant** | `GET /api/library` |
 | M3 | Favoris | **Bloquant** | `GET/POST/DELETE /api/favorites` |
 | M4 | Factures utilisateur | **Bloquant** (légal) | `GET /api/orders/{id}/invoice` |
-| M5 | Tarifs d'abonnement | **Bloquant** | `GET /api/offers` |
+| M5 | ~~Tarifs d'abonnement~~ | **Servi** | `GET /api/offers`, deux vitrines séparées (§2.4) ; prix en base depuis la migration 0068 |
 | M6 | ~~Fenêtre de nouveauté~~ | **Sans objet** | Règle retirée (migration 0064) ; `GET /api/time` subsiste |
 | M7 | Couvertures multi-tailles | Dégradant | `couverture: {…}` en URL absolues |
 | M8 | Facettes de filtres | Dégradant | `GET /api/catalog/facets` |

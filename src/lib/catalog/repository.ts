@@ -14,6 +14,7 @@ import type {
   PageCatalogue,
   PrixAffiche,
   SuggestionLivre,
+  SyntheseAvis,
 } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import { logger } from '@/lib/logger';
@@ -206,7 +207,6 @@ export async function listerCatalogue(
     p_age_max: query.age_max ?? null,
     p_themes: query.themes ?? null,
     p_origine: query.origine ?? null,
-    p_region: query.region ?? null,
     p_type_document: query.type ?? null,
     p_acces: query.acces ?? null,
     p_zone: query.zone,
@@ -263,7 +263,6 @@ export async function listerCatalogue(
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 interface DonneesAffichage {
-  region: EntreeCatalogue['region'];
   /**
    * Type de support et orientation. Ils voyagent ici plutôt que dans
    * `catalog_list` parce que la liste rend déjà vingt-deux colonnes et que ces
@@ -284,14 +283,13 @@ async function donneesDAffichage(
 
   const livres = await client
     .from('books')
-    .select('id, region, type_document, orientation, couverture_jeton')
+    .select('id, type_document, orientation, couverture_jeton')
     .in('id', [...identifiants]);
 
   if (livres.error) throw new Error(`Couvertures illisibles : ${livres.error.message}`);
 
   for (const livre of livres.data ?? []) {
     resultat.set(livre.id, {
-      region: livre.region,
       typeDocument: livre.type_document,
       orientation: livre.orientation,
       jetonCouverture: livre.couverture_jeton,
@@ -321,7 +319,6 @@ function versEntree(
     age_max: ligne.age_max,
     origine_culturelle: ligne.origine_culturelle,
     themes: ligne.themes,
-    region: affichage?.region ?? null,
     // Le repli sur « conte » ne couvre qu'un cas : la ligne d'affichage
     // introuvable. La colonne, elle, est NOT NULL — le titre en a toujours un.
     type_document: affichage?.typeDocument ?? 'conte',
@@ -362,10 +359,10 @@ export async function lireFiche(
     .from('books')
     .select(
       `id, slug, auteur, illustrateur, age_min, age_max, origine_culturelle, themes,
-       region, type_document, orientation, couverture_url, couverture_jeton,
+       type_document, orientation, couverture_url, couverture_jeton,
        inclus_abonnement, disponible_achat, gratuit, nb_pages_extrait,
        publie_le, statut,
-       book_translations!inner(langue, titre, resume, nb_pages, statut),
+       book_translations!inner(langue, titre, resume, description, nb_pages, statut),
        book_prices(zone, montant, devise)`,
     )
     .eq('slug', slug)
@@ -425,7 +422,6 @@ export async function lireFiche(
     age_max: livre.age_max,
     origine_culturelle: livre.origine_culturelle,
     themes: livre.themes,
-    region: livre.region,
     type_document: livre.type_document,
     orientation: livre.orientation,
     couverture_url: livre.couverture_url,
@@ -440,8 +436,33 @@ export async function lireFiche(
     achat_hors_zone: achatHorsZone(livre, prixFiche, query.zone),
     acces: acces.get(livre.id) ?? ACCES_REFUSE,
     pages_extrait: livre.nb_pages_extrait ?? getServerEnv().EXCERPT_PAGES_DEFAULT,
+    description: traduction.description,
+    avis: await syntheseAvis(client, livre.id),
     suggestions: await suggestions(client, livre.id, livre.themes, query.langue),
   };
+}
+
+/**
+ * Note moyenne et effectif des avis PUBLIÉS d'un titre.
+ *
+ * La moyenne est calculée par `book_review_summary`, en base. Elle n'est pas
+ * moyennée ici : « la note d'un titre » est une valeur métier, elle apparaît
+ * à côté du prix, et le frontend ne recalcule jamais une valeur métier.
+ *
+ * Rend `null` quand aucun avis n'est publié — et non zéro. Un titre que
+ * personne n'a commenté ne vaut pas zéro sur cinq.
+ */
+async function syntheseAvis(
+  client: AppSupabaseClient,
+  bookId: string,
+): Promise<SyntheseAvis | null> {
+  const { data, error } = await client.rpc('book_review_summary', { p_books: [bookId] });
+  if (error) return null;
+
+  const ligne = (data ?? [])[0];
+  if (!ligne) return null;
+
+  return { moyenne: Number(ligne.moyenne), nombre: ligne.nombre };
 }
 
 /**

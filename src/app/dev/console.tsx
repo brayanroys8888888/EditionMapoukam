@@ -23,6 +23,8 @@ interface Commande {
 interface Abonnement {
   id: string;
   user_id: string;
+  /** `lecture` ou `association` — §3.6. Les deux se cumulent sur un compte. */
+  domaine: string;
   offre: string;
   statut: string;
   fin_periode: string;
@@ -204,7 +206,13 @@ export function ConsoleSimulation() {
         <ul>
           {etat?.abonnements.map((abonnement) => (
             <li key={abonnement.id}>
-              {abonnement.id.slice(0, 8)} — {abonnement.offre} —{' '}
+              {/*
+                Le DOMAINE d'abord : un compte peut porter deux contrats vivants, et
+                sans lui les deux lignes se ressemblent au point qu'on émet
+                l'événement sur la mauvaise.
+              */}
+              {abonnement.id.slice(0, 8)} — <strong>{abonnement.domaine}</strong> —{' '}
+              {abonnement.offre} —{' '}
               <strong>{abonnement.statut}</strong> — fin {abonnement.fin_periode}{' '}
               {(
                 [

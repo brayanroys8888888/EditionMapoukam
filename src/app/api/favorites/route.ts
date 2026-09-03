@@ -33,7 +33,11 @@ interface LigneFavori {
   ajoute_le: string;
   books: {
     slug: string;
-    region: string | null;
+    /**
+     * Les thèmes ont remplacé `region` — migration 0071. Ils portent
+     * désormais la teinte de la vignette, par `teinteDepuisThemes`.
+     */
+    themes: string[] | null;
     couverture_jeton: string | null;
     statut: string;
   } | null;
@@ -46,7 +50,7 @@ export async function GET(request: Request): Promise<Response> {
   const client = createUserClient(garde.appelant.accessToken);
   const { data, error } = await client
     .from('favorites')
-    .select('book_id, ajoute_le, books(slug, region, couverture_jeton, statut)')
+    .select('book_id, ajoute_le, books(slug, themes, couverture_jeton, statut)')
     .order('ajoute_le', { ascending: false })
     .limit(200);
 
@@ -65,7 +69,7 @@ export async function GET(request: Request): Promise<Response> {
       .map((l) => ({
         livre_id: l.book_id,
         slug: l.books?.slug ?? null,
-        region: l.books?.region ?? null,
+        themes: l.books?.themes ?? [],
         couverture: urlsCouverture(l.books?.couverture_jeton ?? null),
         ajoute_le: l.ajoute_le,
       })),

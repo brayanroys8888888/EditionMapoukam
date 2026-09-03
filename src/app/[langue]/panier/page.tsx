@@ -70,7 +70,7 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
 
         {/* Jamais un cul-de-sac : dire ce qui manque, et donner une action. */}
         <div className={ecran.vide}>
-          <Motif region="vide" place="plein" rayon="14px" className={ecran.videMotif} />
+          <Motif teinte="vide" place="plein" rayon="14px" className={ecran.videMotif} />
 
           <div className={ecran.videTexte}>
             <p className={ecran.videTitre}>{traduire(langue, 'panier.vide')}</p>

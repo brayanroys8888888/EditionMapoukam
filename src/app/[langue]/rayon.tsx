@@ -18,6 +18,7 @@ import {
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import { teinteDuTheme } from '@/components/motif';
 import { BoutiqueV2 } from '@/components/v2/boutique';
 import { versionDesign } from '@/design/version';
 import { ajouterAuPanier } from './panier/actions';
@@ -150,7 +151,6 @@ export async function Rayon({
 
   const filtres: FiltresCatalogue = {
     q: parametres.q,
-    region: parametres.region,
     type,
     themes: parametres.themes,
     origine: parametres.origine,
@@ -165,20 +165,15 @@ export async function Rayon({
   // filtre que le lecteur a posé, c'est l'écran où il se trouve.
   const poses: FiltrePose[] = [];
 
-  if (filtres.region) {
-    poses.push({
-      cle: `region:${filtres.region}`,
-      libelle: traduire(langue, `regions.${filtres.region}`),
-      region: filtres.region,
-      retrait: lien({ region: undefined, page: undefined }),
-    });
-  }
-
   for (const theme of filtres.themes ?? []) {
     const restants = (filtres.themes ?? []).filter((autre) => autre !== theme);
     poses.push({
       cle: `theme:${theme}`,
       libelle: theme,
+      // La pastille garde la couleur qu'avait celle de la région : la teinte
+      // vient maintenant du thème lui-même, par la même fonction que les
+      // couvertures, pour qu'un thème ait UNE couleur sur tout le site.
+      teinte: teinteDuTheme(theme),
       retrait: lien({
         themes: restants.length > 0 ? restants.join(',') : undefined,
         page: undefined,

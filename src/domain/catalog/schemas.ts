@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { REGIONS_CONTE, TYPES_DOCUMENT } from '@/domain/catalog/types';
+import { TYPES_DOCUMENT } from '@/domain/catalog/types';
 
 /**
  * Validation des entrées du catalogue.
@@ -43,15 +43,20 @@ export const catalogQuerySchema = z.object({
   themes: listeSeparee.optional(),
   origine: z.string().trim().min(1).max(80).optional(),
 
-  /**
-   * Région du conte — énumération fermée, alimentée par `catalog_facets`.
+  /*
+   * IL N'Y A PLUS DE FILTRE `region`.
    *
-   * Elle a manqué jusqu'à l'étape F4 : la facette était rendue avec son
-   * effectif, mais aucun paramètre ne permettait de l'appliquer. Un schéma Zod
-   * retirant les clés inconnues, `?region=sahel` n'était pas refusé — il était
-   * ignoré en silence, ce qui est le pire des deux.
+   * Retiré par la migration 0071, en même temps que le paramètre `p_region` de
+   * `catalog_list` : la région ne s'applique qu'aux contes, si bien que
+   * l'employer faisait disparaître tous les livrets pédagogiques. Le filtre de
+   * `themes`, juste au-dessus, vaut pour les deux supports — c'est lui qui
+   * prend la place.
+   *
+   * Un schéma Zod retirant les clés inconnues, une vieille adresse
+   * `?region=sahel` mise en favori n'échoue pas : le paramètre est ignoré et
+   * le catalogue complet s'affiche. C'est le comportement voulu — une page de
+   * résultats vaut mieux qu'une erreur sur un lien partagé.
    */
-  region: z.enum(REGIONS_CONTE).optional(),
 
   /**
    * Type de support — contes, livrets pédagogiques, ou les deux.

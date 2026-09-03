@@ -96,6 +96,89 @@ export type Database = {
           },
         ]
       }
+      association_content_translations: {
+        Row: {
+          chapeau: string
+          content_id: string
+          corps: Json
+          id: string
+          langue: string
+          maj_le: string
+          titre: string
+        }
+        Insert: {
+          chapeau?: string
+          content_id: string
+          corps?: Json
+          id?: string
+          langue: string
+          maj_le?: string
+          titre: string
+        }
+        Update: {
+          chapeau?: string
+          content_id?: string
+          corps?: Json
+          id?: string
+          langue?: string
+          maj_le?: string
+          titre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_content_translations_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "association_contents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_contents: {
+        Row: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          cree_le: string
+          id: string
+          image_url: string | null
+          maj_le: string
+          minutes: number | null
+          ordre: number
+          publie_le: string | null
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          vedette: boolean
+        }
+        Insert: {
+          acces?: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          cree_le?: string
+          id?: string
+          image_url?: string | null
+          maj_le?: string
+          minutes?: number | null
+          ordre?: number
+          publie_le?: string | null
+          slug: string
+          statut?: Database["public"]["Enums"]["translation_status"]
+          vedette?: boolean
+        }
+        Update: {
+          acces?: Database["public"]["Enums"]["association_access"]
+          categorie?: Database["public"]["Enums"]["association_category"]
+          cree_le?: string
+          id?: string
+          image_url?: string | null
+          maj_le?: string
+          minutes?: number | null
+          ordre?: number
+          publie_le?: string | null
+          slug?: string
+          statut?: Database["public"]["Enums"]["translation_status"]
+          vedette?: boolean
+        }
+        Relationships: []
+      }
       book_pages: {
         Row: {
           chemin_allegee: string
@@ -186,10 +269,85 @@ export type Database = {
           },
         ]
       }
+      book_reviews: {
+        Row: {
+          auteur_affiche: string
+          book_id: string
+          cree_le: string
+          id: string
+          maj_le: string
+          modere_le: string | null
+          modere_par: string | null
+          motif_rejet: string | null
+          note: number
+          statut: Database["public"]["Enums"]["review_status"]
+          texte: string
+          user_id: string
+        }
+        Insert: {
+          auteur_affiche: string
+          book_id: string
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          modere_le?: string | null
+          modere_par?: string | null
+          motif_rejet?: string | null
+          note: number
+          statut?: Database["public"]["Enums"]["review_status"]
+          texte: string
+          user_id: string
+        }
+        Update: {
+          auteur_affiche?: string
+          book_id?: string
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          modere_le?: string | null
+          modere_par?: string | null
+          motif_rejet?: string | null
+          note?: number
+          statut?: Database["public"]["Enums"]["review_status"]
+          texte?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "book_reviews_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "book_popularity"
+            referencedColumns: ["book_id"]
+          },
+          {
+            foreignKeyName: "book_reviews_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_reviews_modere_par_fkey"
+            columns: ["modere_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "book_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       book_translations: {
         Row: {
           book_id: string
           cree_le: string
+          description: string | null
           fichier_lecture: string | null
           fichier_telechargement: string | null
           id: string
@@ -204,6 +362,7 @@ export type Database = {
         Insert: {
           book_id: string
           cree_le?: string
+          description?: string | null
           fichier_lecture?: string | null
           fichier_telechargement?: string | null
           id?: string
@@ -218,6 +377,7 @@ export type Database = {
         Update: {
           book_id?: string
           cree_le?: string
+          description?: string | null
           fichier_lecture?: string | null
           fichier_telechargement?: string | null
           id?: string
@@ -1198,6 +1358,45 @@ export type Database = {
           },
         ]
       }
+      plan_prices: {
+        Row: {
+          devise: string
+          maj_le: string
+          montant: number
+          plan_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Insert: {
+          devise: string
+          maj_le?: string
+          montant: number
+          plan_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Update: {
+          devise?: string
+          maj_le?: string
+          montant?: number
+          plan_id?: string
+          zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_prices_devise_fkey"
+            columns: ["devise"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "plan_prices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       promo_codes: {
         Row: {
           actif: boolean
@@ -1381,12 +1580,58 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          actif: boolean
+          code: string
+          cree_le: string
+          descriptif_en: string | null
+          descriptif_fr: string | null
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id: string
+          libelle_en: string
+          libelle_fr: string
+          maj_le: string
+          ordre: number
+          periode: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          cree_le?: string
+          descriptif_en?: string | null
+          descriptif_fr?: string | null
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id?: string
+          libelle_en: string
+          libelle_fr: string
+          maj_le?: string
+          ordre?: number
+          periode: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          cree_le?: string
+          descriptif_en?: string | null
+          descriptif_fr?: string | null
+          domaine?: Database["public"]["Enums"]["subscription_domain"]
+          id?: string
+          libelle_en?: string
+          libelle_fr?: string
+          maj_le?: string
+          ordre?: number
+          periode?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           annule_le: string | null
           cree_le: string
           debut_periode: string
           devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
           fin_periode: string
           id: string
           id_prestataire: string | null
@@ -1395,6 +1640,7 @@ export type Database = {
           maj_le: string
           montant: number
           offre: string
+          plan_id: string | null
           statut: Database["public"]["Enums"]["subscription_status"]
           user_id: string
           zone: Database["public"]["Enums"]["price_zone"]
@@ -1404,6 +1650,7 @@ export type Database = {
           cree_le?: string
           debut_periode?: string
           devise: string
+          domaine?: Database["public"]["Enums"]["subscription_domain"]
           fin_periode: string
           id?: string
           id_prestataire?: string | null
@@ -1412,6 +1659,7 @@ export type Database = {
           maj_le?: string
           montant: number
           offre: string
+          plan_id?: string | null
           statut?: Database["public"]["Enums"]["subscription_status"]
           user_id: string
           zone: Database["public"]["Enums"]["price_zone"]
@@ -1421,6 +1669,7 @@ export type Database = {
           cree_le?: string
           debut_periode?: string
           devise?: string
+          domaine?: Database["public"]["Enums"]["subscription_domain"]
           fin_periode?: string
           id?: string
           id_prestataire?: string | null
@@ -1429,6 +1678,7 @@ export type Database = {
           maj_le?: string
           montant?: number
           offre?: string
+          plan_id?: string | null
           statut?: Database["public"]["Enums"]["subscription_status"]
           user_id?: string
           zone?: Database["public"]["Enums"]["price_zone"]
@@ -1442,6 +1692,13 @@ export type Database = {
             referencedColumns: ["code"]
           },
           {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "subscriptions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1449,6 +1706,65 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      testimonial_translations: {
+        Row: {
+          langue: string
+          maj_le: string
+          role: string | null
+          testimonial_id: string
+          texte: string
+        }
+        Insert: {
+          langue: string
+          maj_le?: string
+          role?: string | null
+          testimonial_id: string
+          texte: string
+        }
+        Update: {
+          langue?: string
+          maj_le?: string
+          role?: string | null
+          testimonial_id?: string
+          texte?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonial_translations_testimonial_id_fkey"
+            columns: ["testimonial_id"]
+            isOneToOne: false
+            referencedRelation: "testimonials"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      testimonials: {
+        Row: {
+          auteur: string
+          cree_le: string
+          id: string
+          maj_le: string
+          ordre: number
+          statut: Database["public"]["Enums"]["translation_status"]
+        }
+        Insert: {
+          auteur: string
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          ordre?: number
+          statut?: Database["public"]["Enums"]["translation_status"]
+        }
+        Update: {
+          auteur?: string
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          ordre?: number
+          statut?: Database["public"]["Enums"]["translation_status"]
+        }
+        Relationships: []
       }
       users: {
         Row: {
@@ -1532,6 +1848,14 @@ export type Database = {
       }
     }
     Functions: {
+      abonnement_ouvre_droit: {
+        Args: {
+          p_at?: string
+          p_domaine: Database["public"]["Enums"]["subscription_domain"]
+          p_user: string
+        }
+        Returns: boolean
+      }
       abonnements_en_anomalie: {
         Args: { p_at?: string }
         Returns: {
@@ -1551,6 +1875,14 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      access_for_association: {
+        Args: { p_at?: string; p_slugs: string[]; p_user: string }
+        Returns: {
+          can_read: boolean
+          reason: Database["public"]["Enums"]["access_reason"]
+          slug: string
+        }[]
       }
       access_for_books: {
         Args: { p_at?: string; p_books: string[]; p_user: string }
@@ -1586,6 +1918,7 @@ export type Database = {
           cree_le: string
           debut_periode: string
           devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
           fin_periode: string
           id: string
           id_prestataire: string | null
@@ -1594,6 +1927,7 @@ export type Database = {
           maj_le: string
           montant: number
           offre: string
+          plan_id: string | null
           statut: Database["public"]["Enums"]["subscription_status"]
           user_id: string
           zone: Database["public"]["Enums"]["price_zone"]
@@ -1601,6 +1935,71 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_creer_contenu_association: {
+        Args: {
+          p_acces?: Database["public"]["Enums"]["association_access"]
+          p_acteur: string
+          p_categorie: Database["public"]["Enums"]["association_category"]
+          p_chapeau?: string
+          p_image_url?: string
+          p_minutes?: number
+          p_slug: string
+          p_titre: string
+        }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          cree_le: string
+          id: string
+          image_url: string | null
+          maj_le: string
+          minutes: number | null
+          ordre: number
+          publie_le: string | null
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          vedette: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_contents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_creer_offre: {
+        Args: {
+          p_acteur: string
+          p_code: string
+          p_descriptif_en?: string
+          p_descriptif_fr?: string
+          p_domaine: Database["public"]["Enums"]["subscription_domain"]
+          p_libelle_en: string
+          p_libelle_fr: string
+          p_ordre?: number
+          p_periode: string
+        }
+        Returns: {
+          actif: boolean
+          code: string
+          cree_le: string
+          descriptif_en: string | null
+          descriptif_fr: string | null
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id: string
+          libelle_en: string
+          libelle_fr: string
+          maj_le: string
+          ordre: number
+          periode: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscription_plans"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1684,6 +2083,30 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_enregistrer_temoignage: {
+        Args: {
+          p_acteur: string
+          p_auteur: string
+          p_id: string
+          p_ordre: number
+          p_versions: Json
+        }
+        Returns: {
+          auteur: string
+          cree_le: string
+          id: string
+          maj_le: string
+          ordre: number
+          statut: Database["public"]["Enums"]["translation_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "testimonials"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_lire_contenu_association: { Args: { p_id: string }; Returns: Json }
       admin_lire_livre: {
         Args: { p_book_id: string }
         Returns: {
@@ -1710,6 +2133,7 @@ export type Database = {
           type_document: Database["public"]["Enums"]["document_type"]
         }[]
       }
+      admin_lire_temoignage: { Args: { p_id: string }; Returns: Json }
       admin_lister_abonnements: {
         Args: { p_page?: number; p_statut?: string; p_taille?: number }
         Returns: {
@@ -1748,6 +2172,28 @@ export type Database = {
           total_lignes: number
         }[]
       }
+      admin_lister_avis: {
+        Args: {
+          p_book?: string
+          p_statut?: Database["public"]["Enums"]["review_status"]
+        }
+        Returns: {
+          auteur_affiche: string
+          auteur_email: string
+          book_id: string
+          cree_le: string
+          id: string
+          livre_slug: string
+          livre_titre: string
+          maj_le: string
+          modere_le: string
+          motif_rejet: string
+          note: number
+          statut: Database["public"]["Enums"]["review_status"]
+          texte: string
+          user_id: string
+        }[]
+      }
       admin_lister_commandes: {
         Args: {
           p_page?: number
@@ -1770,6 +2216,21 @@ export type Database = {
           total_lignes: number
           user_id: string
           zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lister_contenus_association: {
+        Args: never
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          id: string
+          langues: string[]
+          ordre: number
+          publie_le: string
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          titre: string
+          vedette: boolean
         }[]
       }
       admin_lister_livres: {
@@ -1795,6 +2256,24 @@ export type Database = {
           type_document: Database["public"]["Enums"]["document_type"]
         }[]
       }
+      admin_lister_offres: {
+        Args: never
+        Returns: {
+          abonnements: number
+          actif: boolean
+          code: string
+          descriptif_en: string
+          descriptif_fr: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id: string
+          libelle_en: string
+          libelle_fr: string
+          manques: string[]
+          ordre: number
+          periode: string
+          prix: Json
+        }[]
+      }
       admin_lister_promos: {
         Args: { p_page?: number; p_taille?: number }
         Returns: {
@@ -1809,6 +2288,19 @@ export type Database = {
           usage_max: number
           valeur: number
           zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lister_temoignages: {
+        Args: never
+        Returns: {
+          auteur: string
+          cree_le: string
+          id: string
+          langues: string[]
+          maj_le: string
+          ordre: number
+          statut: Database["public"]["Enums"]["translation_status"]
+          texte_fr: string
         }[]
       }
       admin_lister_utilisateurs: {
@@ -1831,6 +2323,66 @@ export type Database = {
           total_lignes: number
         }[]
       }
+      admin_moderer_avis: {
+        Args: {
+          p_acteur: string
+          p_avis: string
+          p_decision: Database["public"]["Enums"]["review_status"]
+          p_motif?: string
+        }
+        Returns: {
+          auteur_affiche: string
+          book_id: string
+          cree_le: string
+          id: string
+          maj_le: string
+          modere_le: string | null
+          modere_par: string | null
+          motif_rejet: string | null
+          note: number
+          statut: Database["public"]["Enums"]["review_status"]
+          texte: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "book_reviews"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_modifier_contenu_association: {
+        Args: {
+          p_acces?: Database["public"]["Enums"]["association_access"]
+          p_acteur: string
+          p_categorie?: Database["public"]["Enums"]["association_category"]
+          p_id: string
+          p_image_url?: string
+          p_minutes?: number
+          p_ordre?: number
+          p_vedette?: boolean
+        }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          cree_le: string
+          id: string
+          image_url: string | null
+          maj_le: string
+          minutes: number | null
+          ordre: number
+          publie_le: string | null
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          vedette: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_contents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_modifier_livre: {
         Args: {
           p_acteur: string
@@ -1846,6 +2398,7 @@ export type Database = {
           p_orientation?: Database["public"]["Enums"]["page_orientation"]
           p_origine_culturelle?: string
           p_region?: Database["public"]["Enums"]["region_conte"]
+          p_themes?: string[]
           p_type_document?: Database["public"]["Enums"]["document_type"]
         }
         Returns: {
@@ -1875,6 +2428,38 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "books"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_modifier_offre: {
+        Args: {
+          p_acteur: string
+          p_actif?: boolean
+          p_descriptif_en?: string
+          p_descriptif_fr?: string
+          p_id: string
+          p_libelle_en?: string
+          p_libelle_fr?: string
+          p_ordre?: number
+        }
+        Returns: {
+          actif: boolean
+          code: string
+          cree_le: string
+          descriptif_en: string | null
+          descriptif_fr: string | null
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id: string
+          libelle_en: string
+          libelle_fr: string
+          maj_le: string
+          ordre: number
+          periode: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscription_plans"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -1909,6 +2494,7 @@ export type Database = {
         Args: {
           p_acteur: string
           p_book_id: string
+          p_description?: string
           p_resume?: string
           p_titre?: string
           p_translation_id: string
@@ -1916,6 +2502,7 @@ export type Database = {
         Returns: {
           book_id: string
           cree_le: string
+          description: string | null
           fichier_lecture: string | null
           fichier_telechargement: string | null
           id: string
@@ -1964,12 +2551,115 @@ export type Database = {
         Args: { p_acteur: string; p_motif?: string }
         Returns: undefined
       }
+      admin_poser_prix_offre: {
+        Args: {
+          p_acteur: string
+          p_devise: string
+          p_id: string
+          p_montant: number
+          p_zone: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          devise: string
+          maj_le: string
+          montant: number
+          plan_id: string
+          zone: Database["public"]["Enums"]["price_zone"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "plan_prices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_poser_version_association: {
+        Args: {
+          p_acteur: string
+          p_chapeau?: string
+          p_corps?: Json
+          p_id: string
+          p_langue: string
+          p_titre: string
+        }
+        Returns: {
+          chapeau: string
+          content_id: string
+          corps: Json
+          id: string
+          langue: string
+          maj_le: string
+          titre: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_content_translations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_publier_contenu_association: {
+        Args: { p_acteur: string; p_id: string; p_publie: boolean }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          cree_le: string
+          id: string
+          image_url: string | null
+          maj_le: string
+          minutes: number | null
+          ordre: number
+          publie_le: string | null
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          vedette: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_contents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_publier_temoignage: {
+        Args: { p_acteur: string; p_id: string; p_publie: boolean }
+        Returns: {
+          auteur: string
+          cree_le: string
+          id: string
+          maj_le: string
+          ordre: number
+          statut: Database["public"]["Enums"]["translation_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "testimonials"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_retirer_droit: {
         Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
         Returns: undefined
       }
+      admin_supprimer_avis: {
+        Args: { p_acteur: string; p_avis: string }
+        Returns: undefined
+      }
+      admin_supprimer_contenu_association: {
+        Args: { p_acteur: string; p_id: string }
+        Returns: undefined
+      }
       admin_supprimer_livre: {
         Args: { p_acteur: string; p_book_id: string; p_motif: string }
+        Returns: undefined
+      }
+      admin_supprimer_offre: {
+        Args: { p_acteur: string; p_id: string }
+        Returns: undefined
+      }
+      admin_supprimer_temoignage: {
+        Args: { p_acteur: string; p_id: string }
         Returns: undefined
       }
       admin_tableau_de_bord: { Args: never; Returns: Json }
@@ -1998,6 +2688,51 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      association_contenu: {
+        Args: {
+          p_at?: string
+          p_langue?: string
+          p_slug: string
+          p_user: string
+        }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          can_read: boolean
+          categorie: Database["public"]["Enums"]["association_category"]
+          chapeau: string
+          corps: Json
+          image_url: string
+          minutes: number
+          publie_le: string
+          reason: Database["public"]["Enums"]["access_reason"]
+          slug: string
+          titre: string
+        }[]
+      }
+      association_liste: {
+        Args: { p_at?: string; p_langue?: string; p_user?: string }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          can_read: boolean
+          categorie: Database["public"]["Enums"]["association_category"]
+          chapeau: string
+          image_url: string
+          minutes: number
+          publie_le: string
+          reason: Database["public"]["Enums"]["access_reason"]
+          slug: string
+          titre: string
+          vedette: boolean
+        }[]
+      }
+      book_review_summary: {
+        Args: { p_books: string[] }
+        Returns: {
+          book_id: string
+          moyenne: number
+          nombre: number
+        }[]
+      }
       catalog_facets: { Args: { p_langue?: string }; Returns: Json }
       catalog_list: {
         Args: {
@@ -2009,7 +2744,6 @@ export type Database = {
           p_origine?: string
           p_page?: number
           p_recherche?: string
-          p_region?: Database["public"]["Enums"]["region_conte"]
           p_taille?: number
           p_themes?: string[]
           p_tri?: string
@@ -2177,9 +2911,9 @@ export type Database = {
           langue_reprise: string
           langues: string[]
           peut_telecharger: boolean
-          region: Database["public"]["Enums"]["region_conte"]
           slug: string
           source: string
+          themes: string[]
           titre: string
         }[]
       }
@@ -2192,6 +2926,38 @@ export type Database = {
         Returns: undefined
       }
       motif_courant: { Args: never; Returns: string }
+      offre_par_code: {
+        Args: {
+          p_code: string
+          p_zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          code: string
+          devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          id: string
+          montant: number
+          periode: string
+        }[]
+      }
+      offres_publiques: {
+        Args: {
+          p_domaine?: Database["public"]["Enums"]["subscription_domain"]
+          p_zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          code: string
+          descriptif_en: string
+          descriptif_fr: string
+          devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          libelle_en: string
+          libelle_fr: string
+          montant: number
+          ordre: number
+          periode: string
+        }[]
+      }
       ouvrir_famille_jetons: {
         Args: { p_hash: string; p_user_id: string }
         Returns: string
@@ -2370,6 +3136,15 @@ export type Database = {
             Returns: Database["public"]["Enums"]["subscription_status_effectif"]
           }
       taille_page_admin: { Args: { p_demandee: number }; Returns: number }
+      temoignages: {
+        Args: { p_langue?: string; p_limite?: number }
+        Returns: {
+          auteur: string
+          id: string
+          role: string
+          texte: string
+        }[]
+      }
       themes_texte: { Args: { p_themes: string[] }; Returns: string }
       titres_publies: { Args: never; Returns: number }
     }
@@ -2381,6 +3156,14 @@ export type Database = {
         | "free"
         | "preview"
         | "none"
+      association_access: "libre" | "abonnes"
+      association_category:
+        | "vie-associative"
+        | "actions"
+        | "accompagnement"
+        | "pedagogie"
+        | "culture"
+        | "besoins-specifiques"
       book_status: "brouillon" | "publie" | "archive"
       document_type: "conte" | "livret_pedagogique"
       download_format: "pdf" | "epub"
@@ -2397,6 +3180,8 @@ export type Database = {
         | "afrique_centrale"
         | "afrique_australe"
         | "afrique_est"
+      review_status: "en_attente" | "publie" | "rejete"
+      subscription_domain: "lecture" | "association"
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
       subscription_status_effectif:
         | "essai"
@@ -2562,6 +3347,15 @@ export const Constants = {
         "preview",
         "none",
       ],
+      association_access: ["libre", "abonnes"],
+      association_category: [
+        "vie-associative",
+        "actions",
+        "accompagnement",
+        "pedagogie",
+        "culture",
+        "besoins-specifiques",
+      ],
       book_status: ["brouillon", "publie", "archive"],
       document_type: ["conte", "livret_pedagogique"],
       download_format: ["pdf", "epub"],
@@ -2579,6 +3373,8 @@ export const Constants = {
         "afrique_australe",
         "afrique_est",
       ],
+      review_status: ["en_attente", "publie", "rejete"],
+      subscription_domain: ["lecture", "association"],
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
       subscription_status_effectif: [
         "essai",

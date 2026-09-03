@@ -115,7 +115,8 @@ const RAYONS: EntreeNav[] = [
 
 const NAVIGATION: EntreeNav[] = [
   { cle: 'navigation.offres', chemin: 'offres' },
-  { cle: 'navigation.blog', chemin: 'blog' },
+  { cle: 'navigation.association', chemin: 'association' },
+  { cle: 'navigation.expertise', chemin: 'expertise' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
   { cle: 'pied.contact', chemin: 'contact' },
 ];
@@ -415,7 +416,10 @@ export function PiedDePageV2({
             <a href={`/${langue}/offres`}>{traduire(langue, 'offres.achatTitre')}</a>
           </li>
           <li>
-            <a href={`/${langue}/blog`}>{traduire(langue, 'navigation.blog')}</a>
+            <a href={`/${langue}/association`}>{traduire(langue, 'navigation.association')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/expertise`}>{traduire(langue, 'navigation.expertise')}</a>
           </li>
         </ColonnePied>
 

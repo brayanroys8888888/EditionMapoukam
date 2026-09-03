@@ -170,56 +170,65 @@ describe('filtres', () => {
     expect(page.entrees.every((e) => e.disponible_achat)).toBe(true);
   });
 
-  it('filtre par région', async () => {
+  it('filtre par thème', async () => {
     // ┌────────────────────────────────────────────────────────────────────┐
-    // │ CE FILTRE A MANQUÉ JUSQU'À L'ÉTAPE F4.                             │
+    // │ LE THÈME A REMPLACÉ LA RÉGION — migration 0071.                    │
     // │                                                                    │
-    // │ `catalog_facets` rendait les régions avec leur effectif — ce qui    │
-    // │ n'a d'usage que pour des pastilles — mais `catalog_list` n'avait    │
-    // │ aucun paramètre. Zod retirant les clés inconnues, `?region=…`       │
-    // │ n'était pas refusé : il était IGNORÉ, et le catalogue entier        │
-    // │ répondait sous une URL qui promettait une région.                   │
+    // │ `?region=…` a longtemps été le seul rangement du catalogue, et il   │
+    // │ ne rangeait que les contes : un livret pédagogique n'a pas de       │
+    // │ région d'origine, et poser le filtre le faisait disparaître sans    │
+    // │ rien annoncer. Le thème vaut pour les deux supports.                │
+    // │                                                                    │
+    // │ Ce qui est éprouvé ici est le même invariant qu'avant : le          │
+    // │ paramètre AGIT, il n'est pas retiré en silence par Zod.             │
     // └────────────────────────────────────────────────────────────────────┘
-    const page = await corpsJson<PageCatalogue>(
-      await catalogue(params({ region: 'afrique_centrale' })),
-    );
+    const page = await corpsJson<PageCatalogue>(await catalogue(params({ themes: 'nature' })));
 
     expect(page.entrees.length).toBeGreaterThan(0);
     for (const entree of page.entrees) {
-      expect(entree.region).toBe('afrique_centrale');
+      expect(entree.themes).toContain('nature');
     }
   });
 
-  it('une autre région rend d’autres titres — le contre-test', async () => {
+  it('un autre thème rend d’autres titres — le contre-test', async () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ SANS CETTE ASSERTION, UN FILTRE QUI IGNORERAIT SON PARAMÈTRE       │
-    // │ PASSERAIT LE TEST PRÉCÉDENT dès lors que la région demandée serait  │
-    // │ la plus représentée. C'est exactement le défaut qu'on vient de      │
-    // │ corriger : il faut prouver que la valeur AGIT.                      │
+    // │ PASSERAIT LE TEST PRÉCÉDENT dès lors que le thème demandé serait    │
+    // │ le plus représenté. Il faut prouver que la valeur AGIT.             │
     // └────────────────────────────────────────────────────────────────────┘
-    const centrale = await corpsJson<PageCatalogue>(
-      await catalogue(params({ region: 'afrique_centrale' })),
-    );
-    const sahel = await corpsJson<PageCatalogue>(await catalogue(params({ region: 'sahel' })));
+    const nature = await corpsJson<PageCatalogue>(await catalogue(params({ themes: 'nature' })));
+    const musique = await corpsJson<PageCatalogue>(await catalogue(params({ themes: 'musique' })));
 
-    expect(centrale.entrees.length).toBeGreaterThan(0);
-    expect(sahel.entrees.length).toBeGreaterThan(0);
+    expect(nature.entrees.length).toBeGreaterThan(0);
+    expect(musique.entrees.length).toBeGreaterThan(0);
 
-    const slugsCentrale = new Set(centrale.entrees.map((e) => e.slug));
-    for (const entree of sahel.entrees) {
-      expect(slugsCentrale.has(entree.slug)).toBe(false);
+    const slugsNature = new Set(nature.entrees.map((e) => e.slug));
+    for (const entree of musique.entrees) {
+      expect(slugsNature.has(entree.slug)).toBe(false);
     }
 
-    expect(centrale.total).not.toBe(sahel.total);
+    expect(nature.total).not.toBe(musique.total);
   });
 
-  it('refuse une région inconnue plutôt que de l’ignorer', async () => {
-    // L'énumération est fermée côté Zod : une valeur hors liste est une erreur
-    // de validation, et non un filtre silencieusement abandonné.
-    const reponse = await catalogue(params({ region: 'atlantide' }));
+  it('un thème inconnu rend une page VIDE, et non le catalogue entier', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ POURQUOI CE N'EST PAS UNE ERREUR 400.                              │
+    // │                                                                    │
+    // │ La région était une énumération fermée, et une valeur hors liste    │
+    // │ était refusée par Zod. Les thèmes sont de la SAISIE LIBRE : ils     │
+    // │ naissent et meurent au rythme du catalogue, et aucune liste fermée  │
+    // │ ne pourrait les suivre sans une migration par thème ajouté.         │
+    // │                                                                    │
+    // │ Le contrat devient donc : le filtre s'applique, et ne trouve rien.  │
+    // │ Ce qui reste interdit — et c'est là tout l'objet du test — est de   │
+    // │ RETOMBER sur le catalogue entier sous une URL qui promet un thème.  │
+    // └────────────────────────────────────────────────────────────────────┘
+    const reponse = await catalogue(params({ themes: 'atlantide' }));
 
-    expect(reponse.status).toBe(400);
-    expect((await corpsJson<ReponseErreur>(reponse)).erreur.code).toBe('requete_invalide');
+    expect(reponse.status).toBe(200);
+    const page = await corpsJson<PageCatalogue>(reponse);
+    expect(page.entrees).toEqual([]);
+    expect(page.total).toBe(0);
   });
 });
 

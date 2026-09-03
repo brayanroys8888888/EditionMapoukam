@@ -38,6 +38,15 @@ const evenementSchema = z.object({
         .optional(),
       offre: z.enum(['mensuel', 'annuel']).optional(),
       /**
+       * Domaine de l'abonnement visé — §3.6. Absent = `lecture`.
+       *
+       * Sans lui, la console ne pourrait éprouver le renouvellement, l'impayé
+       * et l'expiration que sur l'abonnement de lecture : les scénarios de
+       * l'abonnement associatif resteraient hors d'atteinte.
+       */
+      domaine: z.enum(['lecture', 'association']).optional(),
+      planId: z.uuid().optional(),
+      /**
        * Zone tarifaire, figée à la souscription (D4 point 7).
        *
        * Chez un prestataire réel, elle vient du pays du moyen de paiement.

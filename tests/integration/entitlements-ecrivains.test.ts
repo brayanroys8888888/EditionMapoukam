@@ -68,6 +68,16 @@ const ECRIVAINS_ADMIS: readonly { fichier: string; role: string }[] = [
     role: 'CONSOLE /dev — reprise de la remise à zéro, étendue aux copies filigranées',
   },
   {
+    fichier: 'supabase/migrations/20260903000072_avis_des_lecteurs.sql',
+    role:
+      'AUCUN — la migration des avis redéclare `anonymize_user` et `dev_reset` pour y ' +
+      'ajouter l’effacement de `book_reviews`, et reprend le reste VERBATIM. Les deux ' +
+      'écritures sur `entitlements` sont donc celles des migrations 0014 et 0043, à la ' +
+      'ligne près : aucun droit nouveau n’est accordé ni retiré ici. La seule ' +
+      'décision prise est l’ORDRE — l’avis part avant le droit, parce que sans droit ' +
+      'plus rien ne dirait pourquoi cet avis avait pu être écrit.',
+  },
+  {
     fichier: 'supabase/migrations/20260802000043_refus_explicite_et_reset.sql',
     role:
       'CONSOLE /dev — troisième déclaration de la remise à zéro, étendue aux lignées de ' +

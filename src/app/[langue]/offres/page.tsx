@@ -80,7 +80,7 @@ export default async function PageOffres({ params }: Parametres) {
     return <Erreur langue={langue} code="erreur_interne" />;
   }
 
-  const { abonnement, achat_unite: achat } = offres;
+  const { abonnement, association, achat_unite: achat } = offres;
 
   /*
    * La variante de LANCEMENT — pilotée par un réglage serveur,
@@ -94,6 +94,17 @@ export default async function PageOffres({ params }: Parametres) {
   // affiche le prix d'entrée, et la note dit l'autre périodicité.
   const principale = abonnement.offres[0] ?? null;
   const secondaire = abonnement.offres[1] ?? null;
+
+  /*
+   * L'ADHÉSION EST AFFICHÉE SI, ET SEULEMENT SI, UNE OFFRE EXISTE.
+   *
+   * `offres_publiques` ne rend que les formules actives QUI ONT UN PRIX dans
+   * la zone demandée (§4.3 F12 bis). Un bandeau « Adhérer » posé sans cette
+   * garde mènerait, les jours où l'éditeur n'a encore rien tarifé, à un tunnel
+   * qui refuse — soit l'exacte impasse que le bouton de l'abonnement a déjà
+   * eue une fois.
+   */
+  const adhesion = association.offres[0] ?? null;
 
   const intro = traduire(langue, 'offres.comparatifIntro').split(/<lire>|<garder>/);
 
@@ -383,6 +394,63 @@ export default async function PageOffres({ params }: Parametres) {
           </div>
         </section>
       )}
+
+      {/* ── L'adhésion à l'Association Dave ──────────────────────────────── */}
+      {/*
+        ┌──────────────────────────────────────────────────────────────────────┐
+        │ EN BAS, ET HORS DU COMPARATIF — LES DEUX SONT VOULUS.                │
+        │                                                                      │
+        │ L'adhésion n'est pas une troisième façon d'obtenir les contes : elle │
+        │ ouvre un AUTRE contenu (§3.6). Lui donner une troisième colonne dans │
+        │ le tableau l'aurait fait lire comme une variante de l'abonnement,    │
+        │ alors que les deux abonnements sont étanches — celui de lecture      │
+        │ n'ouvre pas l'association, celui de l'association n'ouvre pas le     │
+        │ catalogue, et aucun des deux ne donne le téléchargement.             │
+        │                                                                      │
+        │ Le bandeau reste visible AU LANCEMENT, quand l'abonnement de lecture │
+        │ est fermé : `abonnement_ouvert` est un interrupteur commercial qui   │
+        │ ne parle que du catalogue, et l'association ne l'attend pas.         │
+        └──────────────────────────────────────────────────────────────────────┘
+      */}
+      {adhesion ? (
+        <section className={styles.association}>
+          <div className={styles.associationTexte}>
+            <h2 className={styles.associationTitre}>
+              {traduire(langue, 'offres.associationTitre')}
+            </h2>
+            <p className={styles.associationCorps}>
+              {traduire(langue, 'offres.associationCorps')}
+            </p>
+          </div>
+
+          <div className={styles.associationAction}>
+            <p className={styles.associationPrix}>
+              {adhesion.affichage}{' '}
+              <span className={styles.associationUnite}>
+                {traduire(langue, 'offres.abonnementParPeriode').replace(
+                  '{periode}',
+                  adhesion.periode,
+                )}
+              </span>
+            </p>
+
+            <a
+              className={styles.boutonPrimaire}
+              href={`/${langue}/abonnement/souscrire?domaine=association`}
+            >
+              {traduire(langue, 'offres.associationAdherer')}
+            </a>
+
+            {/* Le second chemin : une partie des contenus est en accès libre,
+                et l'espace se visite sans adhérer. */}
+            <a className={styles.associationLien} href={`/${langue}/association`}>
+              {traduire(langue, 'offres.associationVisiter')}
+            </a>
+
+            <p className={styles.noteBouton}>{traduire(langue, 'offres.associationNote')}</p>
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

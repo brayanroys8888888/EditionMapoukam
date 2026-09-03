@@ -143,7 +143,7 @@ export function SqueletteFiche({ langue }: { langue: LangueInterface }): ReactNo
   );
 }
 
-/** La liste du blog — un article en vedette, puis des cartes. */
+/** La liste de l'espace associatif — un contenu en vedette, puis des cartes. */
 export function SqueletteArticles({
   langue,
   nombre = 4,

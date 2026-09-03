@@ -380,6 +380,15 @@ export function PiedDePage({
           <li>
             <a href={`/${langue}/offres`}>{traduire(langue, 'offres.achatTitre')}</a>
           </li>
+          {/*
+            L'entrée d'expertise est ici parce qu'elle DOIT exister dans les
+            deux thèmes : `NEXT_PUBLIC_DESIGN_VERSION` ne change que
+            l'apparence, jamais ce que le site contient. L'en-tête V1 n'a pas
+            de rangée secondaire où la loger — le pied, lui, en a une.
+          */}
+          <li>
+            <a href={`/${langue}/expertise`}>{traduire(langue, 'navigation.expertise')}</a>
+          </li>
           <li>
             <a href={`/${langue}/conditions-generales`}>{traduire(langue, 'pied.cgv')}</a>
           </li>
