@@ -68,6 +68,10 @@ const nextConfig: NextConfig = {
     '/api/admin/books/ingest': MOTEUR_DE_RENDU,
     '/[langue]/admin/contes/nouveau': MOTEUR_DE_RENDU,
     '/[langue]/admin/contes/[id]': MOTEUR_DE_RENDU,
+    // Le dépôt d'un livret suit la MÊME règle : `deposerLivret` appelle
+    // `ingererRoute` en mémoire, donc le moteur tourne dans la fonction de cet
+    // écran-là. L'oublier ne se verrait qu'en ligne, au premier livret déposé.
+    '/[langue]/admin/livrets/nouveau': MOTEUR_DE_RENDU,
   },
 
   experimental: {
@@ -103,6 +107,33 @@ const nextConfig: NextConfig = {
      * └──────────────────────────────────────────────────────────────────────┘
      */
     serverActions: { bodySizeLimit: '100mb' },
+
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ LE QUATRIÈME PLAFOND, ET IL TRONQUE AU LIEU DE REFUSER.              │
+     * │                                                                      │
+     * │ Next 16 borne à 10 Mo le corps de TOUTE requête dès qu'un proxy —     │
+     * │ notre `middleware.ts` — est déclaré. Ce plafond-là ne rejette pas :   │
+     * │ il COUPE le flux à dix mégaoctets et laisse la suite se dérouler sur  │
+     * │ un corps amputé. Le formulaire multipart s'arrête donc au milieu      │
+     * │ d'une frontière, et l'éditeur reçoit « Unexpected end of form » —     │
+     * │ une erreur de syntaxe, là où la cause est une taille.                 │
+     * │                                                                      │
+     * │ Un plafond qui tronque est pire que celui de 1 Mo déjà rencontré :    │
+     * │ celui-là refusait, celui-ci laisse croire que le fichier est corrompu.│
+     * │                                                                      │
+     * │ Même nombre que les trois autres — `TAILLE_MAX_OCTETS`, le           │
+     * │ `bodySizeLimit` ci-dessus, la limite du bucket `book-sources`         │
+     * │ (migration 0020) — pour que le refus vienne de la route d'ingestion,  │
+     * │ qui sait dire pourquoi. `tests/unit/plafond-depot.test.ts` échoue     │
+     * │ s'ils divergent.                                                      │
+     * │                                                                      │
+     * │ `proxyClientMaxBodySize` et non `middlewareClientMaxBodySize` : le    │
+     * │ second est le nom déprécié du même réglage, et les déclarer tous les  │
+     * │ deux est une erreur de configuration fatale au démarrage.             │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    proxyClientMaxBodySize: '100mb',
   },
 
   headers() {

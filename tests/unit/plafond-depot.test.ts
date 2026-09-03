@@ -59,6 +59,40 @@ describe('le plafond de corps des Server Actions', () => {
     expect(enOctets(trouve?.[1] ?? '')).toBe(TAILLE_MAX_OCTETS);
   });
 
+  it('n’est PAS le seul plafond : celui du proxy le rendrait sans effet', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE MÊME DÉFAUT, REVENU PAR UNE AUTRE PORTE.                        │
+    // │                                                                    │
+    // │ `bodySizeLimit` était bien à cent mégaoctets, et le dépôt d'un      │
+    // │ livret de plus de dix mégaoctets échouait quand même : Next 16      │
+    // │ borne à 10 Mo le corps de toute requête dès qu'un proxy est         │
+    // │ déclaré — et `middleware.ts` en est un.                             │
+    // │                                                                    │
+    // │ Ce plafond-là ne refuse pas, il TRONQUE. Le formulaire multipart    │
+    // │ s'arrêtait au milieu, et l'éditeur lisait « Unexpected end of       │
+    // │ form » : une erreur de syntaxe pour une cause de taille.            │
+    // └────────────────────────────────────────────────────────────────────┘
+    expect(CONFIG).toMatch(/proxyClientMaxBodySize\s*:\s*'[^']+'/);
+  });
+
+  it('vaut le MÊME nombre que le plafond du proxy', () => {
+    const action = /bodySizeLimit\s*:\s*'([^']+)'/.exec(CONFIG);
+    const proxy = /proxyClientMaxBodySize\s*:\s*'([^']+)'/.exec(CONFIG);
+
+    expect(enOctets(proxy?.[1] ?? '')).toBe(TAILLE_MAX_OCTETS);
+    expect(enOctets(proxy?.[1] ?? '')).toBe(enOctets(action?.[1] ?? ''));
+  });
+
+  it('n’emploie pas le nom déprécié, que Next refuse de cumuler', () => {
+    // `experimental.middlewareClientMaxBodySize` est l'ancien nom du même
+    // réglage. Déclarer les deux n'est pas une redondance inoffensive : Next
+    // lève au démarrage, et le serveur ne part plus du tout.
+    // Le nom peut être CITÉ en commentaire — il l'est juste au-dessus, et
+    // dans la configuration, pour expliquer le choix. Ce qui est interdit,
+    // c'est de le DÉCLARER.
+    expect(CONFIG).not.toMatch(/middlewareClientMaxBodySize\s*:/);
+  });
+
   it('dépasse largement le plus lourd des contes du corpus', () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ Le contre-test, et il compte autant que l'égalité ci-dessus.        │
