@@ -162,7 +162,7 @@ RPC aux fonctions réellement présentes dans le type généré. Une fonction aj
 en SQL et non régénérée **ne compile pas** — ce qui est le comportement voulu.
 
 Les migrations sont numérotées et **jamais modifiées après application** : on
-ajoute une migration corrective. Le dépôt en est à la **0065**.
+ajoute une migration corrective. Le dépôt en est à la **0066**.
 
 ## Architecture — les quatre couches, et ce qui les sépare
 
@@ -358,6 +358,18 @@ gestionnaire de webhooks. Elle ne modifie jamais la base de données directement
   L'accès d'un livret est donc **modulaire, titre par titre** : offert, inclus
   dans l'abonnement, vendu à l'unité, ou plusieurs à la fois. Décision de
   l'éditeur du 2 septembre 2026, inscrite au cahier des charges §3.5.
+- **La région du catalogue ne bloque plus la publication.** Décision de
+  l'éditeur du 3 septembre 2026, migration `0066` : la branche `region` a
+  quitté `manques_pour_publication`. Une fiche d'activités n'a pas de région
+  d'origine, et la contrainte n'avait plus de sens sur la moitié du catalogue.
+
+  Ce qui disparaît est le pouvoir de BLOQUER, pas la donnée : la colonne,
+  l'énumération à cinq valeurs, la facette du catalogue public et le champ
+  d'administration restent. Un titre sans région s'affiche en teinte
+  `inconnue` et ne ressort sous aucun filtre de région — ce qui est exact,
+  puisqu'il n'en a pas. `manques_pour_publication` reste l'unique
+  implémentation, et ne lit toujours **jamais** `type_document`.
+
 - **Il n'y a AUCUN délai entre la publication et l'entrée dans l'abonnement.**
   Un titre publié et marqué `inclus_abonnement` est lisible par un abonné à
   l'instant même. `publie_le` ordonne le catalogue ; elle n'ouvre et ne ferme

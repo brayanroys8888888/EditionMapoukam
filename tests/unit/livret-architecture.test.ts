@@ -39,6 +39,118 @@ const ROUTE = readFileSync(
 
 const PIPELINE = readFileSync(join(RACINE, 'src', 'lib', 'ingestion', 'pipeline.ts'), 'utf8');
 
+const LISTE_PARTAGEE = readFileSync(
+  join(RACINE, 'src', 'app', '[langue]', 'admin', 'liste-livres.tsx'),
+  'utf8',
+);
+
+const ONGLET = readFileSync(
+  join(RACINE, 'src', 'app', '[langue]', 'admin', 'livrets', 'page.tsx'),
+  'utf8',
+);
+
+const ONGLET_CONTES = readFileSync(
+  join(RACINE, 'src', 'app', '[langue]', 'admin', 'contes', 'page.tsx'),
+  'utf8',
+);
+
+const RAIL = readFileSync(join(RACINE, 'src', 'components', 'admin', 'index.tsx'), 'utf8');
+
+const FICHE = readFileSync(
+  join(RACINE, 'src', 'app', '[langue]', 'admin', 'contes', '[id]', 'page.tsx'),
+  'utf8',
+);
+
+describe('L’ONGLET DES LIVRETS EST UNE VUE, PAS UN SECOND CATALOGUE', () => {
+  /**
+   * ┌────────────────────────────────────────────────────────────────────┐
+   * │ DEUX ÉCRANS QUI MONTRENT LE MÊME TABLEAU N'ONT LE DROIT DE L'ÉCRIRE     │
+   * │ QU'UNE FOIS.                                                           │
+   * │                                                                        │
+   * │ Recopié, ce tableau aurait divergé au premier champ ajouté — et c'est   │
+   * │ toujours la copie oubliée qui reste en production, parce que personne   │
+   * │ ne la relit. Le test lit donc la TAILLE des deux écrans : au-delà d'un  │
+   * │ seuil, ils ont recommencé à écrire ce que la vue partagée porte déjà.  │
+   * └────────────────────────────────────────────────────────────────────┘
+   */
+  it('les deux écrans lisent LA MÊME vue, et n’écrivent pas de tableau', () => {
+    for (const [nom, source] of [
+      ['livrets', ONGLET],
+      ['contes', ONGLET_CONTES],
+    ] as const) {
+      expect(source, nom).toContain('ListeLivres');
+      expect(source, nom).not.toContain('<table');
+      expect(source, nom).not.toContain('listerLivres');
+    }
+
+    expect(LISTE_PARTAGEE).toContain('<table');
+    expect(LISTE_PARTAGEE).toContain('listerLivres');
+  });
+
+  it('l’onglet des livrets IMPOSE son support, il ne le filtre pas', () => {
+    // Un support posé depuis `?type=` serait un filtre déguisé : l'écran des
+    // livrets montrerait des contes à qui saurait écrire l'adresse.
+    expect(ONGLET).toContain('typeImpose="livret_pedagogique"');
+    expect(ONGLET_CONTES).toContain('typeImpose={null}');
+    // Et la vue partagée ne regarde `?type=` que si l'écran ne l'impose pas.
+    expect(LISTE_PARTAGEE).toContain('typeImpose === null &&');
+  });
+
+  it('les deux écrans passent par `exigerAdministrateur`', () => {
+    // La vue partagée n'est PAS un `page.tsx` : elle n'est pas une entrée, et
+    // la garde reste sur les écrans, où `admin-architecture` va la chercher.
+    for (const [nom, source] of [
+      ['livrets', ONGLET],
+      ['contes', ONGLET_CONTES],
+    ] as const) {
+      expect(source, nom).toContain('exigerAdministrateur');
+    }
+  });
+
+  it('le rail porte l’onglet, sans quoi l’écran serait inatteignable', () => {
+    expect(RAIL).toContain("{ cle: 'admin.livrets', chemin: '/livrets' }");
+  });
+});
+
+describe('LA FICHE D’ÉDITION PARLE DU SUPPORT QU’ELLE OUVRE', () => {
+  /**
+   * ┌────────────────────────────────────────────────────────────────────┐
+   * │ UNE SEULE FICHE, DEUX JEUX DE MOTS — ET LE CHOIX SE FAIT SUR LA        │
+   * │ DONNÉE, PAS SUR L'ADRESSE.                                             │
+   * │                                                                        │
+   * │ Un livret s'ouvrait sous « Champs du conte », et « Retour aux contes »  │
+   * │ ramenait dans un rayon qui n'était pas le sien. Lire le support sur le │
+   * │ titre ouvert, et non sur le chemin emprunté, garde les mots justes      │
+   * │ quel que soit le lien suivi.                                           │
+   * └────────────────────────────────────────────────────────────────────┘
+   */
+  it('elle choisit ses libellés sur `type_document`, pas sur le chemin', () => {
+    expect(FICHE).toContain('MOTS[conte.type_document]');
+  });
+
+  it('les deux supports ont un jeu COMPLET, sans mot de conte qui traîne', () => {
+    // Chaque clé `conte*` de la table a sa jumelle `livret*` : c'est ce qui
+    // empêche d'ajouter un libellé d'un côté seulement, ce qui ne se verrait
+    // qu'en ouvrant un livret.
+    const table = /const MOTS = \{([\s\S]*?)\} as const/.exec(FICHE)?.[1] ?? '';
+    expect(table).not.toBe('');
+
+    const cles = [...table.matchAll(/^\s{4}(\w+):/gm)].map((c) => c[1]);
+    const conte = cles.slice(0, cles.length / 2);
+    const livret = cles.slice(cles.length / 2);
+
+    expect(conte.length).toBeGreaterThan(5);
+    expect(livret).toEqual(conte);
+  });
+
+  it('la suppression d’un livret ramène dans le rayon des LIVRETS', () => {
+    // Le rayon est LIÉ par l'écran, jamais lu dans le formulaire : un champ
+    // caché aurait laissé le navigateur choisir la destination.
+    expect(FICHE).toContain('supprimerConte.bind(null, langue, conte.id, mots.rayon)');
+    expect(ACTIONS).toContain('const liste = `/${langue}/admin${rayon}`;');
+  });
+});
+
 describe('LE TYPE EST IMPOSÉ PAR L’ÉCRAN, JAMAIS LU DANS LE FORMULAIRE', () => {
   /**
    * ┌────────────────────────────────────────────────────────────────────────┐
@@ -84,6 +196,22 @@ describe('L’ÉCRAN DE DÉPÔT PORTE SES DEUX GARDE-FOUS', () => {
     // Redondant avec `admin-architecture`, et délibérément : celui-ci nomme
     // l'écran, si bien qu'un échec dit lequel plutôt que « un écran ».
     expect(ECRAN).toMatch(/exigerAdministrateur\s*\(/);
+  });
+
+  it('il embarque le moteur de rendu, pour la MÊME raison que `maxDuration`', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Le travail tourne dans la fonction de CET écran-ci, pas dans celle  │
+    // │ de la route d'ingestion. Le `.wasm` du moteur est chargé à          │
+    // │ l'exécution, par un chemin relatif au paquet : rien ne le fait      │
+    // │ monter tout seul dans le paquet de la fonction.                     │
+    // │                                                                    │
+    // │ L'oubli ne se voit qu'EN LIGNE, au premier livret déposé, sous la   │
+    // │ forme d'un module introuvable — jamais en local, où le fichier est  │
+    // │ simplement là.                                                      │
+    // └────────────────────────────────────────────────────────────────────┘
+    const config = readFileSync(join(process.cwd(), 'next.config.ts'), 'utf8');
+
+    expect(config).toMatch(/'\/\[langue\]\/admin\/livrets\/nouveau':\s*MOTEUR_DE_RENDU/);
   });
 
   it('il déclare `maxDuration`, parce que l’ingestion tourne DANS sa fonction', () => {

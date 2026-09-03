@@ -357,11 +357,14 @@ describe('L’ÉDITION D’UN CONTE PASSE PAR LES FONCTIONS `admin_*`', () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ LE DÉFAUT QUE CE TEST EMPÊCHE DE REVENIR.                          │
     // │                                                                    │
-    // │ `manques_pour_publication` exige `books.region` depuis la migration │
-    // │ 0044, et AUCUNE fonction `admin_*` ne permettait de l'écrire.       │
-    // │ L'éditeur déposait son PDF, remplissait tout ce que l'écran          │
-    // │ proposait, et « Publier » restait éteint — avec un manque nommé      │
-    // │ `region` qu'aucun champ ne pouvait satisfaire.                       │
+    // │ `manques_pour_publication` a exigé `books.region` de la migration   │
+    // │ 0044 à la 0066, et AUCUNE fonction `admin_*` ne permettait de        │
+    // │ l'écrire avant la 0057 : « Publier » restait éteint sur un manque    │
+    // │ nommé `region` qu'aucun champ ne pouvait satisfaire.                 │
+    // │                                                                    │
+    // │ La 0066 a levé l'exigence, mais PAS le besoin d'écrire la région :   │
+    // │ elle donne sa teinte au titre et sa facette au catalogue. Ce test   │
+    // │ garde donc tout son objet.                                          │
     // │                                                                    │
     // │ Le test vérifie les deux moitiés : l'écriture PASSE, et la lecture   │
     // │ la REND. Sans la seconde, l'écran afficherait « non renseignée » sur │

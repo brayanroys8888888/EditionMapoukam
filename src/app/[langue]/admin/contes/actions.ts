@@ -484,11 +484,21 @@ export async function ajouterVersionConte(
 export async function supprimerConte(
   langueBrute: string,
   livreId: string,
+  /*
+   * Le rayon d'où vient le titre — `/contes` ou `/livrets`. Il est LIÉ par
+   * l'écran, qui le tient du support du titre ouvert, et non lu du formulaire :
+   * ce paramètre choisit une destination de redirection, et un champ caché
+   * l'aurait rendu modifiable depuis le navigateur.
+   *
+   * Sans lui, supprimer un livret ramenait dans le rayon des contes, sur un
+   * message qui parlait d'un conte.
+   */
+  rayon: '/contes' | '/livrets',
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/contes/${livreId}`;
-  const liste = `/${langue}/admin/contes`;
+  const liste = `/${langue}/admin${rayon}`;
 
   const reponse = await appeler(`/api/admin/books/${livreId}`, 'DELETE', {
     motif: texte(donnees, 'motif'),

@@ -9,7 +9,12 @@ import {
   type TypeDocument,
 } from '@/lib/admin/service';
 import { Erreur } from '@/components/etats';
-import { GabaritAdmin, BoutonSoumission, stylesAdmin as styles } from '@/components/admin';
+import {
+  GabaritAdmin,
+  BoutonSoumission,
+  stylesAdmin as styles,
+  type SectionAdmin,
+} from '@/components/admin';
 
 import { exigerAdministrateur } from '../../garde';
 import {
@@ -241,6 +246,63 @@ function libelleManque(langue: Parameters<typeof traduire>[0], manque: string): 
   return rendu === cle ? manque : rendu;
 }
 
+/**
+ * LES LIBELLÉS QUI CHANGENT AVEC LE SUPPORT DU TITRE OUVERT.
+ *
+ * ┌───────────────────────────────────────────────────────────────────────┐
+ * │ UNE SEULE FICHE POUR LES DEUX SUPPORTS — ET C'EST VOULU.                 │
+ * │                                                                          │
+ * │ Les champs, les prix, les manques et la publication sont identiques :    │
+ * │ le support est une étiquette de rangement, il n'ouvre et ne ferme aucun  │
+ * │ droit. Dupliquer cet écran aurait fait deux formulaires à tenir à jour,  │
+ * │ et c'est toujours la copie oubliée qui reste en production.               │
+ * │                                                                          │
+ * │ Ce qui gênait n'était donc pas la fiche : c'étaient ses MOTS. Un livret  │
+ * │ pédagogique s'ouvrait sous « Champs du conte », et « Retour aux contes »   │
+ * │ ramenait dans un rayon qui n'était pas le sien. La table ci-dessous est  │
+ * │ la seule différence entre les deux lectures de cet écran.                 │
+ * └───────────────────────────────────────────────────────────────────────┘
+ *
+ * `satisfies` et non une annotation : le type reste littéral, si bien qu'un
+ * support ajouté à l'énumération `document_type` sans son jeu de mots ne
+ * compile pas.
+ */
+const MOTS = {
+  conte: {
+    rayon: '/contes',
+    retourListe: 'admin.conteRetourListe',
+    editionSousTitre: 'admin.conteEditionSousTitre',
+    champsTitre: 'admin.conteChampsTitre',
+    accesTitre: 'admin.conteAccesTitre',
+    champsIndependants: 'admin.conteChampsIndependants',
+    publicationBloquee: 'admin.contePublicationBloquee',
+    publicationPrete: 'admin.contePublicationPrete',
+    traductionsAide: 'admin.conteTraductionsAide',
+    versionAjoutAide: 'admin.conteVersionAjoutAide',
+    suppressionTitre: 'admin.conteSuppressionTitre',
+    suppressionAide: 'admin.conteSuppressionAide',
+    supprimer: 'admin.conteSupprimer',
+  },
+  livret_pedagogique: {
+    rayon: '/livrets',
+    retourListe: 'admin.livretRetourListe',
+    editionSousTitre: 'admin.livretEditionSousTitre',
+    champsTitre: 'admin.livretChampsTitre',
+    accesTitre: 'admin.livretAccesTitre',
+    champsIndependants: 'admin.livretChampsIndependants',
+    publicationBloquee: 'admin.livretPublicationBloquee',
+    publicationPrete: 'admin.livretPublicationPrete',
+    traductionsAide: 'admin.livretTraductionsAide',
+    versionAjoutAide: 'admin.livretVersionAjoutAide',
+    suppressionTitre: 'admin.livretSuppressionTitre',
+    suppressionAide: 'admin.livretSuppressionAide',
+    supprimer: 'admin.livretSupprimer',
+  },
+} as const satisfies Record<
+  TypeDocument,
+  { rayon: SectionAdmin } & Record<string, CleTraduction | SectionAdmin>
+>;
+
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
@@ -268,15 +330,23 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
 
   const prix = Object.entries(conte.prix ?? {});
 
+  /*
+   * Le support est lu sur le titre OUVERT, jamais sur l'adresse par laquelle on
+   * est arrivé : la fiche est la même des deux rayons, et changer le support
+   * dans le formulaire ci-dessous change ces mots au rechargement suivant.
+   */
+  const mots = MOTS[conte.type_document];
+  const liste = `/${langue}/admin${mots.rayon}`;
+
   return (
     <GabaritAdmin
       langue={langue}
-      section="/contes"
+      section={mots.rayon}
       titre={conte.slug}
-      sousTitre={traduire(langue, 'admin.conteEditionSousTitre')}
+      sousTitre={traduire(langue, mots.editionSousTitre)}
       actions={
-        <a className={styles.boutonDiscret} href={`/${langue}/admin/contes`}>
-          {traduire(langue, 'admin.conteRetourListe')}
+        <a className={styles.boutonDiscret} href={liste}>
+          {traduire(langue, mots.retourListe)}
         </a>
       }
     >
@@ -294,7 +364,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
 
       {/* ── Champs métier ────────────────────────────────────────────────── */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.conteChampsTitre')}</h2>
+        <h2 className={styles.sectionTitre}>{traduire(langue, mots.champsTitre)}</h2>
 
         <div className={styles.cadre}>
           <form className={styles.formulaire} action={modifierConte.bind(null, langue, conte.id)}>
@@ -343,13 +413,19 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
 
             {/*
               ┌──────────────────────────────────────────────────────────────┐
-              │ LA RÉGION — LE CHAMP QUI MANQUAIT, ET CE QU'IL COÛTAIT.     │
+              │ LA RÉGION — FACULTATIVE DEPUIS LE 3 SEPTEMBRE 2026.         │
               │                                                              │
-              │ `manques_pour_publication` l'exige depuis la migration 0044, │
-              │ et aucune fonction `admin_*` ne permettait de la poser avant  │
-              │ la 0057. L'éditeur déposait son PDF, remplissait tout ce que  │
-              │ cet écran proposait, et « Publier » restait éteint — avec un  │
-              │ manque nommé `region` qu'aucun champ ne pouvait satisfaire.   │
+              │ Elle a bloqué la publication de la migration 0044 à la 0066 : │
+              │ `manques_pour_publication` l'exigeait, et « Publier » restait │
+              │ éteint sans elle. La 0066 a retiré cette branche — une fiche  │
+              │ d'activités n'a pas de région d'origine, et la contrainte      │
+              │ n'avait plus de sens sur la moitié du catalogue.              │
+              │                                                              │
+              │ Le champ RESTE, et ce n'est pas de la timidité : c'est lui    │
+              │ qui donne sa teinte au titre et la facette au catalogue        │
+              │ public. Sans lui, le titre s'affiche en teinte `inconnue` et   │
+              │ ne ressort sous aucun filtre de région — ce qui est exact,    │
+              │ puisqu'il n'en a pas.                                         │
               │                                                              │
               │ Elle n'est PAS l'origine culturelle, qui est juste au-dessus  │
               │ et reste un texte libre (« conte akan — Ghana »). Celle-ci    │
@@ -358,9 +434,11 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               │ depuis la première, mais son commentaire est formel :         │
               │ amorçage et reprise de données UNIQUEMENT.                    │
               │                                                              │
-              │ Le choix vide vaut « ne touche pas » et non « efface » —      │
-              │ comme tous les champs métier de ce formulaire, et parce que   │
-              │ la publication l'exige de toute façon.                        │
+              │ Le choix vide vaut « ne touche pas » et non « efface »,      │
+              │ comme tous les champs métier de ce formulaire. Effacer une     │
+              │ région déjà posée demande donc de passer par la base — c'est  │
+              │ assumé : la retirer par inadvertance décolorerait un titre     │
+              │ sans que rien ne le signale.                                  │
               └──────────────────────────────────────────────────────────────┘
             */}
             <div className={styles.champ}>
@@ -516,7 +594,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               │ décoché.                                                     │
               └──────────────────────────────────────────────────────────────┘
             */}
-            <h3 className={styles.libelle}>{traduire(langue, 'admin.conteAccesTitre')}</h3>
+            <h3 className={styles.libelle}>{traduire(langue, mots.accesTitre)}</h3>
 
             <ul className={styles.interrupteurs}>
               {LEVIERS.map((levier) => (
@@ -543,7 +621,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               ))}
             </ul>
 
-            <p className={styles.aide}>{traduire(langue, 'admin.conteChampsIndependants')}</p>
+            <p className={styles.aide}>{traduire(langue, mots.champsIndependants)}</p>
 
             <BoutonSoumission>
               {traduire(langue, 'admin.conteEnregistrer')}
@@ -707,10 +785,10 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
                       </li>
                     ))}
                   </ul>
-                  <p className={styles.aide}>{traduire(langue, 'admin.contePublicationBloquee')}</p>
+                  <p className={styles.aide}>{traduire(langue, mots.publicationBloquee)}</p>
                 </>
               ) : (
-                <p className={styles.aide}>{traduire(langue, 'admin.contePublicationPrete')}</p>
+                <p className={styles.aide}>{traduire(langue, mots.publicationPrete)}</p>
               )}
             </div>
 
@@ -838,7 +916,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
           </div>
         </div>
 
-        <p className={styles.note}>{traduire(langue, 'admin.conteTraductionsAide')}</p>
+        <p className={styles.note}>{traduire(langue, mots.traductionsAide)}</p>
       </section>
 
       {/* ── Ajouter une version linguistique ─────────────────────────────── */}
@@ -909,7 +987,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               </select>
             </div>
 
-            <p className={styles.aide}>{traduire(langue, 'admin.conteVersionAjoutAide')}</p>
+            <p className={styles.aide}>{traduire(langue, mots.versionAjoutAide)}</p>
 
             <BoutonSoumission>
               {traduire(langue, 'admin.conteVersionAjouter')}
@@ -935,15 +1013,15 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
       {conte.statut === 'brouillon' ? (
         <section className={styles.section}>
           <h2 className={styles.sectionTitre}>
-            {traduire(langue, 'admin.conteSuppressionTitre')}
+            {traduire(langue, mots.suppressionTitre)}
           </h2>
 
           <div className={styles.zoneDanger}>
             <form
               className={styles.formulaireNu}
-              action={supprimerConte.bind(null, langue, conte.id)}
+              action={supprimerConte.bind(null, langue, conte.id, mots.rayon)}
             >
-              <p className={styles.aide}>{traduire(langue, 'admin.conteSuppressionAide')}</p>
+              <p className={styles.aide}>{traduire(langue, mots.suppressionAide)}</p>
 
               <div className={styles.champ}>
                 <label className={styles.libelle} htmlFor="suppression-motif">
@@ -970,7 +1048,7 @@ export default async function PageAdminConte({ params, searchParams }: Parametre
               </div>
 
               <BoutonSoumission variante="danger">
-                {traduire(langue, 'admin.conteSupprimer')}
+                {traduire(langue, mots.supprimer)}
               </BoutonSoumission>
             </form>
           </div>

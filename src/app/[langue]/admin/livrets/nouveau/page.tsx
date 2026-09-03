@@ -74,12 +74,14 @@ export default async function PageAdminLivretNouveau({ params, searchParams }: P
   return (
     <GabaritAdmin
       langue={langue}
-      section="/contes"
+      // Déposer un livret, c'est être dans le rayon des livrets : le rail le
+      // dit, et le bouton de retour y ramène.
+      section="/livrets"
       titre={traduire(langue, 'admin.livretNouveau')}
       sousTitre={traduire(langue, 'admin.livretNouveauSousTitre')}
       actions={
-        <a className={styles.boutonDiscret} href={`/${langue}/admin/contes`}>
-          {traduire(langue, 'admin.conteRetourListe')}
+        <a className={styles.boutonDiscret} href={`/${langue}/admin/livrets`}>
+          {traduire(langue, 'admin.livretRetourListe')}
         </a>
       }
     >

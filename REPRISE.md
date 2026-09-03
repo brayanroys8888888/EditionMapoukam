@@ -5,6 +5,61 @@
 
 ---
 
+## 0 ter. L'onglet des livrets, et la région rendue facultative
+
+> Écrit le 3 septembre 2026.
+
+Trois demandes, trois réponses.
+
+### 1. Un onglet dédié aux livrets pédagogiques
+
+Le rail du back-office porte désormais **« Livrets pédagogiques »**, entre
+« Contes » et « Commandes ». C'est la forme du catalogue public, reprise telle
+quelle : `/admin/contes` est le catalogue entier — il garde son filtre de
+support — et `/admin/livrets` est le rayon, dont le support est dans l'adresse.
+
+Le tableau n'est écrit qu'**une fois**, dans `src/app/[langue]/admin/liste-livres.tsx`.
+Les deux `page.tsx` ne font que le paramétrer et portent chacun sa garde.
+
+### 2. Les textes suivent le support
+
+La fiche d'édition reste **unique** pour les deux supports — mêmes champs,
+mêmes prix, mêmes manques — mais choisit ses libellés sur `type_document` :
+plus de « Champs du conte » au-dessus d'un livret, plus de « Retour aux
+contes » vers un rayon qui n'est pas le sien. Seize clés `livret*` ont été
+ajoutées aux deux fichiers d'internationalisation.
+
+La suppression ramène au bon rayon : `supprimerConte` prend le rayon en
+paramètre **lié par l'écran**, jamais lu dans le formulaire.
+
+### 3. La région du catalogue ne bloque plus la publication
+
+Migration **0066** : `manques_pour_publication` perd sa branche `region`. Le
+champ, la colonne, l'énumération et la facette publique restent — seul le
+pouvoir de bloquer disparaît. Un titre sans région prend la teinte `inconnue`
+et ne ressort sous aucun filtre de région.
+
+`tests/integration/publication-validation.test.ts` porte le test **retourné**,
+à sa place, avec la trace de la décision : l'effacer aurait rendu la règle
+réinventable par inadvertance.
+
+### Et la question sur l'orientation
+
+`orientation` n'est **pas** un champ de livret qui aurait débordé sur les
+contes. La migration 0061 l'a créée sur **tous** les livres, `not null`, par
+défaut `portrait`, et la fiche d'édition est la même pour les deux supports.
+Ce qui la faisait *lire* comme un champ de livret était son texte d'aide, qui
+parlait littéralement d'un livret — il a été réécrit.
+
+### Un livret d'essai a été effacé
+
+`le-prince`, déposé à la main pendant les essais, restait en base et portait le
+corpus à onze titres : `access.test.ts`, `schema.test.ts` et `catalog.test.ts`
+en attendent dix. Il a été supprimé — aucun droit ni aucune ligne de commande
+ne le référençait. `npm run verify` sort à **1415 / 1415**.
+
+---
+
 ## 0 bis. Livrets pédagogiques — livré, et les trois arbitrages sont rendus
 
 > Écrit le 2 septembre 2026, complété le même jour après arbitrage.

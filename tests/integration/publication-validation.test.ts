@@ -175,13 +175,27 @@ describe('origine culturelle', () => {
 });
 
 describe('région', () => {
-  it('est exigée — sans elle le titre s’afficherait sans couleur', async () => {
-    // Le pendant FERMÉ de l'origine culturelle. Elle ne sert qu'à choisir une
-    // couleur, et c'est pourquoi elle peut être close quand l'autre ne le
-    // peut pas.
+  it('n’est PLUS exigée — décision de l’éditeur du 3 septembre 2026', async () => {
+    // ┌────────────────────────────────────────────────────────────────┐
+    // │ CE TEST A ÉTÉ RETOURNÉ, ET LE DIRE VAUT MIEUX QUE LE SUPPRIMER.      │
+    // │                                                                    │
+    // │ De la migration 0044 à la 0066, il exigeait l'inverse : sans        │
+    // │ région, pas de publication. La 0066 a retiré cette branche de       │
+    // │ `manques_pour_publication` — une fiche d'activités n'a pas de       │
+    // │ région d'origine, et la contrainte n'avait plus de sens sur la      │
+    // │ moitié du catalogue.                                               │
+    // │                                                                    │
+    // │ Le laisser à sa place, retourné, garde la trace de la décision là  │
+    // │ où quelqu'un la cherchera. L'effacer aurait rendu la règle          │
+    // │ réinventable par inadvertance.                                     │
+    // └────────────────────────────────────────────────────────────────┘
+    //
+    // Ce qu'un titre sans région perd est ailleurs, et c'est exact : il
+    // s'affiche en teinte `inconnue`, et ne ressort sous aucun filtre de
+    // région — puisqu'il n'en a pas.
     const id = await brouillon({ region: null });
 
-    expect(await publier(id)).toMatch(/region/);
+    expect(await publier(id)).toBeNull();
   });
 
   it('accepte les cinq valeurs, et rien d’autre', async () => {

@@ -22,10 +22,23 @@ import styles from './admin.module.css';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-/** Les sections de l'administration, et leur chemin. */
+/**
+ * Les sections de l'administration, et leur chemin.
+ *
+ * « Contes » PORTE LES DEUX SUPPORTS, « Livrets » N'EN PORTE QU'UN — et
+ * c'est la forme du catalogue public, reprise telle quelle : `/catalogue`
+ * montre tout, `/contes` et `/livrets` sont des rayons.
+ *
+ * L'onglet des livrets a été ajouté le 3 septembre 2026. L'accès d'un livret
+ * se règle titre par titre, et cette liste est le seul chemin vers la fiche
+ * qui porte les trois leviers ; un filtre, lui, se perd à chaque retour sur
+ * l'écran, ne se met pas en favori, et rien dans ce rail ne disait qu'il
+ * existait.
+ */
 const SECTIONS = [
   { cle: 'admin.tableauDeBord', chemin: '' },
   { cle: 'admin.contes', chemin: '/contes' },
+  { cle: 'admin.livrets', chemin: '/livrets' },
   { cle: 'admin.commandes', chemin: '/commandes' },
   { cle: 'admin.abonnements', chemin: '/abonnements' },
   { cle: 'admin.utilisateurs', chemin: '/utilisateurs' },
