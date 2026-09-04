@@ -75,6 +75,43 @@ test.describe('aucune page ne déborde horizontalement', () => {
   }
 });
 
+test.describe('aucune page ne force le navigateur à élargir sa fenêtre', () => {
+  for (const { nom, chemin } of PAGES) {
+    test(`${nom} tient dans la largeur de l’APPAREIL`, async ({ page }) => {
+      // ┌────────────────────────────────────────────────────────────────────┐
+      // │ POURQUOI CE TEST DOUBLE LE PRÉCÉDENT, ET NE FAIT PAS DOUBLON.      │
+      // │                                                                    │
+      // │ Le test ci-dessus compare `scrollWidth` à `window.innerWidth`.     │
+      // │ Or, quand une mise en page ne peut pas descendre sous une certaine │
+      // │ largeur, le navigateur mobile ne la casse pas : il ÉLARGIT sa      │
+      // │ fenêtre de mise en page et dézoome pour la faire tenir. Les deux   │
+      // │ mesures grandissent alors ENSEMBLE, et l'égalité est préservée —   │
+      // │ le test reste vert pendant que la page s'affiche minuscule.        │
+      // │                                                                    │
+      // │ C'est exactement ce qui est arrivé à l'écran de connexion : sa     │
+      // │ grille avait deux colonnes de minimums 280 px et 320 px, donc un   │
+      // │ plancher de 632 px. Sur un Pixel 7 — 412 px — `innerWidth` valait  │
+      // │ 632, `scrollWidth` aussi, et la suite passait au vert.             │
+      // │                                                                    │
+      // │ La seule référence qui ne bouge pas est la largeur de l'APPAREIL.  │
+      // └────────────────────────────────────────────────────────────────────┘
+      await page.goto(chemin);
+      await page.waitForLoadState('networkidle');
+
+      const largeurAppareil = page.viewportSize()?.width ?? 0;
+      expect(largeurAppareil, 'viewport non défini').toBeGreaterThan(0);
+
+      const largeurMiseEnPage = await page.evaluate(() => window.innerWidth);
+
+      expect(
+        largeurMiseEnPage,
+        `${nom} : le navigateur a élargi sa fenêtre à ${String(largeurMiseEnPage)}px pour ` +
+          `faire tenir une mise en page trop large — l'appareil en fait ${String(largeurAppareil)}`,
+      ).toBeLessThanOrEqual(largeurAppareil + 1);
+    });
+  }
+});
+
 test.describe('boutique — les filtres en colonne', () => {
   test('sur ordinateur, les filtres sont À GAUCHE de la grille', async ({ page }, infos) => {
     test.skip(infos.project.name !== 'ordinateur', 'mise en page à deux colonnes');

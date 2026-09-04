@@ -25,6 +25,32 @@
   padding: clamp(0.5rem, 2vw, 1rem);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CETTE GRILLE NE POUVAIT PAS DESCENDRE SOUS 632 PX — SUR LA PAGE DE      │
+ * │ CONNEXION.                                                               │
+ * │                                                                          │
+ * │ Deux colonnes de minimums 280 px et 320 px, plus la gouttière : la       │
+ * │ largeur plancher dépassait celle de tous les téléphones. Le navigateur   │
+ * │ ne casse pas la mise en page pour autant, il DÉZOOME pour la faire       │
+ * │ tenir : le formulaire s'affichait en tout petit, et la page se baladait  │
+ * │ latéralement. Sur un public §5.1 majoritairement mobile, c'était l'écran │
+ * │ de connexion qui payait.                                                 │
+ * │                                                                          │
+ * │ C'est aussi pourquoi le test de débordement ne l'a jamais vu : sous      │
+ * │ émulation, il compare `scrollWidth` à `innerWidth`, et le dézoom fait    │
+ * │ grandir les DEUX ensemble. Le nouveau test mesure une largeur de         │
+ * │ COLONNE contre celle de la fenêtre — voir tests/rendu.                   │
+ * │                                                                          │
+ * │ L'aside est décoratif (`aria-hidden`) : sur un écran étroit, son         │
+ * │ accroche typographique disparaît plutôt que de repousser le formulaire   │
+ * │ sous la ligne de flottaison. La marque, elle, reste — ces pages n'ont    │
+ * │ pas d'en-tête de site, et sans elle rien ne dirait où l'on se trouve.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/* La règle qui l'applique vit en FIN de fichier : elle doit passer après la
+   surcharge V2, qui redéclare ces colonnes avec une spécificité supérieure. */
+
 .illustration {
   display: flex;
   flex-direction: column;
@@ -459,4 +485,55 @@
 :global(:root[data-design='v2']) .erreurFormulaire {
   border-radius: var(--rayon-encart);
   border-left: 4px solid var(--region-afrique_centrale-encre);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ÉCRAN ÉTROIT — LA RÈGLE QUI DOIT PASSER EN DERNIER
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES DEUX SÉLECTEURS SONT ÉCRITS, ET CE N'EST PAS UNE PRÉCAUTION VAINE.  │
+ * │                                                                          │
+ * │ La V2 redéclare `.cadreAuth` sous `:root[data-design='v2']`, donc avec   │
+ * │ une spécificité supérieure à celle d'une simple classe. Une règle        │
+ * │ mobile écrite sur `.cadreAuth` seul perdait contre elle en silence :     │
+ * │ la grille restait à deux colonnes fixes, et rien dans la feuille ne      │
+ * │ disait pourquoi. Les deux sélecteurs sont donc nommés, et le bloc est    │
+ * │ placé en fin de fichier — après la surcharge, à égalité de spécificité.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  .cadreAuth,
+  :global(:root[data-design='v2']) .cadreAuth {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    align-items: start;
+  }
+
+  /*
+   * L'aside est décoratif (`aria-hidden`). Sur un téléphone, son aplat de
+   * 540 px de haut poussait le formulaire entièrement sous la ligne de
+   * flottaison : on arrivait sur une page de connexion sans y voir de champ.
+   * Il perd donc sa hauteur et son fond, et ne garde que la marque — ces
+   * écrans n'ont pas d'en-tête de site, et sans elle rien ne dirait où l'on
+   * se trouve.
+   */
+  .illustration,
+  :global(:root[data-design='v2']) .illustration {
+    min-height: 0;
+    height: auto;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: clamp(0.5rem, 2vw, 1rem) 0 0;
+  }
+
+  .illustrationTexte {
+    display: none;
+  }
+
+  .contenu {
+    margin-left: 0;
+  }
 }
