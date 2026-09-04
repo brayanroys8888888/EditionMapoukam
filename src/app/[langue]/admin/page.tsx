@@ -12,6 +12,7 @@ import {
   Compteur,
   GabaritAdmin,
   GraphiqueBarres,
+  Rafraichissement,
   stylesAdmin as styles,
   type BarreGraphique,
 } from '@/components/admin';
@@ -175,7 +176,12 @@ function Bloc({
     <section className={styles.section}>
       <h2 className={styles.sectionTitre}>{titre}</h2>
 
-      <div className={styles.cadre}>
+      {/*
+       * Un bloc sans contenu n'est pas une carte vide : c'est un emplacement.
+       * Le cadre discontinu de `cadreVide` le dit, et évite que huit sections
+       * sans données donnent l'impression d'un écran en panne.
+       */}
+      <div className={garni ? styles.cadre : `${styles.cadre} ${styles.cadreVide}`}>
         {garni ? children : <p className={`${styles.vide} ${styles.videCalme}`}>{vide}</p>}
       </div>
     </section>
@@ -331,6 +337,7 @@ export default async function PageAdmin({ params, searchParams }: Parametres) {
       section=""
       titre={traduire(langue, 'admin.tableauDeBord')}
       sousTitre={traduire(langue, 'admin.tableauSousTitre')}
+      actions={<Rafraichissement langue={langue} />}
     >
       {/* ── Ce qui demande une attention ─────────────────────────────────── */}
       <ul className={`${styles.chiffres} ${styles.section}`}>

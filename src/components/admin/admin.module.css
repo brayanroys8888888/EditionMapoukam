@@ -265,6 +265,22 @@
 }
 
 /*
+ * L'AIR EN TÊTE NE SE PREND QUE DERRIÈRE CE QUI N'EN DONNE PAS.
+ *
+ * Une section porte déjà 38 px sous elle : deux sections voisines sont donc
+ * espacées. Mais quand une section suit autre chose — la note du tableau des
+ * langues, une grille de colonnes — rien ne l'écarte, et « Brouillons non
+ * publiables » venait se coller à la phrase du dessus, les deux se lisant
+ * comme un seul paragraphe.
+ *
+ * La marge haute ne vaut donc que dans ce cas : ajoutée partout, elle
+ * s'additionnerait aux 38 px et creuserait un trou entre chaque bloc.
+ */
+:not(.section) + .section {
+  margin-top: 34px;
+}
+
+/*
  * LE TITRE PREND SON AIR DE CE QUI LE PRÉCÈDE, PAS DE LUI-MÊME.
  *
  * Sur le tableau de bord, six titres de section se suivaient à quatorze pixels
@@ -505,6 +521,94 @@
   text-align: center;
   color: var(--encre-douce);
   font-size: var(--taille-l);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN BLOC VIDE N'EST PAS UNE CARTE — IL NE DOIT PAS EN AVOIR L'AIR.        │
+ * │                                                                          │
+ * │ Sur une base neuve, huit sections du tableau de bord sur dix n'ont rien   │
+ * │ à montrer. Rendues comme les autres — même cadre, même ombre, même        │
+ * │ hauteur — elles donnaient huit grandes boîtes creuses à la file, et       │
+ * │ l'écran entier avait l'air en panne alors qu'il disait simplement         │
+ * │ « rien ne s'est passé ».                                                 │
+ * │                                                                          │
+ * │ Le cadre vide perd donc son relief et prend un trait discontinu : la      │
+ * │ forme dit « emplacement » là où la carte pleine dit « contenu ». Il se    │
+ * │ resserre aussi, parce qu'une phrase de six mots n'a pas besoin de la      │
+ * │ hauteur d'un tableau de dix lignes.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.cadreVide,
+/*
+ * Le second sélecteur n'est pas un doublon : selon les écrans, le message de
+ * vide est tantôt DANS un cadre (`Bloc`), tantôt porté par le cadre lui-même
+ * — cinq appels du tableau de bord écrivent `cadre vide` sur le même `<p>`.
+ * Traiter les deux ici évite d'avoir à corriger cinq appels, et surtout de
+ * rater le sixième que quelqu'un écrira dans six mois.
+ */
+.cadre.vide {
+  border: 1px dashed var(--bordure-forte);
+  border-radius: var(--rayon-carte);
+  background: transparent;
+  box-shadow: none;
+}
+
+.cadreVide .vide,
+.cadre.vide {
+  padding: 20px 24px;
+  font-size: var(--taille-base);
+}
+
+/* ── Le suivi en direct ─────────────────────────────────────────────────── */
+
+.direct {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--taille-s);
+  font-weight: var(--graisse-demi);
+  color: var(--encre-douce);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.directPouls,
+.directArret {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--rayon-pastille);
+  flex: 0 0 auto;
+}
+
+/*
+ * Le point bat, et c'est le SEUL mouvement autonome de l'administration.
+ *
+ * Il dit ce qu'aucun mot ne dirait aussi vite : l'écran est vivant, ces
+ * chiffres ne sont pas une photographie. Sous `prefers-reduced-motion`,
+ * `tokens.css` réduit toute animation à 0,01 ms — le point reste alors
+ * simplement vert, ce qui suffit à distinguer les deux états.
+ */
+.directPouls {
+  background: var(--region-afrique_ouest-accent);
+  animation: battement 2.4s ease-in-out infinite;
+}
+
+.directArret {
+  background: var(--bordure-forte);
+}
+
+@keyframes battement {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
 }
 
 .videCalme {
@@ -1058,6 +1162,12 @@
   font-weight: var(--graisse-forte);
   fill: var(--encre);
   font-variant-numeric: tabular-nums;
+}
+
+/* La piste : l'échelle sur laquelle la barre se lit. Assez claire pour ne pas
+   se confondre avec une barre, assez visible pour que zéro ne soit pas vide. */
+.graphiquePiste {
+  fill: var(--separateur);
 }
 
 .graphiqueBarre {

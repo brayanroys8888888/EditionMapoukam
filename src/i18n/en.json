@@ -641,6 +641,8 @@
     "utilisateurs": "Users",
     "retourSite": "Back to the site",
     "tableauSousTitre": "What needs your attention today.",
+    "enDirect": "Live",
+    "enDirectSuspendu": "Paused",
     "anomalies": "Subscriptions in anomaly",
     "anomaliesNote": "Almost always a lost webhook. The customer can do nothing about it.",
     "brouillons": "Drafts that cannot be published",

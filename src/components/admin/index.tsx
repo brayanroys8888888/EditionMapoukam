@@ -276,7 +276,25 @@ export function GraphiqueBarres({
 
       {barres.map((barre, index) => {
         const y = index * HAUTEUR_BARRE;
-        const largeur = Math.max(2, (barre.valeur / maximum) * largeurPiste);
+        /*
+         * ┌────────────────────────────────────────────────────────────────┐
+         * │ UNE VALEUR NULLE NE DESSINE RIEN, ET C'EST LA PISTE QUI LE DIT.│
+         * │                                                                │
+         * │ Le minimum de 2 px servait à ce qu'une valeur non nulle mais    │
+         * │ minuscule reste visible. Appliqué à ZÉRO, il produisait un      │
+         * │ moignon de deux pixels contre le libellé — « English ▌ 0 » —    │
+         * │ qui se lit comme un défaut d'affichage plutôt que comme une     │
+         * │ absence. C'est ce que montrait le tableau de bord sur une base  │
+         * │ neuve, où toutes les séries valent zéro.                        │
+         * │                                                                │
+         * │ Zéro ne dessine donc aucune barre. Pour que la ligne ne paraisse│
+         * │ pas vide pour autant, une PISTE court derrière chaque barre :   │
+         * │ elle donne l'échelle, et rend le zéro lisible comme « rien sur  │
+         * │ tout ça » au lieu de « rien du tout ».                          │
+         * └────────────────────────────────────────────────────────────────┘
+         */
+        const largeur =
+          barre.valeur === 0 ? 0 : Math.max(2, (barre.valeur / maximum) * largeurPiste);
 
         return (
           <g key={barre.libelle}>
@@ -291,17 +309,36 @@ export function GraphiqueBarres({
             </text>
 
             <rect
-              className={accent ? styles.graphiqueBarreAccent : styles.graphiqueBarre}
+              className={styles.graphiquePiste}
               x={LARGEUR_LIBELLE}
               y={y + 6}
-              width={largeur}
+              width={largeurPiste}
               height={HAUTEUR_BARRE - 12}
               rx={3}
             />
 
+            {largeur > 0 ? (
+              <rect
+                className={accent ? styles.graphiqueBarreAccent : styles.graphiqueBarre}
+                x={LARGEUR_LIBELLE}
+                y={y + 6}
+                width={largeur}
+                height={HAUTEUR_BARRE - 12}
+                rx={3}
+              />
+            ) : null}
+
+            {/*
+             * La valeur s'écrit AU BOUT DE LA PISTE, pas au bout de la barre.
+             *
+             * Suivre la barre plaçait les chiffres en escalier, ce qui est la
+             * façon la plus sûre de rendre deux nombres incomparables — et,
+             * depuis que la piste est dessinée, les faisait écrire par-dessus
+             * elle. Alignés, ils se lisent en colonne comme dans un tableau.
+             */}
             <text
               className={styles.graphiqueValeur}
-              x={LARGEUR_LIBELLE + largeur + 6}
+              x={LARGEUR_LIBELLE + largeurPiste + 6}
               y={y + HAUTEUR_BARRE / 2}
               dominantBaseline="middle"
             >
@@ -316,4 +353,5 @@ export function GraphiqueBarres({
 
 export { styles as stylesAdmin };
 export { BoutonSoumission } from './BoutonSoumission';
+export { Rafraichissement } from './rafraichissement';
 

@@ -646,6 +646,8 @@
     "utilisateurs": "Utilisateurs",
     "retourSite": "Retour au site",
     "tableauSousTitre": "Ce qui demande votre attention aujourd’hui.",
+    "enDirect": "Suivi en direct",
+    "enDirectSuspendu": "Suivi en pause",
     "anomalies": "Abonnements en anomalie",
     "anomaliesNote": "Presque toujours un webhook perdu. Le client n’y peut rien.",
     "brouillons": "Brouillons non publiables",
