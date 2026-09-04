@@ -4,6 +4,7 @@ import { traduire, type LangueInterface } from '@/i18n';
 import type { EntreeCatalogue } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import type { Temoignage } from '@/lib/site/temoignages';
+import { Motif, teinteDuTheme } from '@/components/motif';
 import { Carrousel } from './carrousel';
 import { CarteConteV2 } from './carte-conte';
 import { Revele } from './revele';
@@ -257,7 +258,6 @@ export function AccueilV2({
 
             <ul className={styles.traditions}>
               {themesVitrine.map((facette, rang) => {
-                const imgIndex = (rang % 4) + 1;
                 return (
                   <li key={facette.valeur}>
                     <Revele rang={rang}>
@@ -269,20 +269,31 @@ export function AccueilV2({
                         className={styles.tradition}
                         href={`/${langue}/catalogue?themes=${encodeURIComponent(facette.valeur)}`}
                       >
-                        <div style={{ width: '100%', height: '110px', borderRadius: 'var(--rayon-image)', overflow: 'hidden', marginBottom: '14px' }}>
-                          {/*
-                            L'illustration est DÉCORATIVE : elle tourne sur
-                            quatre visuels sans rapport avec le thème nommé
-                            juste en dessous. Un `alt` la décrivant affirmerait
-                            un lien qui n'existe pas ; il est donc vide, et
-                            l'image est ignorée par les lecteurs d'écran.
-                          */}
-                          <img
-                            src={`/images/tradition-${imgIndex}.jpg`}
-                            alt=""
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        </div>
+                        {/*
+                          ┌──────────────────────────────────────────────────┐
+                          │ LE MOTIF DE LA CHARTE, ET NON UNE PHOTO DE       │
+                          │ BANQUE D'IMAGES.                                  │
+                          │                                                   │
+                          │ Ces vignettes portaient quatre photographies en   │
+                          │ rotation, et le commentaire qui les posait        │
+                          │ l'admettait : « sans rapport avec le thème nommé  │
+                          │ juste en dessous ». On lisait donc une ville      │
+                          │ sous « animaux », une côte sous « nature », un    │
+                          │ désert sous « courage ». Une image qui contredit  │
+                          │ son libellé coûte plus qu'elle ne rapporte : elle │
+                          │ dit au lecteur que personne n'a regardé.          │
+                          │                                                   │
+                          │ Le motif, lui, est TIRÉ DU THÈME — même hachage   │
+                          │ que les substituts de couverture, donc la même    │
+                          │ teinte pour « animaux » ici et sur les cartes du  │
+                          │ catalogue. Il ne raconte rien de faux, il range.  │
+                          └──────────────────────────────────────────────────┘
+                        */}
+                        <Motif
+                          teinte={teinteDuTheme(facette.valeur)}
+                          place="rythme"
+                          className={styles.traditionMotif}
+                        />
                         <p className={styles.traditionNom}>{facette.valeur}</p>
                         <p className={styles.traditionCompte}>
                           {facette.nombre === 1

@@ -406,6 +406,19 @@
   gap: 18px;
 }
 
+/*
+ * La vignette du thème, en motif de charte plutôt qu'en photographie.
+ * Sa marge basse remplace celle que portait l'enveloppe écrite à la main
+ * dans le JSX — une largeur, une hauteur et un rayon posés en `style`, soit
+ * trois valeurs de mise en page hors de toute feuille.
+ */
+.traditionMotif {
+  display: block;
+  width: 100%;
+  margin-bottom: 14px;
+  border-radius: var(--rayon-image);
+}
+
 .tradition {
   display: block;
   height: 100%;

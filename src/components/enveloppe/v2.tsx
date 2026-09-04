@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
 import type { Utilisateur } from '@/domain/api/contract';
-import { IconeCompte, IconeLoupe, IconePanier } from '@/components/icones';
+import { IconeCompte, IconeLoupe, IconePanier, IconeReglages } from '@/components/icones';
 import { TiroirPanier } from '@/components/v2/tiroir-panier';
 import { Marque } from '@/components/v2/marque';
 import { MenuMobile } from '@/components/v2/menu-mobile';
@@ -243,10 +243,12 @@ export function EnteteV2({
            */}
           {utilisateur?.role === 'admin' ? (
             <a
-              className={`${styles.raccourciAdmin} ${styles.actionSecondaire}`}
+              className={`${styles.carreAction} ${styles.actionSecondaire}`}
               href={`/${langue}/admin`}
+              aria-label={traduire(langue, 'navigation.administration')}
+              title={traduire(langue, 'navigation.administration')}
             >
-              {traduire(langue, 'navigation.administration')}
+              <IconeReglages taille={19} />
             </a>
           ) : null}
 

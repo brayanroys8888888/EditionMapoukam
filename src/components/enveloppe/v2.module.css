@@ -75,19 +75,46 @@
   color: var(--action);
 }
 
+/* Sur l'image du hero, l'aplat clair devient un voile : les icônes n'ont plus
+   de contour à teinter, c'est leur fond qui porte l'état. */
 .entetePose .carreAction {
-  border-color: rgb(251 247 239 / 45%);
-  background: rgb(251 247 239 / 12%);
+  background: rgb(251 247 239 / 16%);
   color: var(--v2-fond);
 }
 
 .entetePose .carreAction:hover {
-  border-color: var(--v2-fond);
+  background: rgb(251 247 239 / 30%);
   color: var(--v2-fond);
 }
 
 .entetePose .langues {
-  border-color: rgb(251 247 239 / 40%);
+  background: rgb(251 247 239 / 16%);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SUR L'IMAGE, L'ACTION PASSE À L'OCRE.                                   │
+ * │                                                                          │
+ * │ « Se connecter » est un aplat vert de marque. Posé sur le hero — une     │
+ * │ image de forêt, donc verte et sombre — il se fondait dedans : le seul    │
+ * │ bouton plein de l'en-tête devenait le moins visible de la rangée.        │
+ * │                                                                          │
+ * │ L'ocre est la couleur d'action de la V2, et c'est déjà celle du bouton   │
+ * │ « Découvrir nos livres » vingt centimètres plus bas, dans le même hero.  │
+ * │ Les deux appels à l'action se répondent au lieu de se contredire.        │
+ * │                                                                          │
+ * │ L'encre reste l'encre : du blanc sur cet ocre tombe à 3,10:1, et         │
+ * │ `tokens.css` mesure les deux à chaque exécution des tests.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.entetePose .lienTexte {
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.entetePose .lienTexte:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
 }
 
 .entetePose .langue {
@@ -110,28 +137,51 @@
   --sceau-encre: var(--v2-vert);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE SEULE RANGÉE, ET C'EST LA CORRECTION PRINCIPALE DE CET EN-TÊTE.     │
+ * │                                                                          │
+ * │ Mesuré avant : la marque 224 px, la navigation 685, les actions 327 —    │
+ * │ soit 1276 px demandés pour 1160 disponibles. Avec `flex-wrap: wrap`, le  │
+ * │ bloc d'actions passait donc à la ligne et se collait À GAUCHE, sous la   │
+ * │ marque : deux rangées désalignées, 136 px de hauteur d'en-tête, et un    │
+ * │ site qui a l'air mal monté dès la première seconde.                      │
+ * │                                                                          │
+ * │ Le renvoi à la ligne est retiré. Pour que ça tienne vraiment, chaque     │
+ * │ pièce a maigri — la navigation surtout, qui portait des liens de 16 px   │
+ * │ sur un rembourrage de 14 : c'est une taille de corps de texte, pas de    │
+ * │ menu. Rien n'est masqué ni supprimé : tout entre.                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .enteteInterieur {
   max-width: var(--largeur-page);
   margin: 0 auto;
-  padding: 14px 20px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
+  gap: 14px;
+  flex-wrap: nowrap;
 }
 
 /* ── Mot-symbole ────────────────────────────────────────────────────────── */
 
+/*
+ * La marque tenait 224 px à elle seule — un sceau de 40 px et un mot de 19.
+ * C'est une signature de page d'accueil, pas de barre de navigation : elle
+ * poussait le reste dehors et forçait le renvoi à la ligne. Elle reste la
+ * pièce la plus forte de la rangée, en Fraunces et en vert de marque, mais
+ * elle cesse d'écraser ce qu'elle est censée introduire.
+ */
 .marque {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 9px;
   font-family: var(--police-titre);
   font-variation-settings: var(--titre-variations);
-  font-size: var(--taille-2xl);
+  font-size: var(--taille-xl);
   font-weight: var(--graisse-forte);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.02em;
   color: var(--v2-vert);
   line-height: 1.05;
 }
@@ -141,8 +191,8 @@
 }
 
 .logo {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
   border-radius: 50%;
   background: var(--v2-vert);
@@ -162,10 +212,13 @@
 
 .navigation {
   display: flex;
-  gap: 4px;
+  gap: 0;
   align-items: center;
   margin: 0 auto;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  /* Sans cela, un élément flex refuse de descendre sous sa largeur de contenu
+     et repousse les actions hors du conteneur au lieu de se resserrer. */
+  min-width: 0;
 }
 
 /*
@@ -192,10 +245,14 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--cible-min);
-  padding: 8px 14px;
+  padding: 8px 9px;
   border-radius: var(--rayon-controle);
-  font-size: var(--taille-l);
+  /* 15 px et non 16 : un menu se PARCOURT, il ne se lit pas. La graisse
+     demi et l'espacement resserré tiennent la lisibilité à cette taille. */
+  font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
   color: var(--encre);
   transition: color var(--transition-couleur);
 }
@@ -210,9 +267,9 @@
 .navigation a::after {
   content: '';
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 6px;
+  left: 9px;
+  right: 9px;
+  bottom: 5px;
   height: 2px;
   border-radius: 2px;
   background: var(--action);
@@ -253,12 +310,14 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   min-height: var(--cible-min);
-  padding: 8px 14px;
+  padding: 8px 11px;
   border-radius: var(--rayon-controle);
-  font-size: var(--taille-l);
+  font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
   color: var(--encre);
   cursor: pointer;
   list-style: none;
@@ -292,9 +351,9 @@
 .rayonsResume::after {
   content: '';
   position: absolute;
-  left: 14px;
-  right: 14px;
-  bottom: 6px;
+  left: 9px;
+  right: 9px;
+  bottom: 5px;
   height: 2px;
   border-radius: 2px;
   background: var(--action);
@@ -397,23 +456,49 @@
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES ICÔNES FORMENT UNE FAMILLE — ELLES NE SONT PLUS TROIS BOÎTES        │
+ * │ CERNÉES.                                                                 │
+ * │                                                                          │
+ * │ Chacune portait une bordure de 1,5 px, comme un champ de formulaire :    │
+ * │ trois rectangles contourés à la file, plus la pastille de langue, plus   │
+ * │ le bouton d'action — cinq contours différents sur vingt centimètres.     │
+ * │ C'est ce qui rendait l'en-tête bruyant.                                  │
+ * │                                                                          │
+ * │ Elles reposent maintenant sur un aplat doux, sans contour, et c'est le   │
+ * │ FOND qui répond au survol. Elles se lisent alors comme un groupe, et le  │
+ * │ seul contour restant dans l'en-tête est celui du bouton principal.       │
+ * │                                                                          │
+ * │ 42 px et non 44 : la cible tactile reste garantie par la règle générale  │
+ * │ sur `pointer: coarse` plus bas, où elle repasse à `--cible-min`. Sur     │
+ * │ une souris, deux pixels de moins allègent la rangée.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .carreAction {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--bordure-forte);
+  border: 0;
   border-radius: var(--rayon-controle);
-  background: var(--fond);
+  background: var(--v2-fond-doux);
   color: var(--encre);
-  transition: border-color var(--transition-couleur), color var(--transition-couleur),
+  transition: background var(--transition-couleur), color var(--transition-couleur),
     transform var(--transition-forme);
 }
 
+@media (pointer: coarse) {
+  .carreAction {
+    width: var(--cible-min);
+    height: var(--cible-min);
+  }
+}
+
 .carreAction:hover {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  background: var(--v2-vert);
+  color: var(--v2-fond);
   transform: translateY(-2px);
 }
 
@@ -461,20 +546,24 @@
 
 /* ── Sélecteur de langue ────────────────────────────────────────────────── */
 
+/* Le même aplat que les icônes, et plus de contour : une pièce de moins qui
+   se dessine toute seule dans une rangée qui en comptait cinq. */
 .langues {
   display: flex;
-  border: 1.5px solid var(--bordure-forte);
-  border-radius: var(--rayon-bouton);
+  border: 0;
+  border-radius: var(--rayon-controle);
+  background: var(--v2-fond-doux);
   overflow: hidden;
 }
 
 .langue {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
-  padding: 6px 12px;
-  font-size: var(--taille-s);
+  min-height: 42px;
+  padding: 6px 10px;
+  font-size: var(--taille-xs);
   font-weight: var(--graisse-forte);
+  letter-spacing: 0.04em;
   color: var(--encre-douce);
   background: transparent;
   transition: background var(--transition-couleur), color var(--transition-couleur);

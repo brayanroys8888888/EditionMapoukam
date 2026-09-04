@@ -1,13 +1,16 @@
 import type { ReactNode } from 'react';
 
 /**
- * LES TROIS SEULES ICÔNES DU PRODUIT.
+ * LES QUATRE SEULES ICÔNES DU PRODUIT.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ AUCUNE BIBLIOTHÈQUE D'ICÔNES.                                           │
  * │                                                                          │
- * │ La direction artistique n'en retient que trois — loupe, buste, panier —  │
- * │ toutes trois dans l'en-tête. Installer une bibliothèque pour trois       │
+ * │ La direction artistique n'en retenait que trois — loupe, buste, panier — │
+ * │ toutes trois dans l'en-tête. La quatrième, le curseur d'administration,  │
+ * │ y est entrée le jour où la pastille « Administration » a cédé sa place : │
+ * │ écrite en toutes lettres, elle prenait 120 px dans une rangée qui n'en   │
+ * │ avait plus, et rognait la navigation. Installer une bibliothèque pour trois       │
  * │ tracés, c'est charger quelques centaines de kilooctets sur la connexion  │
  * │ lente qui est la condition réelle d'une partie du public (§5.1), et      │
  * │ ouvrir la porte à une quatrième icône, puis à une cinquième.             │
@@ -57,6 +60,35 @@ export function IconePanier({ taille = 18 }: { taille?: number }): ReactNode {
     <svg {...COMMUNES} width={taille} height={taille}>
       <path d="M5 7.5h14l-1.4 11H6.4z" />
       <path d="M9 7.5a3 3 0 0 1 6 0" />
+    </svg>
+  );
+}
+
+/**
+ * Curseurs de réglage — le raccourci d'administration.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE ICÔNE À LA PLACE D'UN MOT, ET CE N'EST PAS UNE PERTE.               │
+ * │                                                                          │
+ * │ « Administration » s'écrivait en toutes lettres dans une rangée qui      │
+ * │ n'avait plus la place : la navigation en était rognée, un lien passait   │
+ * │ sous le bord. Ce raccourci ne s'adresse qu'aux administrateurs, qui      │
+ * │ savent ce qu'ils cherchent et viennent ici plusieurs fois par jour —     │
+ * │ c'est le cas d'usage exact d'une icône.                                  │
+ * │                                                                          │
+ * │ Le mot n'a pas disparu pour autant : il reste dans `aria-label` et dans  │
+ * │ `title`, donc lu par les lecteurs d'écran et affiché au survol.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function IconeReglages({ taille = 18 }: { taille?: number }): ReactNode {
+  return (
+    <svg {...COMMUNES} width={taille} height={taille}>
+      <line x1="5" y1="7" x2="19" y2="7" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+      <line x1="5" y1="17" x2="19" y2="17" />
+      <circle cx="9.5" cy="7" r="2.1" />
+      <circle cx="15" cy="12" r="2.1" />
+      <circle cx="8" cy="17" r="2.1" />
     </svg>
   );
 }
