@@ -97,6 +97,26 @@ ol {
 }
 
 /*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `figure` PORTE UNE MARGE DE 40 PX QUE PERSONNE N'A DEMANDÉE.            │
+ * │                                                                          │
+ * │ Les navigateurs lui donnent `margin: 1em 40px`. Sur la page d'accueil,   │
+ * │ les trois cartes de témoignage sont des `<figure>` dans une grille :    │
+ * │ elles mesuraient 292 px dans une colonne de 372, et le texte s'y cassait │
+ * │ à trois mots par ligne. Rien dans leur feuille ne le disait — la valeur  │
+ * │ venait du navigateur, et l'inspecteur seul pouvait la montrer.           │
+ * │                                                                          │
+ * │ Les autres `figure` du projet posent déjà leur propre marge : cette      │
+ * │ remise à zéro ne leur retire rien, elle cesse seulement de faire d'un    │
+ * │ défaut du navigateur la mise en page par défaut.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+figure,
+blockquote {
+  margin: 0;
+}
+
+/*
  * Les contrôles n'héritent pas de la police du document — c'est un défaut du
  * navigateur, pas un choix. Sans cette ligne, chaque bouton et chaque champ
  * retombe sur la police système, ce qui se lit immédiatement comme un écran

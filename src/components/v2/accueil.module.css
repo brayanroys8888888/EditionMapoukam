@@ -464,6 +464,29 @@
   gap: 22px;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE `height: 100%` DE LA CARTE NE TRAVERSAIT PAS L'APPARITION.           │
+ * │                                                                          │
+ * │ `Revele` enveloppe ce qu'il anime dans un `<div>`. Entre la case de la   │
+ * │ grille, qui s'étire, et la carte, qui demande 100 %, s'intercalait donc  │
+ * │ un bloc de hauteur automatique : les 100 % se mesuraient sur LUI, et     │
+ * │ les trois cartes gardaient des hauteurs différentes — 405, 378, 405 —    │
+ * │ ce qui se voit immédiatement comme un défaut d'alignement.               │
+ * │                                                                          │
+ * │ On rétablit la chaîne : la case s'étire, l'enveloppe la remplit, la      │
+ * │ carte remplit l'enveloppe. Écrit ici plutôt que sur `.revele`, qui sert  │
+ * │ sur toute la V2 et n'a pas à connaître la mise en page de ses hôtes.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.avis > li {
+  display: grid;
+}
+
+.avis > li > * {
+  height: 100%;
+}
+
 .avisCarte {
   display: flex;
   flex-direction: column;

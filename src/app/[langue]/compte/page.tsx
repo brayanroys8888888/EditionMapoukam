@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { langueValide, traduire, type CleTraduction } from '@/i18n';
+import { langueValide, traduire } from '@/i18n';
 import { identifierAppelant } from '@/lib/auth/session';
 import { GabaritEspace } from '@/components/espace';
 import ecran from '@/components/ecran/ecran.module.css';
@@ -17,18 +17,19 @@ interface Parametres {
   params: Promise<{ langue: string }>;
 }
 
-const SECTIONS: { chemin: string; titre: CleTraduction; corps: CleTraduction }[] = [
-  {
-    chemin: 'bibliotheque',
-    titre: 'compte.bibliotheque',
-    corps: 'compte.achatsTitre',
-  },
-  {
-    chemin: 'abonnement',
-    titre: 'compte.abonnement',
-    corps: 'offres.abonnementResume',
-  },
-];
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES DEUX SECTIONS NE SONT PLUS RÉPÉTÉES ICI.                            │
+ * │                                                                          │
+ * │ `GabaritEspace` porte déjà la navigation de l'espace personnel — « Ma    │
+ * │ bibliothèque », « Mon abonnement », « Paramètres » — en colonne, à       │
+ * │ gauche, avec l'onglet courant marqué. Cette page les redonnait en        │
+ * │ boutons, sous un titre « Mon compte » qui répétait celui de l'écran.     │
+ * │                                                                          │
+ * │ Deux chemins vers la même page ne rassurent pas : ils font douter        │
+ * │ qu'ils mènent au même endroit. La navigation reste à un seul endroit.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
@@ -49,7 +50,7 @@ export default async function PageCompte({ params }: Parametres) {
       <p className={ecran.intro}>{traduire(langue, 'compte.parametresIntro')}</p>
 
       <section className={`${ecran.panneau} ${ecran.section}`}>
-        <dl className={ecran.definitions} style={{ width: '100%' }}>
+        <dl className={`${ecran.definitions} ${ecran.definitionsPleines}`}>
           <div className={ecran.definition}>
             <dt className={ecran.terme}>{traduire(langue, 'auth.email')}</dt>
             <dd className={ecran.valeur}>{appelant.email}</dd>
@@ -72,21 +73,6 @@ export default async function PageCompte({ params }: Parametres) {
         </dl>
       </section>
 
-      <section className={ecran.section}>
-        <h2 className={ecran.sousTitre}>{traduire(langue, 'compte.titre')}</h2>
-
-        <div className={ecran.actions}>
-          {SECTIONS.map((section) => (
-            <a
-              key={section.chemin}
-              className={ecran.boutonSecondaire}
-              href={`/${langue}/compte/${section.chemin}`}
-            >
-              {traduire(langue, section.titre)}
-            </a>
-          ))}
-        </div>
-      </section>
     </GabaritEspace>
   );
 }

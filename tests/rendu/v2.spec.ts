@@ -293,3 +293,73 @@ test.describe('cibles tactiles', () => {
     expect(trop_petites, trop_petites.join(' | ')).toHaveLength(0);
   });
 });
+
+test.describe('les cartes remplissent leur colonne, et se tiennent à la même hauteur', () => {
+  test('les témoignages de l’accueil', async ({ page }) => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ DEUX DÉFAUTS QUE SEUL UN MOTEUR DE RENDU POUVAIT MONTRER.          │
+    // │                                                                    │
+    // │ 1. Les cartes sont des `<figure>`, à qui le NAVIGATEUR donne       │
+    // │    `margin: 1em 40px`. Elles mesuraient 292 px dans une colonne de │
+    // │    372, et le texte s'y cassait à trois mots par ligne. Aucune      │
+    // │    feuille du projet ne portait cette valeur : elle venait d'une    │
+    // │    feuille par défaut que personne ne lit.                         │
+    // │                                                                    │
+    // │ 2. `Revele` enveloppe ce qu'il anime : le `height: 100%` de la     │
+    // │    carte se mesurait sur cette enveloppe, de hauteur automatique,  │
+    // │    et les trois cartes gardaient des hauteurs différentes.         │
+    // │                                                                    │
+    // │ Les deux passent inaperçus de jsdom, qui ne calcule aucune boîte.  │
+    // └────────────────────────────────────────────────────────────────────┘
+    await page.goto('/fr');
+    await page.waitForLoadState('networkidle');
+
+    const mesures = await page.evaluate(() => {
+      const cartes = [...document.querySelectorAll('[class*="avisCarte"]')];
+      return cartes.map((carte) => {
+        const boite = carte.getBoundingClientRect();
+        const case_ = carte.closest('li')?.getBoundingClientRect();
+        return {
+          largeur: Math.round(boite.width),
+          hauteur: Math.round(boite.height),
+          haut: Math.round(boite.top),
+          largeurCase: Math.round(case_?.width ?? 0),
+        };
+      });
+    });
+
+    // Garde d'effectif : sans elle, une page qui ne rendrait AUCUN
+    // témoignage passerait les deux assertions suivantes sans rien prouver.
+    expect(mesures.length).toBeGreaterThanOrEqual(3);
+
+    for (const mesure of mesures) {
+      expect(mesure.largeur, 'la carte remplit sa colonne').toBe(mesure.largeurCase);
+    }
+
+    /*
+     * ┌────────────────────────────────────────────────────────────────────┐
+     * │ « MÊME HAUTEUR » NE VAUT QUE POUR UNE MÊME RANGÉE.                 │
+     * │                                                                    │
+     * │ Sur téléphone, la grille passe à une colonne : les trois cartes    │
+     * │ s'empilent, et leur imposer une hauteur commune les alignerait sur  │
+     * │ le plus bavard des trois — deux cartes à moitié vides, pour rien.   │
+     * │                                                                    │
+     * │ La première version de ce test l'exigeait quand même, et le profil  │
+     * │ téléphone l'a fait tomber. Le défaut était dans l'assertion, pas    │
+     * │ dans la page : c'est le genre d'erreur qu'on corrige en affaiblissant│
+     * │ le test « pour qu'il passe ». On le formule donc pour ce qu'il veut  │
+     * │ vraiment dire — les cartes qui partagent une rangée partagent une   │
+     * │ hauteur — ce qui reste faux si le défaut revient.                   │
+     * └────────────────────────────────────────────────────────────────────┘
+     */
+    const rangees = new Map<number, number[]>();
+    for (const mesure of mesures) {
+      rangees.set(mesure.haut, [...(rangees.get(mesure.haut) ?? []), mesure.hauteur]);
+    }
+
+    for (const [haut, hauteurs] of rangees) {
+      const distinctes = new Set(hauteurs);
+      expect(distinctes.size, `rangée ${String(haut)} : ${hauteurs.join(', ')}`).toBe(1);
+    }
+  });
+});

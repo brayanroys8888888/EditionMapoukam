@@ -207,6 +207,18 @@
   margin: 0;
 }
 
+/*
+ * Une liste de valeurs qui occupe tout son panneau.
+ *
+ * Elle existe comme classe plutôt qu'en `style` posé à la main dans le JSX :
+ * la largeur écrite en dur sur l'écran des paramètres était déjà une seconde
+ * définition de cette liste, et la troisième aurait divergé. C'est la même
+ * raison qui a fait naître `.note` côté administration.
+ */
+.definitionsPleines {
+  width: 100%;
+}
+
 .definition {
   display: flex;
   flex-wrap: wrap;
