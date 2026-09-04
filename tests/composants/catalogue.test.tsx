@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+
+import { routeurSimule } from '../setup/routeur';
 
 import {
   BarreFiltres,
@@ -331,6 +333,48 @@ describe('couvertures de la grille', () => {
     expect(screen.getByText('Couverture à venir')).toBeDefined();
   });
 
+  it('une couverture échouée AVANT l’hydratation retombe aussi sur le substitut', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ LE TEST AU-DESSUS ÉTAIT VERT PENDANT QUE LE CATALOGUE MONTRAIT     │
+    // │ HUIT IMAGES CASSÉES.                                               │
+    // │                                                                    │
+    // │ `fireEvent.error` envoie l'événement APRÈS le montage, c'est-à-dire │
+    // │ à un React qui écoute déjà — le seul cas qui fonctionnait. Dans le  │
+    // │ navigateur, l'image est rendue par le serveur : le chargement       │
+    // │ échoue AVANT l'hydratation, `onError` n'est jamais appelé, et       │
+    // │ l'icône d'image cassée reste. L'écart entre les deux est exactement │
+    // │ ce qui a laissé passer le défaut.                                  │
+    // │                                                                    │
+    // │ On ne simule donc AUCUN événement ici : on place l'image dans       │
+    // │ l'état qu'un chargement échoué lui laisse — `complete` et sans      │
+    // │ largeur intrinsèque — et on exige que le substitut paraisse quand   │
+    // │ même.                                                              │
+    // └────────────────────────────────────────────────────────────────────┘
+    const prototype = window.HTMLImageElement.prototype;
+    const completeInitial = Object.getOwnPropertyDescriptor(prototype, 'complete');
+    const largeurInitiale = Object.getOwnPropertyDescriptor(prototype, 'naturalWidth');
+
+    Object.defineProperty(prototype, 'complete', { configurable: true, get: () => true });
+    Object.defineProperty(prototype, 'naturalWidth', { configurable: true, get: () => 0 });
+
+    try {
+      const { container } = render(<GrilleCatalogue langue="fr" entrees={[entree()]} />);
+
+      expect(container.querySelector('img')).toBeNull();
+      expect(screen.getByText('Couverture à venir')).toBeDefined();
+    } finally {
+      // Rendues à l'identique : ces propriétés sont GLOBALES, et les laisser
+      // en place ferait retomber sur le substitut tous les tests suivants —
+      // à commencer par le contre-test juste en dessous, qui deviendrait vert
+      // pour la mauvaise raison.
+      if (completeInitial) Object.defineProperty(prototype, 'complete', completeInitial);
+      else delete (prototype as unknown as Record<string, unknown>).complete;
+
+      if (largeurInitiale) Object.defineProperty(prototype, 'naturalWidth', largeurInitiale);
+      else delete (prototype as unknown as Record<string, unknown>).naturalWidth;
+    }
+  });
+
   it('une couverture qui se charge n’affiche PAS le substitut — le contre-test', () => {
     // Sans lui, un composant qui montrerait toujours le substitut passerait
     // le test précédent, et le catalogue n'aurait plus aucune image.
@@ -542,6 +586,76 @@ describe('tri et recherche', () => {
     expect(formulaire?.getAttribute('method')).toBe('get');
     expect(formulaire?.getAttribute('action')).toBe('/fr/catalogue');
     expect(screen.getByLabelText('Rechercher un conte').getAttribute('name')).toBe('q');
+  });
+
+  it('la frappe cherche SANS RECHARGER, et remplace l’entrée d’historique', async () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ CE QUE LA RECHERCHE INSTANTANÉE DOIT FAIRE — ET NE PAS FAIRE.      │
+    // │                                                                    │
+    // │ `replace` et non `push` : quatre lettres tapées ne doivent pas      │
+    // │ coûter quatre retours en arrière pour revenir d'où l'on vient.     │
+    // │                                                                    │
+    // │ Et la navigation est DIFFÉRÉE : sans attente, chaque lettre partirait│
+    // │ chercher, soit quatre allers-retours pour un mot de quatre lettres  │
+    // │ — sur la connexion lente du §5.1, c'est la pire façon de chercher.  │
+    // └────────────────────────────────────────────────────────────────────┘
+    render(<ChampRecherche langue="fr" action="/fr/catalogue" filtres={FILTRES_VIDES} />);
+
+    fireEvent.change(screen.getByLabelText('Rechercher un conte'), { target: { value: 'lion' } });
+
+    // Rien n'est parti tant que le doigt peut encore taper.
+    expect(routeurSimule.replace).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(routeurSimule.replace).toHaveBeenCalledWith('/fr/catalogue?q=lion', {
+        scroll: false,
+      });
+    });
+
+    // Jamais `push` : l'historique n'est pas un journal de frappe.
+    expect(routeurSimule.push).not.toHaveBeenCalled();
+  });
+
+  it('la frappe REPORTE les filtres déjà posés dans l’URL cherchée', async () => {
+    // Le pendant, côté navigation douce, du report en champs cachés éprouvé
+    // juste en dessous : chercher depuis un rayon filtré ne doit pas ramener
+    // le catalogue entier.
+    render(
+      <ChampRecherche
+        langue="fr"
+        action="/fr/catalogue"
+        filtres={{ ...FILTRES_VIDES, themes: ['ruse'], acces: 'gratuit' }}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Rechercher un conte'), { target: { value: 'lion' } });
+
+    await waitFor(() => {
+      expect(routeurSimule.replace).toHaveBeenCalled();
+    });
+
+    const [adresse] = routeurSimule.replace.mock.calls[0] as [string];
+    expect(adresse).toContain('acces=gratuit');
+    expect(adresse).toContain('themes=ruse');
+    expect(adresse).toContain('q=lion');
+  });
+
+  it('un champ VIDÉ retire `q` au lieu de chercher une chaîne vide', async () => {
+    // Sans cela, effacer sa recherche laisserait `?q=` dans l'adresse : un
+    // filtre invisible, que rien à l'écran ne permettrait de retirer.
+    render(
+      <ChampRecherche
+        langue="fr"
+        action="/fr/catalogue"
+        filtres={{ ...FILTRES_VIDES, q: 'lion' }}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Rechercher un conte'), { target: { value: '' } });
+
+    await waitFor(() => {
+      expect(routeurSimule.replace).toHaveBeenCalledWith('/fr/catalogue', { scroll: false });
+    });
   });
 
   it('chercher n’efface PAS les filtres déjà posés', () => {

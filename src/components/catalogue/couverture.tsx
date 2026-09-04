@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
 import { Motif, type TeinteMotif } from '@/components/motif';
@@ -66,11 +66,38 @@ export function Couverture({
   classeImage?: string;
 }): ReactNode {
   const [manquante, setManquante] = useState(false);
+  const image = useRef<HTMLImageElement | null>(null);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ `onError` SEUL NE SUFFIT PAS, ET IL MANQUE PRÉCISÉMENT QUAND IL FAUT.   │
+   * │                                                                          │
+   * │ L'image est rendue par le SERVEUR : le navigateur la demande dès qu'il   │
+   * │ lit la balise, bien avant que React n'ait hydraté la page et attaché son │
+   * │ gestionnaire. Quand l'objet manque, l'échec arrive donc dans cet         │
+   * │ intervalle, `onError` ne se déclenche jamais, et l'icône d'image cassée  │
+   * │ reste à l'écran — c'est exactement ce qui se voyait sur les huit cartes  │
+   * │ du catalogue de démonstration, substitut en place et pourtant inutile.  │
+   * │                                                                          │
+   * │ Et l'intervalle s'allonge avec la lenteur du réseau : le repli tombait   │
+   * │ en panne chez le public du §5.1, celui-là même pour qui il compte le     │
+   * │ plus.                                                                    │
+   * │                                                                          │
+   * │ Au montage, on ne demande donc pas si une erreur a été REÇUE, mais dans  │
+   * │ quel état l'image EST : chargée (`complete`) et sans largeur intrinsèque │
+   * │ (`naturalWidth === 0`) est la signature d'un chargement échoué.          │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  useEffect(() => {
+    const noeud = image.current;
+    if (noeud?.complete && noeud.naturalWidth === 0) setManquante(true);
+  }, []);
 
   if (manquante) return <SubstitutCouverture langue={langue} teinte={teinte} />;
 
   return (
     <img
+      ref={image}
       src={url}
       srcSet={`${url} ${String(largeur)}w`}
       sizes={tailles}

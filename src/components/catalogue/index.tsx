@@ -7,6 +7,7 @@ import { TRIS } from '@/domain/catalog/schemas';
 import { Motif, teinteDepuisThemes, teinteDuTheme, type Palette } from '@/components/motif';
 import { Couverture, SubstitutCouverture } from './couverture';
 import styles from './catalogue.module.css';
+import { RechercheInstantanee } from './recherche-instantanee';
 
 /**
  * CATALOGUE — §4.1 F2.
@@ -722,20 +723,19 @@ export function ChampRecherche({
         <input key={`${nom}-${String(index)}`} type="hidden" name={nom} value={valeur} />
       ))}
 
-      <label htmlFor="catalogue-q" className={styles.rechercheLibelle}>
-        {traduire(langue, 'catalogue.recherche')}
-      </label>
-      <input
-        id="catalogue-q"
-        name="q"
-        type="search"
-        defaultValue={filtres.q ?? ''}
+      {/*
+       * Le champ et son bouton vivent dans un composant CLIENT, qui cherche
+       * pendant la frappe. Le `<form>` qui les entoure reste entier : sans
+       * JavaScript, il se soumet comme avant, vers la même adresse.
+       */}
+      <RechercheInstantanee
+        action={action}
+        caches={caches}
+        valeurInitiale={filtres.q ?? ''}
+        libelle={traduire(langue, 'catalogue.recherche')}
         placeholder={traduire(langue, 'catalogue.rechercheAide')}
-        className={styles.rechercheSaisie}
+        libelleAction={traduire(langue, 'catalogue.rechercheAction')}
       />
-      <button type="submit" className={styles.rechercheBouton}>
-        {traduire(langue, 'catalogue.rechercheAction')}
-      </button>
     </form>
   );
 }

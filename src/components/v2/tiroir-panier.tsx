@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 
 import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import type { ApercuCommande } from '@/domain/api/contract';
@@ -61,6 +62,7 @@ export function TiroirPanier({
 }): ReactNode {
   const [etat, setEtat] = useState<Etat>({ sorte: 'ferme' });
   const [enCours, setEnCours] = useState<string | null>(null);
+  const router = useRouter();
 
   const bouton = useRef<HTMLButtonElement | null>(null);
   const panneau = useRef<HTMLDivElement | null>(null);
@@ -163,11 +165,25 @@ export function TiroirPanier({
       await fetch(`/api/cart/items/${livreId}`, { method: 'DELETE' }).catch(() => null);
       setEnCours(null);
       await charger();
-      // La page derrière le tiroir porte le même panier — en-tête compris.
-      // Sans ce rafraîchissement, son montant contredirait le tiroir.
-      window.location.reload();
+      /*
+       * ┌──────────────────────────────────────────────────────────────────┐
+       * │ `router.refresh()`, ET NON `window.location.reload()`.           │
+       * │                                                                  │
+       * │ La page derrière le tiroir porte le même panier : sans           │
+       * │ rafraîchissement, son montant contredirait le tiroir. Mais un    │
+       * │ rechargement complet FERMAIT le tiroir, perdait le focus et      │
+       * │ retéléchargeait toute la page — pour une ligne retirée, et sur   │
+       * │ la connexion lente du §5.1.                                      │
+       * │                                                                  │
+       * │ `router.refresh()` ne redemande que l'arbre serveur : le tiroir  │
+       * │ reste ouvert, à sa place, et l'état qu'on vient de relire n'est  │
+       * │ pas jeté. C'est le même serveur qui répond, donc la même seule   │
+       * │ source de vérité sur le contenu du panier.                       │
+       * └──────────────────────────────────────────────────────────────────┘
+       */
+      router.refresh();
     },
-    [charger],
+    [charger, router],
   );
 
   const nombre = etat.sorte === 'pret' ? etat.apercu.lignes.length : nombreInitial;

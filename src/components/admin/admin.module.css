@@ -31,6 +31,38 @@
   background: var(--v2-fond-doux);
 }
 
+/*
+ * LA COLONNE SOMBRE EST PEINTE PAR LE GABARIT, PAS PAR LE RAIL.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN RAIL COLLANT NE PEUT PAS ÊTRE PLUS HAUT QUE LA FENÊTRE.               │
+ * │                                                                          │
+ * │ `position: sticky` avec `max-height: 100vh` est ce qui garde la          │
+ * │ navigation sous les yeux quand la page défile — c'est voulu. Mais le     │
+ * │ rail mesure alors une hauteur d'écran, quand la page en fait trois : en  │
+ * │ dessous, le fond crème du gabarit reparaissait, et la colonne verte      │
+ * │ semblait s'arrêter au milieu du vide. Ça n'avait pas l'air d'un réglage, │
+ * │ ça avait l'air d'un écran cassé.                                        │
+ * │                                                                          │
+ * │ Le dégradé à arrêts francs peint donc la colonne sur TOUTE la hauteur du │
+ * │ gabarit, derrière un rail qui, lui, continue de coller. Deux arrêts à la │
+ * │ même position : aucune transition, une frontière nette à 236 px — la     │
+ * │ largeur du rail, et la seule valeur à garder en accord avec lui.         │
+ * │                                                                          │
+ * │ Sous 820 px le rail se déplie en barre horizontale et porte de nouveau   │
+ * │ son propre fond : le dégradé n'a plus de sens et ne s'applique pas.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (min-width: 821px) {
+  .gabarit {
+    background: linear-gradient(
+      to right,
+      var(--v2-vert-nuit) 0 236px,
+      var(--v2-fond-doux) 236px
+    );
+  }
+}
+
 /* ── Colonne de navigation ──────────────────────────────────────────────── */
 
 .rail {
@@ -229,7 +261,20 @@
 }
 
 .section {
-  margin-bottom: 30px;
+  margin-bottom: 38px;
+}
+
+/*
+ * LE TITRE PREND SON AIR DE CE QUI LE PRÉCÈDE, PAS DE LUI-MÊME.
+ *
+ * Sur le tableau de bord, six titres de section se suivaient à quatorze pixels
+ * du bloc précédent : « Brouillons non publiables » collait à la note du
+ * tableau d'au-dessus, et les deux se lisaient comme un seul paragraphe. La
+ * marge haute ne vaut donc QUE pour un titre qui suit quelque chose — le
+ * premier de l'écran n'en reçoit aucune, et ne se décolle pas de son en-tête.
+ */
+* + .sectionTitre {
+  margin-top: 34px;
 }
 
 .sectionTitre {
@@ -251,11 +296,30 @@
   gap: 16px;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE RELIEF EST CELUI DE LA V2, ET IL N'EST PAS DÉCORATIF.                 │
+ * │                                                                          │
+ * │ `--ombre-carte` existe depuis la direction V2 et le back-office ne s'en  │
+ * │ servait pas : ses cartes étaient posées à plat sur un fond de la même    │
+ * │ famille, si bien qu'une bordure de 1,5 px portait seule la séparation.   │
+ * │ L'ombre fait le travail que la bordure faisait mal ; la bordure peut     │
+ * │ donc s'affiner à 1 px et cesser de cerner.                               │
+ * │                                                                          │
+ * │ Sous la V1 ces jetons valent `none` : la règle des deux ombres tient,    │
+ * │ et ces cartes y restent exactement telles qu'elles étaient.              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * AUCUN SOULÈVEMENT AU SURVOL ICI, ET C'EST DÉLIBÉRÉ : une carte qui se lève
+ * sous le curseur promet un clic. Ces trois chiffres ne mènent nulle part —
+ * leur donner le geste d'un bouton serait une promesse fausse.
+ */
 .chiffre {
-  padding: 20px;
-  border: 1.5px solid var(--bordure);
-  border-radius: var(--rayon-encart);
+  padding: 22px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
   background: var(--fond);
+  box-shadow: var(--ombre-carte);
 }
 
 .chiffreIntitule {
@@ -312,10 +376,11 @@
  * focalisable est inaccessible à qui n'a pas de souris.
  */
 .cadre {
-  border: 1.5px solid var(--bordure);
-  border-radius: var(--rayon-encart);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
   background: var(--fond);
   overflow-x: auto;
+  box-shadow: var(--ombre-carte);
 }
 
 .tableau {
@@ -344,6 +409,13 @@
 
 .tableau tbody tr:last-child td {
   border-bottom: 0;
+}
+
+/* La ligne s'éclaire PROGRESSIVEMENT : un aplat qui apparaît d'un coup se lit
+   comme un défaut d'affichage, la même teinte fondue se lit comme une réponse.
+   La durée vient du jeton, donc elle tombe à zéro sous `prefers-reduced-motion`. */
+.tableau tbody tr {
+  transition: background var(--transition-couleur);
 }
 
 .tableau tbody tr:hover {
@@ -621,7 +693,24 @@
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
   cursor: pointer;
-  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+  transition: background var(--transition-couleur), border-color var(--transition-couleur),
+    transform var(--transition-forme);
+}
+
+/*
+ * L'ENFONCEMENT AU CLIC, POUR UN SEUL PIXEL.
+ *
+ * Le retour d'un bouton d'administration arrive du serveur : entre le clic et
+ * la réponse, `BoutonSoumission` affiche son rotor, mais rien ne confirme que
+ * le clic a PORTÉ. Ce pixel-là le confirme immédiatement, sans attendre le
+ * réseau — et il disparaît sous `prefers-reduced-motion`, où la durée du
+ * jeton tombe à zéro.
+ */
+.boutonPrimaire:active,
+.boutonSecondaire:active,
+.boutonDiscret:active,
+.boutonDanger:active {
+  transform: translateY(1px);
 }
 
 .boutonPrimaire {
@@ -889,10 +978,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 18px 20px;
-  border: 1.5px solid var(--bordure);
-  border-radius: var(--rayon-encart);
+  padding: 20px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-carte);
   background: var(--fond);
+  box-shadow: var(--ombre-carte);
 }
 
 .carteMontantDevise {
