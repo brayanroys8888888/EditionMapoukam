@@ -9,9 +9,6 @@
  * │ la couleur de lien, le contour de focus et la famille des titres en      │
  * │ viennent. Sans lui, chaque écran repart des styles du navigateur — et    │
  * │ c'est très exactement ce qui donnait des écrans fidèles à 20 %.          │
- * │                                                                          │
- * │ Le préflight de Tailwind reste écarté (voir `tailwind.css`) : celui-ci   │
- * │ le remplace, aux valeurs des maquettes.                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 

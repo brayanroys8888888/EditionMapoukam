@@ -10,9 +10,6 @@ import '@/design/polices.css';
 // La réinitialisation des maquettes (§A.1) : fond, lien, focus, familles de
 // titre. Après les jetons, dont elle lit les variables.
 import '@/design/global.css';
-// APRÈS les jetons, et non avant : le pont shadcn les LIT (`var(--fond)`, …).
-// Inversé, Tailwind résoudrait des variables encore indéfinies.
-import '@/design/tailwind.css';
 
 /**
  * Enveloppe racine.
