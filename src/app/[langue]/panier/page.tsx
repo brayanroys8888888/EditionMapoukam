@@ -66,7 +66,13 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
     return (
       <div className={ecran.pageEtroite}>
         <h1 className={ecran.titre}>{traduire(langue, 'panier.titre')}</h1>
-        <p className={ecran.intro}>{traduire(langue, 'panier.vide')}</p>
+
+        {/*
+          Pas d'introduction ici : elle disait « Votre panier est vide », et
+          l'encart juste en dessous le redit mot pour mot. La phrase lue deux
+          fois à trois centimètres d'intervalle ne rassure pas, elle donne
+          l'impression d'un écran monté deux fois.
+        */}
 
         {/* Jamais un cul-de-sac : dire ce qui manque, et donner une action. */}
         <div className={ecran.vide}>

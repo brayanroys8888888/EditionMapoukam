@@ -47,9 +47,25 @@
   align-items: stretch;
 }
 
-/* Au lancement, l'abonnement disparaît et l'achat prend toute la largeur. */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AU LANCEMENT, LA CARTE RESTE SEULE — ELLE NE DOIT PAS S'ÉTIRER POUR     │
+ * │ AUTANT.                                                                  │
+ * │                                                                          │
+ * │ Tant que l'abonnement n'est pas ouvert, il ne reste que l'achat à        │
+ * │ l'unité. Étalée sur les 1200 px de la page, sa carte gardait son contenu │
+ * │ dans la colonne de gauche — titre, prix, trois avantages, bouton — et    │
+ * │ laissait la moitié droite parfaitement vide. Une carte à moitié          │
+ * │ remplie ne se lit pas comme un choix mis en avant : elle se lit comme    │
+ * │ un bloc dont on a retiré quelque chose.                                  │
+ * │                                                                          │
+ * │ Elle prend donc une largeur de lecture et se centre. C'est la forme      │
+ * │ d'une offre unique — celle qu'on regarde, pas celle qu'on compare.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .cartesLancement {
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 620px);
+  justify-content: center;
 }
 
 .carte {

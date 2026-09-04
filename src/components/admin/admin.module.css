@@ -972,33 +972,59 @@
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
+/* La zone dit la même chose que son bouton : le rouge de la charte, pas
+   l'ocre de l'action. Une bordure d'action autour d'une suppression annonçait
+   la couleur de ce qu'on encourage. */
 .zoneDanger {
-  border: 1.5px solid var(--action);
+  border: 1.5px solid var(--region-afrique_centrale-bordure);
   border-radius: var(--rayon-encart);
   background: var(--fond);
   padding: clamp(16px, 2vw, 24px);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE ACTION DESTRUCTRICE N'EST PAS L'ACTION PRINCIPALE.                   │
+ * │                                                                          │
+ * │ Ce bouton portait `background: var(--action)` — le remplissage exact du  │
+ * │ bouton primaire. Sur l'écran des offres, « Supprimer » était donc        │
+ * │ l'élément le plus voyant de la page, répété à chaque ligne, pendant que  │
+ * │ « Retirer de la vente » — l'action SÛRE, celle que la note de bas de     │
+ * │ tableau recommande — n'était qu'un lien souligné. Le poids visuel était  │
+ * │ l'exact inverse du risque.                                              │
+ * │                                                                          │
+ * │ Il est donc discret au repos et franc au survol, ce qui est l'ordre      │
+ * │ naturel : on ne remarque « Supprimer » qu'au moment où on le vise.       │
+ * │                                                                          │
+ * │ La teinte est le rouge de la charte, et la paire employée est celle que  │
+ * │ `tokens.css` a DÉJÀ mesurée : l'encre d'Afrique centrale sur son propre  │
+ * │ fond, assombrie exprès jusqu'à passer 4,5:1. Aucune couleur nouvelle,    │
+ * │ aucun contraste supposé — et pas une valeur écrite ici, le test des      │
+ * │ jetons lisant aussi les commentaires.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .boutonDanger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--cible-min);
   padding: 0 18px;
-  border: 1.5px solid var(--action);
+  border: 1.5px solid var(--region-afrique_centrale-bordure);
   border-radius: var(--rayon-bouton);
-  background: var(--action);
-  color: var(--action-encre);
+  background: transparent;
+  color: var(--region-afrique_centrale-encre);
   font-family: var(--police-interface);
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
   cursor: pointer;
-  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+  transition: background var(--transition-couleur), border-color var(--transition-couleur),
+    transform var(--transition-forme);
 }
 
 .boutonDanger:hover {
-  background: var(--fond);
-  color: var(--action-encre);
+  background: var(--region-afrique_centrale-fond);
+  border-color: var(--region-afrique_centrale-encre);
+  color: var(--region-afrique_centrale-encre);
 }
 
 /* ── Bandeaux de retour ────────────────────────────────────────────────────
