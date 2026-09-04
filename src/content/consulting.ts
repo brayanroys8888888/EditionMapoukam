@@ -233,14 +233,15 @@ const FR: PresentationConsulting = {
       'Cahier de mathématiques — les chiffres et les formes, à partir de 3 ans.',
     hygiene: 'Cahier d’hygiène — autonomie et propreté, à partir de 6 ans.',
     jeux: 'Le monde magique des jeux et puzzles — s’amuser, créer et apprendre ensemble.',
-    ecole: 'Cahier de l’école — langage et nombres, à partir de 9 ans.',
+    ecole:
+      'Cahier de l’école — langage, nombres, coloriage et découvertes, à partir de 9 ans.',
     trace: 'Cahier de graphisme « Je trace » — les lettres, à partir de 5 ans.',
     coloriage:
       'Cahier d’activités, dessin et coloriage — maternelle 2ᵉ année, à partir de 5 ans.',
     perroquet: 'Page intérieure : le modèle en couleur, le tracé à colorier.',
     orange: 'Page intérieure : reconnaître un fruit, puis le mettre en couleur.',
     atelier:
-      'À l’atelier de conception : les maquettes des cahiers, avant le départ en impression.',
+      'La fondatrice à son bureau, les cahiers déjà parus devant elle. C’est aussi l’affiche de la vidéo.',
   },
   videoLegende: 'La présentation de l’accompagnement, en vidéo.',
   appel: {
@@ -325,12 +326,14 @@ const EN: PresentationConsulting = {
     mathematiques: 'Maths workbook — numbers and shapes, ages 3 and up.',
     hygiene: 'Hygiene workbook — independence and cleanliness, ages 6 and up.',
     jeux: 'The magical world of games and puzzles — play, make and learn together.',
-    ecole: 'School workbook — language and numbers, ages 9 and up.',
+    ecole:
+      'School workbook — language, numbers, colouring and discovery, ages 9 and up.',
     trace: 'Handwriting workbook, “I trace” — letters, ages 5 and up.',
     coloriage: 'Activity book, drawing and colouring — nursery year 2, ages 5 and up.',
     perroquet: 'Inside page: the coloured model, and the outline to colour in.',
     orange: 'Inside page: name a fruit, then bring it into colour.',
-    atelier: 'In the design studio: workbook layouts, before they go to print.',
+    atelier:
+      'The founder at her desk, with the workbooks already published. It is also the video’s poster frame.',
   },
   videoLegende: 'The support we offer, presented on video.',
   appel: {

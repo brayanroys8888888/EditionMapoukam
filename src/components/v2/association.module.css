@@ -339,6 +339,78 @@
   justify-content: center;
 }
 
+/* ── L'IDENTITÉ : LE LOGO ET LA DEVISE ─────────────────────────────────── */
+
+/*
+ * Le logo est carré (1024 × 1024) et porte DÉJÀ le nom et la devise. Il est
+ * donc décoratif au sens strict — le texte qui compte est répété en dessous,
+ * en vraie typographie, lisible à la loupe d'écran et traduisible. Son `alt`
+ * dit néanmoins ce qu'il montre : un lecteur d'écran ne doit pas rencontrer un
+ * trou là où un voyant voit l'emblème de l'association.
+ */
+.identite {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 72ch;
+  margin: 0 auto clamp(32px, 4vw, 48px);
+  padding: 0 24px;
+  text-align: center;
+}
+
+.logo {
+  display: block;
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  border-radius: var(--rayon-carte);
+}
+
+.devise {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 1.25rem;
+  line-height: 1.3;
+  color: var(--encre-douce);
+}
+
+/* ── LA VIDÉO DE PRÉSENTATION ──────────────────────────────────────────── */
+
+/*
+ * `max-width` en pixels, et non en pourcentage : la vidéo fait 640 × 360, et
+ * l'étirer au-delà de sa définition ne montrerait rien de plus qu'un flou.
+ *
+ * `aspect-ratio` est posé pour que la place soit RÉSERVÉE avant que le premier
+ * octet arrive. Sans lui, l'affiche pousse le texte vers le bas au moment où
+ * elle se charge, et le lecteur perd la ligne qu'il lisait.
+ */
+.video {
+  max-width: 72ch;
+  margin: 0 auto clamp(40px, 5vw, 64px);
+  padding: 0 24px;
+}
+
+.lecteur {
+  display: block;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 16 / 9;
+  margin: 0 auto;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-carte);
+  background: var(--fond-doux);
+}
+
+.videoLegende {
+  margin: 12px auto 0;
+  max-width: 640px;
+  font-size: var(--taille-m);
+  line-height: 1.5;
+  color: var(--encre-douce);
+  text-align: center;
+}
+
 /* ── LA PRÉSENTATION, EN TÊTE DE L'ESPACE ──────────────────────────────── */
 
 .presentation {

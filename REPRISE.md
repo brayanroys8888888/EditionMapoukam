@@ -5,6 +5,120 @@
 
 ---
 
+## 0 septies. L'Association DAVE — les vrais textes, le logo, la vidéo
+
+> Écrit le 4 septembre 2026.
+
+### La demande
+
+> « remplace par les vraies données qui se trouvent dans ce dossier
+> `New section/Association Dave` »
+
+Un fichier de texte (une introduction et trois articles), le logo de
+l'association, quatre photos et une vidéo.
+
+### Ce que le dépôt portait avant, et pourquoi c'était grave
+
+`src/content/association.ts` était **de mon invention**. Écrit d'après le reste
+du site faute de mieux, il décrivait une association qui dote des bibliothèques
+de quartier et recueille des contes auprès de conteurs. C'était vraisemblable,
+c'était bien écrit, et c'était **faux** : le logo de l'association dit
+« DAVE — enfants à besoins spécifiques — grandir ensemble, apprendre autrement ».
+
+La leçon n'est pas « il manquait des données ». C'est qu'un texte inventé sur
+une structure réelle ne se signale pas comme manquant : il a l'air fini. Un
+`TODO` aurait été moins joli et infiniment plus honnête. Le fichier porte
+désormais un encadré qui raconte le remplacement, pour que personne ne
+« réaméliore » ces phrases : elles engagent une association auprès de familles.
+
+### Ce qui a été construit
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `src/content/association.ts` | la présentation réelle, FR et EN, plus `LOGO_ASSOCIATION` et `VIDEO_PRESENTATION` |
+| `src/app/[langue]/association/page.tsx` | le logo et sa devise sous la bannière, la vidéo entre la présentation et l'appel à l'adhésion |
+| `src/components/v2/association.module.css` | `.identite`, `.logo`, `.devise`, `.video`, `.lecteur`, `.videoLegende` — jetons seuls, zéro hexadécimal |
+| `public/images/association/` | le logo, quatre photos, `presentation.mp4` |
+| `supabase/seed.sql` | les **trois articles** de l'association, en accès libre, illustrés par leurs propres photos |
+| `tests/unit/association-contenu.test.ts` | dix tests |
+
+Les trois articles gardent le vocabulaire de l'association : « briser
+l'isolement », « l'inclusion sans compromis », « seul on va plus vite, ensemble
+on va plus loin ». Ils ne sont pas réécrits, seulement découpés en blocs
+`{titre, paragraphes | points}` — la forme qu'attend la colonne `corps`.
+
+### Les arbitrages, à ne pas rejouer
+
+| Question | Réponse | Pourquoi |
+| --- | --- | --- |
+| Les trois articles en base ou en fichier ? | **En base**, comme les cinq autres | Ils portent un droit d'accès, et un droit se garde là où RLS et les privilèges de colonne le protègent. La décision du 3 septembre tient : la présentation en fichier, les contenus en base |
+| Libre ou réservé aux adhérents ? | **Libre** | Ce sont les textes qui donnent envie d'adhérer. Les mettre derrière l'adhésion, c'est demander de payer pour lire pourquoi payer |
+| Qui devient la vedette ? | **« Sur le terrain avec l'Association DAVE »** | La voix de l'association passe devant les articles repris du blog. `lire-a-voix-haute` perd la vedette, garde son slug et sa redirection 308 |
+| Quelle affiche pour la vidéo ? | **`apprendre-ensemble.jpg`** | Aucun `ffmpeg` ni `ffprobe` sur la machine : impossible d'en extraire une image. Le visuel « Ensemble, nous apprenons mieux » fourni avec la vidéo dit le sujet, et une affiche promet le sujet, pas la première image |
+
+### Le piège : une vedette unique, et un index qui se vérifie ligne par ligne
+
+`association_contents_une_seule_vedette` (migration 0069) est un index **unique
+partiel** : au plus une ligne peut porter `vedette` parmi les publiées.
+
+La tentation était d'écrire le retrait de l'ancienne vedette et la pose de la
+nouvelle dans le même `insert … on conflict … do update`. Un index unique
+ordinaire n'est pas différé : il se vérifie **ligne par ligne**, et non en fin
+d'instruction. Selon l'ordre dans lequel PostgreSQL traite les lignes, le seed
+aurait donc échoué — ou pas. Un défaut qui se manifeste une fois sur deux est
+pire qu'un défaut franc.
+
+Le seed écrit donc deux instructions : `update … set vedette = false where
+vedette;` d'abord, l'insertion ensuite.
+
+### La vidéo, mesurée sans `ffprobe`
+
+Dix secondes, 640 × 360, 1,19 Mo — lus directement dans les atomes `mvhd` et
+`stsd` du fichier. C'est ce qui a fixé la mise en page : la vidéo de
+l'expertise est verticale et plafonnée à 420 px, celle-ci est en 16/9 et
+plafonnée à 640 px, sa définition réelle. L'étirer au-delà n'aurait montré
+qu'un flou.
+
+`preload="none"` dans les deux cas : §5.1, une part importante du public est sur
+réseau mobile lent, et une vidéo qui se télécharge d'elle-même dépense un
+forfait que personne n'a engagé.
+
+### Ce que le test défend
+
+`tests/unit/association-contenu.test.ts`, dix tests, sans base :
+
+- les trois médias déclarés existent **sur le disque** — le type ne connaît que
+  la chaîne ;
+- les chemins `/images/association/…` écrits à la main dans `seed.sql` existent
+  eux aussi — le SQL s'applique sans un mot sur un fichier renommé ;
+- parité FR/EN, et l'anglais n'est pas le français recopié ;
+- la section « Adhérer » garde ses **trois** points : ce n'est pas de la prose
+  d'agrément, c'est la règle d'étanchéité des deux abonnements énoncée à
+  l'écran ;
+- aucun montant d'adhésion dans le fichier de contenu — les tarifs vivent dans
+  `subscription_plans` / `plan_prices` depuis la 0068.
+
+### À savoir avant de reprendre
+
+- **La porte n'a pas pu être passée en entier** : le serveur de développement
+  occupe le port 3000, et `tests/unit/middleware.test.ts` simule une panne
+  réseau — un serveur qui répond la lui refuse. Tout le reste est vert :
+  1547 réussis sur 1549, la seconde chute étant un dépassement de 30 s sur
+  l'extraction d'un PDF, repassé seul en 70/70. Arrêter le serveur et relancer
+  `npm run verify` pour l'enregistrer.
+- **`tests/effectif-attendu.json` a été complété à la main** (1539 → 1549,
+  92 fichiers). La porte ne l'écrit d'elle-même que sur une exécution
+  entièrement verte.
+- Le serveur de développement répondait **500 sur tous les écrans** en fin de
+  session, page d'accueil comprise — donc avant toute modification de cette
+  session. C'est le symptôme décrit dans `CLAUDE.md` : un serveur saturé après
+  douze minutes de tests d'intégration. Le redémarrer.
+- Le dossier `New section/` reste **non versionné** (4,7 Mo de sources brutes,
+  deux MP4). À verser au dépôt ou à mettre au `.gitignore` — décision du
+  propriétaire.
+
+---
+
 ## 0 sexies. Expertise & conseil — Mapoukam Consulting
 
 > Écrit le 4 septembre 2026. **La porte est verte : 1539 tests, 91 fichiers.**

@@ -393,7 +393,15 @@ on conflict (plan_id, zone) do update set
 -- Contenus de l'espace associatif (§3.6, §4.1 F4 bis)
 --
 -- ┌────────────────────────────────────────────────────────────────────────────┐
--- │ CE SONT LES CINQ ARTICLES DE L'ANCIEN BLOG, REPRIS EN ACCÈS LIBRE.        │
+-- │ HUIT TEXTES, DE DEUX PROVENANCES — ET LA DIFFÉRENCE COMPTE.               │
+-- │                                                                            │
+-- │ Les TROIS PREMIERS ont été écrits par l'Association DAVE et fournis le      │
+-- │ 4 septembre 2026 : ils disent ce qu'elle fait, pourquoi, et comment y       │
+-- │ prendre part. Ils ne se réécrivent pas — ils engagent une structure réelle  │
+-- │ auprès de familles réelles. Leurs illustrations sont les photos fournies    │
+-- │ avec eux, versionnées dans `public/images/association/`.                    │
+-- │                                                                            │
+-- │ LES CINQ AUTRES SONT LES ARTICLES DE L'ANCIEN BLOG, REPRIS EN ACCÈS LIBRE. │
 -- │                                                                            │
 -- │ Décision du propriétaire, 3 septembre 2026 : le blog devient l'espace de    │
 -- │ l'association, ses articles en forment la part ouverte, et les contenus     │
@@ -414,19 +422,41 @@ on conflict (plan_id, zone) do update set
 -- temps de six mois.
 -- ---------------------------------------------------------------------------
 
+-- La vedette est libérée AVANT l'insertion, dans son propre ordre.
+--
+-- `association_contents_une_seule_vedette` est un index unique partiel : au plus
+-- une ligne peut porter `vedette` parmi les publiées. Un index unique ordinaire
+-- se vérifie LIGNE PAR LIGNE, et non en fin d'instruction — poser la nouvelle
+-- vedette dans le même `insert … on conflict` que le retrait de l'ancienne
+-- échouerait donc selon l'ordre où PostgreSQL traite les lignes, c'est-à-dire
+-- par intermittence. Le retrait d'abord, la pose ensuite : deux instructions.
+update public.association_contents set vedette = false where vedette;
+
 insert into public.association_contents
-  (slug, categorie, acces, statut, publie_le, minutes, vedette, ordre)
+  (slug, categorie, acces, statut, publie_le, minutes, vedette, ordre, image_url)
 values
+  -- Les trois textes de l'Association DAVE, et leurs photos.
+  ('sur-le-terrain-avec-l-association-dave', 'actions', 'libre', 'publie',
+   timestamptz '2026-09-01 09:00:00+00', 3, true, 0,
+   '/images/association/kit-pedagogique.jpg'),
+  ('education-pour-tous-responsabilite-collective', 'besoins-specifiques', 'libre', 'publie',
+   timestamptz '2026-08-25 09:00:00+00', 3, false, 0,
+   '/images/association/classes-inclusives.jpg'),
+  ('trois-facons-de-soutenir-l-association-dave', 'vie-associative', 'libre', 'publie',
+   timestamptz '2026-08-18 09:00:00+00', 3, false, 0,
+   '/images/association/formation-des-parents.jpg'),
+
+  -- Les cinq articles repris du blog. Leurs slugs sont ceux des redirections.
   ('lire-a-voix-haute', 'accompagnement', 'libre', 'publie',
-   timestamptz '2026-07-28 09:00:00+00', 6, true, 0),
+   timestamptz '2026-07-28 09:00:00+00', 6, false, 0, null),
   ('choisir-selon-l-age', 'pedagogie', 'libre', 'publie',
-   timestamptz '2026-07-21 09:00:00+00', 5, false, 0),
+   timestamptz '2026-07-21 09:00:00+00', 5, false, 0, null),
   ('anansi-et-les-histoires-du-monde', 'culture', 'libre', 'publie',
-   timestamptz '2026-07-14 09:00:00+00', 7, false, 0),
+   timestamptz '2026-07-14 09:00:00+00', 7, false, 0, null),
   ('contes-en-classe', 'pedagogie', 'libre', 'publie',
-   timestamptz '2026-07-07 09:00:00+00', 8, false, 0),
+   timestamptz '2026-07-07 09:00:00+00', 8, false, 0, null),
   ('accompagner-enfants-besoins-specifiques', 'besoins-specifiques', 'libre', 'publie',
-   timestamptz '2026-06-30 09:00:00+00', 9, false, 0)
+   timestamptz '2026-06-30 09:00:00+00', 9, false, 0, null)
 on conflict (slug) do update set
   categorie = excluded.categorie,
   acces = excluded.acces,
@@ -435,6 +465,7 @@ on conflict (slug) do update set
   minutes = excluded.minutes,
   vedette = excluded.vedette,
   ordre = excluded.ordre,
+  image_url = excluded.image_url,
   maj_le = public.app_now();
 
 -- ---------------------------------------------------------------------------
@@ -449,6 +480,86 @@ insert into public.association_content_translations (content_id, langue, titre, 
 select c.id, 'fr', v.titre, v.chapeau, v.corps
 from public.association_contents c
 join (values
+  ('sur-le-terrain-avec-l-association-dave',
+   'Sur le terrain avec l’Association DAVE : quand un simple kit pédagogique change un regard',
+   'L’éducation n’est pas qu’une question de grands discours ou de manuels théoriques. C’est avant tout une rencontre humaine, un sourire et un déclic.',
+   $json$[
+     {
+       "titre": "La puissance d’un outil adapté",
+       "paragraphes": [
+         "Sur le terrain, avec les équipes de l’Association DAVE, nous mesurons chaque jour la puissance d’un outil adapté. Qu’il s’agisse d’un support visuel, d’un jeu de cartes inclusif ou d’un livret d’activités, voir le visage d’un enfant s’illuminer lorsqu’il comprend, réussit et prend confiance en lui est notre plus belle récompense."
+       ]
+     },
+     {
+       "titre": "Pourquoi chaque action compte",
+       "points": [
+         "Briser l’isolement : offrir à un enfant en situation de handicap ou de difficulté d’apprentissage les moyens de participer comme les autres.",
+         "Soutenir les familles : apporter aux parents des solutions concrètes et rassurantes pour accompagner le quotidien à la maison.",
+         "Semer l’espoir : prouver que chaque communauté, même rurale ou défavorisée, mérite un accès égal à l’excellence éducative."
+       ]
+     },
+     {
+       "titre": "Ce qu’il y a derrière chaque kit",
+       "paragraphes": [
+         "Derrière chaque kit distribué, il y a la conviction profonde qu’aucun enfant ne doit être laissé sur le bord de la route.",
+         "Merci à tous ceux qui, à nos côtés, rendent cette magie possible."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('education-pour-tous-responsabilite-collective',
+   'Pourquoi l’éducation pour tous n’est pas un rêve lointain, mais une responsabilité collective',
+   'Parler d’« éducation pour tous », c’est bien plus qu’un slogan : c’est un combat de chaque instant.',
+   $json$[
+     {
+       "titre": "Des barrières invisibles, mais bien réelles",
+       "paragraphes": [
+         "Trop souvent, les enfants ayant des besoins spécifiques ou vivant dans des zones reculées se heurtent à des barrières invisibles mais bien réelles : manque de supports adaptés, manque de formation, manque de moyens.",
+         "À l’Association DAVE, nous refusons la fatalité. Nous croyons fermement que l’inclusion et l’accessibilité pédagogique ne sont pas des options, mais les piliers fondamentaux d’une société juste et prospère."
+       ]
+     },
+     {
+       "titre": "Nos axes de combat pour bâtir l’avenir",
+       "points": [
+         "L’inclusion sans compromis : concevoir des ressources qui s’adaptent à l’enfant, et non l’inverse.",
+         "Le partage des savoirs : former, sensibiliser et outiller les enseignants et les parents pour qu’ils deviennent des acteurs du changement.",
+         "La valorisation du patrimoine : ancrer l’apprentissage dans nos réalités culturelles pour donner du sens à ce que l’enfant apprend."
+       ]
+     },
+     {
+       "titre": "Une brique après l’autre",
+       "paragraphes": [
+         "Bâtir l’éducation de demain, c’est poser une brique après l’autre, ensemble. Et ce chantier commence dès aujourd’hui, grâce à votre engagement."
+       ]
+     }
+   ]$json$::jsonb),
+
+  ('trois-facons-de-soutenir-l-association-dave',
+   'Bâtir l’éducation de demain : 3 façons simples de soutenir les actions de l’Association DAVE dès aujourd’hui',
+   'On nous demande souvent : « Comment puis-je vous aider concrètement ? » La bonne nouvelle, c’est que chaque geste, même le plus simple, a un impact immense sur le terrain.',
+   $json$[
+     {
+       "titre": "Des projets ambitieux, et des forces vives",
+       "paragraphes": [
+         "L’Association DAVE porte des projets ambitieux pour rendre l’éducation accessible à tous les enfants. Et pour y arriver, nous avons besoin de forces vives à nos côtés."
+       ]
+     },
+     {
+       "titre": "Trois façons d’agir dès maintenant",
+       "points": [
+         "Partager et faire connaître : parler de nos actions autour de vous, partager nos publications sur les réseaux sociaux ou en parler à un proche, c’est déjà offrir de la visibilité à notre cause.",
+         "Participer à nos événements et ateliers : rejoindre nos séminaires, nos formations ou nos ateliers, en présentiel ou en ligne, pour enrichir vos pratiques et soutenir nos projets.",
+         "Soutenir nos campagnes de terrain : contribuer à la production et à la distribution de nos kits pédagogiques pour équiper les enfants dans les zones prioritaires."
+       ]
+     },
+     {
+       "titre": "Rejoindre le mouvement",
+       "paragraphes": [
+         "« Seul on va plus vite, ensemble on va plus loin. » Rejoignez le mouvement et devenez, vous aussi, un acteur de la révolution éducative !"
+       ]
+     }
+   ]$json$::jsonb),
+
   ('lire-a-voix-haute',
    'Lire à voix haute, même quand on n’est pas conteur',
    'On croit qu’il faut savoir raconter. Il faut surtout accepter de lire mal, et de recommencer le lendemain.',

@@ -3,7 +3,11 @@ import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
 
 import { langueValide, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
-import { lirePresentationAssociation } from '@/content/association';
+import {
+  lirePresentationAssociation,
+  LOGO_ASSOCIATION,
+  VIDEO_PRESENTATION,
+} from '@/content/association';
 import {
   lireContenusAssociatifs,
   type ContenuAssociatif,
@@ -189,6 +193,26 @@ export default async function PageAssociation({ params }: Parametres) {
 
       {/* ── La présentation, versionnée ─────────────────────────────────── */}
       <div className={boutique.page}>
+        {/*
+          Le logo porte déjà le nom et la devise, mais en pixels. La devise est
+          donc RÉPÉTÉE en dessous, en texte : elle est ainsi traduite, agrandie
+          avec le reste de la page, et lue par un lecteur d'écran.
+
+          `width` et `height` sont ceux du fichier : ils réservent la place
+          avant que l'image arrive, ce qui évite que le texte saute sous les
+          yeux d'un lecteur sur réseau lent.
+        */}
+        <div className={styles.identite}>
+          <img
+            className={styles.logo}
+            src={`/images/association/${LOGO_ASSOCIATION.fichier}`}
+            alt={presentation.logoAlt}
+            width={LOGO_ASSOCIATION.largeur}
+            height={LOGO_ASSOCIATION.hauteur}
+          />
+          <p className={styles.devise}>{presentation.devise}</p>
+        </div>
+
         <div className={styles.presentation}>
           {presentation.sections.map((section) => (
             <section key={section.titre}>
@@ -208,6 +232,33 @@ export default async function PageAssociation({ params }: Parametres) {
             </section>
           ))}
         </div>
+
+        {/*
+          ── La vidéo de présentation ─────────────────────────────────────
+
+          `preload="none"` : rien ne descend tant que le visiteur n'a pas
+          appuyé. §5.1 — une part importante du public est sur réseau mobile
+          lent, et une vidéo qui se charge d'elle-même dépense un forfait que
+          personne n'a engagé.
+
+          `playsInline` : sans lui, Safari sur iPhone passe en plein écran dès
+          la lecture et arrache le visiteur à la page.
+        */}
+        <figure className={styles.video}>
+          <video
+            className={styles.lecteur}
+            controls
+            preload="none"
+            playsInline
+            poster={`/images/association/${VIDEO_PRESENTATION.affiche}`}
+          >
+            <source
+              src={`/images/association/${VIDEO_PRESENTATION.fichier}`}
+              type="video/mp4"
+            />
+          </video>
+          <figcaption className={styles.videoLegende}>{presentation.videoLegende}</figcaption>
+        </figure>
 
         {/* ── L'appel à l'adhésion ─────────────────────────────────────── */}
         <div className={styles.mur}>

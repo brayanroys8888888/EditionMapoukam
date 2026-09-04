@@ -16,12 +16,28 @@ import type { Section } from './editorial';
  * │   visiteur. Elle doit s'afficher sans requête, être relue en revue de    │
  * │   code, et exister dans les DEUX langues sous peine de ne pas compiler.  │
  * │                                                                          │
- * │ • LES CONTENUS — comptes rendus, actions, ressources — se publient au    │
+ * │ • LES CONTENUS — récits de terrain, actions, ressources — se publient au │
  * │   fil de l'eau, par l'éditeur, depuis `/admin/association`. Les mettre   │
  * │   ici demanderait un déploiement à chaque publication, et surtout ils    │
  * │   portent un DROIT D'ACCÈS : `abonnes` ou `libre`. Un droit se garde en  │
  * │   base, où RLS et les privilèges de colonne le protègent — jamais dans   │
  * │   un fichier que le client télécharge.                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE TEXTE VIENT DE L'ASSOCIATION, PAS DE NOUS.                           │
+ * │                                                                          │
+ * │ Le 4 septembre 2026, une première version de ce fichier a été remplacée  │
+ * │ intégralement. Elle avait été écrite d'après le reste du site, faute de  │
+ * │ mieux, et elle décrivait une association qui dote des bibliothèques et   │
+ * │ recueille des contes auprès de conteurs. C'était vraisemblable et c'était │
+ * │ faux : DAVE travaille auprès des ENFANTS À BESOINS SPÉCIFIQUES, et sa    │
+ * │ devise — « grandir ensemble, apprendre autrement » — est sur son logo.   │
+ * │                                                                          │
+ * │ Tout ce qui suit est repris des textes fournis par l'association. Ne pas │
+ * │ « améliorer » ces phrases : elles engagent une structure réelle auprès   │
+ * │ de familles réelles, et une reformulation habile y glisse une promesse   │
+ * │ que personne n'a faite.                                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -34,13 +50,50 @@ import type { Section } from './editorial';
  * │ texte dit ce qu'on obtient, jamais ce qu'on paie.                        │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
+
+/**
+ * LE LOGO DE L'ASSOCIATION.
+ *
+ * `largeur` et `hauteur` sont celles du fichier, relevées sur le disque. Sans
+ * elles, la page saute au moment où l'image arrive — et sur une connexion
+ * lente, elle arrive après le texte que le visiteur a commencé à lire.
+ */
+export const LOGO_ASSOCIATION = {
+  fichier: 'logo-dave.jpg',
+  largeur: 1024,
+  hauteur: 1024,
+} as const;
+
+/**
+ * LA VIDÉO DE PRÉSENTATION.
+ *
+ * Dix secondes, 640 × 360, un peu plus d'un mégaoctet — relevés dans ses
+ * atomes, faute de `ffprobe` sur la machine. Elle ne descend QUE si le visiteur
+ * la lance : `preload="none"` et une affiche. §5.1 — une part importante du
+ * public est sur réseau mobile lent, et une vidéo qui se télécharge d'elle-même
+ * y consomme un forfait sans qu'on l'ait demandé.
+ *
+ * L'affiche n'est pas une image extraite de la vidéo : c'est le visuel
+ * « Ensemble, nous apprenons mieux » fourni par l'association. Un poster ne
+ * promet pas la première image du film, il promet le sujet.
+ */
+export const VIDEO_PRESENTATION = {
+  fichier: 'presentation.mp4',
+  affiche: 'apprendre-ensemble.jpg',
+} as const;
+
 export interface PresentationAssociation {
   /** Petite capitale au-dessus du titre. */
   oeil: string;
   titre: string;
   chapeau: string;
-  /** Mission, adhésion, appel à soutien — dans cet ordre. */
+  /** La devise, telle qu'elle est écrite sur le logo. */
+  devise: string;
+  /** Texte de remplacement du logo — il PORTE le nom et la devise. */
+  logoAlt: string;
+  /** Mission, adhésion, soutien — dans cet ordre. */
   sections: Section[];
+  videoLegende: string;
   /** Le bloc d'appel à l'adhésion, sous les sections. */
   appel: {
     titre: string;
@@ -52,28 +105,29 @@ export interface PresentationAssociation {
 
 const FR: PresentationAssociation = {
   oeil: 'L’association',
-  titre: 'L’Association Dave',
+  titre: 'L’Association DAVE',
   chapeau:
-    'Faire arriver des histoires là où elles n’arrivent pas — dans les classes sans bibliothèque, chez les familles éloignées du livre, auprès des enfants que la lecture met en difficulté.',
+    'Le cœur battant de notre engagement sociétal. Née de la conviction qu’aucun enfant ne doit être laissé sur le bord de la route, l’Association DAVE incarne notre action de terrain.',
+  devise: 'Grandir ensemble, apprendre autrement.',
+  logoAlt: 'Association DAVE — enfants à besoins spécifiques — grandir ensemble, apprendre autrement',
   sections: [
     {
-      titre: 'Ce que nous faisons',
+      titre: 'Notre action de terrain',
       paragraphes: [
-        'L’Association Dave est née du même constat que la maison d’édition : des enfants grandissent sans jamais entendre une histoire qui leur ressemble. L’édition répond à une partie du problème — encore faut-il que les livres franchissent la porte.',
-        'L’association s’occupe de cette porte. Elle dote des classes et des bibliothèques de quartier, forme des adultes qui lisent à voix haute, et accompagne les familles d’enfants à besoins spécifiques, pour qui la lecture du soir demande des aménagements que personne ne leur explique.',
+        'L’association porte des initiatives concrètes pour rendre l’éducation inclusive et accessible à tous, en concevant des solutions adaptées et en soutenant activement les communautés.',
+        'Bâtir l’éducation de demain se fait main dans la main. Les textes publiés plus bas racontent ce que nous faisons sur le terrain, le combat qui les motive, et comment y prendre part.',
       ],
       points: [
-        'Dotation de contes et de livrets pédagogiques à des écoles et des associations de quartier.',
-        'Ateliers de lecture à voix haute, pour des parents et des enseignants qui n’ont jamais été formés à cela.',
-        'Accompagnement des familles d’enfants dyslexiques, à trouble de l’attention, ou simplement fâchés avec le déchiffrage.',
-        'Recueil et transmission de contes auprès de conteurs, avant que les versions orales ne se perdent.',
+        'Briser l’isolement : offrir à un enfant en situation de handicap ou de difficulté d’apprentissage les moyens de participer comme les autres.',
+        'Soutenir les familles : apporter aux parents des solutions concrètes et rassurantes pour accompagner le quotidien à la maison.',
+        'Semer l’espoir : prouver que chaque communauté, même rurale ou défavorisée, mérite un accès égal à l’excellence éducative.',
       ],
     },
     {
       titre: 'Adhérer',
       paragraphes: [
         'L’adhésion est un abonnement distinct de celui du catalogue, et c’est délibéré : l’un finance des livres, l’autre finance des actions. Ils ne se remplacent pas, ne se déduisent pas l’un de l’autre, et l’on peut n’en prendre qu’un.',
-        'Adhérer ouvre l’ensemble des contenus réservés de cet espace : comptes rendus détaillés des actions, fiches d’accompagnement, guides pour monter un atelier, entretiens avec les conteurs et les enseignants avec qui nous travaillons.',
+        'Adhérer ouvre l’ensemble des contenus réservés de cet espace : récits de terrain détaillés, ressources d’accompagnement, supports adaptés et comptes rendus d’ateliers.',
       ],
       points: [
         'L’adhésion n’ouvre pas la lecture en ligne du catalogue — c’est l’abonnement de lecture qui le fait.',
@@ -84,43 +138,50 @@ const FR: PresentationAssociation = {
     {
       titre: 'Nous soutenir autrement',
       paragraphes: [
-        'Une adhésion n’est pas la seule façon d’aider, et parfois pas la plus utile. Une classe qui accueille un atelier, un conteur qui accepte d’être enregistré, un libraire qui garde deux cartons : ce sont des soutiens que l’argent n’achète pas.',
-        'Si vous êtes enseignant, bibliothécaire, orthophoniste, conteur, ou simplement quelqu’un qui connaît une structure à qui ces livres manqueraient, écrivez-nous. La page de contact suffit — dites d’où vous écrivez et ce que vous voyez autour de vous.',
+        'On nous demande souvent : « Comment puis-je vous aider concrètement ? » La bonne nouvelle, c’est que chaque geste, même le plus simple, a un impact immense sur le terrain.',
+      ],
+      points: [
+        'Partager et faire connaître : parler de nos actions autour de vous, partager nos publications, en parler à un proche.',
+        'Participer à nos événements et ateliers : séminaires, formations et ateliers, en présentiel ou en ligne.',
+        'Soutenir nos campagnes de terrain : contribuer à la production et à la distribution des kits pédagogiques dans les zones prioritaires.',
       ],
     },
   ],
+  videoLegende: 'L’Association DAVE en vidéo.',
   appel: {
-    titre: 'Rejoindre l’association',
+    titre: 'Rejoindre le mouvement',
     texte:
-      'L’adhésion ouvre les contenus réservés de cet espace et finance les dotations et les ateliers.',
+      '« Seul on va plus vite, ensemble on va plus loin. » L’adhésion ouvre les contenus réservés de cet espace et soutient la production et la distribution des kits pédagogiques.',
     action: 'Voir les formules d’adhésion',
   },
 };
 
 const EN: PresentationAssociation = {
   oeil: 'The association',
-  titre: 'The Dave Association',
+  titre: 'The DAVE Association',
   chapeau:
-    'Bringing stories where they do not arrive — to classrooms without a library, to families far from books, to children for whom reading is a struggle.',
+    'The beating heart of our social commitment. Born of the conviction that no child should be left by the roadside, the DAVE Association is our work on the ground.',
+  devise: 'Growing up together, learning differently.',
+  logoAlt:
+    'DAVE Association — children with specific needs — growing up together, learning differently',
   sections: [
     {
-      titre: 'What we do',
+      titre: 'Our work on the ground',
       paragraphes: [
-        'The Dave Association grew out of the same observation as the publishing house: children grow up without ever hearing a story that looks like them. Publishing answers part of the problem — the books still have to get through the door.',
-        'The association takes care of that door. It equips classrooms and neighbourhood libraries, trains adults to read aloud, and supports families of children with specific needs, for whom bedtime reading requires adjustments nobody ever explains to them.',
+        'The association runs concrete initiatives to make education inclusive and accessible to everyone, by designing adapted solutions and actively supporting communities.',
+        'Building tomorrow’s education is done hand in hand. The pieces published below tell what we do on the ground, the fight behind it, and how to take part.',
       ],
       points: [
-        'Donations of tales and teaching booklets to schools and neighbourhood associations.',
-        'Read-aloud workshops for parents and teachers who were never trained for it.',
-        'Support for families of children with dyslexia, attention difficulties, or simply a quarrel with decoding.',
-        'Collecting and passing on tales from storytellers, before the oral versions are lost.',
+        'Breaking isolation: giving a child with a disability or a learning difficulty the means to take part like the others.',
+        'Supporting families: giving parents concrete, reassuring answers for everyday life at home.',
+        'Sowing hope: proving that every community, however rural or underserved, deserves equal access to educational excellence.',
       ],
     },
     {
       titre: 'Becoming a member',
       paragraphes: [
         'Membership is a subscription separate from the catalogue one, and that is deliberate: one funds books, the other funds action. They do not replace each other, neither is deducted from the other, and you may take only one.',
-        'Membership opens every reserved item in this space: detailed reports on our work, support sheets, guides for running a workshop, and interviews with the storytellers and teachers we work with.',
+        'Membership opens every reserved item in this space: detailed field reports, support resources, adapted materials and workshop write-ups.',
       ],
       points: [
         'Membership does not open online reading of the catalogue — the reading subscription does that.',
@@ -131,15 +192,20 @@ const EN: PresentationAssociation = {
     {
       titre: 'Other ways to help',
       paragraphes: [
-        'Membership is not the only way to help, and sometimes not the most useful one. A class that hosts a workshop, a storyteller willing to be recorded, a bookseller who keeps two boxes aside: these are forms of support money cannot buy.',
-        'If you are a teacher, a librarian, a speech therapist, a storyteller, or simply someone who knows a place these books would be missed, write to us. The contact page is enough — tell us where you are writing from and what you see around you.',
+        'We are often asked: “How can I actually help?” The good news is that every gesture, however small, has an immense impact on the ground.',
+      ],
+      points: [
+        'Share and spread the word: talk about our work around you, share our posts, mention it to someone close.',
+        'Join our events and workshops: seminars, training and workshops, in person or online.',
+        'Support our field campaigns: help produce and distribute teaching kits in priority areas.',
       ],
     },
   ],
+  videoLegende: 'The DAVE Association on video.',
   appel: {
-    titre: 'Join the association',
+    titre: 'Join the movement',
     texte:
-      'Membership opens the reserved contents of this space and funds the donations and the workshops.',
+      '“Alone we go faster, together we go further.” Membership opens the reserved contents of this space and supports the production and distribution of teaching kits.',
     action: 'See membership plans',
   },
 };
