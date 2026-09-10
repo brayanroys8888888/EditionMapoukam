@@ -12,12 +12,16 @@ export class ResendMailer implements Mailer {
 
   async envoyer(message: MessageMail): Promise<ResultatEnvoi> {
     const from = process.env.RESEND_FROM_EMAIL || 'Édition Mapoukam <onboarding@resend.dev>';
+    
+    // Si un HTML est fourni, on l'utilise. Sinon, on enveloppe le texte dans le design global.
+    const contenuHtml = message.html || this.envelopperDansDesign(message.texte);
+
     const response = await this.resend.emails.send({
       from,
       to: message.destinataire,
       subject: message.sujet,
       text: message.texte,
-      html: message.html || `<p>${message.texte}</p>`,
+      html: contenuHtml,
     });
 
     if (response.error) {
@@ -28,6 +32,58 @@ export class ResendMailer implements Mailer {
       id: response.data?.id || `resend_${Date.now()}`,
       envoyeLe: new Date(),
     };
+  }
+
+  /**
+   * Enveloppe un texte brut dans le design email d'Édition Mapoukam.
+   */
+  private envelopperDansDesign(texteBrut: string): string {
+    // Convertir les sauts de ligne en balises <br/>, et détecter les liens pour les styliser
+    const texteFormate = texteBrut
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;') // Éviter l'injection
+      .split('\n')
+      .map(ligne => {
+        // Formater les liens qui commencent par http ou /
+        if (ligne.trim().startsWith('http') || ligne.trim().startsWith('/')) {
+          const url = ligne.trim().startsWith('/') ? `https://editionmapoukam.vercel.app${ligne.trim()}` : ligne.trim();
+          return `<div style="text-align:center;margin:32px 0;"><a href="${url}" style="display:inline-block;background-color:#16371f;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:14px 32px;border-radius:50px;">Accéder à mon espace</a></div>`;
+        }
+        return ligne ? `<p style="margin:0 0 16px;font-size:16px;color:#1c2b1e;line-height:1.6;">${ligne}</p>` : '';
+      })
+      .join('');
+
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body style="margin:0;padding:0;background-color:#f4ede0;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4ede0;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" style="max-width:560px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(22,55,31,0.10);">
+          <tr>
+            <td style="background-color:#16371f;padding:24px 40px;text-align:center;">
+              <p style="margin:0;font-size:16px;letter-spacing:3px;text-transform:uppercase;color:#a8c5a0;font-weight:600;">Édition Mapoukam</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:40px;">
+              ${texteFormate}
+            </td>
+          </tr>
+          <tr>
+            <td style="background-color:#f8f4ee;padding:20px 40px;text-align:center;border-top:1px solid #e8ddd0;">
+              <p style="margin:0;font-size:12px;color:#a0b0a2;">Des contes africains pour les enfants du monde entier.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
   }
 }
 
