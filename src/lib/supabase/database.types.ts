@@ -1783,6 +1783,7 @@ export type Database = {
           nom_complet: string | null
           role: Database["public"]["Enums"]["user_role"]
           statut: Database["public"]["Enums"]["user_status"]
+          telephone: string | null
         }
         Insert: {
           anonymise_le?: string | null
@@ -1794,6 +1795,7 @@ export type Database = {
           nom_complet?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           statut?: Database["public"]["Enums"]["user_status"]
+          telephone?: string | null
         }
         Update: {
           anonymise_le?: string | null
@@ -1805,6 +1807,7 @@ export type Database = {
           nom_complet?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           statut?: Database["public"]["Enums"]["user_status"]
+          telephone?: string | null
         }
         Relationships: []
       }
@@ -2049,6 +2052,7 @@ export type Database = {
           nom_complet: string | null
           role: Database["public"]["Enums"]["user_role"]
           statut: Database["public"]["Enums"]["user_status"]
+          telephone: string | null
         }
         SetofOptions: {
           from: "*"
@@ -2691,6 +2695,7 @@ export type Database = {
           nom_complet: string | null
           role: Database["public"]["Enums"]["user_role"]
           statut: Database["public"]["Enums"]["user_status"]
+          telephone: string | null
         }
         SetofOptions: {
           from: "*"

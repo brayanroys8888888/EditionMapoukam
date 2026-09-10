@@ -150,13 +150,6 @@ export default async function PageAbonnement({ params }: Parametres) {
    * `frontend-architecture` interdit, et la raison pour laquelle la règle vit
    * dans `statut_effectif`.
    */
-  const introduction =
-    statut === 'anomalie'
-      ? traduire(langue, 'abonnement.anomalieCorps')
-      : traduire(
-          langue,
-          annule ? 'abonnement.finPeriodeApresAnnulation' : 'abonnement.finPeriode',
-        ).replace('{date}', finPeriode);
 
   if (estV3()) {
     return (
