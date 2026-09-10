@@ -254,15 +254,17 @@ otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
-# Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# Serveur SMTP de production — Resend
+# Les variables d'env sont injectées par Vercel en production.
+# En local, ce bloc est inactif (Mailpit gère les emails de développement).
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 465
+user = "resend"
+pass = "env(RESEND_API_KEY)"
+admin_email = "noreply@editionmapoukam.royceproject.site"
+sender_name = "Édition Mapoukam"
 
 # ┌──────────────────────────────────────────────────────────────────────────┐
 # │ GABARITS PORTANT LE CODE À USAGE UNIQUE — arbitrage Q3, 3 août 2026.     │
