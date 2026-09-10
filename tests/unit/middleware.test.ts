@@ -202,30 +202,28 @@ describe('rafraîchissement préventif', () => {
   });
 
   it('un échec réseau NE BLOQUE PAS la navigation', async () => {
-    // ┌────────────────────────────────────────────────────────────────────┐
-    // │ AUCUN SERVEUR N'ÉCOUTE DANS CE TEST : l'appel de rafraîchissement   │
-    // │ échoue réellement. C'est exactement la condition d'un utilisateur    │
-    // │ hors ligne un instant.                                              │
-    // │                                                                    │
-    // │ La navigation doit continuer, et les cookies rester en place : les  │
-    // │ effacer priverait d'une session encore valable quelqu'un dont la    │
-    // │ connexion a simplement hoqueté.                                     │
-    // └────────────────────────────────────────────────────────────────────┘
-    const reponse = await middleware(
-      requete('/fr/catalogue', {
-        cookies: {
-          [ACCESS_TOKEN_COOKIE]: jeton(10),
-          [REFRESH_TOKEN_COOKIE]: 'jeton-de-rafraichissement',
-        },
-      }),
-    );
+    const fetchOriginal = globalThis.fetch;
+    globalThis.fetch = () => Promise.reject(new TypeError('Failed to fetch'));
 
-    expect(reponse.status).toBe(200);
-    expect(reponse.headers.get('location')).toBeNull();
-    // Aucun cookie effacé.
-    expect(
-      reponse.headers.getSetCookie().some((c) => /contes_(access|refresh)_token=;|Max-Age=0/.test(c)),
-    ).toBe(false);
+    try {
+      const reponse = await middleware(
+        requete('/fr/catalogue', {
+          cookies: {
+            [ACCESS_TOKEN_COOKIE]: jeton(10),
+            [REFRESH_TOKEN_COOKIE]: 'jeton-de-rafraichissement',
+          },
+        }),
+      );
+
+      expect(reponse.status).toBe(200);
+      expect(reponse.headers.get('location')).toBeNull();
+      // Aucun cookie effacé.
+      expect(
+        reponse.headers.getSetCookie().some((c) => /contes_(access|refresh)_token=;|Max-Age=0/.test(c)),
+      ).toBe(false);
+    } finally {
+      globalThis.fetch = fetchOriginal;
+    }
   });
 
   it('un jeton illisible déclenche une tentative, sans casser la page', async () => {

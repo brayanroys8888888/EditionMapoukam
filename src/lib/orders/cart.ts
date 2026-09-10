@@ -58,7 +58,7 @@ export async function ajouterAuPanier(
   bookId: string,
   langue: 'fr' | 'en',
   options: { client?: AppSupabaseClient } = {},
-): Promise<{ ok: true } | { ok: false; raison: RefusAjout }> {
+): Promise<{ ok: true; deja: boolean } | { ok: false; raison: RefusAjout }> {
   const client = options.client ?? createServiceClient();
 
   const livre = await client
@@ -89,8 +89,32 @@ export async function ajouterAuPanier(
 
   const cartId = await panierDe(userId, { client });
 
-  // Un titre déjà présent n'est pas une erreur : le panier n'a pas de quantité,
-  // un achat est perpétuel et ne s'achète qu'une fois (§3.2).
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ON REGARDE AVANT D'ÉCRIRE, POUR POUVOIR LE DIRE.                      │
+   * │                                                                        │
+   * │ Un titre déjà présent n'est pas une erreur : le panier n'a pas de      │
+   * │ quantité, un achat est perpétuel et ne s'achète qu'une fois (§3.2).    │
+   * │ L'`upsert` reste donc la bonne écriture — mais il ne DIT pas s'il a    │
+   * │ inséré ou remplacé, et PostgREST ne le rapporte pas davantage.         │
+   * │                                                                        │
+   * │ Sans cette information, l'interface ne peut pas tenir la règle de      │
+   * │ `06-interactions-state.md` : « if already in cart, open the cart       │
+   * │ instead of duplicating ». Pire, l'ajout optimiste avancerait la        │
+   * │ pastille d'un titre que le panier contenait déjà, et l'écart se        │
+   * │ corrigerait sous l'œil à l'aller-retour suivant.                       │
+   * │                                                                        │
+   * │ Une lecture de plus sur une table minuscule, indexée par la clé qu'on  │
+   * │ interroge. C'est le prix d'une réponse honnête.                        │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const existant = await client
+    .from('cart_items')
+    .select('book_id')
+    .eq('cart_id', cartId)
+    .eq('book_id', bookId)
+    .maybeSingle();
+
   const { error } = await client
     .from('cart_items')
     .upsert({ cart_id: cartId, book_id: bookId, langue }, { onConflict: 'cart_id,book_id' });
@@ -100,7 +124,7 @@ export async function ajouterAuPanier(
   }
 
   logger.info('Titre ajouté au panier', { userId, bookId });
-  return { ok: true };
+  return { ok: true, deja: existant.data !== null };
 }
 
 /** Retire un titre du panier. */

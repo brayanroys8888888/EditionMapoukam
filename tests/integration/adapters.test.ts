@@ -282,17 +282,145 @@ describe('sélection des adaptateurs', () => {
 
   it('refuse explicitement un adaptateur non implémenté', () => {
     // Le message doit désigner l'adaptateur manquant plutôt qu'une variable
-    // inconnue : c'est ce qui rendra le branchement réel lisible le jour venu.
+    // inconnue : c'est ce qui rend le branchement lisible le jour venu.
     resetAdapters();
     const precedent = process.env['PAYMENT_PROVIDER'];
     process.env['PAYMENT_PROVIDER'] = 'stripe';
     resetServerEnvCache();
 
     try {
-      expect(() => getPaymentProvider()).toThrow(/aucun adaptateur réel/i);
+      expect(() => getPaymentProvider()).toThrow(/aucun adaptateur n'est implémenté/i);
+      // …et il NOMME ce qui est servi, pour qu'on n'ait pas à lire le registre.
+      expect(() => getPaymentProvider()).toThrow(/notchpay/i);
     } finally {
       if (precedent === undefined) delete process.env['PAYMENT_PROVIDER'];
       else process.env['PAYMENT_PROVIDER'] = precedent;
+      resetServerEnvCache();
+      resetAdapters();
+    }
+  });
+
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ NOTCH PAY EXIGE SES CLÉS AU DÉMARRAGE, ET PAS AU PREMIER PAIEMENT.  │
+   * │                                                                      │
+   * │ Sans la clé de hachage, tout marche jusqu'au premier webhook, rejeté  │
+   * │ « signature invalide » : la commande est payée chez le prestataire et │
+   * │ reste en attente chez nous. Le registre est l'endroit où ce défaut se │
+   * │ voit encore gratuitement.                                            │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('refuse de brancher Notch Pay sans ses trois clés', () => {
+    resetAdapters();
+    const precedent = process.env['PAYMENT_PROVIDER'];
+    const clesPrecedentes = {
+      pk: process.env['NOTCHPAY_PUBLIC_KEY'],
+      sk: process.env['NOTCHPAY_PRIVATE_KEY'],
+      hsk: process.env['NOTCHPAY_HASH_KEY'],
+    };
+
+    process.env['PAYMENT_PROVIDER'] = 'notchpay';
+    delete process.env['NOTCHPAY_PUBLIC_KEY'];
+    delete process.env['NOTCHPAY_PRIVATE_KEY'];
+    delete process.env['NOTCHPAY_HASH_KEY'];
+    resetServerEnvCache();
+
+    try {
+      expect(() => getPaymentProvider()).toThrow(
+        /NOTCHPAY_PUBLIC_KEY, NOTCHPAY_PRIVATE_KEY, NOTCHPAY_HASH_KEY/,
+      );
+    } finally {
+      if (precedent === undefined) delete process.env['PAYMENT_PROVIDER'];
+      else process.env['PAYMENT_PROVIDER'] = precedent;
+      for (const [nom, valeur] of [
+        ['NOTCHPAY_PUBLIC_KEY', clesPrecedentes.pk],
+        ['NOTCHPAY_PRIVATE_KEY', clesPrecedentes.sk],
+        ['NOTCHPAY_HASH_KEY', clesPrecedentes.hsk],
+      ] as const) {
+        if (valeur === undefined) delete process.env[nom];
+        else process.env[nom] = valeur;
+      }
+      resetServerEnvCache();
+      resetAdapters();
+    }
+  });
+
+  it('refuse une clé de PRODUCTION tant que le drapeau n’est pas posé', () => {
+    /*
+     * La consigne du propriétaire — « on ne va utiliser que la version
+     * paiement de test » — est tenue par du code plutôt que par la mémoire de
+     * celui qui remplit `.env.local`. Sans ce refus, un copier-coller de
+     * fichier d'environnement débiterait de vraies cartes.
+     */
+    resetAdapters();
+    const precedent = process.env['PAYMENT_PROVIDER'];
+    const clesPrecedentes = {
+      pk: process.env['NOTCHPAY_PUBLIC_KEY'],
+      sk: process.env['NOTCHPAY_PRIVATE_KEY'],
+      hsk: process.env['NOTCHPAY_HASH_KEY'],
+    };
+
+    process.env['PAYMENT_PROVIDER'] = 'notchpay';
+    process.env['NOTCHPAY_PUBLIC_KEY'] = 'pk_live_reelle';
+    process.env['NOTCHPAY_PRIVATE_KEY'] = 'sk_test_abc';
+    process.env['NOTCHPAY_HASH_KEY'] = 'hsk_test_abc';
+    resetServerEnvCache();
+
+    try {
+      expect(() => getPaymentProvider()).toThrow(/pas des clés de test/i);
+    } finally {
+      if (precedent === undefined) delete process.env['PAYMENT_PROVIDER'];
+      else process.env['PAYMENT_PROVIDER'] = precedent;
+      for (const [nom, valeur] of [
+        ['NOTCHPAY_PUBLIC_KEY', clesPrecedentes.pk],
+        ['NOTCHPAY_PRIVATE_KEY', clesPrecedentes.sk],
+        ['NOTCHPAY_HASH_KEY', clesPrecedentes.hsk],
+      ] as const) {
+        if (valeur === undefined) delete process.env[nom];
+        else process.env[nom] = valeur;
+      }
+      resetServerEnvCache();
+      resetAdapters();
+    }
+  });
+
+  it('branche Notch Pay avec ses trois clés de test, et il se dit NON simulé', () => {
+    resetAdapters();
+    const precedent = process.env['PAYMENT_PROVIDER'];
+    const clesPrecedentes = {
+      pk: process.env['NOTCHPAY_PUBLIC_KEY'],
+      sk: process.env['NOTCHPAY_PRIVATE_KEY'],
+      hsk: process.env['NOTCHPAY_HASH_KEY'],
+    };
+
+    process.env['PAYMENT_PROVIDER'] = 'notchpay';
+    process.env['NOTCHPAY_PUBLIC_KEY'] = 'pk_test_abc';
+    process.env['NOTCHPAY_PRIVATE_KEY'] = 'sk_test_abc';
+    process.env['NOTCHPAY_HASH_KEY'] = 'hsk_test_abc';
+    resetServerEnvCache();
+
+    try {
+      const provider = getPaymentProvider();
+      expect(provider.nom).toBe('notchpay');
+      /*
+       * `simule` commande la console de `/dev`, le bandeau « paiement simulé »
+       * et le chemin de règlement. Le lire du CONTRAT évite un `instanceof`
+       * qui embarquerait la classe simulée dans le bundle de production.
+       */
+      expect(provider.simule).toBe(false);
+      // Le gestionnaire de webhooks lit cet en-tête, et non une constante.
+      expect(provider.enteteSignature).toBe('x-notch-signature');
+    } finally {
+      if (precedent === undefined) delete process.env['PAYMENT_PROVIDER'];
+      else process.env['PAYMENT_PROVIDER'] = precedent;
+      for (const [nom, valeur] of [
+        ['NOTCHPAY_PUBLIC_KEY', clesPrecedentes.pk],
+        ['NOTCHPAY_PRIVATE_KEY', clesPrecedentes.sk],
+        ['NOTCHPAY_HASH_KEY', clesPrecedentes.hsk],
+      ] as const) {
+        if (valeur === undefined) delete process.env[nom];
+        else process.env[nom] = valeur;
+      }
       resetServerEnvCache();
       resetAdapters();
     }

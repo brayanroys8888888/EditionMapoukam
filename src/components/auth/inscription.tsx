@@ -6,6 +6,9 @@ import { messageErreur, traduire, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
 import { Marque } from '@/components/v2/marque';
 import { LONGUEUR_MOT_DE_PASSE_MIN } from '@/lib/auth/schemas';
+import { estV3 } from '@/design/version';
+import { BasculeAuth, PanneauPromesse } from './panneau';
+import { ChampMotDePasse } from './mot-de-passe';
 import styles from './auth.module.css';
 
 import type { ActionFormulaire } from './index';
@@ -118,6 +121,27 @@ export function FormulaireInscription({
   attente?: number;
 }): ReactNode {
   const [motDePasse, setMotDePasse] = useState('');
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LA CASE DES CONDITIONS EST TENUE ICI, ET NULLE PART AILLEURS.           │
+   * │                                                                          │
+   * │ Le prototype la pose ; ce produit n'a rien qui l'enregistre, et rien    │
+   * │ dans la spécification n'énonce que l'inscription EXIGE une acceptation. │
+   * │ Inventer cette règle au passage — la vérifier côté serveur, la stocker  │
+   * │ — serait inventer un engagement juridique dans une passe de design.     │
+   * │                                                                          │
+   * │ Elle est donc réelle, mais réelle de ce qu'elle peut être : le bouton   │
+   * │ reste inerte tant qu'elle n'est pas cochée. Personne ne prétend qu'un   │
+   * │ consentement est conservé, et la case ne fait pas semblant d'exister.   │
+   * │                                                                          │
+   * │ Sans JavaScript, la case reste affichée et le bouton reste actif : le   │
+   * │ serveur, lui, n'a pas changé d'avis sur ce qu'il exige. C'est le sens   │
+   * │ de « tenue ici » — c'est une aide de saisie, pas une garde.             │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
+
   const bloque = attente !== undefined && attente > 0;
 
   const texteErreur = !erreur
@@ -128,15 +152,24 @@ export function FormulaireInscription({
 
   return (
     <div className={styles.cadreAuth}>
-      <aside className={styles.illustration} aria-hidden="true">
-        <Marque langue={langue} petite className={styles.marqueAuth} />
-        <p className={styles.illustrationTexte}>
-          {traduire(langue, 'auth.illustrationInscription')}
-        </p>
-      </aside>
+      {estV3() ? (
+        <PanneauPromesse langue={langue} />
+      ) : (
+        <aside className={styles.illustration} aria-hidden="true">
+          <Marque langue={langue} petite className={styles.marqueAuth} />
+          <p className={styles.illustrationTexte}>
+            {traduire(langue, 'auth.illustrationInscription')}
+          </p>
+        </aside>
+      )}
 
       <div className={styles.contenu}>
+        <BasculeAuth langue={langue} mode="inscription" />
+
         <h1 className={styles.titre}>{traduire(langue, 'auth.inscriptionTitre')}</h1>
+        {estV3() ? (
+          <p className={styles.intro}>{traduire(langue, 'auth.inscriptionIntro')}</p>
+        ) : null}
 
         {texteErreur ? (
           <p className={styles.erreurFormulaire} role="alert">
@@ -145,14 +178,12 @@ export function FormulaireInscription({
         ) : null}
 
         <form action={action} className={styles.formulaire} noValidate>
-          <Champ
-            id="inscription-email"
-            name="email"
-            type="email"
-            libelle={traduire(langue, 'auth.email')}
-            autoComplete="email"
-            required
-          />
+          {/*
+           * L'ordre du prototype : le nom, puis l'adresse, puis le mot de
+           * passe. Il n'est pas indifférent — on donne son nom avant son
+           * adresse, et un formulaire qui commence par l'adresse a l'air d'un
+           * formulaire de connexion auquel on aurait ajouté des champs.
+           */}
           <Champ
             id="inscription-nom"
             name="nom_complet"
@@ -160,35 +191,71 @@ export function FormulaireInscription({
             libelle={traduire(langue, 'auth.nomComplet')}
             aide={traduire(langue, 'auth.nomCompletAide')}
             autoComplete="name"
+            {...(estV3() ? { placeholder: traduire(langue, 'auth.nomExemple') } : {})}
           />
           <Champ
+            id="inscription-email"
+            name="email"
+            type="email"
+            libelle={traduire(langue, 'auth.email')}
+            autoComplete="email"
+            required
+            {...(estV3() ? { placeholder: traduire(langue, 'auth.emailExemple') } : {})}
+          />
+
+          {/*
+           * Le seuil affiché est celui de `LONGUEUR_MOT_DE_PASSE_MIN`, importé
+           * depuis les schémas — jamais les « au moins 8 caractères » du
+           * prototype, qui décrivent une politique que ce produit n'applique
+           * pas. Une maquette n'est jamais une autorité sur une règle.
+           */}
+          <ChampMotDePasse
+            langue={langue}
             id="inscription-motdepasse"
-            name="password"
-            type="password"
             libelle={traduire(langue, 'auth.motDePasse')}
             autoComplete="new-password"
             required
-            value={motDePasse}
-            onChange={(evenement) => {
-              setMotDePasse(evenement.target.value);
-            }}
+            placeholder={traduire(langue, 'auth.regleLongueur')}
+            onChange={setMotDePasse}
           />
 
           <ForceMotDePasse langue={langue} valeur={motDePasse} />
 
+          {estV3() ? (
+            <div className={styles.rangeeOptions}>
+              <label className={styles.caseConditions}>
+                <input
+                  type="checkbox"
+                  name="conditions"
+                  checked={conditionsAcceptees}
+                  onChange={(evenement) => {
+                    setConditionsAcceptees(evenement.target.checked);
+                  }}
+                />
+                <a href={`/${langue}/conditions-generales`}>
+                  {traduire(langue, 'auth.accepterConditions')}
+                </a>
+              </label>
+            </div>
+          ) : null}
+
           <p className={styles.mention}>{traduire(langue, 'auth.aucuneDonneeEnfant')}</p>
 
-          <Bouton type="submit" disabled={bloque}>
+          <Bouton type="submit" disabled={bloque || (estV3() && !conditionsAcceptees)}>
             {traduire(langue, 'auth.inscriptionSoumettre')}
           </Bouton>
+
+          {estV3() ? <p className={styles.note}>{traduire(langue, 'auth.note')}</p> : null}
         </form>
 
-        <nav className={styles.liens} aria-label={traduire(langue, 'auth.inscriptionTitre')}>
-          <span className={styles.lienSecondaire}>
-            {traduire(langue, 'auth.dejaUnCompte')}{' '}
-            <a href={`/${langue}/connexion`}>{traduire(langue, 'auth.seConnecter')}</a>
-          </span>
-        </nav>
+        {estV3() ? null : (
+          <nav className={styles.liens} aria-label={traduire(langue, 'auth.inscriptionTitre')}>
+            <span className={styles.lienSecondaire}>
+              {traduire(langue, 'auth.dejaUnCompte')}{' '}
+              <a href={`/${langue}/connexion`}>{traduire(langue, 'auth.seConnecter')}</a>
+            </span>
+          </nav>
+        )}
       </div>
     </div>
   );

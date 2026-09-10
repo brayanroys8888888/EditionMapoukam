@@ -25,7 +25,7 @@
 .bloc {
   position: relative;
   overflow: hidden;
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   border-radius: var(--rayon-image);
 }
 
@@ -123,7 +123,7 @@
 .ficheVisuel {
   padding: clamp(20px, 3vw, 40px);
   border-radius: var(--rayon-panneau);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 .ficheCouverture {
@@ -205,7 +205,7 @@
 
 /* Le bandeau vert reste plein : il ne dépend d'aucune donnée. */
 .banniere {
-  background: var(--v2-vert);
+  background: var(--chrome);
   padding: clamp(38px, 5vw, 64px) 20px;
 }
 

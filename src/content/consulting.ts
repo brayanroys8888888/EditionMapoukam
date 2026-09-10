@@ -66,6 +66,14 @@ export interface PrestationConsulting {
   tarif: string;
   /** La réserve qui accompagne le tarif, quand il y en a une. */
   tarifPrecision?: string;
+  /**
+   * La pastille de mise en avant — « Le plus demandé ».
+   *
+   * UNE SEULE prestation la porte, et c'est ce qui lui donne sa valeur : trois
+   * cartes toutes « les plus demandées » ne recommandent rien. Absente sur les
+   * deux autres, l'absence n'est pas un oubli.
+   */
+  vedette?: string;
   /** Ce que le client obtient — jamais ce que nous faisons. */
   gains: string[];
   /** La phrase qui explique pourquoi ce tarif est celui-là. */
@@ -127,9 +135,35 @@ export interface PresentationConsulting {
   /** Petite capitale au-dessus du titre. */
   oeil: string;
   titre: string;
+  /**
+   * La phrase de résumé, employée par la MÉTA-DESCRIPTION.
+   *
+   * Elle réunit ce que le héros écrit sur deux niveaux — `accroche` puis
+   * `argument`. Un moteur de recherche affiche une phrase, pas une mise en
+   * page ; l'écran, lui, sépare la promesse de sa justification.
+   */
   chapeau: string;
+  /** La promesse, en un souffle. Le plus gros texte de la page après le titre. */
+  accroche: string;
+  /** Ce qui la justifie, juste dessous, en plus petit. */
+  argument: string;
+  /** Le bouton d'appel du héros — il mène à la page de contact. */
+  actionAccompagnement: string;
+  /** Le second bouton du héros — il descend jusqu'aux tarifs, sur la page. */
+  actionTarifs: string;
+  /** Le libellé du bouton porté par CHAQUE carte de prestation. */
+  actionDevis: string;
   /** Qui nous sommes, ce que la certification veut dire. */
   sections: Section[];
+  /**
+   * Le sur-titre de la section des offres, au-dessus de son titre.
+   *
+   * Il existe parce qu'un sur-titre et un titre ne disent pas la même chose :
+   * le premier RANGE la section dans la page, le second annonce ce qu'elle
+   * contient. Les confondre donne une page dont toutes les sections
+   * commencent par la même hauteur de voix.
+   */
+  prestationsOeil: string;
   prestationsTitre: string;
   prestationsTexte: string;
   /**
@@ -142,7 +176,11 @@ export interface PresentationConsulting {
   gainsTitre: string;
   /** Les trois offres, dans l'ordre où elles sont annoncées. */
   prestations: PrestationConsulting[];
+  /** Le sur-titre de la section des visuels. */
   realisationsTitre: string;
+  /** Son titre — ce que sont ces visuels. */
+  realisationsAccroche: string;
+  /** Et la phrase qui les présente, sous le titre. */
   realisationsTexte: string;
   /** Légende de chaque visuel — le type exige les onze. */
   legendes: Record<CleRealisation, string>;
@@ -163,6 +201,12 @@ const FR: PresentationConsulting = {
   titre: 'Mapoukam Consulting',
   chapeau:
     'L’excellence pédagogique internationale à prix juste. Pourquoi les standards d’élite et l’innovation pédagogique devraient-ils rester hors de portée ?',
+  accroche: 'L’excellence pédagogique internationale à prix juste.',
+  argument:
+    'Pourquoi les standards d’élite et l’innovation pédagogique devraient-ils rester hors de portée ? Chez Mapoukam Consulting, nous faisons le choix d’un impact réel et partagé.',
+  actionAccompagnement: 'Planifier un accompagnement',
+  actionTarifs: 'Voir les tarifs',
+  actionDevis: 'Demander un devis',
   sections: [
     {
       titre: 'Un choix : l’impact partagé',
@@ -177,6 +221,7 @@ const FR: PresentationConsulting = {
       ],
     },
   ],
+  prestationsOeil: 'Nos prestations',
   prestationsTitre: 'Nos trois offres clés en main',
   prestationsTexte:
     'Trois prestations, chacune avec son tarif d’appel et ce qu’elle vous apporte. Le montant définitif est arrêté au devis, après un premier échange sur votre structure.',
@@ -198,6 +243,7 @@ const FR: PresentationConsulting = {
     {
       cle: 'formation',
       titre: 'La formation des équipes enseignantes',
+      vedette: 'Le plus demandé',
       tarif: '15 000 FCFA par enseignant',
       tarifPrecision: 'ou forfait module d’équipe à partir de 100 000 FCFA',
       gains: [
@@ -223,8 +269,9 @@ const FR: PresentationConsulting = {
     },
   ],
   realisationsTitre: 'Nos réalisations',
+  realisationsAccroche: 'Des supports conçus, maquettés et livrés prêts à imprimer',
   realisationsTexte:
-    'Des supports conçus, maquettés et livrés prêts à imprimer. Chacun est né d’une demande précise : un niveau, un public, une difficulté à lever.',
+    'Chacun est né d’une demande précise : un niveau, un public, une difficulté à lever.',
   legendes: {
     alphabet:
       'Cartes de l’alphabet, maternelle 1 et 2 — pédagogie inclusive, à partir de 4 ans.',
@@ -258,6 +305,12 @@ const EN: PresentationConsulting = {
   titre: 'Mapoukam Consulting',
   chapeau:
     'International teaching standards at a fair price. Why should elite standards and pedagogical innovation stay out of reach?',
+  accroche: 'International teaching standards at a fair price.',
+  argument:
+    'Why should elite standards and pedagogical innovation stay out of reach? At Mapoukam Consulting, we choose impact that is real and shared.',
+  actionAccompagnement: 'Plan a programme',
+  actionTarifs: 'See the rates',
+  actionDevis: 'Request a quote',
   sections: [
     {
       titre: 'A deliberate choice: shared impact',
@@ -272,6 +325,7 @@ const EN: PresentationConsulting = {
       ],
     },
   ],
+  prestationsOeil: 'Our services',
   prestationsTitre: 'Our three turnkey offers',
   prestationsTexte:
     'Three services, each with its entry price and what it brings you. The final amount is settled in the quote, after a first conversation about your organisation.',
@@ -293,6 +347,7 @@ const EN: PresentationConsulting = {
     {
       cle: 'formation',
       titre: 'Training for teaching teams',
+      vedette: 'Most requested',
       tarif: '15,000 FCFA per teacher',
       tarifPrecision: 'or a team module from 100,000 FCFA',
       gains: [
@@ -318,8 +373,9 @@ const EN: PresentationConsulting = {
     },
   ],
   realisationsTitre: 'Our work',
+  realisationsAccroche: 'Resources designed, laid out and delivered print-ready',
   realisationsTexte:
-    'Resources designed, laid out and delivered print-ready. Each one answers a precise request: a year group, an audience, a difficulty to lift.',
+    'Each one answers a precise request: a year group, an audience, a difficulty to lift.',
   legendes: {
     alphabet: 'Alphabet cards, nursery years 1 and 2 — inclusive teaching, ages 4 and up.',
     graphisme: 'Handwriting workbook — guided strokes, ages 4 and up.',

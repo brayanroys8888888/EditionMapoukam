@@ -54,7 +54,7 @@
   text-align: left;
   padding: 12px 14px;
   /*
-   * `var(--v2-vert)` SANS REPLI, et le repli qui était là méritait de partir.
+   * UN JETON SANS REPLI, et le repli qui était là méritait de partir.
    *
    * Ces six déclarations portaient une valeur de repli écrite en dur — et qui
    * n'était même pas celle du jeton. Elle ne pouvait donc rien sauver ; elle ne
@@ -69,19 +69,19 @@
    * comme celui qui interdit la lecture directe de l'horloge. Écrire la valeur
    * proscrite pour expliquer qu'on l'a retirée rouvrirait la porte qu'on ferme.
    */
-  border: 1.5px solid var(--v2-vert);
+  border: 1.5px solid var(--accent-encre);
   border-radius: var(--rayon-bouton);
   background: var(--fond);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
   transition: background var(--transition-couleur), color var(--transition-couleur);
 }
 
 .onglet:hover {
-  background: var(--v2-vert);
-  color: var(--fond);
-  border-color: var(--v2-vert);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-color: var(--chrome);
 }
 
 /*
@@ -89,9 +89,9 @@
  * REDIT visuellement ; elle ne le remplace pas.
  */
 .ongletActif {
-  border-color: var(--v2-vert);
-  background: var(--v2-vert);
-  color: var(--fond);
+  border-color: var(--chrome);
+  background: var(--chrome);
+  color: var(--chrome-encre);
   font-weight: var(--graisse-forte);
 }
 
@@ -452,4 +452,77 @@
 .achatTelecharger:hover {
   background: var(--carte-encre);
   color: var(--fond);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LA COLONNE DE NAVIGATION CESSE D'ÊTRE UNE RANGÉE DE BOUTONS.        ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS PILULES CONTOURÉES, C'EST TROIS APPELS À L'ACTION POUR AUCUN.     │
+ * │                                                                          │
+ * │ La V2 dessine ses onglets de compte comme des boutons : contour d'accent,│
+ * │ pilule, inversion pleine sur l'onglet courant. Sur un écran où l'on ne   │
+ * │ fait que se repérer, trois boutons réclament trois fois l'attention et   │
+ * │ le vrai bouton de l'écran — « Enregistrer », « Télécharger » — se noie.  │
+ * │                                                                          │
+ * │ Organic les rend à ce qu'ils sont : des rangées de sommaire. Rien au     │
+ * │ repos, un aplat doux au survol, et l'onglet ouvert en terre cuite sur    │
+ * │ la surface. `aria-current` continue de le dire aux lecteurs d'écran,     │
+ * │ comme avant — la couleur ne fait que le redire.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+:global(:root[data-design='v3']) .onglets {
+  flex-direction: column;
+  gap: 4px;
+}
+
+:global(:root[data-design='v3']) .onglet {
+  flex: 1 1 auto;
+  border: 0;
+  border-radius: var(--rayon-bloc);
+  background: transparent;
+  color: var(--encre);
+  font-weight: var(--graisse-demi);
+}
+
+:global(:root[data-design='v3']) .onglet:hover {
+  background: var(--fond-doux);
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .ongletActif,
+:global(:root[data-design='v3']) .ongletActif:hover {
+  background: var(--surface);
+  color: var(--accent-encre);
+  font-weight: var(--graisse-forte);
+  box-shadow: var(--ombre-carte);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES CARTES DE LIVRE NE PASSENT PAS SUR LA SURFACE — ET C'EST VOULU.     │
+ * │                                                                          │
+ * │ `.reprise` et `.achat` peignent leur fond avec `--carte-*`, que le       │
+ * │ composant pose depuis le PREMIER THÈME du titre : une bibliothèque       │
+ * │ tirée sur trois thèmes montre trois teintes, et c'est ce qui la rend     │
+ * │ parcourable d'un coup d'œil.                                             │
+ * │                                                                          │
+ * │ Les repeindre toutes en crème de surface aurait « harmonisé » l'écran    │
+ * │ en lui retirant sa seule aide au repérage. La teinte suit déjà la        │
+ * │ direction : sous Organic, `--region-*` vaut la sauge.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/*
+ * La barre de reprise de lecture prend l'action.
+ *
+ * Elle mesure une progression, c'est-à-dire quelque chose qui APPELLE : la
+ * reprendre est l'action de l'écran. C'est la même terre cuite que la barre
+ * du lecteur, et c'est voulu — les deux disent la même chose.
+ */
+:global(:root[data-design='v3']) .repriseBarreRemplie {
+  background: var(--action);
 }

@@ -52,6 +52,11 @@ export interface EmissionResultat {
 export class FakePaymentProvider implements PaymentProvider {
   readonly nom = 'fake';
 
+  /** C'est tout l'objet de cette classe : le dire plutôt que le laisser deviner. */
+  readonly simule = true;
+
+  readonly enteteSignature = SIGNATURE_HEADER;
+
   readonly #clock: Clock;
   readonly #transport: Transport;
   readonly #urlWebhook: string;

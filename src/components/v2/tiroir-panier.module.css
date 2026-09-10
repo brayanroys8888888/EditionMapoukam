@@ -92,8 +92,8 @@
 }
 
 .fermer:hover {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
 }
 
 .titre {
@@ -114,8 +114,8 @@
   display: grid;
   place-items: center;
   border-radius: var(--rayon-pastille);
-  background: var(--v2-fond-doux);
-  color: var(--v2-vert);
+  background: var(--fond-doux);
+  color: var(--accent-encre);
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
   font-variant-numeric: tabular-nums;
@@ -178,11 +178,11 @@
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   line-height: 1.25;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 a.ligneTitre:hover {
-  color: var(--v2-vert-clair);
+  color: var(--second-encre);
 }
 
 .lignePrix {
@@ -225,7 +225,7 @@ a.ligneTitre:hover {
   flex: 0 0 auto;
   padding: 18px 20px 22px;
   border-top: 1.5px solid var(--bordure);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 .totalLigne {
@@ -261,7 +261,7 @@ a.ligneTitre:hover {
   font-variation-settings: var(--titre-variations);
   font-size: var(--taille-4xl);
   font-weight: var(--graisse-forte);
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   font-variant-numeric: tabular-nums;
 }
 
@@ -273,18 +273,18 @@ a.ligneTitre:hover {
   width: 100%;
   min-height: var(--cible-min);
   padding: 16px 24px;
-  border: 2px solid var(--v2-vert);
+  border: 2px solid var(--marque);
   border-radius: var(--rayon-bouton);
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--marque);
+  color: var(--marque-encre);
   font-size: var(--taille-xl);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), transform var(--transition-forme);
 }
 
 .payer:hover {
-  background: var(--v2-vert-clair);
-  color: var(--fond);
+  background: var(--marque-survol);
+  color: var(--marque-encre);
   transform: translateY(-2px);
 }
 
@@ -371,4 +371,369 @@ a.ligneTitre:hover {
   gap: 8px;
   font-size: var(--taille-m);
   color: var(--encre-douce);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * V3 — LE TIROIR D'ORGANIC.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Cotes du prototype de bureau, lignes 166 à 210. Rien n'est inventé : la
+ * largeur, les rembourrages, les deux rayons et les trois tailles de texte y
+ * sont écrits en clair, et le relevé les compare un à un.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PLUS UN POINT DE CONTRÔLE, C'EST LE PANIER.                    │
+ * │                                                                          │
+ * │ La V2 l'appelait « Vérifiez votre panier » et n'y montrait que des noms  │
+ * │ et des prix — l'encadré en tête de ce fichier le raconte. Organic y      │
+ * │ met la couverture, l'âge et la pagination : on y reconnaît ce qu'on a    │
+ * │ mis, plutôt que d'en relire la liste.                                    │
+ * │                                                                          │
+ * │ Le titre suit — « Votre panier ». Les deux mots ne se valent pas : le    │
+ * │ premier demande une vérification, le second rend un objet.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Voile ──────────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .voile {
+  z-index: 70;
+  /*
+   * L'olive à 42 % du prototype, et un flou de trois pixels derrière.
+   *
+   * Le voile de la V2 est vert à 55 % et sans flou : il ÉTEINT la page. Ici
+   * elle reste lisible sous le tiroir — c'est ce qui dit qu'on n'a pas changé
+   * d'écran, et qu'il suffit de toucher à côté pour revenir.
+   */
+  background: color-mix(in srgb, var(--chrome-2) 42%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+/* ── Panneau ────────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .tiroir {
+  z-index: 80;
+  /*
+   * 420 px, plafonnés à 92 vw. La V2 en prend 440 et tombe à 100 vw : sur un
+   * téléphone, le tiroir occupait alors l'écran entier et rien ne disait
+   * qu'il y avait une page dessous.
+   */
+  width: min(420px, 92vw);
+  background: var(--surface);
+  border-left: 1px solid var(--bordure);
+  box-shadow: var(--ombre-l);
+}
+
+/*
+ * Sous 760 px, le tiroir prend toute la largeur — c'est ce que `05` demande,
+ * et c'est la seule taille où les 8 % de page laissés visibles ne servent
+ * plus à rien : ils sont trop étroits pour qu'on y reconnaisse quoi que ce
+ * soit, et assez larges pour qu'on les touche par erreur.
+ */
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .tiroir {
+    width: 100vw;
+  }
+}
+
+/* ── En-tête ────────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .entete {
+  padding: 24px 26px;
+  /* Le prototype sépare par `justify-content`, sans écart déclaré. À deux
+     enfants l'effet est le même ; à trois — la pastille de compte de la V2 —
+     il ne l'est plus, et c'est ce qui rendait l'en-tête plus haut. */
+  gap: 0;
+  border-bottom: 1px solid var(--bordure);
+  background: transparent;
+}
+
+:global(:root[data-design='v3']) .titre {
+  order: 1;
+  font-size: 21px;
+  font-weight: var(--graisse-normale);
+  /*
+   * L'interligne est HÉRITÉ — 1,6, et non le 1,15 des titres de la V2.
+   *
+   * Le prototype ne déclare rien sur ce `<span>` : sa ligne mesure donc
+   * 33,6 px, et c'est elle qui donne à l'en-tête sa hauteur. À 1,15 le titre
+   * remontait de cinq pixels et l'en-tête entier maigrissait de dix.
+   */
+  line-height: var(--interligne-corps);
+  letter-spacing: normal;
+}
+
+/*
+ * Le bouton passe à DROITE, et devient le rond de 38 px du prototype.
+ *
+ * `order` plutôt qu'un changement d'ordre dans le JSX : l'ordre du DOM est
+ * aussi l'ordre de tabulation, et le bouton de fermeture d'une boîte modale
+ * gagne à rester le premier qu'on atteint.
+ */
+:global(:root[data-design='v3']) .fermer {
+  order: 2;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--bordure);
+  background: transparent;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CHAQUE CLASSE PORTE UNE DÉCLARATION LOCALE, MÊME PUREMENT V3.           │
+ * │                                                                          │
+ * │ Un module CSS n'exporte que ce qu'il déclare LOCALEMENT. Une classe      │
+ * │ écrite uniquement sous `:global(:root[data-design='v3'])` ne figure pas  │
+ * │ dans l'objet rendu : `styles.fermerFleche` vaut `undefined`, et le       │
+ * │ `class` posé est la chaîne « undefined ». Ni le build, ni `tsc`, ni      │
+ * │ l'exécution ne le signalent — le dessin est simplement faux.             │
+ * │                                                                          │
+ * │ `tests/unit/classes-css.test.ts` existe pour ce piège.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.fermerFleche {
+  display: inline;
+}
+
+:global(:root[data-design='v3']) .fermerFleche {
+  display: none;
+}
+
+.fermerCroix {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .fermerCroix {
+  display: block;
+}
+
+/*
+ * La pastille de compte disparaît : le prototype n'en a pas, et le nombre est
+ * déjà lisible sur le bouton de l'en-tête, d'où l'on vient d'arriver.
+ */
+:global(:root[data-design='v3']) .compte {
+  display: none;
+}
+
+/* ── Corps ──────────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .corps {
+  padding: 20px 26px;
+}
+
+:global(:root[data-design='v3']) .ligne {
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+/*
+ * La dernière ligne GARDE son filet, contrairement à la V2.
+ *
+ * Le prototype le laisse : il ferme la liste et sépare le dernier titre du
+ * vide qui suit. Sans lui, la liste a l'air coupée par le bas.
+ */
+:global(:root[data-design='v3']) .lignes li:last-child .ligne {
+  border-bottom: 1px solid var(--bordure);
+}
+
+:global(:root[data-design='v3']) .vignette {
+  width: 62px;
+  flex: 0 0 62px;
+  height: 90px;
+  aspect-ratio: auto;
+  border-radius: 10px;
+  box-shadow: var(--ombre-s);
+}
+
+:global(:root[data-design='v3']) .ligneTexte {
+  gap: 0;
+}
+
+:global(:root[data-design='v3']) .ligneTitre {
+  font-size: 15.5px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) a.ligneTitre:hover {
+  color: var(--accent-encre);
+}
+
+.ligneMeta {
+  font-size: var(--taille-m);
+  color: var(--encre-douce);
+}
+
+:global(:root[data-design='v3']) .ligneMeta {
+  margin-top: 4px;
+  font-size: 12.5px;
+}
+
+:global(:root[data-design='v3']) .lignePrix {
+  margin-top: 8px;
+  font-size: 14.5px;
+  color: var(--action-texte);
+}
+
+/*
+ * « Retirer » devient une croix — et le mot RESTE dans le document.
+ *
+ * Une croix sans texte s'annonce « bouton », et rien d'autre. Le libellé
+ * passe donc en retrait de scène plutôt qu'en `display: none`, qui l'aurait
+ * aussi retiré de l'arbre d'accessibilité : le bouton n'aurait plus eu de nom.
+ * C'est exactement ce que fait déjà `.ajouterTexte` sur les cartes.
+ */
+.retirerCroix {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .retirerCroix {
+  display: block;
+}
+
+.retirerTexte {
+  position: static;
+}
+
+:global(:root[data-design='v3']) .retirerTexte {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:global(:root[data-design='v3']) .retirer {
+  align-self: flex-start;
+  min-height: 0;
+  padding: 4px;
+  color: var(--encre-douce);
+  text-decoration: none;
+}
+
+:global(:root[data-design='v3']) .retirer:hover:not(:disabled) {
+  color: var(--accent-encre);
+}
+
+/* ── État vide ──────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .etat {
+  gap: 0;
+  padding: 52px 10px;
+  color: var(--encre-douce);
+}
+
+.etatRond {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .etatRond {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: var(--fond-doux);
+  color: var(--action);
+}
+
+:global(:root[data-design='v3']) .etatTitre {
+  margin-bottom: 6px;
+  font-size: 18px;
+  font-weight: var(--graisse-normale);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .etatCorps {
+  margin: 0;
+  font-size: 14px;
+  line-height: var(--interligne-corps);
+}
+
+:global(:root[data-design='v3']) .etatAction {
+  margin-top: 22px;
+  min-height: 0;
+  padding: 13px 24px;
+  border: 0;
+  font-family: var(--police-titre);
+  font-size: 14.5px;
+  font-weight: var(--graisse-normale);
+}
+
+/* ── Pied ───────────────────────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .pied {
+  padding: 22px 26px;
+  border-top: 1px solid var(--bordure);
+  background: var(--fond-doux);
+}
+
+:global(:root[data-design='v3']) .totalLigne {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+:global(:root[data-design='v3']) .totalFinal {
+  padding-top: 0;
+  margin-bottom: 6px;
+  border-top: 0;
+}
+
+:global(:root[data-design='v3']) .totalFinalIntitule {
+  font-size: 14px;
+  font-weight: var(--graisse-normale);
+  color: var(--encre-douce);
+}
+
+:global(:root[data-design='v3']) .totalFinalMontant {
+  font-size: 23px;
+  font-weight: var(--graisse-normale);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .mention {
+  display: block;
+  gap: 0;
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  text-align: left;
+}
+
+:global(:root[data-design='v3']) .payer {
+  min-height: 0;
+  padding: 16px;
+  gap: 0;
+  border: 0;
+  font-family: var(--police-titre);
+  font-size: 16px;
+  font-weight: var(--graisse-normale);
+  /*
+   * Un bouton n'hérite pas de l'interligne : celui du prototype vaut
+   * `normal`. À 1,6 il mesurait 57,6 px au lieu de 51, et le pied du tiroir
+   * gagnait les mêmes sept pixels — pris sur la liste des titres.
+   */
+  line-height: normal;
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * La flèche tombe : le prototype écrit « Payer maintenant », sans rien après.
+ *
+ * Sur un bouton pleine largeur, une flèche promet un pas de plus alors que
+ * c'est le dernier geste du tiroir — la suite est un écran de paiement, pas
+ * un défilement.
+ */
+.payerFleche {
+  display: inline;
+}
+
+:global(:root[data-design='v3']) .payerFleche {
+  display: none;
 }

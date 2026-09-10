@@ -39,3 +39,14 @@ coverage/
 # Maquettes de reference, livrees par l outil de design.
 # 1,3 Mo de HTML autonome : une intention visuelle, pas du code deploye.
 update_design/
+
+# Captures d ecrans : 23 Mo de PNG regenerables par scripts/captures-ecrans.mjs.
+captures/
+
+# Dossier de passation Claude Design : 7,6 Mo de prototypes, d images et de
+# documents. Meme traitement qu update_design/ — c est une intention visuelle,
+# pas du code deploye, et la source fait foi dans le projet Claude Design
+# b41ce6a2-73cb-4d17-bb4f-8582be43d7e0. La decision, elle, est versionnee
+# dans docs/REFONTE-V3.md.
+design_handoff_edition_mapoukam/
+.captures/

@@ -1,0 +1,459 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * NOUS ÉCRIRE — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `design_handoff_edition_mapoukam/Site EditionMapoukam.dc.html`,
+ * lignes 1032 à 1088. Chaque valeur de cette feuille y est écrite en clair
+ * dans un attribut `style` — le README du dossier le dit : « Every measurement
+ * is present as an inline `style` attribute in the prototypes — when a doc
+ * here and the prototype disagree, the prototype wins. »
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CETTE PAGE A SA PROPRE FEUILLE, ET NE SE CONTENTE PAS DE       │
+ * │ JETONS.                                                                  │
+ * │                                                                          │
+ * │ Le lot 9 a repeint les pages éditoriales sans les redessiner : la V2 y   │
+ * │ rendait ses coordonnées dans une liste de définitions et son formulaire  │
+ * │ dans la carte d'achat de la boutique. Repeindre suffisait tant qu'on     │
+ * │ regardait les couleurs.                                                  │
+ * │                                                                          │
+ * │ Le prototype, lui, dessine autre chose : trois CARTES à pictogramme,     │
+ * │ une rangée de sujets en pastilles, un panneau de formulaire à 34 px de   │
+ * │ rayon. Aucune règle de couleur ne fabrique un pictogramme ni une         │
+ * │ pastille — il faut le balisage. D'où un écran V3 à part, et la V2        │
+ * │ laissée intacte derrière `estV3()`.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES TROIS ENDROITS OÙ LE PROTOTYPE N'EST PAS SUIVI À LA LETTRE, ET      │
+ * │ POURQUOI.                                                                │
+ * │                                                                          │
+ * │ 1. `outline: none` sur les champs — REFUSÉ. Le prototype le pose sur     │
+ * │    chaque `input` et chaque `textarea`. C'est l'anneau de focus du       │
+ * │    clavier, et le §5.3 du cahier des charges fixe WCAG 2.1 AA. Les       │
+ * │    champs héritent donc de l'anneau de `global.css`, qui ne se voit      │
+ * │    qu'au focus clavier et ne change rien à l'écran au repos.             │
+ * │                                                                          │
+ * │ 2. Le BLANC sur le bouton d'envoi — REFUSÉ. C'est l'écart n° 1 de        │
+ * │    `tokens.css`, déjà tranché et mesuré : le blanc sur la terre cuite    │
+ * │    vaut 3,61:1, quand le seuil du texte courant est 4,5:1. Le bouton     │
+ * │    porte `--action-encre`.                                               │
+ * │                                                                          │
+ * │ 3. `transition: all .2s ease` sur les pastilles — la DURÉE est reprise,  │
+ * │    la courbe devient `--ease`. `10-animation-spec.md` l'exige lui-même : │
+ * │    « One easing curve everywhere […] Export it as --ease ».              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ══ Le bandeau de tête ═══════════════════════════════════════════════════
+ *
+ * `background: var(--ground-2)`, `border-bottom: 1px solid var(--line)`.
+ *
+ * Il ne réemploie PAS `.banniere` de la boutique : celle-ci est une bande à
+ * deux colonnes, alignée sur le conteneur de 1240, et elle porte un halo
+ * radial en coin. Le prototype tient ce bandeau-ci sur 820 px CENTRÉS, sans
+ * halo — c'est ce qui donne à la page de contact son air de lettre.
+ */
+.tete {
+  background: var(--fond-doux);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.teteInterieur {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 60px 28px 52px;
+}
+
+/*
+ * Le sur-titre reste EN LIGNE, comme dans le prototype.
+ *
+ * Le passer en `display: block` déplacerait sa ligne de base d'un peu plus
+ * d'un pixel : la hauteur de sa ligne ne serait plus donnée par la fonte du
+ * bloc mais par la sienne. Le rendre bloc ne servirait qu'à s'épargner de
+ * savoir pourquoi il ne l'est pas.
+ */
+.oeil {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+/*
+ * `letter-spacing` vaut −0,015 em : c'est la valeur du système « Organic »
+ * pour tous les titres (`_ds/organic-…/styles.css`), que le prototype ne
+ * redéclare pas. La V2 en posait −0,025 sur ses bannières — un titre en
+ * Caprasimo s'y resserrait de trois pixels sur « Contactez-nous ».
+ */
+.titre {
+  font-size: clamp(38px, 4.4vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 14px 0 16px;
+}
+
+.chapeau {
+  font-size: 18.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/* ══ Le corps — deux colonnes ═════════════════════════════════════════════
+ *
+ * `max-width: 1240px; padding: 60px 28px 96px; grid-template-columns: .9fr
+ * 1.1fr; gap: 56px; align-items: start`.
+ *
+ * Le centrage passe par la marge intérieure plutôt que par `max-width` +
+ * `margin: auto` : c'est la forme déjà employée par la boutique sous Organic,
+ * et elle laisse le fond aller d'un bord à l'autre.
+ */
+.corps {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 56px;
+  align-items: start;
+  padding: 60px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 96px;
+}
+
+/* ── Colonne gauche : les coordonnées ───────────────────────────────────── */
+
+.colonneTitre {
+  font-size: 28px;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  margin: 0 0 26px;
+}
+
+.coordonnees {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* La liste n'a ni puce ni retrait : ce sont des cartes, pas des items. */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * La carte de coordonnée. Le survol ne déplace rien — le prototype ne pose
+ * ici que `border-color: var(--terra)`, et `.lift` sur une carte qu'on ne
+ * peut pas cliquer promettrait une cible qui n'existe pas.
+ */
+.coordonnee {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 24px;
+  padding: 20px 22px;
+  transition: border-color 0.35s var(--ease);
+}
+
+.coordonnee:hover,
+.coordonnee:focus-within {
+  border-color: var(--action);
+}
+
+/*
+ * Le pictogramme est DÉCORATIF, et il est marqué comme tel dans le balisage.
+ *
+ * La terre cuite sur le fond doux vaut 2,84:1 — sous les 3:1 que WCAG 2.1
+ * exige d'un élément graphique PORTEUR D'INFORMATION. Il n'en porte aucune :
+ * l'étiquette « Adresse », « Téléphone », « Email » est écrite en toutes
+ * lettres à trois pixels de là. C'est la condition qui rend l'exemption
+ * valable, et c'est pour ça qu'elle est écrite ici plutôt que supposée.
+ */
+.picto {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--fond-doux);
+  color: var(--action);
+  display: grid;
+  place-items: center;
+}
+
+.coordonneeCle {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.coordonneeValeur {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 16.5px;
+  margin-top: 3px;
+}
+
+/*
+ * Le lien reprend l'encre courante et son soulignement n'apparaît qu'au
+ * survol : dans la maquette, la valeur est du texte, et trois liens soulignés
+ * feraient de la colonne une liste de liens plutôt qu'une carte de visite.
+ */
+.coordonneeValeur a {
+  color: inherit;
+}
+
+.coordonneeValeur a:hover {
+  color: var(--lien-survol);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/*
+ * UN SEUL paragraphe, et non deux.
+ *
+ * Le prototype réunit « nous répondons sous deux jours ouvrés » et « aucun
+ * compte n'est nécessaire » dans le même bloc. Les deux phrases vivent dans
+ * deux clés parce qu'elles se réemploient séparément ailleurs ; c'est ici que
+ * la mise en page les rassemble, pas le dictionnaire.
+ */
+.note {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--encre-douce);
+  margin: 26px 0 0;
+}
+
+/* ── Colonne droite : le panneau du formulaire ──────────────────────────── */
+
+.panneau {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 34px;
+  padding: 38px;
+  box-shadow: var(--ombre-m);
+}
+
+.panneauTitre {
+  font-size: 26px;
+  letter-spacing: -0.015em;
+  line-height: 1.12;
+  margin: 0 0 6px;
+}
+
+.panneauNote {
+  font-size: 14.5px;
+  color: var(--encre-douce);
+  margin: 0 0 26px;
+}
+
+.champs {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.champ {
+  display: block;
+}
+
+/*
+ * Le groupe de sujets est un `<fieldset>` — c'est ce qui rattache l'intitulé
+ * « Votre demande porte sur » aux quatre choix pour un lecteur d'écran. Il
+ * arrive avec un cadre, un rembourrage et surtout un `min-inline-size:
+ * min-content` qui l'empêcherait de se replier dans la colonne : les quatre
+ * lignes ci-dessous le ramènent à un bloc ordinaire.
+ */
+.groupe {
+  display: block;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.libelle {
+  display: block;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--encre-douce);
+  margin-bottom: 7px;
+}
+
+/* Le groupe de sujets porte 9 px sous son intitulé, contre 7 aux champs. */
+.libelleGroupe {
+  margin-bottom: 9px;
+}
+
+.saisie {
+  width: 100%;
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure);
+  border-radius: 18px;
+  padding: 15px 18px;
+  font: inherit;
+  font-size: 15.5px;
+  color: var(--encre);
+}
+
+.saisie::placeholder {
+  color: var(--encre-douce);
+  /* Firefox éclaircit les indications de saisie ; on rend le contraste. */
+  opacity: 1;
+}
+
+.zone {
+  resize: vertical;
+}
+
+/* ── Les pastilles de sujet ─────────────────────────────────────────────── */
+
+/*
+ * DES BOUTONS RADIO, ET PAS DES BOUTONS.
+ *
+ * Le prototype emploie quatre `<button>` et garde le choix dans son état
+ * React. Ici le formulaire part par `mailto:` — sans JavaScript — et le sujet
+ * doit voyager avec lui. Un groupe de boutons radio le fait tout seul, se
+ * traverse aux flèches du clavier, s'annonce comme un choix unique, et
+ * n'ajoute pas un octet au paquet client.
+ *
+ * L'apparence, elle, ne change pas d'un pixel : le rond natif est masqué et
+ * c'est le `<span>` frère qui est peint.
+ */
+.sujets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sujet {
+  display: inline-flex;
+}
+
+/*
+ * Le bouton radio reste dans le flux, invisible et de taille nulle, plutôt
+ * que masqué par `display: none` — qui le retirerait de la traversée clavier
+ * et le rendrait injoignable.
+ */
+.sujetSaisie {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sujetPastille {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--bordure);
+  background: transparent;
+  color: var(--encre);
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 13.5px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    background-color 0.2s var(--ease);
+}
+
+.sujetSaisie:checked + .sujetPastille {
+  border-color: var(--action);
+  background: color-mix(in srgb, var(--action) 12%, transparent);
+}
+
+/*
+ * L'anneau de focus se pose sur la pastille PEINTE : le bouton radio réel n'a
+ * pas de surface, et l'anneau se réduirait au pixel qu'il occupe.
+ */
+.sujetSaisie:focus-visible + .sujetPastille {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/* ── Le bouton d'envoi ──────────────────────────────────────────────────── */
+
+.envoyer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  border-radius: 999px;
+  padding: 18px;
+  font-family: var(--police-titre);
+  font-size: 16.5px;
+  /*
+   * `normal`, et non l'interligne du corps.
+   *
+   * Le prototype ne pose ici ni `font: inherit` ni `line-height` : le bouton
+   * garde celui du navigateur, ce qui lui donne 55 px de haut. `global.css`
+   * fait hériter la police aux boutons — l'interligne suivait, et le bouton
+   * gagnait six pixels que rien n'expliquait à la lecture.
+   */
+  line-height: normal;
+  cursor: pointer;
+  box-shadow: var(--ombre-m);
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.envoyer:hover {
+  background: var(--action-survol);
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-l);
+}
+
+/* ══ Les deux points de rupture de `02-layout-responsive.md` ══════════════ */
+
+/*
+ * ≤ 1120 px — « every 2-column content grid collapses to 1 column ».
+ */
+@media (max-width: 1120px) {
+  .corps {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+/*
+ * ≤ 760 px — « page heads pad down to 48px 20px 56px ».
+ *
+ * La cible tactile des pastilles monte à 44 px : à 10 px de marge et 13,5 px
+ * de texte elles en mesurent 38, ce que le §5.3 refuse sur un écran tactile.
+ * Le geste est réservé au petit écran — l'élargir au bureau déformerait la
+ * rangée que le prototype dessine.
+ */
+@media (max-width: 760px) {
+  .teteInterieur {
+    padding: 48px 20px 56px;
+  }
+
+  .corps {
+    padding: 48px 20px 72px;
+  }
+
+  .panneau {
+    padding: 28px 22px;
+  }
+
+  .sujetPastille {
+    min-height: var(--cible-min);
+  }
+}
+
+/*
+ * Le mouvement se coupe. Le filet général de `tokens.css` ramène toute
+ * transition à 0,01 ms, ce qui suffit pour une couleur mais pas pour un
+ * déplacement : le bouton sauterait de quatre pixels au lieu d'y glisser.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .envoyer:hover {
+    transform: none;
+  }
+}

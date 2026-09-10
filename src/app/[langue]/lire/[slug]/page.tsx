@@ -5,7 +5,7 @@ import { notFound } from 'next/navigation';
 import { langueValide, traduire } from '@/i18n';
 import { ficheQuerySchema } from '@/domain/catalog/schemas';
 import { lireFiche } from '@/lib/catalog/repository';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Lecteur } from '@/components/lecteur';
 
 /**
@@ -51,7 +51,7 @@ export default async function PageLecture({ params, searchParams }: Parametres) 
 
   if (!SLUG_VALIDE.test(slug)) notFound();
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 

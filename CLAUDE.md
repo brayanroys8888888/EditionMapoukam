@@ -25,11 +25,29 @@ La spécification complète est dans `docs/cahier-des-charges.md`. Elle fait foi
 En cas de contradiction entre ce fichier et la spécification, la spécification
 gagne — signale-moi la contradiction plutôt que de trancher seul.
 
-## Mode de développement : 100 % local, aucun service externe
+## Mode de développement : local par défaut, une exception nommée
 
-**Aucune clé API de service externe n'est utilisée dans ce projet à ce stade.**
-Aucun compte Stripe, aucun compte Resend, aucun service tiers. Tout tourne sur la
-machine de développement.
+**Le paiement fait exception depuis le 8 septembre 2026.** Décision du
+propriétaire : les paiements passent par **Notch Pay**, et **en mode test
+uniquement**. Tout le reste du tableau ci-dessous tient inchangé — pas de
+Stripe, pas de Resend, aucun autre service tiers.
+
+L'exception est **bornée par du code, pas par la mémoire** : l'adaptateur
+refuse de démarrer sur une clé qui ne porte pas `test_` tant que
+`NOTCHPAY_AUTORISER_PRODUCTION` n'est pas explicitement posé. Trois clés, trois
+rôles, et elles ne se remplacent pas — la clé de hachage, et elle seule, vérifie
+la signature d'un webhook. **`docs/NOTCHPAY.md` porte le détail**, y compris ce
+que Notch Pay ne sait pas faire : il n'a **aucun prélèvement récurrent**, et
+l'abonnement reste donc servi par le faux prestataire.
+
+Le pari de l'étape 3 a tenu : brancher un vrai prestataire n'a touché ni le
+gestionnaire de webhooks, ni l'octroi des droits, ni un écran. Deux lignes
+seulement sont devenues génériques — l'en-tête de signature, demandé au
+prestataire au lieu d'une constante, et `simule`, qui fait disparaître la
+console de simulation devant un prestataire réel.
+
+Hors paiement, **aucune clé API de service externe n'est utilisée.** Tout tourne
+sur la machine de développement.
 
 Les actions qui dépendraient normalement d'un tiers sont **simulées par des
 adaptateurs locaux**, derrière les mêmes interfaces que leurs futurs équivalents
@@ -37,7 +55,7 @@ réels :
 
 | Service réel (plus tard) | Adaptateur local (maintenant) |
 |---|---|
-| Stripe | `FakePaymentProvider` + console de simulation |
+| Paiement — **Notch Pay est branché**, en test | `FakePaymentProvider` + console de simulation, tant que `PAYMENT_PROVIDER=fake` |
 | Resend (emails transactionnels) | `FileMailer` — écrit les emails dans `.mails/` |
 | Emails d'authentification | Interface de capture d'emails de Supabase local |
 | Supabase hébergé | Supabase local via Docker (`supabase start`) |
@@ -60,7 +78,7 @@ conception à corriger.
 | Base de données | PostgreSQL via Supabase local (Docker) |
 | Auth | Supabase Auth (local) |
 | Stockage | Supabase Storage local (buckets privés) |
-| Paiement | `FakePaymentProvider`, derrière l'interface `PaymentProvider` |
+| Paiement | `FakePaymentProvider` ou **Notch Pay**, derrière l'interface `PaymentProvider` |
 | Emails | `FileMailer`, derrière l'interface `Mailer` |
 | Traitement PDF | poppler (`pdftoppm`, `pdftotext`) en sous-processus |
 | Images | `sharp` |
@@ -567,6 +585,7 @@ ce qui a tout l'air du dessin voulu. C'est le logo, et ça a déjà trompé.
 | `docs/PLAN-FRONTEND.md` | le chantier d'interface en cours |
 | `docs/API-CONTRAT.md` | le contrat des routes |
 | `docs/AVANT-MISE-EN-PRODUCTION.md` | ce qui reste à faire avant la mise en ligne |
+| `docs/NOTCHPAY.md` | **où coller les clés de paiement**, ce que l'intégration fait, et les deux points qui restent à arbitrer |
 | `REPRISE.md` | **le point de reprise vivant** — état du chantier, pièges rencontrés, identifiants locaux |
 | `docs/maquettes/` | intention visuelle. **Jamais une autorité sur une donnée** : leurs prix sont faux, et le dossier le dit |
 
@@ -575,7 +594,9 @@ porte ce qui est en cours, alors que celui-ci porte ce qui est permanent.
 
 ## Ce qu'il ne faut pas faire
 
-- N'installe aucun SDK de service externe (Stripe, Resend, etc.) à ce stade.
+- N'installe aucun SDK de service externe (Stripe, Resend, etc.). L'exception
+  Notch Pay ne l'ouvre pas : l'adaptateur parle à son API avec `fetch`, et
+  aucun paquet n'a été ajouté.
 - N'invente pas de règle métier absente de la spécification — pose-moi la question.
 - Ne passe pas à l'étape suivante si `npm run verify` échoue.
 - Ne désactive pas un test pour faire passer la suite.

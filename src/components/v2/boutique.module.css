@@ -25,9 +25,19 @@
  * donne à chaque page une entrée, et au site un rythme.
  */
 .banniere {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
   position: relative;
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  color: var(--chrome-encre);
   overflow: hidden;
 }
 
@@ -64,14 +74,14 @@
   font-size: clamp(32px, 4.6vw, 54px);
   letter-spacing: -0.025em;
   line-height: 1.05;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   margin-bottom: 12px;
 }
 
 .banniereTexte {
   font-size: var(--taille-xl);
   line-height: 1.6;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   opacity: 0.88;
   max-width: 60ch;
 }
@@ -82,6 +92,59 @@
   max-width: var(--largeur-page);
   margin: 0 auto;
   padding: clamp(32px, 4vw, 52px) 20px clamp(56px, 7vw, 80px);
+}
+
+/* ── Le haut de la fiche : un bloc, deux surfaces possibles ─────────────── */
+
+/*
+ * `.hautFiche` NE DESSINE RIEN sous la V1 et la V2.
+ *
+ * Il existe pour qu'Organic puisse poser UN SEUL aplat crème sur le fil
+ * d'Ariane et les deux colonnes à la fois — voir l'encadré de `fiche.tsx`.
+ * Sous les deux directions précédentes, la bannière garde son aplat et le
+ * conteneur reste transparent : aucun pixel ne bouge.
+ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA DÉCLARATION QUI NE DESSINE RIEN N'EST PAS VIDE DE SENS.              │
+ * │                                                                          │
+ * │ Un module CSS n'exporte que les classes qu'il déclare LOCALEMENT. Écrite │
+ * │ seulement dans un sélecteur `:global(…) .hautFiche[data-fiche]`, la      │
+ * │ classe manquait à l'objet `styles`, et `styles.hautFiche` rendait        │
+ * │ `class="undefined"`. `classes-css.test.ts` attrape exactement cela, et   │
+ * │ il a raison : sous Organic tout se dessinait quand même — la règle vise  │
+ * │ l'attribut — tandis que la V1 et la V2 perdaient leur conteneur sans     │
+ * │ qu'aucun écran ne le montre.                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.hautFiche {
+  /*
+   * `display: block` est ce que ce conteneur serait de toute façon : c'est la
+   * DÉCLARATION qui compte ici, pas la propriété.
+   */
+  display: block;
+}
+
+/*
+ * `.hautCorps` reprend EXACTEMENT les cotes que `.page` donnait à la grille.
+ * C'est le même bloc, à la même place, sorti d'un parent pour pouvoir être
+ * peint par un autre.
+ */
+.hautCorps {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: clamp(32px, 4vw, 52px) 20px 0;
+}
+
+/*
+ * La grille étant sortie de `.page`, le rembourrage haut de celle-ci
+ * s'AJOUTERAIT à la marge du premier bloc — jusqu'à 124 px là où il y en avait
+ * 72. Il vaut donc zéro sur une fiche : ce sont les marges des blocs qui
+ * espacent, comme avant.
+ */
+.page[data-fiche] {
+  padding-top: 0;
 }
 
 /* ── Barre d'outils de la boutique ──────────────────────────────────────── */
@@ -103,7 +166,7 @@
 }
 
 .compte strong {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
 }
 
@@ -140,14 +203,14 @@
 }
 
 .triActif {
-  background: var(--v2-vert);
-  border-color: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  border-color: var(--chrome);
+  color: var(--chrome-encre);
   font-weight: var(--graisse-forte);
 }
 
 .triActif:hover {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 /*
@@ -347,13 +410,13 @@
   flex: 0 0 auto;
   font-size: var(--taille-m);
   font-weight: var(--graisse-demi);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .effacer:hover {
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
 }
 
 /* ── L'ancre, le voile et le bouton : téléphone seulement ───────────────── */
@@ -425,7 +488,7 @@
     background: var(--fond);
     font-size: var(--taille-l);
     font-weight: var(--graisse-forte);
-    color: var(--v2-vert);
+    color: var(--accent-encre);
   }
 
   /* Le nombre de filtres posés — `aria-label` le redit en toutes lettres. */
@@ -437,8 +500,8 @@
     height: 24px;
     padding: 0 7px;
     border-radius: var(--rayon-pastille);
-    background: var(--v2-vert);
-    color: var(--v2-fond);
+    background: var(--chrome);
+    color: var(--chrome-encre);
     font-size: var(--taille-s);
     font-variant-numeric: tabular-nums;
   }
@@ -537,8 +600,8 @@
     margin-top: 18px;
     padding: 14px 20px;
     border-radius: var(--rayon-bouton);
-    background: var(--v2-vert);
-    color: var(--v2-fond);
+    background: var(--chrome);
+    color: var(--chrome-encre);
     font-size: var(--taille-l);
     font-weight: var(--graisse-forte);
     text-align: center;
@@ -564,7 +627,7 @@
   font-weight: var(--graisse-forte);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   margin-bottom: 10px;
 }
 
@@ -592,20 +655,20 @@
 
 
 .pastille:hover {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
 }
 
 /* L'état actif est aussi porté par `aria-current` — la couleur le REDIT. */
 .pastilleActive {
-  background: var(--v2-vert);
-  border-color: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  border-color: var(--chrome);
+  color: var(--chrome-encre);
   font-weight: var(--graisse-forte);
 }
 
 .pastilleActive:hover {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 /* ── Grille ─────────────────────────────────────────────────────────────── */
@@ -643,7 +706,7 @@
   place-items: center;
   padding: clamp(20px, 3vw, 40px);
   border-radius: var(--rayon-panneau);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   z-index: 1;
 }
 
@@ -674,9 +737,9 @@
   gap: 8px;
   padding: 7px 15px;
   border-radius: var(--rayon-pastille);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   border: 1.5px solid var(--bordure-forte);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-s);
   font-weight: var(--graisse-forte);
   text-transform: uppercase;
@@ -751,7 +814,7 @@
   font-size: var(--taille-2xl);
   font-weight: var(--graisse-forte);
   line-height: 1.15;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 /* ── Bloc d'achat ───────────────────────────────────────────────────────── */
@@ -760,7 +823,7 @@
   padding: 26px;
   border: 1.5px solid var(--bordure-forte);
   border-radius: var(--rayon-panneau);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   box-shadow: var(--ombre-carte);
 }
 
@@ -778,7 +841,7 @@
   font-size: clamp(34px, 3.6vw, 46px);
   font-weight: var(--graisse-forte);
   line-height: 1;
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   font-variant-numeric: tabular-nums;
 }
 
@@ -802,7 +865,7 @@
   font-weight: var(--graisse-forte);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   margin-bottom: 14px;
 }
 
@@ -837,7 +900,7 @@
 }
 
 .confianceCoche {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
   flex: 0 0 auto;
 }
@@ -868,4 +931,2222 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(46%, 230px), 1fr));
   gap: 22px;
+}
+
+/* ══ La bascule grille / liste ════════════════════════════════════════════ */
+
+/*
+ * Un segment, dans une piste — la forme qu'Organic donne à tout choix binaire
+ * (`05-components.md` : « `--card` + shadow inside a `--ground-2` track for
+ * segmented tabs »). Elle se distingue ainsi du tri voisin, qui est une liste
+ * de choix parmi cinq : la forme dit déjà combien il y a d'options.
+ */
+.vues {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--rayon-bouton);
+  background: var(--fond-doux);
+}
+
+.vueLien {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: var(--rayon-bouton);
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.vueLien:hover {
+  color: var(--accent-encre);
+}
+
+.vueActive {
+  background: var(--surface);
+  color: var(--encre);
+  font-weight: var(--graisse-forte);
+  box-shadow: var(--ombre-carte);
+}
+
+.vueActive:hover {
+  color: var(--encre);
+}
+
+/* ══ La vue LISTE — la même carte, remise en page ═════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TOUT SE JOUE DEPUIS LE CONTENEUR, ET PAS UNE LIGNE DE JSX NE CHANGE.    │
+ * │                                                                          │
+ * │ La carte rend toujours les mêmes six éléments dans le même ordre :       │
+ * │ couverture, thème, titre, méta, pied de prix — et le voile qui porte     │
+ * │ l'action. `grid-template-areas` les redistribue, la couverture passe à   │
+ * │ 96 px, et le prix rejoint la droite de la rangée.                        │
+ * │                                                                          │
+ * │ C'est ce qui permet à la bascule de ne rien coûter : aucune donnée n'est │
+ * │ chargée en plus, aucune règle d'accès n'est réécrite, et le bouton       │
+ * │ d'ajout reste le même bouton — donc la même Server Action.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.grille[data-vue='liste'] {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/*
+ * La mise en page de la RANGÉE, elle, vit dans `v2.module.css`, à côté de
+ * `.carte` : les modules CSS hachent leurs noms, et cette feuille-ci ne peut
+ * pas viser une classe déclarée dans une autre. C'est `CarteConteV2` qui pose
+ * `.carteListe`, et c'est là-bas que la grille de la rangée est écrite.
+ */
+
+/* ══ La barre d'achat flottante — écran étroit, V3 ════════════════════════ */
+
+/*
+ * Rendue dans tous les cas, dessinée par la seule V3 étroite. Voir l'encadré
+ * de `fiche.tsx` : c'est la feuille qui décide, jamais le composant.
+ */
+.barreAchat,
+.reserveAchat {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  :global(:root[data-design='v3']) .barreAchat {
+    /*
+     * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+     *
+     * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+     * sombre, elle disparaît : le focus clavier existe, il est simplement
+     * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+     * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+     * tout ce qu'il contient.
+     */
+    --focus-couleur: var(--chrome-encre);
+    /*
+     * ┌────────────────────────────────────────────────────────────────────┐
+     * │ 84 px DU BAS — c'est-à-dire AU-DESSUS de la barre d'onglets.       │
+     * │                                                                    │
+     * │ La cote vient du dossier, et elle n'est pas arbitraire : la barre  │
+     * │ d'onglets fait 96 px de haut. Poser celle-ci à zéro la recouvrirait │
+     * │ — on perdrait la navigation en gagnant un bouton d'achat.          │
+     * │                                                                    │
+     * │ Le `z-index` de 45 la place SOUS les onglets (55) : si les deux se │
+     * │ chevauchaient malgré tout, c'est la navigation qui doit gagner.    │
+     * └────────────────────────────────────────────────────────────────────┘
+     */
+    position: fixed;
+    inset: auto 14px 84px;
+    z-index: 45;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 12px 14px 12px 20px;
+    border-radius: var(--rayon-panneau);
+    background: var(--chrome);
+    color: var(--chrome-encre);
+    box-shadow: var(--ombre-flottante);
+  }
+
+  /*
+   * La réserve rend à la page les 80 px que la barre lui prend. Ajoutés aux
+   * 96 px de la barre d'onglets, cela fait les 176 px que `02` demande sur un
+   * écran de produit — et le dernier bloc de la fiche cesse de passer dessous.
+   */
+  :global(:root[data-design='v3']) .reserveAchat {
+    display: block;
+    height: 80px;
+  }
+
+  /*
+   * Le bloc d'achat perd son bouton : il est maintenant dans la barre. Le
+   * prix, l'étiquette et les trois faits de réassurance restent — ce sont eux
+   * qu'on vient lire, et la barre ne les porte pas.
+   */
+  :global(:root[data-design='v3']) .achatActions {
+    display: none;
+  }
+}
+
+.barreAchatPrix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-3xl);
+  font-weight: var(--graisse-forte);
+  line-height: 1;
+  color: var(--chrome-encre);
+  font-variant-numeric: tabular-nums;
+}
+
+.barreAchatMention {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+  color: var(--chrome-encre);
+}
+
+.barreAchatAction {
+  flex: 0 0 auto;
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LA FICHE : LA COUVERTURE CESSE D'ÊTRE ENCADRÉE.                     ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PANNEAU AUTOUR DE LA COUVERTURE PARTAIT D'UNE BONNE INTENTION.       │
+ * │                                                                          │
+ * │ La V2 pose la couverture au centre d'un aplat de fond doux, avec un      │
+ * │ rembourrage généreux : cela la détache d'une page crème sur crème.       │
+ * │                                                                          │
+ * │ Organic n'en a pas besoin — l'ombre longue fait le même travail, et la   │
+ * │ fait tenir dans l'espace au lieu de la coller dans une boîte. Le cadre   │
+ * │ deviendrait alors le deuxième rectangle de l'écran, en concurrence avec  │
+ * │ l'illustration qu'il est censé servir.                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .ficheVisuel {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
+/* Les quatre réponses passent sur la surface de carte, un cran au-dessus. */
+:global(:root[data-design='v3']) .reponse {
+  background: var(--surface);
+}
+
+:global(:root[data-design='v3']) .achat {
+  background: var(--surface);
+  border-color: var(--bordure);
+}
+
+/*
+ * La pastille d'origine perd son contour : sur trois plans de crème, un filet
+ * autour d'une pastille déjà remplie ne sépare plus rien — il épaissit.
+ */
+:global(:root[data-design='v3']) .ficheOrigine {
+  background: var(--surface);
+  border-color: transparent;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA GRILLE DU CATALOGUE — 226 px, ET NON 250.                            │
+ * │                                                                          │
+ * │ La maquette écrit `repeat(auto-fill, minmax(226px, 1fr)); gap:34px 26px`.│
+ * │ Vingt-quatre pixels de moins par colonne, et l'écart se voit : sur une   │
+ * │ fenêtre de 1440, la V2 tenait trois cartes de 271 px de large, donc      │
+ * │ 408 px de haut rien que pour la couverture. Le dossier en tient quatre,  │
+ * │ et la carte descend à 340 px de haut.                                    │
+ * │                                                                          │
+ * │ Le `min(46%, …)` est CONSERVÉ, et il ne vient pas du dossier : il        │
+ * │ garantit deux cartes par ligne sur téléphone. À 226 px secs, un écran de │
+ * │ 375 px n'en tiendrait qu'une, et il faudrait seize écrans de défilement  │
+ * │ pour seize contes — sur la connexion et l'appareil du §5.1.              │
+ * │                                                                          │
+ * │ L'écart vertical de 34 px est celui du dossier : il sépare les RANGÉES,  │
+ * │ où le texte de la carte a besoin de plus d'air que ses colonnes.         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .grille {
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 226px), 1fr));
+  gap: 34px 26px;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LES FILTRES PASSENT AU-DESSUS, ET LA GRILLE PREND TOUTE LA PAGE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA MAQUETTE N'A PAS DE COLONNE DE FILTRES. C'EST UNE BARRE.             │
+ * │                                                                          │
+ * │ La V2 réserve 260 px à gauche, en position collante. La maquette met la  │
+ * │ recherche, les thèmes, les tranches d'âge, le tri et la bascule          │
+ * │ grille/liste sur UNE rangée qui se replie, au-dessus d'une grille large  │
+ * │ de 1240.                                                                 │
+ * │                                                                          │
+ * │ Ce n'est pas un goût : c'est ce qui fixe la HAUTEUR des cartes. Avec la  │
+ * │ colonne, la grille disposait de 868 px et tenait trois cartes de 271 px  │
+ * │ de large — donc 408 px de couverture. Sans elle, elle en tient quatre à  │
+ * │ 276, et la couverture descend à 415… puis cinq dès que la fenêtre        │
+ * │ dépasse 1400. Le rapport `268/403` est celui du dossier ; c'est la       │
+ * │ LARGEUR disponible qui commande, et rien d'autre.                        │
+ * │                                                                          │
+ * │ Le balisage ne bouge pas. Les filtres restent un `<nav>` étiqueté et     │
+ * │ leur panneau reste avant la grille dans l'ordre du document : un lecteur │
+ * │ d'écran et un navigateur au clavier les rencontrent au même moment       │
+ * │ qu'avant.                                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .colonnes {
+  display: block;
+}
+
+:global(:root[data-design='v3']) .colonneFiltres {
+  position: static;
+  max-width: none;
+  min-width: 0;
+  margin-bottom: 26px;
+}
+
+:global(:root[data-design='v3']) .colonneGrille {
+  min-width: 0;
+}
+
+/*
+ * Le panneau perd son cadre et devient la barre du dossier : une rangée qui
+ * se replie, sans hauteur minimale — celle de 300 px réservait la place d'une
+ * colonne, et n'a plus d'objet à l'horizontale.
+ */
+:global(:root[data-design='v3']) .filtres {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 26px;
+  min-height: 0;
+  padding: 18px 22px;
+  border-radius: var(--rayon-bloc);
+}
+
+/*
+ * Chaque groupe garde son intitulé, et c'est un écart ASSUMÉ avec le dossier.
+ *
+ * La maquette pose ses pastilles sans les nommer : on y lit « Nature »,
+ * « Animaux », « 3–5 ans », « 6–8 ans » sur une même rangée, et rien ne dit
+ * lequel range par thème et lequel par âge. Sur sept thèmes et quatre
+ * tranches, la rangée devient une liste de mots.
+ *
+ * Les intitulés sont ce que le dossier lui-même exige ailleurs — `06` demande
+ * que chaque groupe de filtres soit annoncé. On garde donc la barre, et on
+ * garde les noms.
+ */
+:global(:root[data-design='v3']) .filtres > * {
+  flex: 0 1 auto;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA BANNIÈRE DU CATALOGUE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * `background:var(--ground-2);border-bottom:1px solid var(--line)`, et un
+ * `padding:44px 28px 40px` sur une grille `1.2fr .8fr` alignée en bas.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLE ÉTAIT OLIVE. LA MAQUETTE LA VEUT CRÈME.                            │
+ * │                                                                          │
+ * │ L'aplat sombre venait de la V2, où il servait à séparer la bannière du   │
+ * │ catalogue. Organic s'en passe : c'est un simple filet, et la crème       │
+ * │ secondaire suffit à distinguer l'en-tête de la grille.                   │
+ * │                                                                          │
+ * │ La conséquence dépasse la couleur — sur olive, le fil d'Ariane et les    │
+ * │ deux cartes de compte auraient demandé une encre claire, donc un second  │
+ * │ jeu de règles pour un seul écran.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE FOND EST PLEINE LARGEUR, LE CONTENU EST BORNÉ — EN UNE SEULE BOÎTE.  │
+ * │                                                                          │
+ * │ La maquette imbrique une section pleine largeur et un `div` à 1240 px.   │
+ * │ Ici les deux colonnes sont des enfants directs de la bannière : plutôt   │
+ * │ que d'ajouter un niveau de balisage, le rembourrage horizontal absorbe   │
+ * │ le centrage — `max(28px, (100% - 1240px) / 2 + 28px)` vaut 28 px tant    │
+ * │ que la fenêtre est étroite, puis la gouttière qui centre PLUS les 28 px  │
+ * │ de la maquette.                                                          │
+ * │                                                                          │
+ * │ Les « + 28px » ne sont pas une coquetterie : sans eux, la boîte unique   │
+ * │ rend un contenu de 1240 px de large, quand les deux boîtes imbriquées    │
+ * │ de la maquette en rendent 1184 — la bordure extérieure mesure 1240, le   │
+ * │ rembourrage en reprend 28 de chaque côté. Fusionner les deux niveaux     │
+ * │ oblige à additionner leurs marges ; l'oublier élargit la page de 56 px   │
+ * │ sans que rien n'ait l'air cassé.                                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .banniere {
+  --focus-couleur: var(--accent-encre);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  /*
+   * `column-gap`, et surtout PAS le raccourci `gap`.
+   *
+   * Le fil d'Ariane occupe une premiere RANGEE de cette grille : un `gap: 40px`
+   * l'aurait donc ecarte du titre de quarante pixels, en plus de la marge du
+   * titre. Mesure sur le rayon des livrets : quarante-quatre pixels de trop,
+   * repercutes sur tout ce qui suit — la banniere, le panneau, la grille.
+   * L'ecart entre les deux COLONNES, lui, est bien celui de la maquette.
+   */
+  column-gap: 40px;
+  row-gap: 0;
+  align-items: end;
+  padding: 44px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 40px;
+  background: var(--creme);
+  border-bottom: 1px solid var(--bordure);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .banniereInterieur {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* `font-size:12.5px`, le segment courant en terre cuite assombrie. */
+.filAriane {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+.filAriane a {
+  color: var(--encre-douce);
+}
+
+.filAriane a:hover {
+  color: var(--accent-encre);
+}
+
+.filArianeCourant {
+  color: var(--accent-encre);
+}
+
+/*
+ * Le fil occupe la PREMIÈRE RANGÉE, sur toute la largeur — voir l'encadré du
+ * balisage. `align-self: end` le colle au bas de sa rangée, faute de quoi il
+ * flotterait au milieu d'une rangée étirée par `align-items: end`.
+ */
+/*
+ * ── 28 PX DE GOUTTIÈRE, PAS 20 ─────────────────────────────────────────────
+ *
+ * Le gabarit d'Organic tient en une ligne — `max-width: 1240px; padding: 0
+ * 28px` — et le prototype la répète à chaque section. La V2 en posait 20, ce
+ * qui rendait un contenu de 1200 px là où la maquette en rend 1184 : huit
+ * pixels de décalage à gauche, huit à droite, sur TOUT le corps de l'écran.
+ *
+ * Ça ne se voit pas seul. Ça se voit contre la bannière juste au-dessus, qui
+ * additionne déjà correctement les deux niveaux de la maquette : le fil
+ * d'Ariane et le premier titre de la grille ne tombaient pas sur la même
+ * verticale, et rien ne disait lequel des deux avait tort.
+ */
+:global(:root[data-design='v3']) .page {
+  padding-left: 28px;
+  padding-right: 28px;
+  /*
+   * 44 px sous la bannière, une valeur FIXE — le prototype écrit
+   * `padding: 44px 28px 0` sur la première section du corps, à toutes les
+   * largeurs. La V2 y mettait `clamp(32px, 4vw, 52px)`, qui vaut 52 dès
+   * 1300 px de fenêtre : huit pixels de plus, et tout le corps de l'écran
+   * descendait d'autant sous une bannière, elle, parfaitement calée.
+   */
+  padding-top: 44px;
+}
+
+:global(:root[data-design='v3']) .banniere > .filAriane {
+  grid-column: 1 / -1;
+  align-self: end;
+}
+
+:global(:root[data-design='v3']) .banniereTitre {
+  margin: 14px 0 12px;
+  font-size: clamp(38px, 4.4vw, 62px);
+  line-height: 1;
+  /*
+   * `-0.015em`, la traque des titres du système — `_ds/…/styles.css` la pose
+   * sur `h1..h6` et le prototype ne la redéclare pas ici. Elle valait
+   * `-0.02em`, soit 1,24 px au lieu de 0,9 sur un titre de 62 : trois
+   * dixièmes de pixel par lettre, et une ligne plus courte de trois pixels
+   * tous les dix caractères.
+   */
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+/*
+ * ── LE RAYON DES LIVRETS A SA PROPRE BANNIÈRE ──────────────────────────────
+ *
+ * Prototype lignes 1092 à 1112, contre 385 à 400 pour le catalogue. Cinq
+ * cotes diffèrent, et elles diffèrent toutes dans le même sens : la bannière
+ * des livrets est plus HAUTE et son titre plus petit. C'est cohérent — le
+ * rayon porte une intro de deux phrases là où le catalogue en a une, et un
+ * titre de deux mots contre un.
+ */
+:global(:root[data-design='v3']) .banniere[data-support='livret_pedagogique'] {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  column-gap: 44px;
+  /*
+   * Les 16 px qui separent le fil du titre. Le prototype les ecrit en
+   * `margin-top` sur la grille, parce que son fil est HORS grille ; ici le fil
+   * est une rangee, et l'ecart entre deux rangees s'appelle `row-gap`.
+   *
+   * Le catalogue, lui, garde 0 : son titre porte deja une marge haute de
+   * 14 px, et c'est elle qui fait l'ecart de ce cote-la.
+   */
+  row-gap: 16px;
+  padding-top: 52px;
+  padding-bottom: 46px;
+}
+
+:global(:root[data-design='v3'])
+  .banniere[data-support='livret_pedagogique']
+  .banniereTitre {
+  margin: 0 0 14px;
+  font-size: clamp(38px, 4.4vw, 60px);
+}
+
+:global(:root[data-design='v3'])
+  .banniere[data-support='livret_pedagogique']
+  .banniereTexte {
+  max-width: 600px;
+  font-size: 17.5px;
+  line-height: 1.6;
+}
+
+:global(:root[data-design='v3'])
+  .banniere[data-support='livret_pedagogique']
+  .compteCarte {
+  min-width: 120px;
+}
+
+:global(:root[data-design='v3'])
+  .banniere[data-support='livret_pedagogique']
+  .compteValeur {
+  font-size: 26px;
+}
+
+
+
+:global(:root[data-design='v3']) .banniereTexte {
+  margin: 0;
+  max-width: 560px;
+  font-size: 17px;
+  color: var(--encre-douce);
+}
+
+/* ── Les deux cartes de compte ──────────────────────────────────────────── */
+
+.banniereComptes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.compteCarte {
+  min-width: 130px;
+  padding: 18px 22px;
+  border: 1px solid var(--bordure);
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.compteValeur {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 28px;
+  color: var(--accent-encre);
+}
+
+.compteLibelle {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/*
+ * Sous 760 px, les deux colonnes s'empilent et les cartes passent à gauche :
+ * une rangée alignée à droite sous un titre aligné à gauche donne un écran
+ * qui a l'air de pencher.
+ */
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .banniere {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 32px 20px 28px;
+  }
+
+  .banniereComptes {
+    justify-content: flex-start;
+  }
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA BARRE DE FILTRES, UNE SEULE RANGÉE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * La maquette aligne sur une rangée qui se replie : la recherche (pastille de
+ * 250 px au minimum), les thèmes, les tranches d'âge, le tri, puis la bascule
+ * grille/liste. Le compte, lui, descend au-dessus de la grille.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE CHAMP RESTE UN FORMULAIRE, ET SON BOUTON RESTE.                      │
+ * │                                                                          │
+ * │ La maquette n'a qu'un champ : sa recherche est un `onInput` JavaScript.  │
+ * │ Ici c'est un vrai `<form method="get">` dont le bouton est le chemin de  │
+ * │ REPLI sans JavaScript — §5.1. On le garde donc, compact, dans la rangée. │
+ * │ Un chemin de repli qu'on cache n'en est plus un.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .colonneFiltres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+}
+
+/* Le titre « Filtrer » disparaît : la rangée se lit sans qu'on la nomme, et
+   les groupes portent déjà leur intitulé. Le `<nav>` garde son `aria-label`. */
+:global(:root[data-design='v3']) .colonneFiltres > .panneauEntete {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .filtres {
+  flex: 1 1 320px;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+/* Le champ de recherche prend la forme de pastille du dossier. */
+:global(:root[data-design='v3']) .colonneFiltres :global(form) {
+  flex: 0 1 auto;
+}
+
+/* Le tri et la bascule ferment la rangée, à droite. */
+:global(:root[data-design='v3']) .tri,
+:global(:root[data-design='v3']) .vues {
+  flex: 0 0 auto;
+}
+
+/* Le compte reste seul au-dessus de la grille. */
+:global(:root[data-design='v3']) .outils {
+  margin-bottom: 26px;
+}
+
+/* ── La rangée, pour de bon ─────────────────────────────────────────────── */
+
+/*
+ * Le panneau redevient la barre : c'est LUI qui porte le cadre, et ses enfants
+ * — recherche, groupes de filtres, tri, bascule — s'alignent dedans.
+ */
+:global(:root[data-design='v3']) .panneau {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 18px;
+  padding: 14px 18px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-bloc);
+  background: var(--surface);
+}
+
+/*
+ * Le titre « Filtrer » s'en va. La rangée se lit sans qu'on la nomme, et
+ * chaque groupe porte déjà son intitulé — « THÈMES », « ACCÈS ». Le `<nav>`
+ * conserve son `aria-label`, donc rien n'est retiré à qui écoute.
+ */
+:global(:root[data-design='v3']) .panneauEntete {
+  display: none;
+}
+
+/*
+ * Chaque groupe passe en ligne : son intitulé devient une étiquette posée
+ * DEVANT ses pastilles, au lieu d'un titre posé dessus. C'est ce qui permet
+ * à douze thèmes et trois accès de tenir sur la même rangée que le reste.
+ */
+:global(:root[data-design='v3']) .groupe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px 10px;
+  margin: 0;
+}
+
+:global(:root[data-design='v3']) .groupeTitre {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+:global(:root[data-design='v3']) .pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+/* La recherche perd son intitulé au-dessus : la pastille se comprend seule. */
+:global(:root[data-design='v3']) .colonneFiltres :global(label) {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+/* Le tri perd son intitulé « Trier par » écrit en toutes lettres devant. */
+:global(:root[data-design='v3']) .tri,
+:global(:root[data-design='v3']) .vues {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+:global(:root[data-design='v3']) .triTitre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+/* ── Les contrôles reprennent les dimensions du dossier ─────────────────── */
+
+/*
+ * `padding:9px 16px;font-size:13px;border:1px` — la pastille de thème de la
+ * maquette. La nôtre portait `min-height:46px;padding:10px 18px` et un filet
+ * de 1,5 px sur du texte de 15 : dix pixels de plus en hauteur, et une graisse
+ * qui la faisait lire comme un bouton d'action plutôt que comme un filtre.
+ */
+:global(:root[data-design='v3']) .pastille {
+  min-height: var(--cible-min);
+  padding: 9px 16px;
+  border-width: 1px;
+  border-color: var(--bordure);
+  background: transparent;
+  font-size: 13px;
+  font-weight: var(--graisse-normale, 400);
+}
+
+:global(:root[data-design='v3']) .pastilleActive {
+  border-color: transparent;
+}
+
+/* Le tri : mêmes dimensions, pour que la rangée ait une seule hauteur. */
+:global(:root[data-design='v3']) .triLien {
+  min-height: var(--cible-min);
+  padding: 9px 16px;
+  border-width: 1px;
+  font-size: 13px;
+  font-weight: var(--graisse-normale, 400);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BASCULE DEVIENT DEUX DISQUES DE 36 — ET GARDE SES MOTS.              │
+ * │                                                                          │
+ * │ La maquette écrit `width:36px;height:36px` et ne compte que sur          │
+ * │ `aria-label`. Le libellé du produit est écrit en toutes lettres, et un   │
+ * │ commentaire du composant dit pourquoi : « une icône seule ne se lit pas, │
+ * │ et deux rectangles gris ne disent pas lequel est actif ».                 │
+ * │                                                                          │
+ * │ Les deux tiennent : le mot sort de la SCÈNE, pas du document. Même       │
+ * │ technique que le libellé du bouton d'ajout — le nom accessible reste,    │
+ * │ la pastille fait 36 px.                                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .vueLien {
+  width: var(--cible-min);
+  height: var(--cible-min);
+  min-height: 0;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
+}
+
+:global(:root[data-design='v3']) .vueLibelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BARRE NE CAPTURE PLUS LA MOLETTE — C'ÉTAIT UN RESTE DE LA COLONNE.   │
+ * │                                                                          │
+ * │ En colonne collante, le panneau de filtres porte `max-height:            │
+ * │ calc(100vh - 320px)`, `overflow-y: auto` et `overscroll-behavior-y:      │
+ * │ contain`. Les trois vont ensemble et sont justes POUR UNE COLONNE : une  │
+ * │ liste de filtres plus haute que l'écran doit défiler chez elle, et       │
+ * │ `contain` empêche la page de repartir quand on arrive au bout.           │
+ * │                                                                          │
+ * │ Devenue une barre horizontale, elle n'a plus rien à faire défiler — mais │
+ * │ elle garde `contain`. Résultat : la molette s'arrête dès que le curseur  │
+ * │ passe dessus, et la page se fige sans que rien ne l'explique. C'est le   │
+ * │ défaut le plus déroutant de cet écran, parce qu'il ne se voit pas : il   │
+ * │ se sent.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .panneau {
+  max-height: none;
+  overflow: visible;
+  overscroll-behavior-y: auto;
+}
+
+:global(:root[data-design='v3']) .filtres {
+  max-height: none;
+  overflow: visible;
+  overscroll-behavior-y: auto;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BARRE COLLE, SANS RECOUVRIR CE QU'ELLE FILTRE.                       │
+ * │                                                                          │
+ * │ `top` vaut la hauteur de l'en-tête, qui est lui-même collant : posée à   │
+ * │ zéro, la barre passerait DESSOUS et se ferait recouvrir par lui.         │
+ * │                                                                          │
+ * │ Elle ne colle qu'à partir de 760 px. En dessous, l'en-tête, la barre     │
+ * │ d'onglets et la barre d'achat occupent déjà les deux bords de l'écran ;  │
+ * │ une troisième bande fixe ne laisserait qu'une fenêtre au contenu.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (min-width: 761px) {
+  :global(:root[data-design='v3']) .colonneFiltres {
+    position: sticky;
+    top: 76px;
+    z-index: 20;
+    padding-top: 12px;
+    padding-bottom: 4px;
+    /* Le fond de page, pour que la grille ne transparaisse pas dessous. */
+    background: var(--fond);
+  }
+}
+
+/* Declaration locale pure — voir `classes-css.test.ts`. */
+.vueLibelle {
+  white-space: nowrap;
+}
+
+/* Declaration locale pure — voir `classes-css.test.ts`. */
+.compteFacette {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Le compte d'une facette quitte la scene sous Organic — pas le document.
+ *
+ * La maquette ecrit « Nature », pas « nature (2) ». Le nombre double la
+ * largeur de chaque pastille et pousse la barre sur trois rangees, pour dire
+ * ce que la grille montre deja juste en dessous. Un lecteur d'ecran, lui,
+ * continue de l'entendre : sans la grille sous les yeux, c'est exactement
+ * l'information qui manque.
+ */
+:global(:root[data-design='v3']) .compteFacette {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Declarations locales pures — voir `classes-css.test.ts`. ───────────── */
+
+.triListe {
+  display: flex;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA BARRE SE REPLIE : UNE RANGEE, DES MENUS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PROBLEME N'ETAIT PAS LA HAUTEUR, C'ETAIT CE QU'ELLE COUTAIT.         │
+ * │                                                                          │
+ * │ Collee sous l'en-tete, la barre depliee mangeait 268 px en haut de       │
+ * │ chaque ecran de defilement — soit un quart d'un ordinateur portable, en  │
+ * │ permanence, pour des filtres qu'on pose une fois.                        │
+ * │                                                                          │
+ * │ Les groupes se replient donc en menus. Deux consequences mesurables :    │
+ * │ la barre tient sur UNE rangee, et le contenu retrouve la place qu'elle   │
+ * │ lui prenait.                                                             │
+ * │                                                                          │
+ * │ `<details>` et non un menu en JavaScript : il s'ouvre au clic ET au      │
+ * │ clavier, il annonce son etat aux lecteurs d'ecran, et il fonctionne      │
+ * │ sans une ligne de script — §5.1. C'est deja le motif du menu             │
+ * │ « Boutique » de l'en-tete et des colonnes du pied.                       │
+ * │                                                                          │
+ * │ Sous la V1 et la V2, `open={!estV3()}` laisse les groupes DEPLIES : la   │
+ * │ colonne de gauche a la place de les montrer, et les replier lui          │
+ * │ retirerait sa raison d'etre.                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .groupe,
+:global(:root[data-design='v3']) .tri {
+  position: relative;
+  display: block;
+}
+
+/* Le resume devient une pastille, avec le chevron du menu de l'en-tete. */
+:global(:root[data-design='v3']) .groupeTitre,
+:global(:root[data-design='v3']) .triTitre {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--cible-min);
+  padding: 9px 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre);
+  font-size: 13px;
+  font-weight: var(--graisse-normale, 400);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+  /* Le triangle par defaut du navigateur : on pose le notre. */
+  list-style: none;
+}
+
+:global(:root[data-design='v3']) .groupeTitre::-webkit-details-marker,
+:global(:root[data-design='v3']) .triTitre::-webkit-details-marker {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .groupeTitre::after,
+:global(:root[data-design='v3']) .triTitre::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentcolor;
+  border-bottom: 1.5px solid currentcolor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--transition-forme);
+}
+
+:global(:root[data-design='v3']) .groupe[open] > .groupeTitre::after,
+:global(:root[data-design='v3']) .tri[open] > .triTitre::after {
+  transform: translateY(1px) rotate(-135deg);
+}
+
+:global(:root[data-design='v3']) .groupe[open] > .groupeTitre,
+:global(:root[data-design='v3']) .tri[open] > .triTitre {
+  border-color: var(--action);
+  color: var(--accent-encre);
+}
+
+/*
+ * Le panneau FLOTTE : deplie dans le flux, il repousserait la grille de deux
+ * cents pixels a chaque ouverture, ce qui est exactement le defaut qu'on
+ * corrige. `z-index` au-dessus de la grille, jamais au-dessus de l'en-tete.
+ */
+:global(:root[data-design='v3']) .pastilles,
+:global(:root[data-design='v3']) .triListe {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  width: max-content;
+  max-width: min(520px, 88vw);
+  padding: 14px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-bloc);
+  background: var(--surface);
+  box-shadow: var(--ombre-l);
+}
+
+/* Le tri s'ouvre en colonne : ses libelles sont longs et se comparent. */
+:global(:root[data-design='v3']) .triListe {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  max-width: 260px;
+}
+
+/* La barre redevient une rangee simple. */
+:global(:root[data-design='v3']) .panneau {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+}
+
+/* La barre occupe toute la largeur : sinon ses menus se replient a 730 px. */
+:global(:root[data-design='v3']) .panneau {
+  flex: 1 1 100%;
+  width: 100%;
+}
+
+/*
+ * La feuille est le conteneur reel de la barre — c'est ELLE qui est l'enfant
+ * flex de la colonne, pas le panneau. Mesure : la colonne faisait 1200 px et
+ * la feuille 730, si bien que la rangee se repliait sur deux lignes pour rien.
+ *
+ * Sur telephone, la feuille est une boite modale montante : la regle ne vaut
+ * donc qu'a partir de 761 px, ou elle n'est qu'un conteneur transparent.
+ */
+@media (min-width: 761px) {
+  :global(:root[data-design='v3']) .feuille {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE CONTENEUR DE LA BARRE EST TRANSPARENT — SEUL LE PANNEAU EST OPAQUE.  │
+ * │                                                                          │
+ * │ La colonne portait `background: var(--fond)` pour que la grille ne se    │
+ * │ voie pas passer derriere elle pendant le defilement. Mais le panneau,    │
+ * │ lui, est deja opaque : le fond de la colonne ne couvrait que la bande    │
+ * │ de rembourrage autour, et cette bande beige se lisait comme un second    │
+ * │ bandeau colle sous la banniere.                                          │
+ * │                                                                          │
+ * │ Ce qu'on perd est mince — quelques pixels de contenu visibles au ras du  │
+ * │ panneau pendant le defilement — et ce qu'on gagne est que la barre       │
+ * │ FLOTTE au lieu de peser.                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (min-width: 761px) {
+  :global(:root[data-design='v3']) .colonneFiltres {
+    background: transparent;
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CINQ COLONNES : LA CARTE RACCOURCIT SANS QUE LA COUVERTURE SE DEFORME.  │
+ * │                                                                          │
+ * │ Le rapport `268/403` vient du dossier et ne bouge pas : c'est celui des  │
+ * │ couvertures reelles, et le changer les recadrerait. La hauteur d'une     │
+ * │ carte ne se reduit donc que par sa LARGEUR, et la largeur ne se reduit   │
+ * │ que par colonnes entieres.                                               │
+ * │                                                                          │
+ * │ Mesure a 1440 px de fenetre, grille de 1160 :                            │
+ * │   4 colonnes → 271 x 407                                                 │
+ * │   5 colonnes → 211 x 318                                                 │
+ * │                                                                          │
+ * │ Il n'existe rien entre les deux — une grille ne compte pas en demi-      │
+ * │ colonnes. Le pas fait 22 %, la demande en visait 15 : on prend le pas    │
+ * │ disponible plutot que de deformer les couvertures pour tomber juste.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .grille {
+  grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr));
+}
+
+/*
+ * ── LE RAYON DES LIVRETS COMPTE EN 330, PAS EN 226 ─────────────────────────
+ *
+ * Prototype ligne 1154 : `repeat(auto-fill, minmax(330px, 1fr))` avec 26 px
+ * d'ecart. Une carte couchee au format 16/11 n'a pas la meme largeur utile
+ * qu'une couverture debout — a 226 px, le titre d'un livret tomberait sur
+ * trois lignes sous une image de 155 px de haut.
+ *
+ * Le `min(92%, 330px)` n'est pas dans la maquette : c'est la garde qui
+ * empeche une colonne de 330 px de deborder un telephone de 320. Elle ne
+ * change rien au-dela de 358 px de large, c'est-a-dire partout ou la maquette
+ * a quelque chose a dire.
+ */
+:global(:root[data-design='v3']) .grille[data-support='livret_pedagogique'] {
+  grid-template-columns: repeat(auto-fill, minmax(min(92%, 330px), 1fr));
+  gap: 26px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CHAÎNE DE HAUTEUR DOIT ÊTRE COMPLÈTE, OU ELLE NE SERT À RIEN.        │
+ * │                                                                          │
+ * │ Une carte de livret est un PANNEAU : son filet et son fond dessinent un  │
+ * │ bord, et deux panneaux voisins qui ne finissent pas à la même hauteur    │
+ * │ se voient tout de suite — c'est même le seul défaut de cette grille      │
+ * │ qu'on remarque sans mesurer. La carte porte bien `height: 100%`, et sa   │
+ * │ rangée de pied `margin-top: auto`.                                       │
+ * │                                                                          │
+ * │ Entre les deux, DEUX boîtes de hauteur automatique : le `<li>` de la     │
+ * │ grille et le `<div>` que `Revele` enveloppe autour de chaque carte. Un   │
+ * │ pourcentage se résout contre le parent ; un parent en hauteur auto ne    │
+ * │ résout rien, et `height: 100%` retombe silencieusement sur `auto`.       │
+ * │ Mesuré : 404 px et 427 px côte à côte dans une rangée de 427.            │
+ * │                                                                          │
+ * │ C'est le même piège que `height: 100%` contre `aspect-ratio`, et il se   │
+ * │ répare de la même façon : rendre la chaîne continue, plutôt que          │
+ * │ contourner le maillon manquant.                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .grille[data-support='livret_pedagogique'] > li,
+:global(:root[data-design='v3']) .grille[data-support='livret_pedagogique'] > li > * {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/*
+ * ── L'APPEL « SUR MESURE » DU RAYON DES LIVRETS ────────────────────────────
+ *
+ * `background:var(--deep);border-radius:32px;padding:44px` sur une grille
+ * `1.2fr .8fr` avec 36 px d'ecart, le bouton aligne a gauche de sa colonne.
+ * Valeurs relevees dans `Site EditionMapoukam.dc.html`.
+ */
+.surMesure {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 36px;
+  align-items: center;
+  margin-top: 40px;
+  padding: 44px;
+  border-radius: 32px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  /* L'anneau de focus suit l'encre de cette surface — elle est sombre. */
+  --focus-couleur: var(--chrome-encre);
+}
+
+.surMesureTitre {
+  margin: 0 0 12px;
+  font-size: clamp(26px, 2.8vw, 36px);
+  line-height: 1.08;
+  color: var(--chrome-encre);
+}
+
+.surMesureCorps {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--chrome-encre);
+  opacity: 0.8;
+}
+
+.surMesureAction {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 17px 28px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 16px;
+}
+
+.surMesureAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/* Sous 760 px, le bouton passe sous le texte plutot qu'a cote. */
+@media (max-width: 760px) {
+  .surMesure {
+    grid-template-columns: 1fr;
+    gap: 24px;
+    padding: 28px;
+    border-radius: 26px;
+  }
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LES PASTILLES DE NIVEAU, RAYON DES LIVRETS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype, lignes 1144 à 1148 et la fabrique de style de la ligne 2086 :
+ * `border-radius: 999px; padding: 9px 16px; font-size: 13px`, filet sur la
+ * ligne quand la pastille dort, olive plein quand elle est active — et le
+ * filet disparaît alors, remplacé par un contour transparent qui garde la
+ * même largeur de boîte. Sans ce `transparent`, la rangée entière se décale
+ * d'un pixel au clic.
+ *
+ * Elles remplacent les menus de thèmes et d'accès sur ce rayon ; elles ne s'y
+ * ajoutent pas. L'encadré de `boutique.tsx` dit pourquoi.
+ */
+.niveaux {
+  display: flex;
+}
+
+:global(:root[data-design='v3']) .niveaux {
+  flex: 1;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.pastilleNiveau {
+  display: inline-flex;
+}
+
+:global(:root[data-design='v3']) .pastilleNiveau {
+  align-items: center;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  padding: 9px 16px;
+  font-size: 13px;
+  color: var(--encre);
+  text-decoration: none;
+  transition: background var(--transition-couleur), color var(--transition-couleur),
+    border-color var(--transition-couleur);
+}
+
+:global(:root[data-design='v3']) .pastilleNiveau:hover {
+  border-color: var(--action);
+  color: var(--encre);
+}
+
+.pastilleNiveauActive {
+  font-weight: inherit;
+}
+
+:global(:root[data-design='v3']) .pastilleNiveauActive {
+  /* `transparent` et non `border: 0` : la boîte garde sa largeur, et la
+     rangée ne bouge pas d'un pixel quand on change de niveau. */
+  border-color: transparent;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .pastilleNiveauActive:hover {
+  border-color: transparent;
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LE HAUT DE LA FICHE D'UN TITRE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype, lignes 500 à 530. Le bandeau ne porte plus que le fil d'Ariane ;
+ * le titre commence dans la colonne de droite, à la même ligne de base que la
+ * couverture. Voir l'encadré de `fiche.tsx` : ce n'est pas un déplacement
+ * décoratif, c'est le sens de lecture de l'écran.
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE BANDEAU CRÈME COUVRE LE FIL D'ARIANE *ET* LES DEUX COLONNES.         │
+ * │                                                                          │
+ * │ Mesuré : la section 1 du prototype garde la crème du bandeau sur toute  │
+ * │ jusque sous la carte d'achat. Nous n'en avions que sous le fil, et les   │
+ * │ sept cents pixels suivants tombaient sur le fond de page, plus clair.    │
+ * │                                                                          │
+ * │ Deux crèmes voisines ne se lisent pas comme une erreur — elles se lisent │
+ * │ comme une intention. C'est ce qui a fait tenir le défaut si longtemps.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .hautFiche[data-fiche] {
+  background: var(--creme);
+}
+
+/*
+ * La bannière n'est plus qu'un porte-fil : elle perd son aplat, qui est monté
+ * d'un cran, et son rembourrage bas, qui appartient désormais à `.hautCorps`.
+ *
+ * `34px` en haut, ZÉRO en bas : le prototype écrit `padding:34px 0 0` sur la
+ * section, et le fil n'a pas de marge. Nous avions 20 px de rembourrage plus
+ * 12 px de marge sous le fil, puis 44 px de rembourrage de page — soit 76 px
+ * là où le prototype en met 34. Les colonnes commençaient 133 px trop bas.
+ */
+:global(:root[data-design='v3']) .banniere[data-fiche] {
+  display: block;
+  padding: 34px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 0;
+  background: transparent;
+  border-bottom: 0;
+}
+
+/* `padding:34px 28px 64px` — la cote du prototype, à toutes les largeurs. */
+:global(:root[data-design='v3']) .hautCorps {
+  padding: 34px 28px 64px;
+}
+
+/*
+ * `.85fr 1.15fr` — la colonne de texte est la PLUS LARGE, et c'est voulu.
+ *
+ * La grille du catalogue fait l'inverse. Ici la couverture est un objet
+ * unique qu'on regarde, pas une vignette qu'on compare : elle n'a pas besoin
+ * de place, elle a besoin d'air — d'où les 60 px d'écart et le halo qui la
+ * détache. Le texte, lui, porte le titre, l'accroche, quatre encarts et une
+ * carte d'achat : c'est lui qui manquait de largeur.
+ */
+:global(:root[data-design='v3']) .fiche {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 60px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE HALO SAUGE EST UN PSEUDO-ÉLÉMENT, PAS UNE BOÎTE DE PLUS.             │
+ * │                                                                          │
+ * │ Le prototype pose un `div` flouté DERRIÈRE la couverture, aux            │
+ * │ pourcentages `left:8% right:8% top:12% bottom:22%`. Un pseudo-élément    │
+ * │ rend exactement la même chose sans ajouter d'élément au document : le    │
+ * │ halo est une décoration pure, et un lecteur d'écran n'a rien à y         │
+ * │ entendre.                                                                │
+ * │                                                                          │
+ * │ Il est posé sur le CADRE et non sur l'image : l'image est tournée de     │
+ * │ deux degrés, et le halo doit rester droit — c'est le décalage entre les  │
+ * │ deux qui donne l'objet posé de travers plutôt qu'une image inclinée.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * `display: block` — et non la grille centrée de la V2.
+ *
+ * La V2 centre la couverture dans un cadre ; Organic lui donne toute sa
+ * colonne et pose une pastille EN DESSOUS. Une grille `place-items: center`
+ * aurait empilé les deux enfants au centre d'une piste unique, et la pastille
+ * y aurait pris la largeur de la couverture.
+ */
+:global(:root[data-design='v3']) .ficheVisuel {
+  position: relative;
+  /*
+   * `top: auto` — SANS LUI, LA COLONNE DESCEND DE QUATRE-VINGT-DIX PIXELS.
+   *
+   * La V2 rend la couverture collante (`position: sticky; top: 90px`) pour
+   * qu'elle suive le défilement. Organic ne la colle pas. Repasser en
+   * `relative` sans reprendre le `top` ne l'annule pas : `top` s'applique aussi
+   * au positionnement relatif, et il DÉCALE alors l'élément de 90 px vers le
+   * bas au lieu de le retenir sous l'en-tête.
+   *
+   * Le défaut est particulièrement discret : la couverture reste dans sa
+   * colonne, à la bonne largeur, avec son halo — elle est simplement plus
+   * basse que le titre d'à côté, ce qui ressemble à une intention de mise en
+   * page. Mesuré : 293 au lieu de 203.
+   */
+  top: auto;
+  display: block;
+  padding: 8px 0 34px;
+}
+
+/*
+ * ── « Feuilleter les premières pages » ─────────────────────────────────────
+ *
+ * Prototype ligne 511. Une pastille de surface, filet d'un pixel, centrée sous
+ * la couverture à 26 px. `width: fit-content` avec `margin: … auto` : le
+ * prototype obtient le centrage par `margin:26px auto 0` sur un `flex` en
+ * ligne, ce qui suppose une largeur intrinsèque — un `display:flex` de bloc
+ * s'étirerait à toute la colonne.
+ */
+.feuilleter {
+  position: relative;
+  display: flex;
+  width: fit-content;
+  align-items: center;
+  gap: 10px;
+  margin: 26px auto 0;
+  padding: 14px 24px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+  /*
+   * `normal`, et non l'interligne de 1,6 du corps de page : 24 px d'interligne
+   * sur un bouton de 15 px lui donnaient 54 px de haut au lieu de 48. Six
+   * pixels sur une pastille, c'est un bouton qui n'a plus la meme taille que
+   * ses voisins.
+   */
+  line-height: normal;
+  box-shadow: var(--ombre-s);
+  transition: border-color var(--transition-couleur);
+}
+
+.feuilleter:hover {
+  border-color: var(--action);
+}
+
+:global(:root[data-design='v3']) .ficheVisuel::before {
+  content: '';
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 12%;
+  bottom: 22%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--second) 30%, transparent);
+  filter: blur(6px);
+}
+
+/*
+ * `max-width: none` — la V2 plafonnait à 360 px.
+ *
+ * Mesuré : la couverture du prototype occupe TOUTE sa colonne, 477,7 px sur
+ * une fenêtre de 1440. Le plafond de la V2 la laissait à 360, soit cent
+ * dix-huit pixels de moins sur l'objet qui est l'argument de vente de
+ * l'écran. Le halo, lui, était déjà à la bonne taille : il débordait donc la
+ * couverture au lieu de la porter.
+ */
+:global(:root[data-design='v3']) .ficheCouverture {
+  position: relative;
+  max-width: none;
+  aspect-ratio: 268 / 403;
+  border-radius: 20px;
+  /*
+   * `0 30px 60px` — l'ombre de la fiche, plus longue que celle des cartes.
+   * `--ombre-couverture` vaut `0 22px 44px` : c'est la vignette d'une grille,
+   * où vingt couvertures partagent l'écran. Ici il n'y en a qu'une, posée de
+   * travers sur un halo — l'ombre est ce qui la décolle de la page.
+   */
+  box-shadow: var(--ombre-couverture-fiche);
+  /*
+   * Deux degrés, et pas plus. C'est assez pour lire « posé sur une table » et
+   * trop peu pour qu'on soupçonne un défaut de mise en page. La règle globale
+   * `prefers-reduced-motion` de `global.css` ne la touche pas : ce n'est pas
+   * un mouvement, c'est une position.
+   */
+  transform: rotate(-2deg);
+}
+
+/*
+ * Le titre de la fiche n'est pas celui d'un rayon : il descend de 62 à 54.
+ *
+ * Il est atteint par `.fiche .banniereTitre` et non par un sélecteur de
+ * frère : sous Organic, le titre a QUITTÉ la bannière pour la colonne de
+ * droite — voir l'encadré de `fiche.tsx`. Le viser depuis la bannière ne
+ * l'atteindrait plus.
+ */
+:global(:root[data-design='v3']) .fiche .banniereTitre {
+  margin: 14px 0 10px;
+  font-size: clamp(34px, 4vw, 54px);
+  line-height: 1.02;
+}
+
+:global(:root[data-design='v3']) .fiche .banniereTexte {
+  margin: 0 0 24px;
+  max-width: none;
+  font-size: 19px;
+}
+
+/*
+ * ── LE SUR-TITRE DE LA FICHE — pastille perdue, capitales sauge gagnées ────
+ *
+ * Prototype ligne 519 : `font-size:11.5px; letter-spacing:.14em; uppercase`,
+ * sauge, précédé d'un point de 6 px. La V2 en faisait une PASTILLE — fond,
+ * filet, rembourrage — ce que le prototype ne fait nulle part sur cet écran.
+ * Une pastille est un bouton qui ne réagit pas : elle promet une action que
+ * la ligne n'a pas.
+ */
+:global(:root[data-design='v3']) .ficheOrigine {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  margin-bottom: 0;
+  gap: 8px;
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  color: var(--second-encre);
+}
+
+:global(:root[data-design='v3']) .ficheOrigine .fichePuce {
+  width: 6px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--second-encre);
+}
+
+/*
+ * L'accroche est du texte de VITRINE, pas du texte de lecture.
+ *
+ * La V2 lui donne Literata et l'interligne de lecture — ce sont les réglages
+ * du corps d'un conte, faits pour tenir sur trois cents pages. Le prototype
+ * écrit ici la police d'interface à 19 px : deux lignes qui se lisent d'un
+ * coup d'œil, entre un titre et un prix. Mesuré, 17 px en serif contre 19 en
+ * sans : la ligne était plus petite ET plus lente à lire.
+ */
+:global(:root[data-design='v3']) .ficheResume {
+  font-family: var(--police-interface);
+  font-size: 19px;
+  line-height: 1.6;
+  max-width: none;
+  margin-bottom: 24px;
+}
+
+/* La couverture remplit sa colonne : c'est l'objet qu'on est venu voir. */
+:global(:root[data-design='v3']) .ficheVisuel img {
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * La carte d'achat : `border-radius: 30px; padding: 28px`, un filet d'un
+ * pixel et l'ombre moyenne du système. La V2 y met 26 px et un filet d'un
+ * pixel et demi — deux valeurs de la direction précédente.
+ */
+:global(:root[data-design='v3']) .achat {
+  padding: 28px;
+  border: 1px solid var(--bordure);
+  border-radius: 30px;
+  background: var(--surface);
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * ── LES CARACTÉRISTIQUES : DES PASTILLES EN LIGNE, PAS UNE GRILLE ─────────
+ *
+ * Prototype lignes 523 à 530. La V2 en fait une grille `auto-fit` de cases à
+ * 140 px minimum, qui s'étirent pour remplir la ligne ; le prototype pose des
+ * pastilles à largeur intrinsèque, de 120 px au moins, qui se suivent et
+ * reviennent à la ligne quand il le faut.
+ *
+ * L'écart n'est pas décoratif : une grille étirée donne trois cases de
+ * 208 px quoi qu'elles contiennent, et « 12 » y flotte au milieu d'un vide
+ * qu'on lit comme une donnée manquante.
+ */
+:global(:root[data-design='v3']) .reponses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+:global(:root[data-design='v3']) .reponse {
+  min-width: 120px;
+  padding: 14px 20px;
+  border: 1px solid var(--bordure);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+:global(:root[data-design='v3']) .reponseIntitule {
+  margin-bottom: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+}
+
+:global(:root[data-design='v3']) .reponseValeur {
+  margin-top: 4px;
+  font-size: 19px;
+  /*
+   * 1,6 — l'interligne du corps, que le prototype laisse s'appliquer. La V2
+   * serrait a 1,15 : neuf pixels de moins par pastille, et une rangee de
+   * caracteristiques plus basse que la colonne d'en face.
+   */
+  line-height: 1.6;
+  color: var(--encre);
+}
+
+/*
+ * ── L'INTÉRIEUR DE LA CARTE D'ACHAT ───────────────────────────────────────
+ *
+ * Prototype lignes 532 à 551. Le prix et sa mention partagent une ligne de
+ * base ; les deux boutons suivent à 20 px ; les trois preuves ferment la
+ * carte, séparées par un filet.
+ */
+:global(:root[data-design='v3']) .achatPrix {
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+/*
+ * 34 px FIXES, et non `clamp(34px, 3.6vw, 46px)`.
+ *
+ * La borne haute du `clamp` se déclenchait dès 1278 px de fenêtre : le prix
+ * s'affichait à 46 px sur tout écran de bureau, douze de plus que le titre du
+ * prototype ne le veut. Un prix plus gros que le titre du livre inverse ce
+ * que la page vend.
+ */
+:global(:root[data-design='v3']) .prixMontant {
+  font-size: 34px;
+  /* Meme raison que la valeur d'une pastille : 54,4 px de ligne, non 34. */
+  line-height: 1.6;
+}
+
+:global(:root[data-design='v3']) .prixMention {
+  font-size: 13.5px;
+}
+
+:global(:root[data-design='v3']) .achatActions {
+  gap: 12px;
+  margin: 20px 0 18px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES BOUTONS SE VISENT PAR UN ATTRIBUT, PAS PAR LEUR CLASSE.             │
+ * │                                                                          │
+ * │ `.boutonOcre` et `.boutonContour` vivent dans `accueil.module.css`. Leur │
+ * │ nom est HACHÉ à la compilation, et différemment dans chaque module :     │
+ * │ `:global(.boutonOcre)` écrit ici cherche une classe littérale qui        │
+ * │ n'existe nulle part dans le document. La règle se compilait, se          │
+ * │ chargeait, et ne s'appliquait à rien.                                    │
+ * │                                                                          │
+ * │ Le symptôme, mesuré : le bouton d'achat gardait ses deux pixels de       │
+ * │ bordure et son encre de V2 — un bouton terre cuite à texte sombre, là    │
+ * │ où le prototype en veut un sans filet à texte clair.                     │
+ * │                                                                          │
+ * │ `data-achat` est posé par `fiche.tsx` sur les deux boutons de la carte.  │
+ * │ Un attribut n'est pas renommé, il se lit dans le balisage, et il dit ce  │
+ * │ que la classe ne dit pas : lequel des deux est l'action principale.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * La portée est `.achatActions` et non `.achat` : les mêmes boutons sont
+ * rendus une seconde fois dans la barre flottante du téléphone, où ils ont
+ * leur propre dessin.
+ */
+
+/*
+ * Le bouton principal prend la place qui reste, avec un plancher à 200 px ;
+ * le second garde sa largeur intrinsèque. C'est le formulaire qui porte la
+ * souplesse — le bouton, lui, remplit son formulaire.
+ */
+:global(:root[data-design='v3']) .achatActions > form {
+  flex: 0 0 auto;
+}
+
+/*
+ * L'ACTION PRINCIPALE est toujours la première, qu'elle soit un lien nu ou un
+ * bouton dans son formulaire. Deux sélecteurs, parce que le rendu dépend du
+ * droit : « Lire en ligne » est un lien, « Ajouter au panier » un formulaire —
+ * un `GET` qui modifie un panier serait rejoué par le moindre préchargement.
+ */
+:global(:root[data-design='v3']) .achatActions > [data-achat='principal'],
+:global(:root[data-design='v3']) .achatActions > form:first-child {
+  flex: 1 1 200px;
+  min-width: 200px;
+}
+
+:global(:root[data-design='v3']) .achatActions > form > [data-achat] {
+  width: 100%;
+}
+
+/*
+ * `padding: 18px 28px`, rayon plein, 17 px de police de titre. `min-height: 0`
+ * retire la cible minimale de la V2 : à ce rembourrage le bouton fait 58 px de
+ * haut, bien au-delà des 44 px exigés — la contrainte ne sert plus qu'à
+ * fausser la mesure.
+ */
+:global(:root[data-design='v3']) .achatActions [data-achat] {
+  min-height: 0;
+  padding: 18px 28px;
+  border-radius: 999px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 17px;
+  line-height: normal;
+}
+
+/*
+ * Le bouton d'accent : pas de filet, l'aplat suffit — le prototype écrit
+ * `border:0`. La V2 lui donne deux pixels de bordure de la même couleur que
+ * son fond, ce qui l'agrandit de quatre pixels sans que rien ne le montre.
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 22 PX DE LIGNE SUR LE SEUL BOUTON QUI PORTE UNE ICÔNE.                  │
+ * │                                                                          │
+ * │ Les deux boutons du prototype font 58 px de haut. Chez nous, celui du    │
+ * │ cabas n'en faisait que 56, et son voisin 58 : deux boutons côte à côte,  │
+ * │ pas de la même taille.                                                   │
+ * │                                                                          │
+ * │ La cause est une finesse du modèle flexible, mesurée valeur par valeur : │
+ * │ un nœud de texte NU devient un élément anonyme qui garde le montant de   │
+ * │ ligne du conteneur — tant qu'il est SEUL. Dès qu'une icône partage la    │
+ * │ rangée, il retombe sur la hauteur de ses propres glyphes, vingt pixels.  │
+ * │                                                                          │
+ * │ D'où la portée : `principal` est le seul à porter un tracé. L'écrire     │
+ * │ partout aurait poussé le second bouton à 60 — on aurait échangé un       │
+ * │ défaut contre son symétrique.                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .achatActions [data-achat='principal'] {
+  gap: 10px;
+  border: 0;
+  line-height: 22px;
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * Le bouton de contour de la fiche est cerné d'ENCRE, pas du filet clair des
+ * panneaux : il est la seconde action d'une carte, et un filet de séparation
+ * n'y ferait pas un bouton. C'est la seule place du produit où il porte cette
+ * valeur, d'où la portée.
+ */
+:global(:root[data-design='v3']) .achatActions [data-achat='second'] {
+  gap: normal;
+  border: 1.5px solid var(--encre);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .achatActions [data-achat='second']:hover {
+  border-color: var(--encre);
+  background: var(--encre);
+  color: var(--fond);
+}
+
+:global(:root[data-design='v3']) .confiance {
+  gap: 9px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--bordure);
+}
+
+:global(:root[data-design='v3']) .confianceLigne {
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Le tracé de la coche est posé en attribut : ici, seule sa place se règle. */
+:global(:root[data-design='v3']) .confianceCoche {
+  flex: none;
+  margin-top: 3px;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LE BAS DE LA FICHE : TROIS ONGLETS
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype, lignes 555 à 625. La section vit dans `.page`, qui porte déjà la
+ * largeur de 1240 px et les 28 px de gouttière : il ne reste ici que le rythme
+ * vertical — 66 px au-dessus de la barre, 40 en dessous du panneau.
+ */
+.onglets {
+  padding: 66px 0 40px;
+}
+
+/*
+ * `margin-bottom: -1px` sur les onglets, et non sur la barre.
+ *
+ * Le filet de 2 px de l'onglet actif doit COUVRIR celui de la barre, sinon
+ * deux traits se superposent d'un pixel et l'onglet actif paraît décollé.
+ */
+.ongletsBarre {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--bordure);
+  margin-bottom: 34px;
+}
+
+.onglet {
+  margin-bottom: -1px;
+  padding: 14px 18px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--encre-douce);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 16.5px;
+  line-height: normal;
+  cursor: pointer;
+  transition: color var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+.onglet:hover {
+  color: var(--encre);
+}
+
+.onglet[data-actif] {
+  border-bottom-color: var(--action);
+  color: var(--encre);
+}
+
+/* ── Panneau « Extrait » ───────────────────────────────────────────────── */
+
+.extrait {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 56px;
+  align-items: start;
+}
+
+/*
+ * 620 px, et le §5.3 y tient autant que le prototype : au-delà d'environ
+ * soixante-quinze signes, l'œil perd la ligne suivante en revenant à la marge.
+ */
+.extraitTexte {
+  max-width: 620px;
+}
+
+.extraitPremier {
+  font-size: 19px;
+  line-height: 1.75;
+  margin: 0 0 18px;
+}
+
+/*
+ * LA LETTRINE EST UN FLOTTANT, PAS UN POSITIONNEMENT.
+ *
+ * `float: left` laisse le texte l'ENVELOPPER : c'est tout le dessin d'une
+ * lettrine. Un `position: absolute` aurait demandé de réserver la place à la
+ * main, et la réserve aurait été fausse au premier changement de corps.
+ *
+ * `line-height: .8` la remonte dans sa propre boîte pour que son sommet
+ * s'aligne sur celui de la ligne, et non sur la hauteur d'un caractère de 64.
+ */
+.lettrine {
+  float: left;
+  padding: 6px 12px 0 0;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 64px;
+  line-height: 0.8;
+  color: var(--action-texte);
+}
+
+.extraitSuite {
+  font-size: 17px;
+  line-height: 1.8;
+  color: var(--encre-douce);
+  margin: 0 0 18px;
+}
+
+.continuer {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 24px;
+  border: 1.5px solid var(--bordure);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+  line-height: normal;
+  transition: border-color var(--transition-couleur);
+}
+
+.continuer:hover {
+  border-color: var(--action);
+}
+
+/* ── La colonne « Ce que l'enfant en retire » ──────────────────────────── */
+
+.apports {
+  background: var(--creme);
+  border-radius: 28px;
+  padding: 30px;
+}
+
+.apportsTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 19px;
+  margin: 0 0 16px;
+}
+
+.apport {
+  display: flex;
+  gap: 11px;
+  font-size: 15px;
+  color: var(--encre-douce);
+  margin: 0 0 12px;
+}
+
+.apportPuce {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  margin-top: 8px;
+  border-radius: 99px;
+  background: var(--action);
+}
+
+/* ── Panneau « Détails » ───────────────────────────────────────────────── */
+
+.details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+}
+
+/*
+ * La carte de détail n'a PAS de filet — c'est ce qui la distingue d'une
+ * pastille du haut de fiche. Le haut annonce, le bas renseigne : deux tons,
+ * et le filet appartient à celui qui vend.
+ */
+.detail {
+  padding: 22px 24px;
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.detailIntitule {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.detailValeur {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 18px;
+}
+
+/*
+ * ── « Dans la même veine » ferme la page ───────────────────────────────────
+ *
+ * `padding: 40px 0 96px` — le prototype garde 96 px sous la dernière rangée.
+ * `.page` n'en pose donc plus : sinon les deux s'additionneraient.
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES 44 PX DU HAUT NE S'APPLIQUENT PLUS À UNE FICHE.                     │
+ * │                                                                          │
+ * │ `.page` porte 44 px de rembourrage haut sous Organic : c'est l'écart     │
+ * │ entre une bannière et le corps de l'écran, et il vaut pour le rayon, le  │
+ * │ catalogue, les pages éditoriales. Une fiche n'a plus rien au-dessus —    │
+ * │ son bandeau s'arrête sous les colonnes, et les onglets apportent leurs   │
+ * │ propres 66 px.                                                           │
+ * │                                                                          │
+ * │ La règle de base `.page[data-fiche]` ne suffisait pas : deux classes     │
+ * │ contre trois sélecteurs, la version Organic l'emportait. Mesuré, la      │
+ * │ section des onglets tombait 44 px trop bas — avec tout ce qui suit.      │
+ * │                                                                          │
+ * │ En bas, même raison inverse : c'est « Dans la même veine » qui porte     │
+ * │ les 96 px de garde, et les additionner en aurait fait 176.              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .page[data-fiche] {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+:global(:root[data-design='v3']) .page[data-fiche] > .bloc {
+  margin-top: 0;
+  padding: 40px 0 96px;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA FICHE D'UN LIVRET
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype, lignes 1192 à 1275. Cinq choses la séparent de la fiche d'un
+ * conte, et toutes tiennent au même fait : un livret ne se regarde pas, il
+ * s'examine.
+ *
+ *  · le bandeau se FERME d'un filet — la fiche continue en dessous, à plat,
+ *    au lieu de s'ouvrir sur des onglets ;
+ *  · la grille s'inverse : 1,35 contre 0,65, la planche prend la place ;
+ *  · la planche est COUCHÉE et cadrée en `contain` (voir `fiche-planches.tsx`);
+ *  · le titre descend de 54 à 42 — il partage sa colonne avec une carte
+ *    d'achat plus dense, et ne peut plus tenir trois lignes ;
+ *  · les deux boutons s'empilent sur toute la largeur.
+ */
+:global(:root[data-design='v3']) .hautFiche[data-support='livret_pedagogique'] {
+  border-bottom: 1px solid var(--bordure);
+}
+
+/*
+ * `padding: 34px 28px 20px` sur le fil, `10px 28px 56px` sur la grille — la
+ * fiche d'un conte écrit `34px 0 0` et `34px 28px 64px`. Le livret serre son
+ * haut : la planche est large, et la faire commencer plus haut évite qu'elle
+ * paraisse flotter.
+ */
+:global(:root[data-design='v3']) .hautFiche[data-support='livret_pedagogique'] .banniere[data-fiche] {
+  padding-bottom: 20px;
+}
+
+:global(:root[data-design='v3']) .hautFiche[data-support='livret_pedagogique'] .hautCorps {
+  padding: 10px 28px 56px;
+}
+
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] {
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+  gap: 44px;
+}
+
+/* ── La planche et ses vignettes ───────────────────────────────────────── */
+
+.planche {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 11;
+  /*
+   * `contain` — voir l'encadré de `fiche-planches.tsx`. Une planche est une
+   * fiche d'activité : la recadrer coupe la consigne écrite en haut.
+   */
+  object-fit: contain;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 26px;
+  box-shadow: var(--ombre-l);
+}
+
+.vignettes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/*
+ * Le filet de 2 px porte l'ÉTAT, et il est là dans les deux cas — seule la
+ * couleur change. Un filet qui apparaît sur la vignette active décalerait les
+ * trois autres de deux pixels à chaque clic.
+ */
+.vignette {
+  width: 112px;
+  height: 76px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid var(--bordure);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--transition-couleur);
+}
+
+.vignette[data-actif] {
+  border-color: var(--action);
+}
+
+.vignette img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * Le libellé de la vignette est LU, jamais vu.
+ *
+ * Le prototype fait des vignettes des boutons sans nom : au lecteur d'écran,
+ * la bande n'annonce que « bouton, bouton, bouton ». `clip-path` retire la
+ * chose de l'écran sans la retirer de l'arbre d'accessibilité — contrairement
+ * à `display: none`, qui l'emporterait aussi.
+ */
+.vignetteLibelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.plancheLegende {
+  margin: 16px 0 0;
+  font-size: 13.5px;
+  color: var(--encre-douce);
+}
+
+/* ── La colonne de droite ──────────────────────────────────────────────── */
+
+/*
+ * 42 px au lieu de 54 : le titre partage sa colonne, plus étroite de 45 %,
+ * avec une carte d'achat que rien ne peut réduire.
+ */
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .banniereTitre {
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.06;
+}
+
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .ficheResume {
+  font-size: 16.5px;
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .achat {
+  padding: 26px;
+  border-radius: 28px;
+}
+
+/*
+ * Le prix et sa note passent l'un SOUS l'autre.
+ *
+ * Sur la fiche d'un conte ils partagent une ligne de base : « 4,99 € » puis
+ * « le conte », d'un seul tenant. Ici la note est plus longue — elle dit le
+ * format et l'usage — et la mettre à côté d'un prix de 30 px la casserait en
+ * deux lignes contre la marge droite d'une colonne déjà étroite.
+ */
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .achatPrix {
+  display: block;
+  margin-bottom: 20px;
+}
+
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .prixMontant {
+  display: block;
+  font-size: 30px;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .prixMention {
+  display: block;
+  font-size: 13px;
+}
+
+/* Les deux boutons s'empilent, chacun sur toute la largeur. */
+:global(:root[data-design='v3']) .fiche[data-support='livret_pedagogique'] .achatActions {
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+}
+
+:global(:root[data-design='v3'])
+  .fiche[data-support='livret_pedagogique']
+  .achatActions
+  > form,
+:global(:root[data-design='v3'])
+  .fiche[data-support='livret_pedagogique']
+  .achatActions
+  > [data-achat] {
+  width: 100%;
+  min-width: 0;
+  flex: none;
+}
+
+:global(:root[data-design='v3'])
+  .fiche[data-support='livret_pedagogique']
+  .achatActions
+  [data-achat] {
+  justify-content: center;
+  padding: 16px;
+  font-size: 16px;
+  /*
+   * `normal` — le correctif des 22 px ne vaut que pour le bouton qui porte le
+   * cabas, et la fiche d'un livret n'en a pas. L'y garder aurait rendu des
+   * boutons de 54 px là où le prototype en dessine 51.
+   */
+  line-height: normal;
+}
+
+/*
+ * L'écart de 9 px ne vaut que pour le bouton d'ACCENT : le prototype l'écrit
+ * sur lui seul. Le bouton de contour n'a qu'un mot à afficher, et un écart
+ * déclaré sur un élément sans second enfant ne se voit pas — jusqu'au jour où
+ * quelqu'un y ajoute une icône et se demande d'où vient le décalage.
+ */
+:global(:root[data-design='v3'])
+  .fiche[data-support='livret_pedagogique']
+  .achatActions
+  [data-achat='principal'] {
+  gap: 9px;
+  box-shadow: var(--ombre-s);
+}
+
+:global(:root[data-design='v3'])
+  .fiche[data-support='livret_pedagogique']
+  .achatActions
+  [data-achat='second'] {
+  gap: normal;
+}
+
+/* ── Les caractéristiques, en pied de carte ────────────────────────────── */
+
+.livretSpecs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 20px 0 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--bordure);
+}
+
+/*
+ * `<dl>` avec un `<div>` par paire — c'est la forme que la spécification HTML
+ * prévoit pour grouper un terme et sa définition, et la seule qui permette de
+ * les mettre aux deux bouts d'une ligne sans mentir sur la structure.
+ */
+.livretSpec {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.livretSpecCle {
+  color: var(--encre-douce);
+}
+
+.livretSpecValeur {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+}
+
+/* ── Les panneaux du bas ───────────────────────────────────────────────── */
+
+.panneaux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+  padding: 66px 0 30px;
+}
+
+/*
+ * `.panneau` existe déjà pour les filtres du rayon : ces règles-ci ne valent
+ * que DANS `.panneaux`, et ne peuvent donc pas l'atteindre.
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PORTÉE ORGANIC EST OBLIGATOIRE ICI, ET CE N'EST PAS DU CONFORT.      │
+ * │                                                                          │
+ * │ `.panneau` et `.panneauTitre` servent DÉJÀ au panneau de filtres du      │
+ * │ rayon, et celui-ci porte une règle `:root[data-design='v3'] .panneau` —  │
+ * │ trois sélecteurs contre deux. Écrite sans la même portée, la règle       │
+ * │ ci-dessous perdait : mesuré, les panneaux d'un livret sortaient avec le  │
+ * │ rembourrage d'un filtre, 12 px sur 16, et son filet.                     │
+ * │                                                                          │
+ * │ Les deux usages resteront distincts tant que ces règles vivent sous      │
+ * │ `.panneaux` — le pluriel n'existe que pour le bas d'une fiche.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .panneaux .panneau {
+  /*
+   * `display: block` : le panneau de filtres du rayon est une grille à
+   * gouttière de 10 px, et l'héritage ajoutait cet écart entre le titre et
+   * chaque objectif — dix pixels que le prototype ne met pas.
+   */
+  display: block;
+  gap: normal;
+  padding: 30px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--surface);
+}
+
+:global(:root[data-design='v3']) .panneaux .panneauTitre {
+  margin: 0 0 18px;
+  padding: 0;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 21px;
+  /* Le titre d'un panneau de filtres porte la traque des titres ; celui-ci non. */
+  letter-spacing: normal;
+}
+
+.panneauLigne {
+  display: flex;
+  gap: 11px;
+  margin: 0 0 12px;
+  font-size: 15.5px;
+  line-height: 1.55;
+}
+
+.panneauCoche {
+  flex: none;
+  margin-top: 5px;
 }

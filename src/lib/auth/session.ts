@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { createServiceClient, createUserClient } from '@/lib/supabase/clients';
 import { errors } from '@/lib/http/responses';
 import { logger } from '@/lib/logger';
@@ -19,7 +20,19 @@ export interface Appelant {
   role: 'user' | 'admin';
   langue_preferee: string;
   statut: 'actif' | 'suspendu' | 'anonymise';
+  nom_complet?: string | null;
+  telephone?: string | null;
+  cree_le?: string;
   accessToken: string;
+}
+
+/** Génère un nom générique (ex. user8297) si aucun nom n'est renseigné. */
+export function nomUtilisateurEffectif(nomComplet: string | null | undefined, userId: string): string {
+  if (nomComplet && nomComplet.trim().length > 0) {
+    return nomComplet.trim();
+  }
+  const suffixe = userId.replace(/[^0-9]/g, '').slice(-4) || userId.slice(-4) || '8297';
+  return `user${suffixe}`;
 }
 
 /**
@@ -49,12 +62,57 @@ export async function identifierAppelant(request: Request): Promise<Appelant | n
   const jeton = extraireJeton(request);
   if (!jeton) return null;
 
+  return _resoudreAppelant(jeton);
+}
+
+/**
+ * Variante de `identifierAppelant` qui consulte aussi le magasin de cookies
+ * de Next.js en repli.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `headers()` DE NEXT.JS DANS UN SERVER COMPONENT OMET L'EN-TÊTE `cookie`.│
+ * │                                                                          │
+ * │ Le layout construit une `new Request('http://interne/', { headers })`    │
+ * │ à partir de `headers()`. Or, `headers()` ne reporte PAS l'en-tête       │
+ * │ `Cookie` : il ne contient que les en-têtes HTTP standards (host, etc.)   │
+ * │ Le cookie de session posé par la Server Action est bien reçu par le      │
+ * │ navigateur et renvoyé dans la requête suivante, mais `headers()` ne le   │
+ * │ propage pas dans l'objet `Headers` retourné.                             │
+ * │                                                                          │
+ * │ Le magasin de cookies de Next.js (`cookies()`) y a accès, lui : c'est    │
+ * │ le repli qu'emploie cette variante.                                      │
+ * │                                                                          │
+ * │ Les routes d'API, elles, reçoivent le vrai objet `Request` du serveur,   │
+ * │ avec tous ses en-têtes — elles gardent `identifierAppelant`.             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export async function identifierAppelantAvecCookies(request: Request): Promise<Appelant | null> {
+  // Essayer d'abord par les en-têtes de la requête (Authorization ou Cookie).
+  let jeton = extraireJeton(request);
+
+  // Repli sur le magasin de cookies Next.js si l'en-tête Cookie est absent.
+  if (!jeton) {
+    try {
+      const store = await cookies();
+      jeton = store.get(ACCESS_TOKEN_COOKIE)?.value ?? null;
+    } catch {
+      // Hors contexte Next.js (tests unitaires), cookies() lève — c'est attendu.
+    }
+  }
+
+  if (!jeton) return null;
+
+  return _resoudreAppelant(jeton);
+}
+
+/** Résolution commune du profil à partir d'un jeton validé. */
+async function _resoudreAppelant(jeton: string): Promise<Appelant | null> {
   const { data, error } = await createUserClient(jeton).auth.getUser();
   if (error || !data.user) return null;
 
   const profil = await createServiceClient()
     .from('users')
-    .select('id, email, role, langue_preferee, statut')
+    .select('id, email, role, langue_preferee, statut, nom_complet, telephone, cree_le')
     .eq('id', data.user.id)
     .maybeSingle();
 
@@ -69,12 +127,17 @@ export async function identifierAppelant(request: Request): Promise<Appelant | n
     return null;
   }
 
+  const nomEff = nomUtilisateurEffectif(profil.data.nom_complet, profil.data.id);
+
   return {
     id: profil.data.id,
     email: profil.data.email,
     role: profil.data.role,
     langue_preferee: profil.data.langue_preferee,
     statut: profil.data.statut,
+    nom_complet: nomEff,
+    telephone: profil.data.telephone,
+    cree_le: profil.data.cree_le,
     accessToken: jeton,
   };
 }

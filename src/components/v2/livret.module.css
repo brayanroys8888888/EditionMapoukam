@@ -1,0 +1,242 @@
+/*
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║ LE KIT OFFERT, MIS EN AVANT — rayon des livrets.                          ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Prototype `Site EditionMapoukam.dc.html`, lignes 1116 à 1136. Chaque valeur
+ * ci-dessous y est relevée ; les rares écarts sont écrits à leur place, avec
+ * leur raison.
+ *
+ * Ce module n'a PAS de bloc `[data-design='v3']` : il n'existe que sous
+ * Organic. `livrets/page.tsx` ne le rend qu'après `estV3()`, si bien qu'aucune
+ * de ces règles n'atteint jamais la V1 ni la V2. Une feuille entière gardée
+ * par une condition qui n'est pas dans la feuille est plus lisible qu'une
+ * feuille où chaque règle répète sa garde.
+ */
+
+.panneau {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 0;
+  overflow: hidden;
+  margin-bottom: 44px;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 34px;
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `min-height: 330px` EST PORTÉ PAR LE CADRE, PAS PAR L'IMAGE.            │
+ * │                                                                          │
+ * │ Le prototype le pose sur l'`<img>` avec `height: 100%`. Les deux         │
+ * │ ensemble sur une image sortent du même piège que la grille : un          │
+ * │ pourcentage se résout contre la hauteur du parent, laquelle n'est ici    │
+ * │ imposée par rien — le navigateur retombe alors sur la hauteur            │
+ * │ intrinsèque du fichier, et le panneau prend la taille du dessin.         │
+ * │                                                                          │
+ * │ Posé sur le cadre, le minimum devient une vraie contrainte : la colonne  │
+ * │ de gauche fait au moins 330 px, la droite s'aligne par `stretch`, et     │
+ * │ l'image remplit ce qu'on lui donne.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.visuel {
+  position: relative;
+  min-height: 330px;
+  background: var(--fond-doux);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Une planche debout se lit en entier — voir la note du composant. */
+.visuel[data-orientation='portrait'] .image {
+  object-fit: contain;
+}
+
+/* Le substitut de couverture remplit le cadre comme l'image le ferait. */
+.visuel > *:not(.pastille) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * La pastille : sauge en aplat, olive profond en encre.
+ *
+ * Le prototype y met du blanc. Mesuré, ce couple ne vaut que 3,73:1, sous les
+ * 4,5:1 d'AA — et c'est justement pourquoi la palette nomme séparément
+ * `--second` (l'aplat) et `--second-contre` (ce qui s'y dessine).
+ */
+.pastille {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  background: var(--second);
+  color: var(--second-contre);
+  border-radius: 999px;
+  padding: 7px 15px;
+  /* Une seule ligne : l'interligne du corps ne l'espace pas, il la grandit —
+     26 px au prototype contre 32,4 a 1,6. Voir la meme note sur `v2`. */
+  line-height: normal;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.corps {
+  display: flex;
+  flex-direction: column;
+  padding: 34px;
+}
+
+.niveau {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--second-encre);
+}
+
+.titre {
+  font-family: var(--police-titre);
+  font-size: 26px;
+  line-height: 1.15;
+  margin: 12px 0 10px;
+}
+
+.titreLien {
+  color: inherit;
+  text-decoration: none;
+  transition: color var(--transition-couleur);
+}
+
+.titreLien:hover {
+  color: var(--accent-encre);
+}
+
+.resume {
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0 0 20px;
+}
+
+.objectifs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.objectif {
+  display: flex;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  margin: 0 0 9px;
+}
+
+/*
+ * `flex: none` empêche la coche de rétrécir quand l'objectif tient sur deux
+ * lignes ; les 4 px de marge la posent sur la première ligne de texte plutôt
+ * qu'au milieu du bloc.
+ */
+.coche {
+  flex: none;
+  margin-top: 4px;
+  color: var(--action);
+}
+
+/*
+ * `margin-top: auto` colle la rangée de boutons en bas du panneau, quelle que
+ * soit la longueur du résumé et le nombre d'objectifs.
+ */
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+/*
+ * Le premier bouton prend le reste de la ligne — `flex: 1` — et ne descend
+ * jamais sous 150 px : en dessous, « Ouvrir le kit » passerait sur deux
+ * lignes et la rangée doublerait de hauteur.
+ */
+.actionPrincipale {
+  flex: 1;
+  min-width: 150px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 22px;
+  font-family: var(--police-titre);
+  font-size: 15.5px;
+  line-height: normal;
+  text-decoration: none;
+  transition: background var(--transition-couleur), transform var(--transition-forme);
+}
+
+.actionPrincipale:hover {
+  background: var(--action-survol);
+  transform: translateY(-4px);
+}
+
+.actionSecondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: var(--encre);
+  border: 1.5px solid var(--encre);
+  border-radius: 999px;
+  padding: 15px 22px;
+  font-family: var(--police-titre);
+  font-size: 15.5px;
+  line-height: normal;
+  text-decoration: none;
+  transition: background var(--transition-couleur), color var(--transition-couleur),
+    transform var(--transition-forme);
+}
+
+.actionSecondaire:hover {
+  background: var(--encre);
+  color: var(--fond);
+  transform: translateY(-4px);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ EN COLONNE ÉTROITE, LE PANNEAU S'EMPILE — ET LA COUVERTURE RÉTRÉCIT.    │
+ * │                                                                          │
+ * │ 880 px est le point où la colonne de droite tomberait sous 300 px : le   │
+ * │ titre de 26 px y passerait sur quatre lignes et les deux boutons sur     │
+ * │ deux rangées. Empilé, le panneau garde ses proportions, et la couverture │
+ * │ perd son minimum de 330 px — sur un téléphone, elle occuperait sinon la  │
+ * │ moitié de l'écran avant qu'un seul mot soit lisible.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 880px) {
+  .panneau {
+    grid-template-columns: 1fr;
+  }
+
+  .visuel {
+    min-height: 0;
+    aspect-ratio: 16 / 11;
+  }
+
+  .corps {
+    padding: 26px 22px 24px;
+  }
+}

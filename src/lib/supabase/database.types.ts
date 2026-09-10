@@ -421,6 +421,8 @@ export type Database = {
           inclus_abonnement: boolean
           maj_le: string
           nb_pages_extrait: number | null
+          niveau: string | null
+          objectifs: string[]
           orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string | null
           publie_le: string | null
@@ -445,6 +447,8 @@ export type Database = {
           inclus_abonnement?: boolean
           maj_le?: string
           nb_pages_extrait?: number | null
+          niveau?: string | null
+          objectifs?: string[]
           orientation?: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle?: string | null
           publie_le?: string | null
@@ -469,6 +473,8 @@ export type Database = {
           inclus_abonnement?: boolean
           maj_le?: string
           nb_pages_extrait?: number | null
+          niveau?: string | null
+          objectifs?: string[]
           orientation?: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle?: string | null
           publie_le?: string | null
@@ -2120,6 +2126,8 @@ export type Database = {
           inclus_abonnement: boolean
           manques: string[]
           nb_pages_extrait: number
+          niveau: string
+          objectifs: string[]
           orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string
           prix: Json
@@ -2395,6 +2403,8 @@ export type Database = {
           p_illustrateur?: string
           p_inclus_abonnement?: boolean
           p_nb_pages_extrait?: number
+          p_niveau?: string
+          p_objectifs?: string[]
           p_orientation?: Database["public"]["Enums"]["page_orientation"]
           p_origine_culturelle?: string
           p_region?: Database["public"]["Enums"]["region_conte"]
@@ -2415,6 +2425,8 @@ export type Database = {
           inclus_abonnement: boolean
           maj_le: string
           nb_pages_extrait: number | null
+          niveau: string | null
+          objectifs: string[]
           orientation: Database["public"]["Enums"]["page_orientation"]
           origine_culturelle: string | null
           publie_le: string | null
@@ -2741,6 +2753,7 @@ export type Database = {
           p_age_min?: number
           p_at?: string
           p_langue?: string
+          p_niveau?: string
           p_origine?: string
           p_page?: number
           p_recherche?: string
@@ -2764,6 +2777,8 @@ export type Database = {
           langues: string[]
           montant: number
           nb_pages: number
+          niveau: string
+          objectifs: string[]
           origine_culturelle: string
           publie_le: string
           resume: string
@@ -2926,6 +2941,7 @@ export type Database = {
         Returns: undefined
       }
       motif_courant: { Args: never; Returns: string }
+      niveaux_du_livre: { Args: { p_niveau: string }; Returns: string[] }
       offre_par_code: {
         Args: {
           p_code: string

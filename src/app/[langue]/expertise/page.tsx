@@ -8,6 +8,8 @@ import {
   lirePresentationConsulting,
 } from '@/content/consulting';
 import { Revele } from '@/components/v2/revele';
+import { ExpertiseV3 } from '@/components/v2/expertise-v3';
+import { estV3 } from '@/design/version';
 import styles from '@/components/v2/expertise.module.css';
 import boutique from '@/components/v2/boutique.module.css';
 
@@ -63,6 +65,25 @@ export default async function PageExpertise({ params }: Parametres) {
    * n'affiche jamais une coordonnée à moitié.
    */
   const telephone = IDENTITE_EDITEUR.telephone.replace(/\s/g, '');
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ÉCRAN EST REDESSINÉ — PAS SEULEMENT REPEINT.         │
+   * │                                                                      │
+   * │ C'est la seule page du site qui OUVRE SUR L'OLIVE, et ce n'est pas   │
+   * │ une variation : elle s'adresse à des directions d'école, pas à des   │
+   * │ parents. La certification monte dans un panneau à droite du titre,  │
+   * │ les trois offres deviennent des cartes à tarif, et les onze visuels  │
+   * │ prennent une mosaïque en colonnes plutôt qu'une grille qui les       │
+   * │ recadrerait tous au même rapport.                                    │
+   * │                                                                      │
+   * │ La V2 reste en place, intacte, sous cette condition — le même        │
+   * │ partage que sur `/contact` et `/a-propos`.                           │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return <ExpertiseV3 langue={langue} />;
+  }
 
   return (
     <>

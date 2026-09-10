@@ -1,0 +1,387 @@
+/*
+ * LA SUPERPOSITION DE RECHERCHE — cotes du prototype de bureau, lignes 133
+ * à 160, et du prototype mobile, lignes 60 à 77.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CHAQUE CLASSE PORTE UNE DÉCLARATION LOCALE AVANT SA RÈGLE V3.           │
+ * │                                                                          │
+ * │ Un module CSS n'exporte que ce qu'il DÉCLARE localement. Une classe      │
+ * │ écrite uniquement sous `:global(:root[data-design='v3'])` donne          │
+ * │ `styles.x === undefined`, et le DOM reçoit la chaîne « undefined » comme │
+ * │ nom de classe. `tests/unit/classes-css.test.ts` le vérifie.              │
+ * │                                                                          │
+ * │ Ici la question ne se pose pas tout à fait de la même façon que sur      │
+ * │ l'authentification : cette pièce n'existe QUE sous Organic — la V1 et    │
+ * │ la V2 n'ont pas de superposition, leur loupe reste un lien vers le       │
+ * │ catalogue. Les déclarations de base ne sont donc pas un repli visuel     │
+ * │ mais le socle géométrique, et les règles V3 n'ajoutent que les teintes   │
+ * │ et les cotes propres à la direction.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── Le voile ───────────────────────────────────────────────────────────── */
+
+/*
+ * Il commence SOUS la superposition (z-index 79 contre 80) et couvre tout le
+ * reste. Le prototype n'en dessine pas : il n'a rien à fermer au clic, son
+ * état vit en mémoire. Ici il est la cible de sortie, et une superposition
+ * qu'on ne peut fermer qu'au clavier serait un piège.
+ */
+.voile {
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: rgb(24 20 12 / 45%);
+  cursor: pointer;
+}
+
+/* ── Le panneau ─────────────────────────────────────────────────────────── */
+
+.superposition {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 80;
+  padding: 30px 28px 34px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+  box-shadow: var(--ombre-l, var(--ombre-flottante));
+  /*
+   * L'ouverture : opacité et douze pixels de descente, en 300 ms.
+   *
+   * `prefers-reduced-motion` est traité par la règle globale des jetons, qui
+   * ramène toutes les durées à zéro — l'animation disparaît, la position
+   * finale reste.
+   */
+  animation: paraitre 300ms ease;
+}
+
+@keyframes paraitre {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Sous `prefers-reduced-motion`, la superposition PARAÎT au lieu de descendre.
+ *
+ * Elle ne disparaît pas, et elle n'arrive pas plus tard : seul le mouvement
+ * est retiré. C'est la nuance que la plupart des implémentations ratent —
+ * couper l'animation ne doit jamais couper ce qu'elle amenait.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .superposition {
+    animation: none;
+  }
+}
+
+.interieur {
+  max-width: 920px;
+  margin: 0 auto;
+}
+
+/* ── La rangée de saisie ────────────────────────────────────────────────── */
+
+.rangee {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 14px;
+  /* Deux pixels, et non un : c'est la ligne qui porte la saisie. */
+  border-bottom: 2px solid var(--bordure);
+}
+
+.loupe {
+  flex: none;
+  color: var(--action);
+}
+
+/*
+ * Le champ est le TITRE de l'écran : Caprasimo, 27 px, sans cadre.
+ *
+ * `appearance: none` retire la croix que Chrome ajoute à `type="search"` :
+ * elle se pose sur la ligne de fond, à côté de la pastille « Échap », et il y
+ * aurait alors deux façons de vider le champ à deux pixels l'une de l'autre.
+ * Le type reste `search` — c'est ce qu'il est, et les technologies
+ * d'assistance l'annoncent comme tel.
+ */
+.champ {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  /*
+   * `border-radius: 0` et l'absence de rembourrage sont RELEVÉS, pas choisis.
+   *
+   * Le prototype laisse au champ les valeurs propres du navigateur — 1px 2px
+   * de rembourrage, aucun arrondi. Une réinitialisation globale posait ici
+   * quatre pixels d'arrondi et supprimait le rembourrage : invisible sur un
+   * champ transparent, mais deux pixels de décalage sur le texte saisi.
+   */
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  font-family: var(--police-titre);
+  font-size: 27px;
+  font-weight: var(--graisse-normale);
+  /*
+   * `normal`, et non l'interligne de corps.
+   *
+   * Hérité, 1,6 sur 27 px donnait 43,2 px de haut : la rangée de saisie
+   * passait de 52 à 59 px, et les sept pixels descendaient sur TOUT ce qui
+   * suit — suggestions, grille, résultats. Un interligne de champ déréglait
+   * la hauteur de la superposition entière.
+   */
+  line-height: normal;
+  color: var(--encre);
+  appearance: none;
+}
+
+.champ::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.champ::placeholder {
+  color: var(--encre-douce);
+  opacity: 1;
+}
+
+.echap {
+  flex: none;
+  padding: 7px 14px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: none;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+  cursor: pointer;
+}
+
+.echap:hover {
+  color: var(--encre);
+}
+
+/* ── Les suggestions ────────────────────────────────────────────────────── */
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.suggestionsLibelle {
+  align-self: center;
+  margin-right: 4px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 15px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 13.5px;
+  color: var(--encre);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+.pastille:hover {
+  background: var(--fond-doux);
+  border-color: var(--action);
+  color: var(--encre);
+}
+
+/* ── Les résultats ──────────────────────────────────────────────────────── */
+
+/*
+ * `46vh` de haut au plus, et le débordement défile.
+ *
+ * La superposition est ancrée EN HAUT de la fenêtre : sans ce plafond, six
+ * résultats sur un téléphone couché recouvriraient la page entière, et l'on
+ * ne verrait plus ce qu'on quitte.
+ */
+.resultats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+  max-height: 46vh;
+  overflow: auto;
+}
+
+.resultat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--fond-doux);
+  text-align: left;
+  text-decoration: none;
+  color: var(--encre);
+  cursor: pointer;
+  transition: box-shadow var(--transition-couleur);
+}
+
+.resultat:hover {
+  box-shadow: var(--ombre-m, var(--ombre-carte));
+}
+
+.couverture,
+.couvertureVide {
+  flex: none;
+  width: 46px;
+  height: 66px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: var(--ombre-s, none);
+}
+
+/*
+ * Un titre sans couverture garde sa PLACE.
+ *
+ * Sans ce substitut, la ligne se replierait sur elle-même et le titre
+ * remonterait de 46 px vers la gauche : la grille cesserait d'être une
+ * grille au premier titre dont la vignette n'est pas encore produite.
+ */
+.couvertureVide {
+  display: block;
+  background: var(--bordure);
+}
+
+.resultatTexte {
+  min-width: 0;
+}
+
+.resultatTitre {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 15px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+  /* Un titre long ne pousse pas la vignette hors de la carte. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resultatMeta {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+.aucun {
+  margin: 22px 0 0;
+  font-size: 14.5px;
+  color: var(--encre-douce);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * MOBILE — le prototype ne superpose plus, il pose un champ dans l'en-tête.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype mobile, lignes 60 à 77. La superposition garde sa mécanique — même
+ * composant, même recherche, même Échap — mais elle cesse d'être un grand
+ * panneau : elle se resserre sur la hauteur de l'en-tête, le champ passe en
+ * pastille, et les suggestions défilent sur une rangée.
+ *
+ * C'est le même arbitrage que sur l'authentification : le prototype mobile
+ * REDESSINE, il ne comprime pas.
+ */
+@media (max-width: 760px) {
+  .superposition {
+    padding: 12px 16px 14px;
+  }
+
+  .rangee {
+    gap: 10px;
+    padding: 12px 18px;
+    border-bottom: 0;
+    border: 1px solid var(--bordure);
+    border-radius: 999px;
+    background: var(--surface);
+  }
+
+  .loupe {
+    width: 17px;
+    height: 17px;
+  }
+
+  .champ {
+    font-family: var(--police-interface);
+    font-size: 15.5px;
+  }
+
+  /*
+   * La pastille « Échap » cède la place à une cible de 44 px.
+   *
+   * Le mot n'a pas de sens sur un téléphone — il n'y a pas de touche Échap —
+   * et le prototype mobile pose à cet endroit un bouton de fermeture carré.
+   * Le LIBELLÉ accessible ne change pas pour autant : c'est toujours
+   * « fermer la recherche » qui est annoncé.
+   */
+  .echap {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin-right: -8px;
+    border: 0;
+    font-size: 0;
+  }
+
+  .echap::after {
+    content: '×';
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  .suggestions {
+    flex-wrap: nowrap;
+    gap: 8px;
+    margin-top: 0;
+    padding: 12px 0 2px;
+    overflow-x: auto;
+    /* Le défilement ne doit pas rogner les pastilles au repos. */
+    scrollbar-width: none;
+  }
+
+  .suggestions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .suggestionsLibelle {
+    display: none;
+  }
+
+  .pastille {
+    flex: none;
+    font-size: 13px;
+  }
+
+  .resultats {
+    grid-template-columns: 1fr;
+    margin-top: 14px;
+    max-height: 54vh;
+  }
+}

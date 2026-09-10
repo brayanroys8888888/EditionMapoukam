@@ -1,0 +1,511 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * À PROPOS — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `Site EditionMapoukam.dc.html`, lignes 966 à 1030.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ QUATRE SECTIONS, ET UNE QUI DISPARAÎT.                                  │
+ * │                                                                          │
+ * │ La V2 ouvrait sur un bandeau olive, puis consacrait une SECTION entière  │
+ * │ au récit — image à gauche, sur-titre « Notre histoire », trois           │
+ * │ paragraphes à droite. Le prototype fait autrement : le récit EST le      │
+ * │ héros, sur deux colonnes, et il n'y a pas de bandeau séparé.             │
+ * │                                                                          │
+ * │ Ce n'est pas une économie de place. Une page « à propos » qui commence   │
+ * │ par un bandeau, puis annonce « Notre histoire », puis raconte, met deux  │
+ * │ portes avant la pièce. Le prototype ouvre la porte directement.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Le rembourrage horizontal reprend la forme employée par la boutique et par
+ * l'écran de contact : la boîte va d'un bord à l'autre, et sa marge intérieure
+ * absorbe à la fois le centrage du conteneur de 1240 et ses 28 px propres.
+ */
+
+/* ══ Le héros — récit à gauche, image à droite ════════════════════════════ */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--fond-doux);
+  border-bottom: 1px solid var(--bordure);
+}
+
+/*
+ * Le disque terre cuite qui déborde du coin haut-gauche.
+ *
+ * 12 % d'opacité : c'est assez pour que la bande cesse d'être un aplat, et
+ * trop peu pour qu'on le regarde. Il est purement décoratif — d'où le
+ * `aria-hidden` posé sur lui dans le balisage.
+ */
+.heroCercle {
+  position: absolute;
+  top: -90px;
+  left: -70px;
+  width: 330px;
+  height: 330px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--action) 12%, transparent);
+  pointer-events: none;
+}
+
+.heroInterieur {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: center;
+  padding: 60px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 64px;
+}
+
+/*
+ * Le sur-titre reste EN LIGNE, comme au prototype — voir l'encadré du même
+ * nom dans `contact.module.css` : en bloc, la hauteur de sa ligne viendrait de
+ * sa propre fonte et non de celle du conteneur, et la ligne perdrait quatre
+ * pixels.
+ */
+.oeil {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+.titre {
+  font-size: clamp(36px, 4.4vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 14px 0 18px;
+}
+
+.paragraphe {
+  font-size: 17.5px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+  margin: 0 0 14px;
+}
+
+.paragraphe:last-child {
+  margin-bottom: 0;
+}
+
+.photo {
+  position: relative;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SON RAPPORT NATUREL, ET NON LE 4/5 DU PROTOTYPE.                        │
+ * │                                                                          │
+ * │ Le prototype réserve ici un portrait en 4/5 et le remplit d'une          │
+ * │ photographie quelconque. L'image réelle est un PANORAMA en 1080 × 602    │
+ * │ qui met en scène les quatre univers de la maison, chacun nommé sur       │
+ * │ l'illustration. Recadrée en portrait, elle perdrait deux univers sur     │
+ * │ quatre — c'est-à-dire son sujet.                                          │
+ * │                                                                          │
+ * │ Le reste de la boîte ne bouge pas : 32 px de rayon, l'ombre de panneau,  │
+ * │ la colonne de droite du héros. C'est le rapport qui s'adapte au          │
+ * │ contenu, et non l'inverse.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ET ELLE N'EST PAS LAVÉE.                                                │
+ * │                                                                          │
+ * │ Le système « Organic » pose `.washed` — désaturée, contraste et éclat    │
+ * │ adoucis — sur chaque PHOTOGRAPHIE, pour qu'elle cesse de se battre avec  │
+ * │ la palette. Celle-ci n'est pas une photographie : c'est une              │
+ * │ illustration qui porte du TEXTE — le nom de la maison, sa devise, les    │
+ * │ quatre univers. Éclaircie de 10 % et désaturée, ces mots pâlissent       │
+ * │ jusqu'à l'illisible.                                                     │
+ * │                                                                          │
+ * │ C'est la même règle que pour les couvertures de livres, et pour la même  │
+ * │ raison : ce qui porte une information reste franc.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 32px;
+  box-shadow: var(--ombre-l);
+}
+
+/* ══ La citation — un panneau olive ═══════════════════════════════════════ */
+
+.sectionCitation {
+  padding: 70px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 20px;
+}
+
+.citation {
+  /*
+   * L'anneau de focus suit l'encre de CETTE surface : sur l'olive, celui de
+   * la page disparaît. Le panneau ne porte pas de lien aujourd'hui — la règle
+   * est posée d'avance, parce qu'un lien ajouté demain ne s'accompagnerait
+   * pas de sa correction.
+   */
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-radius: 36px;
+  padding: 52px;
+  margin: 0;
+}
+
+.citationTexte {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: clamp(24px, 2.8vw, 36px);
+  line-height: 1.22;
+  margin: 0 0 28px;
+}
+
+.citationAuteur {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/*
+ * L'EMBLÈME, et non des initiales.
+ *
+ * Le prototype met là les initiales de qui parle. Ici personne ne parle : la
+ * ligne est la devise de la maison. Le disque porte donc l'emblème du logo
+ * officiel, posé en masque comme partout ailleurs — la forme vient du
+ * fichier, la couleur du jeton.
+ */
+.sceau {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--action);
+}
+
+.sceau::after {
+  content: '';
+  position: absolute;
+  /* L'emblème est deux fois plus large que haut : à 72 % il touchait le bord. */
+  inset: 19%;
+  background: var(--action-encre);
+  mask-image: url('/images/logo-mapoukam-marque.png');
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-size: contain;
+}
+
+.citationSignature {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16.5px;
+  line-height: 1.3;
+}
+
+/* ══ Les quatre principes ═════════════════════════════════════════════════ */
+
+.sectionPrincipes {
+  padding: 60px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 20px;
+}
+
+/*
+ * 600 px, et pas la pleine largeur.
+ *
+ * Un sur-titre et un titre courts, étalés sur 1184 px, laissent une ligne
+ * seule au milieu d'un désert. La borne les tient ensemble.
+ */
+.enTete {
+  max-width: 600px;
+  margin-bottom: 32px;
+}
+
+.titreSection {
+  font-size: clamp(30px, 3.2vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 10px 0 0;
+}
+
+.principes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.principe {
+  height: 100%;
+  background: var(--surface);
+  border-radius: 28px;
+  padding: 30px;
+  box-shadow: var(--ombre-s);
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.principe:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * Le numéro est un ORNEMENT, pas une information : la liste est déjà ordonnée
+ * et un lecteur d'écran annonce « élément 2 sur 4 ». L'énoncer une seconde
+ * fois ferait entendre « deux, deux, des cultures nommées ».
+ */
+.principeNumero {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 34px;
+  color: var(--action-texte);
+}
+
+.principeTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 19px;
+  line-height: 1.2;
+  margin: 16px 0 10px;
+}
+
+.principeCorps {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/* ══ Le catalogue en preuve ═══════════════════════════════════════════════ */
+
+.sectionCatalogue {
+  padding: 70px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 96px;
+}
+
+.catalogueEnTete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+}
+
+/*
+ * `1.12`, et non `1.05` comme son voisin.
+ *
+ * Le prototype pose `line-height:1.05` sur le titre des principes et RIEN sur
+ * celui-ci, qui hérite donc du 1,12 que le système « Organic » donne à tous
+ * ses titres. Deux titres voisins, deux interlignes : ce n'est pas une
+ * distraction du dossier, c'est ce qui tient la rangée de couvertures à sa
+ * hauteur.
+ */
+.titreCatalogue {
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 10px 0 0;
+}
+
+.boutonCatalogue {
+  display: inline-flex;
+  align-items: center;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-radius: 999px;
+  padding: 15px 26px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15px;
+  /* `normal`, comme au prototype : l'interligne du corps l'épaissirait. */
+  line-height: normal;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.boutonCatalogue:hover {
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE RANGÉE QUI GLISSE, ET NON UNE GRILLE QUI SE REPLIE.                 │
+ * │                                                                          │
+ * │ La V2 disposait le catalogue en grille : neuf couvertures sur deux       │
+ * │ rangées inégales, dont la seconde ne portait rien d'autre qu'un vide à   │
+ * │ droite. Le prototype en fait UNE rangée qui déborde volontairement du    │
+ * │ bord — c'est ce débordement qui dit qu'on peut faire glisser, mieux      │
+ * │ qu'une barre de défilement au doigt.                                     │
+ * │                                                                          │
+ * │ `grid-auto-flow: column` plutôt qu'un `flex` : les colonnes gardent une  │
+ * │ largeur commune, donc les couvertures restent alignées quel que soit le  │
+ * │ format d'origine de chaque image.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.rangee {
+  list-style: none;
+  margin: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(170px, 1fr);
+  gap: 20px;
+  overflow-x: auto;
+  /* Le rembourrage laisse la place au soulèvement de dix pixels au survol. */
+  padding: 6px 4px 20px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ PAS DE MAGNÉTISME DE DÉFILEMENT ICI — IL MANGEAIT LE REMBOURRAGE.       │
+ * │                                                                          │
+ * │ `scroll-snap-type: x proximity` semblait un ajout inoffensif : la rangée │
+ * │ glisse, autant qu'elle s'arrête proprement. En réalité le moteur aligne  │
+ * │ le bord de la première carte sur la position d'ancrage du conteneur —    │
+ * │ donc sur le bord de la BOÎTE, et non sur celui du contenu. La rangée     │
+ * │ s'ouvrait à `scrollLeft: 4`, exactement les quatre pixels de             │
+ * │ rembourrage, et la première couverture touchait le bord.                 │
+ * │                                                                          │
+ * │ Quatre pixels, invisibles à l'œil, mesurables à la règle — et le         │
+ * │ prototype n'a pas de magnétisme. La barre de filtres du catalogue, elle, │
+ * │ en a un ET son `scroll-padding-inline` : c'est la correction qu'il       │
+ * │ faudrait ici si l'on y tenait.                                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.rangee::-webkit-scrollbar {
+  height: 6px;
+}
+
+.rangee::-webkit-scrollbar-thumb {
+  background: var(--bordure-forte);
+  border-radius: 999px;
+}
+
+.carte {
+  display: block;
+  color: inherit;
+}
+
+.couverture {
+  /*
+   * `display: block`, et ce n’est pas cosmétique.
+   *
+   * Une image reste EN LIGNE par défaut : elle s’assoit sur une ligne de
+   * texte et laisse sous elle la place des jambages, soit sept à huit pixels
+   * de vide que rien n’explique. Le système « Organic » pose `img{display:
+   * block}` dans sa feuille ; ce dépôt ne le fait pas, et chaque image doit
+   * donc le déclarer.
+   */
+  display: block;
+  width: 100%;
+  /*
+   * `height: auto` n'est pas une precaution : les attributs `width` et
+   * `height` de la balise valent une hauteur EMPLOYEE, qui bat
+   * `aspect-ratio`. Sans cette ligne, la couverture mesurait ses 403 px
+   * d'attribut dans une colonne de 170 — soit un rapport de 170/403 au lieu
+   * de 268/403. Les attributs restent : ils reservent la place avant que
+   * l'image n'arrive.
+   */
+  height: auto;
+  aspect-ratio: 268 / 403;
+  object-fit: cover;
+  border-radius: 14px;
+  box-shadow: var(--ombre-s);
+  transition:
+    transform 0.45s var(--ease),
+    box-shadow 0.45s var(--ease);
+}
+
+.carteTitre {
+  display: block;
+  margin: 12px 0 0;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15px;
+  line-height: 1.2;
+  transition: color 0.25s var(--ease);
+}
+
+/*
+ * Le survol du dossier : dix pixels de levée, un degré et demi de rotation, et
+ * le titre qui passe à la terre cuite. La rotation est ce qui fait qu'un livre
+ * a l'air d'un livre plutôt que d'une vignette.
+ */
+.carte:hover .couverture {
+  transform: translateY(-10px) rotate(-1.4deg);
+  box-shadow: var(--ombre-couverture);
+}
+
+.carte:hover .carteTitre {
+  color: var(--action-texte);
+}
+
+/* ══ Les deux points de rupture de `02-layout-responsive.md` ══════════════ */
+
+/*
+ * ≤ 1120 px — « every 2-column content grid collapses to 1 column », et
+ * « fiche cover, about photo […] centre with a max-width ». Le dossier fixe
+ * lui-même 340 px pour `.aproposPhoto`.
+ */
+@media (max-width: 1120px) {
+  .heroInterieur {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .photo {
+    max-width: 340px;
+    margin-inline: auto;
+  }
+}
+
+/* ≤ 760 px — « page heads pad down to 48px 20px 56px ». */
+@media (max-width: 760px) {
+  .heroInterieur {
+    padding: 48px 20px 56px;
+  }
+
+  .sectionCitation {
+    padding: 48px 20px 16px;
+  }
+
+  .citation {
+    padding: 32px 24px;
+  }
+
+  .sectionPrincipes {
+    padding: 40px 20px 16px;
+  }
+
+  .sectionCatalogue {
+    padding: 48px 20px 72px;
+  }
+}
+
+/*
+ * Le mouvement se coupe. Le filet général de `tokens.css` ramène toute
+ * transition à 0,01 ms, ce qui suffit pour une couleur mais pas pour un
+ * déplacement : la carte sauterait de dix pixels au lieu d'y glisser.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .principe:hover,
+  .boutonCatalogue:hover {
+    transform: none;
+  }
+
+  .carte:hover .couverture {
+    transform: none;
+  }
+}

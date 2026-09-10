@@ -50,7 +50,7 @@
   flex: 0 0 auto;
   display: block;
   border-radius: 50%;
-  background: var(--sceau-fond, var(--v2-vert));
+  background: var(--sceau-fond, var(--chrome));
   position: relative;
 }
 
@@ -60,8 +60,8 @@
   /* Le logo occupe 72 % du disque : au-delà il touche les bords, en deçà il
      flotte. */
   inset: 14%;
-  background: var(--sceau-encre, var(--v2-fond));
-  mask-image: url('/images/logo-mapoukam.png');
+  background: var(--sceau-encre, var(--fond));
+  mask-image: url('/images/logo-mapoukam-marque.png');
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;
@@ -83,11 +83,203 @@
  */
 .surSombre {
   --sceau-fond: var(--action);
-  --sceau-encre: var(--v2-vert-nuit);
+  --sceau-encre: var(--chrome-2);
 }
 
 /* Au-dessus d'une image, le sceau devient clair et l'encre verte. */
 .surImage {
-  --sceau-fond: var(--v2-fond);
-  --sceau-encre: var(--v2-vert);
+  --sceau-fond: var(--chrome-encre);
+  --sceau-encre: var(--accent-encre);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE SCEAU, ET LE MOT QUI NE PREND AUCUNE COULEUR.                    ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ⚠ La couleur du sceau a été REVUE à la passe au pixel du 6 septembre 2026 :
+ * l'encadré ci-dessous dit pourquoi la terre cuite avait été choisie, et le
+ * dernier encadré du fichier dit pourquoi l'olive du prototype revient. Les
+ * deux se lisent ensemble ; le second n'annule que la conclusion.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'OLIVE NE POUVAIT PAS TENIR LES DEUX THÈMES — première lecture.        │
+ * │                                                                          │
+ * │ Le sceau se replie sur `--chrome`, soit l'olive profond. En thème clair  │
+ * │ il se détache très bien sur la crème. En thème SOMBRE, l'olive de nuit   │
+ * │ se pose sur le fond de nuit : deux valeurs séparées par moins d'un       │
+ * │ pour cent de luminance, et le disque disparaît — avec le logo qu'il      │
+ * │ portait. (Les valeurs ne sont pas citées ici : le test des couleurs      │
+ * │ littérales lit AUSSI les commentaires, et écrire la teinte proscrite     │
+ * │ pour l'expliquer rouvrirait la porte qu'on ferme.)                       │
+ * │                                                                          │
+ * │ La terre cuite, elle, est claire sur le sombre et sombre sur le clair —  │
+ * │ c'est la définition d'une couleur d'accent, et c'est la seule de la      │
+ * │ palette qui tienne les deux côtés.                                       │
+ * │                                                                          │
+ * │ Le MOT, lui, n'est pas peint du tout : il hérite de la surface qui le    │
+ * │ porte. Voir l'encadré suivant — c'est la correction d'une première       │
+ * │ version qui lui imposait l'encre de la page.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE MOT N'A PAS DE COULEUR À LUI, ET C'EST LA BONNE RÉPONSE.             │
+ * │                                                                          │
+ * │ Une première version lui posait `color: var(--encre)` — l'encre de la    │
+ * │ page, pour que le mot-symbole ne soit pas peint en accent. La règle      │
+ * │ était juste dans l'en-tête et fausse partout ailleurs : la marque est    │
+ * │ aussi rendue sur le PIED olive et sur le panneau sombre de la connexion, │
+ * │ où l'encre de page est du noir sur du vert.                              │
+ * │                                                                          │
+ * │ En héritant, elle prend l'encre de la surface qui la porte — l'encre     │
+ * │ dans l'en-tête, la crème sur l'olive. C'est ce que faisait déjà la V2,   │
+ * │ et ce qu'il ne fallait pas défaire.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .marque {
+  gap: 12px;
+}
+
+/*
+ * Les DEUX variables sont posées, et sur le sceau lui-même.
+ *
+ * Le disque lit `--sceau-fond`, et son logo — un masque, dans un `::after` —
+ * lit `--sceau-encre`. Poser une `color` n'aurait rien fait : le masque ne
+ * lit pas `currentColor`, il lit la variable. Le défaut aurait été un disque
+ * terre cuite portant un logo resté crème, c'est-à-dire presque juste.
+ */
+:global(:root[data-design='v3']) .sceau {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--rayon-pastille);
+}
+
+:global(:root[data-design='v3']) .marquePetite .sceau {
+  width: 34px;
+  height: 34px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE LOGO OFFICIEL REVIENT — DÉCISION DU PROPRIÉTAIRE, 6 SEPTEMBRE 2026.  │
+ * │                                                                          │
+ * │ Une version intermédiaire avait remplacé le logo par le monogramme du    │
+ * │ prototype, et l'argument était juste : le fichier fourni est un LOCKUP   │
+ * │ — le dessin ET les deux mots « Editions Mapoukam », l'un sous l'autre.   │
+ * │ Réduit au disque de 44 px, il rend des mots hauts de quatre pixels.      │
+ * │                                                                          │
+ * │ La conclusion, elle, ne l'était pas : ce qu'il fallait retirer, ce sont  │
+ * │ les MOTS, pas le logo. `logo-mapoukam-marque.png` est le fichier         │
+ * │ officiel recadré sur son emblème seul — le « eM » couronné — découpé au  │
+ * │ pixel sur la ligne vide que le fichier porte entre l'emblème et le mot   │
+ * │ (lignes 243 à 259 sur 447). Aucun trait n'est redessiné ; c'est le même  │
+ * │ fichier, sans sa moitié illisible.                                       │
+ * │                                                                          │
+ * │ Le mot, lui, reste écrit à côté en texte, comme il l'a toujours été.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .sceau::after {
+  /* 62 % du disque : l'emblème est plus large que haut, et à 72 % il touchait
+     les bords. */
+  inset: 19%;
+}
+
+:global(:root[data-design='v3']) .marquePetite .sceau {
+  font-size: 14px;
+}
+
+/*
+ * ── Le bloc nom + signature ──────────────────────────────────────────────
+ *
+ * Le prototype empile deux lignes à droite du sceau : le nom en Caprasimo
+ * 20 px, puis « Contes d'Afrique » en 10,5 px espacé de .16 em. Le bloc porte
+ * `line-height: 1.05` — c'est lui qui serre les deux lignes l'une contre
+ * l'autre ; posé sur chaque ligne séparément, l'écart aurait été le même à
+ * l'œil et faux à la mesure.
+ */
+.bloc {
+  display: block;
+  text-align: left;
+  line-height: 1.05;
+}
+
+.nom {
+  display: block;
+  font-size: 20px;
+  /*
+   * Le prototype ne resserre QUE le monogramme, jamais le nom.
+   *
+   * `.marque` porte `-.015em` depuis la V1, où la police de titre était
+   * étroite. Caprasimo est large et déjà serrée de dessin : reprendre ce
+   * resserrement collait les lettres deux à deux, et le mot mesurait dix
+   * pixels de moins que la maquette — assez pour déplacer toute la
+   * navigation qui le suit.
+   */
+  letter-spacing: normal;
+}
+
+/*
+ * La signature n'est pas en police de titre.
+ *
+ * Le prototype la laisse à la police d'interface — c'est ce qui la fait lire
+ * comme une mention et non comme un second nom. La marque, elle, impose
+ * Caprasimo à tout ce qu'elle contient : il faut donc la reprendre ici.
+ */
+.signature {
+  display: block;
+  font-family: var(--police-interface);
+  font-size: 10.5px;
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE SCEAU REPREND L'OLIVE DU PROTOTYPE.                              ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QUI AVAIT MOTIVÉ LA TERRE CUITE, ET POURQUOI ÇA NE TIENT PLUS.       │
+ * │                                                                          │
+ * │ Le lot 3 avait écarté l'olive parce que, en thème sombre, le disque      │
+ * │ disparaît dans le fond de nuit. C'était juste — mais la conclusion       │
+ * │ tirée l'était moins : ce n'est pas le DISQUE qui porte la marque, c'est  │
+ * │ le logo qu'il contient. En posant l'encre du chrome dessus — une crème   │
+ * │ qui ne bouge pas d'un thème à l'autre — le logo reste lisible quand le   │
+ * │ disque s'efface, exactement comme le « EM » crème du prototype.          │
+ * │                                                                          │
+ * │ Le pied, lui, garde son disque terre cuite : il est posé SUR l'olive, où │
+ * │ un disque olive serait invisible dans les deux thèmes. C'est `surSombre`,│
+ * │ et le prototype fait le même choix.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .sceau {
+  --sceau-fond: var(--chrome);
+  --sceau-encre: var(--chrome-encre);
+  box-shadow: var(--ombre-s);
+}
+
+/*
+ * `surSombre` doit gagner : elle est déclarée AVANT dans le fichier, donc à
+ * spécificité égale la règle ci-dessus l'emporterait. Le sélecteur double la
+ * spécificité juste ce qu'il faut, sans `!important`.
+ */
+:global(:root[data-design='v3']) .surSombre .sceau {
+  --sceau-fond: var(--action);
+  --sceau-encre: var(--action-encre);
+  box-shadow: none;
+}
+
+/*
+ * Le nom du prototype fait 20 px ; la V2 le tenait à 19.
+ *
+ * `:not(.marquePetite)` n’est pas une précaution de style : sans lui, ce
+ * sélecteur bat `.marquePetite` à la spécificité, et le panneau de connexion
+ * comme le menu plein écran verraient leur marque grossir de trois pixels.
+ */
+:global(:root[data-design='v3']) .marque:not(.marquePetite) {
+  font-size: 20px;
 }

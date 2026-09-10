@@ -30,16 +30,6 @@ const VALEURS = [
   { titre: 'v2.aproposValeur4Titre', corps: 'v2.aproposValeur4Corps' },
 ] as const;
 
-/** Les initiales de la fondatrice, dérivées du nom — jamais recopiées. */
-function initiales(nom: string): string {
-  return nom
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((mot) => mot.charAt(0).toUpperCase())
-    .join('');
-}
-
 export function AproposV2({
   langue,
   couvertures,
@@ -48,8 +38,6 @@ export function AproposV2({
   /** Quelques titres du catalogue, pour le mur. Vide si la base est muette. */
   couvertures: EntreeCatalogue[];
 }): ReactNode {
-  const nomFondatrice = traduire(langue, 'v2.aproposFondatrice');
-
   return (
     <>
       <div className={boutique.banniere} data-banniere>
@@ -64,9 +52,13 @@ export function AproposV2({
         {/* ── Le récit ──────────────────────────────────────────────────── */}
         <section className={styles.recit}>
           <div className={styles.visuel}>
+            {/* Décorative : le `<h2>` voisin porte déjà ce texte. Voir
+                l'encadré de `accueil.tsx`, même défaut, même correctif. */}
             <img
               src="/images/apropos-fondation.png"
-              alt={traduire(langue, 'v2.aproposHistoireTitre')}
+              alt=""
+              loading="lazy"
+              decoding="async"
               style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--rayon-panneau)' }}
             />
           </div>
@@ -78,9 +70,12 @@ export function AproposV2({
             </h2>
 
             <div className={styles.texte} style={{ marginTop: '22px' }}>
+              {/*
+                Deux paragraphes, et non trois : le troisième était inventé, et
+                les textes réels du propriétaire n'en portent que deux.
+              */}
               <p>{traduire(langue, 'v2.aproposH1')}</p>
               <p>{traduire(langue, 'v2.aproposH2')}</p>
-              <p>{traduire(langue, 'v2.aproposH3')}</p>
             </div>
           </div>
         </section>
@@ -92,20 +87,18 @@ export function AproposV2({
               {traduire(langue, 'v2.aproposCitation')}
             </blockquote>
 
+            {/*
+              UNE DEVISE, PAS UNE CITATION.
+
+              Cette phrase est celle de la maison — elle est imprimée sur son
+              illustration, sous son nom. La signer du nom de la fondatrice lui
+              prêterait des paroles qu'elle n'a pas dites ; c'est ce que faisait
+              la version précédente, avec une phrase inventée par-dessus le
+              marché.
+            */}
             <figcaption className={styles.citationAuteur}>
-              {/*
-                Les initiales sont CALCULÉES depuis le nom : recopier « MF »
-                à côté du nom créerait deux sources, et la seconde survivrait
-                à un changement de la première.
-              */}
-              <span className={styles.initiales} aria-hidden="true">
-                {initiales(nomFondatrice)}
-              </span>
               <span className={styles.citationNom}>
-                {nomFondatrice}
-                <span className={styles.citationRole}>
-                  {traduire(langue, 'v2.aproposFondatriceRole')}
-                </span>
+                {traduire(langue, 'v2.aproposSignature')}
               </span>
             </figcaption>
           </figure>

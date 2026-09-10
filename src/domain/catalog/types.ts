@@ -128,6 +128,21 @@ export interface EntreeCatalogue {
   type_document: TypeDocument;
   /** Orientation de la mise en page. NOT NULL elle aussi. */
   orientation: OrientationPage;
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ DEUX CHAMPS QUI NE VALENT QUE POUR UN LIVRET — migration 0079.        │
+   * │                                                                        │
+   * │ `niveau` est une cle de rangement : « PS · MS · GS ». Saisie libre, et │
+   * │ non une enumeration — les systemes scolaires different d'un pays a      │
+   * │ l'autre, et la plateforme en sert plusieurs.                            │
+   * │                                                                        │
+   * │ `objectifs` est un TABLEAU VIDE par defaut, jamais nul : une liste vide │
+   * │ se parcourt, un `null` demande une garde a chaque lecture. Sur un       │
+   * │ conte, les deux valent `null` et `[]` — la notion ne s'y applique pas.  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  niveau: string | null;
+  objectifs: string[];
   /** @deprecated Une seule taille, sous forme de chemin. Lire `couverture`. */
   couverture_url: string | null;
   /**

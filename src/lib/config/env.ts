@@ -45,13 +45,54 @@ const serverSchema = z.object({
    */
   DATABASE_URL: z.string().min(1).optional(),
 
-  // ---- Adaptateurs locaux ----
-  PAYMENT_PROVIDER: z.enum(['fake', 'stripe']).default('fake'),
+  // ---- Adaptateurs ----
+  PAYMENT_PROVIDER: z.enum(['fake', 'stripe', 'notchpay']).default('fake'),
   MAILER: z.enum(['file', 'resend']).default('file'),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
   MAIL_OUTPUT_DIR: z.string().min(1).default('.mails'),
   FAKE_WEBHOOK_SECRET: z.string().min(8),
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ NOTCH PAY — TROIS CLÉS, TROIS RÔLES, ET ELLES NE SE REMPLACENT PAS.   │
+   * │                                                                        │
+   * │ Décision du propriétaire, 8 septembre 2026 : les paiements passent par │
+   * │ Notch Pay, en mode TEST seulement pour l'instant. Elles sont           │
+   * │ FACULTATIVES ici — l'application doit continuer de démarrer sur la     │
+   * │ pile locale, sans compte chez qui que ce soit. C'est l'adaptateur qui  │
+   * │ exige les siennes, et seulement s'il est branché.                      │
+   * │                                                                        │
+   * │  · `pk_…` — la clé PUBLIQUE, en-tête `Authorization`. Elle ouvre et    │
+   * │    relit un paiement ;                                                 │
+   * │  · `sk_…` — la clé PRIVÉE, en-tête `X-Grant`. Elle n'est exigée que    │
+   * │    par les opérations sensibles, le remboursement en tête ;            │
+   * │  · `hsk_…` — la clé de HACHAGE, et elle seule vérifie la signature     │
+   * │    d'un webhook. La documentation insiste : ni la publique ni la       │
+   * │    privée ne conviennent là.                                           │
+   * │                                                                        │
+   * │ Aucune n'est préfixée `NEXT_PUBLIC_` — pas même la « publique » : le   │
+   * │ navigateur n'a rien à ouvrir chez le prestataire, tout part du         │
+   * │ serveur, et une clé exposée est une clé à faire tourner.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  NOTCHPAY_PUBLIC_KEY: z.string().min(1).optional(),
+  NOTCHPAY_PRIVATE_KEY: z.string().min(1).optional(),
+  NOTCHPAY_HASH_KEY: z.string().min(1).optional(),
+
+  /**
+   * Autorise-t-on les clés de PRODUCTION ?
+   *
+   * Par défaut non, et c'est délibéré : l'adaptateur refuse de démarrer sur
+   * une clé qui ne porte pas `test_`. La consigne du propriétaire est « on ne
+   * va utiliser que la version paiement de test », et une consigne qu'aucun
+   * code ne défend se perd au premier copier-coller de fichier
+   * d'environnement — celui-là même qui débiterait de vraies cartes.
+   */
+  NOTCHPAY_AUTORISER_PRODUCTION: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((valeur) => valeur === 'true'),
 
   // ---- Application ----
   NEXT_PUBLIC_APP_URL: z.url(),
@@ -71,11 +112,19 @@ const serverSchema = z.object({
    * │ de code, seulement de reposer la variable. Une refonte qu'on ne peut   │
    * │ pas annuler est une refonte qu'on n'ose pas montrer.                   │
    * │                                                                        │
-   * │ La valeur par défaut reste `v1` : tant que la V2 n'est pas validée,    │
-   * │ un environnement qui ne dit rien sert ce qui est validé.               │
+   * │ La valeur par défaut est la direction VALIDÉE — `v2` aujourd'hui.      │
+   * │ Un environnement qui ne dit rien sert ce qui est fini, jamais ce qui   │
+   * │ est en cours : la `v3` se demande, elle ne s'attrape pas.              │
+   * │                                                                        │
+   * │ ⚠ Cette liste est la SECONDE, et elle doit rester alignée sur          │
+   * │ `VERSIONS_DESIGN` dans `src/design/version.ts`. Les deux ne peuvent    │
+   * │ pas fusionner : ce schéma s'exécute au démarrage du serveur, et        │
+   * │ `version.ts` est lu des deux côtés du réseau. Une direction ajoutée    │
+   * │ ici seulement se sert mais n'a pas de jetons ; ajoutée là seulement,   │
+   * │ elle fait REFUSER le démarrage — c'est ce qu'un test garde.            │
    * └────────────────────────────────────────────────────────────────────────┘
    */
-  NEXT_PUBLIC_DESIGN_VERSION: z.enum(['v1', 'v2']).default('v2'),
+  NEXT_PUBLIC_DESIGN_VERSION: z.enum(['v1', 'v2', 'v3']).default('v2'),
 
   /**
    * Durée des URL signées d'un contenu payant. CLAUDE.md règle 3 : 300

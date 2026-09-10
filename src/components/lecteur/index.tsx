@@ -1,17 +1,16 @@
 'use client';
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 
 import { traduire, type LangueInterface } from '@/i18n';
 import { Chargement } from '@/components/etats';
+import { poserToast } from '@/components/toast';
+import { estV3 } from '@/design/version';
 import type { ReponsePage } from '@/domain/api/contract';
+
+import { useBalayage, useEffacement } from './comportements';
+import type { Etat } from './etat';
+import { SceneV3 } from './scene-v3';
 import styles from './lecteur.module.css';
 
 /**
@@ -43,6 +42,19 @@ import styles from './lecteur.module.css';
  * │ C'est le filet. La surveillance PRÉVENTIVE, elle, vit dans le            │
  * │ middleware, au-dessus de tous les écrans (étape F2).                     │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE COMPOSANT NE DESSINE PLUS QU'UNE SCÈNE SUR DEUX.                     │
+ * │                                                                          │
+ * │ Toute la logique ci-dessous — droits, signatures, préchargement, reprise │
+ * │ de lecture — est la même sous les trois directions visuelles, et elle    │
+ * │ n'est écrite qu'ici. Ce qui change est la SCÈNE : celle de la V2 vit au  │
+ * │ bas de ce fichier, celle d'Organic dans `scene-v3.tsx`, avec son plein   │
+ * │ écran.                                                                   │
+ * │                                                                          │
+ * │ Recopier la logique dans la seconde scène aurait recopié l'encadré       │
+ * │ ci-dessus, c'est-à-dire la règle la plus délicate de l'écran.            │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 
 interface ProprietesLecteur {
@@ -65,24 +77,6 @@ interface ProprietesLecteur {
   possedeAuChargement: boolean;
 }
 
-type Etat =
-  | { sorte: 'chargement' }
-  | { sorte: 'page'; donnees: ReponsePage }
-  | { sorte: 'finExtrait' }
-  | { sorte: 'sessionPerdue' }
-  | { sorte: 'erreur' };
-
-/**
- * Délai avant que l'interface s'efface, en millisecondes.
- *
- * Quatre secondes : assez pour tourner une page sans que les boutons
- * clignotent, assez court pour que la lecture reprenne le plein écran.
- */
-const DELAI_EFFACEMENT = 4000;
-
-/** Déplacement horizontal minimal, en pixels, pour qu'un balayage compte. */
-const SEUIL_BALAYAGE = 45;
-
 export function Lecteur({
   langue,
   livreId,
@@ -95,13 +89,32 @@ export function Lecteur({
 }: ProprietesLecteur): ReactNode {
   const [page, setPage] = useState(pageInitiale);
   const [etat, setEtat] = useState<Etat>({ sorte: 'chargement' });
-  const [efface, setEfface] = useState(false);
-  /** La note d'aide n'apparaît qu'AU PREMIER effacement, puis plus jamais. */
-  const [note, setNote] = useState<'jamais' | 'visible' | 'estompee'>('jamais');
-  const noteVue = useRef(false);
 
   /** Pages déjà obtenues, pour ne pas redemander une signature encore valable. */
   const cache = useRef(new Map<number, ReponsePage>());
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LA REPRISE SE DIT, ELLE NE SE DEVINE PAS.                               │
+   * │                                                                          │
+   * │ Le serveur rend `pageInitiale` depuis `reading_progress` : rouvrir un    │
+   * │ conte ramène à la page où l'on s'était arrêté. C'est le bon              │
+   * │ comportement — et il est déroutant sans un mot, parce qu'un enfant qui   │
+   * │ rouvre son conte tombe au milieu d'une histoire qu'il croyait            │
+   * │ recommencer.                                                             │
+   * │                                                                          │
+   * │ Le message part UNE fois, au montage, et jamais aux pages suivantes :    │
+   * │ `pageInitiale` ne bouge pas pendant la lecture, et la garde de           │
+   * │ référence protège du double montage du mode strict.                      │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  const repriseAnnoncee = useRef(false);
+
+  useEffect(() => {
+    if (repriseAnnoncee.current || pageInitiale <= 1) return;
+    repriseAnnoncee.current = true;
+    poserToast('reprise', { nombre: pageInitiale });
+  }, [pageInitiale]);
 
   const demander = useCallback(
     async (numero: number, signal?: AbortSignal): Promise<ReponsePage | 'refus' | 'echec'> => {
@@ -162,7 +175,27 @@ export function Lecteur({
       // │ entre tourner la page et attendre devant un écran blanc.       │
       // │ L'échec est ignoré : ce n'est qu'une avance, pas un besoin.    │
       // └────────────────────────────────────────────────────────────────┘
-      if (page < total) void demander(page + 1, controleur.signal);
+      if (page < total) {
+        void demander(page + 1, controleur.signal).then((suivante) => {
+          /*
+           * ┌────────────────────────────────────────────────────────────┐
+           * │ L'ADRESSE NE SUFFIT PAS : CE SONT LES OCTETS QU'ON ATTEND. │
+           * │                                                            │
+           * │ Obtenir la signature à l'avance épargne un aller-retour de │
+           * │ quelques dizaines de millisecondes ; l'image, elle, pèse   │
+           * │ des centaines de kilo-octets. Sur la connexion lente du    │
+           * │ §5.1, c'est elle qui fait l'attente.                       │
+           * │                                                            │
+           * │ `new Image()` la met dans le cache du navigateur sans rien │
+           * │ dessiner. L'échec est ignoré — ce n'est qu'une avance.     │
+           * └────────────────────────────────────────────────────────────┘
+           */
+          if (typeof suivante === 'string' || typeof Image === 'undefined') return;
+          const avance = new Image();
+          avance.decoding = 'async';
+          avance.src = suivante.url;
+        });
+      }
 
       // ┌────────────────────────────────────────────────────────────────┐
       // │ L'ÉCHEC D'ENREGISTREMENT DE LA PROGRESSION EST INVISIBLE.      │
@@ -194,7 +227,8 @@ export function Lecteur({
   );
 
   // Flèches et espace : la navigation au clavier est un critère AA, et c'est
-  // aussi ce dont se sert un lecteur installé devant un grand écran.
+  // aussi ce dont se sert un lecteur installé devant un grand écran — et le
+  // seul moyen de tourner la page en plein écran sans bouger la souris.
   useEffect(() => {
     function surTouche(evenement: KeyboardEvent): void {
       if (evenement.key === 'ArrowRight' || evenement.key === ' ') {
@@ -213,87 +247,98 @@ export function Lecteur({
     };
   }, [page, aller]);
 
-  // ┌────────────────────────────────────────────────────────────────────────┐
-  // │ L'EFFACEMENT DE L'INTERFACE — le comportement central de cet écran.    │
-  // │                                                                        │
-  // │ Il est SUSPENDU dès qu'un message occupe la scène : fin d'extrait,     │
-  // │ session perdue, erreur. Effacer les boutons d'un écran qui demande une │
-  // │ action laisserait le lecteur devant un message sans issue — et         │
-  // │ précisément dans les trois cas où il en a le plus besoin.              │
-  // └────────────────────────────────────────────────────────────────────────┘
-  const chromeUtile = etat.sorte === 'page' || etat.sorte === 'chargement';
-
-  useEffect(() => {
-    if (!chromeUtile) {
-      setEfface(false);
-      return;
-    }
-
-    let minuterie = window.setTimeout(() => {
-      setEfface(true);
-      if (!noteVue.current) {
-        noteVue.current = true;
-        setNote('visible');
-        window.setTimeout(() => {
-          setNote('estompee');
-        }, 2200);
-        window.setTimeout(() => {
-          setNote('jamais');
-        }, 2800);
-      }
-    }, DELAI_EFFACEMENT);
-
-    function reveiller(): void {
-      setEfface(false);
-      window.clearTimeout(minuterie);
-      minuterie = window.setTimeout(() => {
-        setEfface(true);
-      }, DELAI_EFFACEMENT);
-    }
-
-    // `passive` : ces écouteurs ne préviennent jamais le défilement, et le dire
-    // au navigateur lui évite d'attendre pour savoir.
-    const evenements = ['pointermove', 'pointerdown', 'keydown', 'touchstart'] as const;
-    for (const nom of evenements) {
-      window.addEventListener(nom, reveiller, { passive: true });
-    }
-
-    return () => {
-      window.clearTimeout(minuterie);
-      for (const nom of evenements) {
-        window.removeEventListener(nom, reveiller);
-      }
-    };
-  }, [chromeUtile]);
-
-  /** Point de départ d'un balayage, pour mesurer le déplacement à sa fin. */
-  const departBalayage = useRef<number | null>(null);
-
   const positionCle = possedeAuChargement ? 'lecteur.position' : 'lecteur.positionExtrait';
   const libellePosition = traduire(langue, positionCle)
     .replace('{page}', String(page))
     .replace('{total}', String(total));
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LA BASCULE EST ICI, ET ELLE EST LA DERNIÈRE LIGNE DE LA LOGIQUE.     │
+   * │                                                                      │
+   * │ Tout ce qui précède vaut pour les deux scènes ; tout ce qui suit      │
+   * │ n'appartient qu'à la V2. La V3 emporte en plus le plein écran, que la │
+   * │ V2 n'a jamais eu et n'aura pas : sa scène est bâtie autour de         │
+   * │ commandes flottantes, pas autour d'un plateau.                        │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return (
+      <SceneV3
+        langue={langue}
+        slug={slug}
+        titre={titre}
+        page={page}
+        total={total}
+        etat={etat}
+        aller={aller}
+        possedeAuChargement={possedeAuChargement}
+        libellePosition={libellePosition}
+      />
+    );
+  }
+
+  return (
+    <SceneV2
+      langue={langue}
+      slug={slug}
+      titre={titre}
+      page={page}
+      total={total}
+      etat={etat}
+      aller={aller}
+      libellePosition={libellePosition}
+    />
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LA SCÈNE DE LA V2
+// ═══════════════════════════════════════════════════════════════════════════
+
+interface ProprietesSceneV2 {
+  langue: LangueInterface;
+  slug: string;
+  titre: string;
+  page: number;
+  total: number;
+  etat: Etat;
+  aller: (cible: number) => void;
+  libellePosition: string;
+}
+
+/**
+ * La scène de la V2 — inchangée, à l'extraction près.
+ *
+ * Elle efface son interface EN PAGE, au bout de quatre secondes. Le prototype
+ * d'Organic ne le fait pas, et sa scène ne le fait donc plus : voir l'encadré
+ * de `scene-v3.tsx`. Ce comportement-ci reste ce qu'il était.
+ */
+function SceneV2({
+  langue,
+  slug,
+  titre,
+  page,
+  total,
+  etat,
+  aller,
+  libellePosition,
+}: ProprietesSceneV2): ReactNode {
+  // ┌────────────────────────────────────────────────────────────────────────┐
+  // │ L'EFFACEMENT EST SUSPENDU dès qu'un message occupe la scène : fin      │
+  // │ d'extrait, session perdue, erreur. Effacer les boutons d'un écran qui  │
+  // │ demande une action laisserait le lecteur devant un message sans issue. │
+  // └────────────────────────────────────────────────────────────────────────┘
+  const chromeUtile = etat.sorte === 'page' || etat.sorte === 'chargement';
+  const { efface, note } = useEffacement(chromeUtile);
+
+  const balayage = useBalayage((sens) => {
+    aller(page + sens);
+  });
+
   return (
     <div className={styles.cadre}>
-      <div
-        className={styles.scene}
-        onTouchStart={(evenement) => {
-          departBalayage.current = evenement.touches[0]?.clientX ?? null;
-        }}
-        onTouchEnd={(evenement) => {
-          const depart = departBalayage.current;
-          departBalayage.current = null;
-          if (depart === null) return;
-
-          const arrivee = evenement.changedTouches[0]?.clientX ?? depart;
-          const ecart = arrivee - depart;
-          // En deçà du seuil, c'est une pression, pas un balayage : tourner la
-          // page sur un doigt qui tremble rendrait le lecteur inutilisable.
-          if (Math.abs(ecart) < SEUIL_BALAYAGE) return;
-          aller(ecart < 0 ? page + 1 : page - 1);
-        }}
-      >
+      <div className={styles.scene} {...balayage}>
         {/* ── Barre supérieure ──────────────────────────────────────────── */}
         <div className={efface ? `${styles.barreHaute} ${styles.efface}` : styles.barreHaute}>
           {/*
@@ -332,10 +377,27 @@ export function Lecteur({
 
             {etat.sorte === 'page' ? (
               <img
+                /*
+                 * `key` sur l'ADRESSE : elle force React à remonter l'élément
+                 * à chaque page, ce qui rejoue l'animation d'entrée. Sans
+                 * elle, React réutilise le même `<img>` en changeant `src`,
+                 * l'animation ne rejoue pas, et la page suivante apparaît
+                 * d'un coup — le « saut » que le fondu existe pour éviter.
+                 */
+                key={etat.donnees.url}
                 src={etat.donnees.url}
                 width={etat.donnees.page.largeur}
                 height={etat.donnees.page.hauteur}
                 alt=""
+                /*
+                 * La page EST l'écran : rien d'autre n'est à charger, et la
+                 * différer reviendrait à retarder la seule chose qu'on est
+                 * venu voir. `fetchPriority` la fait passer devant la
+                 * préparation de la planche suivante, lancée juste après.
+                 */
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className={styles.image}
               />
             ) : null}

@@ -37,7 +37,7 @@ const langueSchema = z.object({
 
 const progressionSchema = z.object({
   langue: z.enum(['fr', 'en']).default('fr'),
-  page: z.int().positive().max(10_000),
+  page: z.number().int().positive().max(10_000),
 });
 
 /** Page de reprise. N'exige aucun droit d'accès au titre — voir plus bas. */

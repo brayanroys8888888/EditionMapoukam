@@ -183,6 +183,37 @@
   color: var(--encre-douce);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA MARQUE DE RECHERCHE — UN FOND, ET SURTOUT PAS UNE ENCRE.             │
+ * │                                                                          │
+ * │ `11-realtime-behaviour.md` donne la terre cuite diluée à 22 %, notée en  │
+ * │ clair — le test des couleurs littérales interdit d'en recopier la        │
+ * │ notation jusqu'ici, commentaire compris. On la lit donc par le jeton     │
+ * │ `--action` : sous la V1 il vaut l'ocre, sous la V2 l'ocre de marque,     │
+ * │ sous Organic la terre cuite du dossier. Une valeur écrite en dur         │
+ * │ donnerait la terre cuite d'Organic aux trois — c'est-à-dire une couleur  │
+ * │ qui n'appartient à aucune palette dans deux cas sur trois.               │
+ * │                                                                          │
+ * │ `color: inherit` est la moitié qui compte : le navigateur pose un        │
+ * │ jaune vif ET une encre noire sur `<mark>`. Sur un titre en crème         │
+ * │ posé sur l'olive du mode sombre, cette encre noire est illisible — le    │
+ * │ surlignage effacerait le mot qu'il désigne. La marque teinte le fond,    │
+ * │ le texte garde la couleur qu'il avait.                                   │
+ * │                                                                          │
+ * │ À 22 %, le fond passe le contraste du texte qui le traverse : il n'est   │
+ * │ pas un calque opaque, il ne peut donc pas assombrir l'encre au-delà de   │
+ * │ ce que la carte fait déjà.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.surligne {
+  background: color-mix(in srgb, var(--action) 22%, transparent);
+  color: inherit;
+  border-radius: 3px;
+  /* Sans elle, deux mots marqués côte à côte se touchent et n'en font qu'un. */
+  padding: 0 1px;
+}
+
 /* ── Les lignes d'accès ─────────────────────────────────────────────────── */
 
 /*
@@ -637,4 +668,140 @@
 .compte strong {
   color: var(--encre);
   font-weight: var(--graisse-forte);
+}
+
+/*
+ * Le compte d'une facette — visible sous V1 et V2, hors scène sous Organic.
+ *
+ * La maquette écrit « Nature », pas « nature (2) ». Le nombre double la
+ * largeur de chaque pastille et pousse la barre sur trois rangées, pour dire
+ * ce que la grille montre déjà juste en dessous.
+ *
+ * Il sort de la SCÈNE, pas du document : un lecteur d'écran continue de
+ * l'entendre, et pour qui n'a pas la grille sous les yeux, c'est justement
+ * l'information qui manque.
+ */
+/*
+ * Declaration locale PURE, et elle n'est pas decorative.
+ *
+ * Une classe qui n'apparait QUE dans une chaine `:global(...) .classe` n'est
+ * pas exportee par les modules CSS de Next : `styles.compteFacette` vaut alors
+ * `undefined`, l'attribut rendu est `class="undefined"`, et la regle ne trouve
+ * jamais sa cible. Rien n'echoue — ni au build, ni au typecheck — et le style
+ * ne s'applique tout simplement pas.
+ *
+ * Le meme piege avait deja fait rendre `class="undefined"` a trois sections de
+ * l'accueil. Une declaration locale, meme sans effet, suffit a l'ecarter.
+ */
+.compteFacette {
+  font-variant-numeric: tabular-nums;
+}
+
+:global(:root[data-design='v3']) .compteFacette {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA RECHERCHE DEVIENT UNE PASTILLE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * `border-radius:999px;padding:10px 18px;min-width:250px;font-size:14px`, et
+ * une loupe DANS le champ. Le rectangle à angles de 9 px et le gros bouton
+ * ocre à côté venaient de la V1 ; la maquette n'a ni l'un ni l'autre.
+ */
+:global(:root[data-design='v3']) .recherche {
+  gap: 0;
+  margin-bottom: 0;
+  position: relative;
+  align-items: center;
+}
+
+/* L'intitulé sort de la scène : le champ porte déjà son texte indicatif, et
+   la loupe dit ce qu'il fait. Il reste annoncé — c'est le nom du champ. */
+:global(:root[data-design='v3']) .rechercheLibelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * La loupe est dessinée par le pseudo-élément du conteneur, en fond du champ.
+ * Une `<svg>` aurait demandé de toucher au balisage d'un composant partagé
+ * par les trois directions, pour un ornement que seule celle-ci porte.
+ */
+:global(:root[data-design='v3']) .rechercheSaisie {
+  flex: 1 1 auto;
+  min-width: 250px;
+  max-width: 340px;
+  min-height: var(--cible-min);
+  padding: 10px 18px 10px 42px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23645c50' stroke-width='2.75' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 16px center;
+  /* 16 px au minimum : en deçà, Safari iOS zoome au focus. */
+  font-size: var(--taille-l);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE BOUTON « RECHERCHER » SORT DE LA SCÈNE — ET RESTE LE CHEMIN DE REPLI. │
+ * │                                                                          │
+ * │ La maquette n'a pas de bouton : son champ filtre à la frappe. Le nôtre    │
+ * │ aussi, par `RechercheInstantanee` — mais le `<form method="get">` doit    │
+ * │ rester utilisable SANS JavaScript (§5.1), et le bouton était ce repli.    │
+ * │                                                                          │
+ * │ Il n'en est plus besoin POUR CELA : dans un formulaire à champ unique,    │
+ * │ la touche Entrée soumet nativement. Le bouton reste donc dans le          │
+ * │ document — atteignable à la tabulation, annoncé, activable — et quitte    │
+ * │ seulement la scène. Le supprimer aurait retiré la seule commande visible  │
+ * │ à qui navigue au clavier sans voir le champ.                             │
+ * │                                                                          │
+ * │ `clip-path` et non `display: none` : une commande retirée du rendu n'est  │
+ * │ plus focusable, et le repli disparaîtrait avec elle.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .rechercheBouton {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Au focus, il redevient visible : sinon on tabule sur une cible invisible. */
+:global(:root[data-design='v3']) .rechercheBouton:focus-visible {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0 0 0 8px;
+  padding: 10px 18px;
+  overflow: visible;
+  clip-path: none;
+  border: 1px solid var(--action);
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: 13px;
 }

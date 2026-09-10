@@ -3,7 +3,8 @@ import type { Metadata } from 'next';
 import { langueValide, traduire } from '@/i18n';
 import { IDENTITE_EDITEUR } from '@/content/editorial';
 import { CorpsEditorial } from '@/components/editorial';
-import { versionDesign } from '@/design/version';
+import { ContactV3 } from '@/components/v2/contact';
+import { estV3, structureRefondue } from '@/design/version';
 import ecran from '@/components/ecran/ecran.module.css';
 import boutique from '@/components/v2/boutique.module.css';
 import accueil from '@/components/v2/accueil.module.css';
@@ -64,8 +65,26 @@ export default async function PageContact({ params }: Parametres) {
    * │ censé empêcher.                                                       │
    * └──────────────────────────────────────────────────────────────────────┘
    */
-  if (versionDesign() !== 'v2') {
+  if (!structureRefondue()) {
     return <CorpsEditorial langue={langue} slug="contact" />;
+  }
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ÉCRAN EST REDESSINÉ — PAS SEULEMENT REPEINT.         │
+   * │                                                                      │
+   * │ Le prototype de passation ne montre pas la même page : trois cartes  │
+   * │ à pictogramme au lieu d'une liste de définitions, une rangée de      │
+   * │ sujets en pastilles, et un panneau de formulaire à part. Aucune      │
+   * │ règle de couleur ne fabrique un pictogramme ; il faut le balisage.   │
+   * │                                                                      │
+   * │ La V2 reste donc en place, intacte, sous cette condition — c'est le  │
+   * │ même partage qu'ailleurs dans le dépôt, et il garde la direction     │
+   * │ précédente servable tant que la refonte n'est pas terminée.          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return <ContactV3 langue={langue} />;
   }
 
   return (
@@ -90,16 +109,30 @@ export default async function PageContact({ params }: Parametres) {
                 « Téléphone » suivie du vide annonce une information manquante
                 au lieu de la taire.
               */}
+              {/*
+                ┌──────────────────────────────────────────────────────────┐
+                │ TROIS LIGNES, TROIS ÉTIQUETTES DISTINCTES.               │
+                │                                                          │
+                │ L'adresse et le téléphone portaient la MÊME — « Nos      │
+                │ coordonnées » — parce que le titre de la colonne avait   │
+                │ servi deux fois. Dans une liste de définitions, c'est    │
+                │ deux termes identiques pour deux valeurs différentes :   │
+                │ un lecteur d'écran annonce « Nos coordonnées : Yassa…    │
+                │ Nos coordonnées : +237… » sans jamais dire ce qu'est le  │
+                │ second. À l'œil, le doublon se lit comme une erreur de   │
+                │ copie ; à l'oreille, il rend la ligne inutilisable.      │
+                └──────────────────────────────────────────────────────────┘
+              */}
               {IDENTITE_EDITEUR.adresse ? (
                 <div className={ecran.definition}>
-                  <dt className={ecran.terme}>{traduire(langue, 'v2.contactCoordonnees')}</dt>
+                  <dt className={ecran.terme}>{traduire(langue, 'v2.contactAdresse')}</dt>
                   <dd className={ecran.valeur}>{IDENTITE_EDITEUR.adresse}</dd>
                 </div>
               ) : null}
 
               {IDENTITE_EDITEUR.telephone ? (
                 <div className={ecran.definition}>
-                  <dt className={ecran.terme}>{traduire(langue, 'v2.contactCoordonnees')}</dt>
+                  <dt className={ecran.terme}>{traduire(langue, 'v2.contactTelephone')}</dt>
                   <dd className={ecran.valeur}>
                     {/*
                       `tel:` sans espaces : un numéro composé au doigt sur un

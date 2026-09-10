@@ -100,3 +100,35 @@ export async function telechargerConte(
   // fichier, et l'URL expire dans cinq minutes.
   redirect(corps.url);
 }
+
+/**
+ * Enregistre les modifications de profil (nom complet et téléphone).
+ * L'adresse email n'est pas modifiable.
+ */
+export async function enregistrerProfil(
+  langueBrute: string,
+  donnees: FormData,
+): Promise<void> {
+  const { headers } = await import('next/headers');
+  const { identifierAppelantAvecCookies } = await import('@/lib/auth/session');
+  const { createServiceClient } = await import('@/lib/supabase/clients');
+
+  const langue = langueValide(langueBrute);
+  const appelant = await identifierAppelantAvecCookies(
+    new Request('http://interne/', { headers: await headers() }),
+  );
+  if (!appelant) redirect(`/${langue}/connexion`);
+
+  const nomComplet = (donnees.get('nom_complet') as string)?.trim() || null;
+  const telephone = (donnees.get('telephone') as string)?.trim() || null;
+
+  await createServiceClient()
+    .from('users')
+    .update({
+      nom_complet: nomComplet,
+      telephone: telephone,
+    })
+    .eq('id', appelant.id);
+
+  redirect(`/${langue}/compte?toast=profilEnregistre`);
+}

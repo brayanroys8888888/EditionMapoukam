@@ -26,8 +26,24 @@ import { join } from 'node:path';
 
 const RACINE = process.cwd();
 
-/** Les écrans que les trois navigations doivent joindre, dans cet ordre. */
-const RAYONS_ATTENDUS = ['contes', 'livrets', 'catalogue'];
+/**
+ * Les écrans que les trois navigations doivent joindre, dans cet ordre.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ « catalogue » N'EN FAIT PLUS PARTIE, ET L'ÉCRAN EXISTE TOUJOURS.         │
+ * │                                                                          │
+ * │ La liste déroulante offrait « les contes », « les livrets » et « les     │
+ * │ deux » : une troisième porte sur le même fonds, qui demandait un choix   │
+ * │ que le visiteur qui arrive n'a pas encore à faire.                       │
+ * │                                                                          │
+ * │ `/catalogue` reste servi, reste au plan de site — le troisième cas de    │
+ * │ ce fichier le vérifie encore, sur `CHEMINS_FIXES` — et reste l'adresse   │
+ * │ de la loupe, du pied de page et de tous les liens déjà partagés. Ce test │
+ * │ ne dit pas quels écrans EXISTENT ; il dit lesquels les trois navigations │
+ * │ doivent annoncer À L'IDENTIQUE.                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const RAYONS_ATTENDUS = ['contes', 'livrets'];
 
 /**
  * Les `chemin:` d'un tableau de navigation, dans l'ordre de la source.
@@ -77,7 +93,7 @@ describe('les rayons du catalogue', () => {
     // moteurs, ce qui ne se remarque qu'au trafic, des semaines plus tard.
     const plan = readFileSync(join(RACINE, 'src', 'app', 'sitemap.ts'), 'utf8');
 
-    for (const rayon of RAYONS_ATTENDUS) {
+    for (const rayon of [...RAYONS_ATTENDUS, 'catalogue']) {
       expect(plan, `${rayon} absent de CHEMINS_FIXES`).toContain(`'/${rayon}'`);
     }
   });

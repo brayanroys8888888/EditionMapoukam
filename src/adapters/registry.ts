@@ -1,5 +1,6 @@
 import { getServerEnv } from '@/lib/config/env';
 import { FakePaymentProvider } from './payment/fake/fake-payment-provider';
+import { NotchPayPaymentProvider } from './payment/notchpay/notchpay-payment-provider';
 import type { PaymentProvider } from './payment/types';
 import { FileMailer } from './mail/file-mailer';
 import { ResendMailer } from './mail/resend-mailer';
@@ -29,8 +30,37 @@ export function getPaymentProvider(): PaymentProvider {
     return paiement;
   }
 
+  /*
+   * Notch Pay — décision du propriétaire du 8 septembre 2026, en mode TEST.
+   *
+   * L'adaptateur exige ses trois clés et refuse les clés de production tant
+   * que `NOTCHPAY_AUTORISER_PRODUCTION` n'est pas posé : ce refus vit dans son
+   * constructeur, donc ici, au démarrage, et non au premier paiement.
+   */
+  if (choix === 'notchpay') {
+    const env = getServerEnv();
+    paiement = new NotchPayPaymentProvider({
+      /*
+       * Les clés sont lues ICI et passées à l'adaptateur, qui n'ouvre jamais
+       * l'environnement lui-même. C'est ce qui permet de le construire dans un
+       * test sans pile Supabase — `getServerEnv()` valide TOUT — et ce qui
+       * garantit qu'une clé n'est lue qu'à un seul endroit.
+       *
+       * `?? undefined` : le schéma les rend facultatives (l'application doit
+       * démarrer sans compte chez qui que ce soit), et c'est l'adaptateur qui
+       * exige les siennes, avec un message qui les nomme toutes.
+       */
+      ...(env.NOTCHPAY_PUBLIC_KEY ? { clePublique: env.NOTCHPAY_PUBLIC_KEY } : {}),
+      ...(env.NOTCHPAY_PRIVATE_KEY ? { clePrivee: env.NOTCHPAY_PRIVATE_KEY } : {}),
+      ...(env.NOTCHPAY_HASH_KEY ? { cleHachage: env.NOTCHPAY_HASH_KEY } : {}),
+      autoriserProduction: env.NOTCHPAY_AUTORISER_PRODUCTION,
+      urlApplication: env.NEXT_PUBLIC_APP_URL,
+    });
+    return paiement;
+  }
+
   throw new Error(
-    `PAYMENT_PROVIDER=${choix} : aucun adaptateur réel n'est implémenté à ce stade. Aucun SDK de prestataire n'est installé (CLAUDE.md).`,
+    `PAYMENT_PROVIDER=${choix} : aucun adaptateur n'est implémenté pour ce prestataire. Les valeurs servies sont \`fake\` et \`notchpay\`.`,
   );
 }
 

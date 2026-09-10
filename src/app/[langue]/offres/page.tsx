@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import { langueValide, traduire } from '@/i18n';
 import { lireOffres } from '@/lib/offers/service';
 import { Erreur } from '@/components/etats';
+import { OffresV3 } from '@/components/v2/offres-v3';
+import { estV3 } from '@/design/version';
 import styles from '@/components/offres/offres.module.css';
 
 /**
@@ -78,6 +80,25 @@ export default async function PageOffres({ params }: Parametres) {
     offres = await lireOffres('international');
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;
+  }
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ÉCRAN EST REDESSINÉ — PAS SEULEMENT REPEINT.         │
+   * │                                                                      │
+   * │ Deux cartes plus un bandeau d'adhésion deviennent TROIS cartes de     │
+   * │ même gabarit, dont une sombre, et le tableau comparatif cède la place │
+   * │ à une ligne de limite portée par chaque carte — on lit ce qu'une      │
+   * │ formule n'ouvre pas au moment où on lit son prix.                     │
+   * │                                                                      │
+   * │ Ce qui ne change pas : la lecture des offres, la garde sur l'adhésion │
+   * │ sans prix, la variante de lancement, et le fait qu'AUCUN montant ne   │
+   * │ soit écrit dans le code. La V2 reste en place, intacte, sous cette    │
+   * │ condition — le même partage que sur les quatre écrans précédents.     │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return <OffresV3 langue={langue} offres={offres} />;
   }
 
   const { abonnement, association, achat_unite: achat } = offres;

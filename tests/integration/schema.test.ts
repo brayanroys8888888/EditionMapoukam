@@ -186,7 +186,12 @@ describe('jeu de démonstration', () => {
     `);
     const par = (slug: string) => rows.find((r) => r.slug === slug);
 
-    expect(rows).toHaveLength(10);
+    /*
+     * Quatorze titres : dix contes et quatre livrets pedagogiques depuis le
+     * 7 septembre 2026. Voir l'encadre de `access.test.ts`, meme jeu, meme
+     * raison.
+     */
+    expect(rows).toHaveLength(14);
 
     // Publié de longue date et inclus : lisible par un abonné.
     expect(par('le-lion-et-la-souris')).toMatchObject({

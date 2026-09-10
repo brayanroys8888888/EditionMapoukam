@@ -75,6 +75,18 @@ export interface ReponseFacettes {
    */
   types: Facette[];
   themes: Facette[];
+  /**
+   * Les NIVEAUX scolaires, éclatés en jetons — migration 0083.
+   *
+   * `books.niveau` est composé : « PS · MS · GS » désigne trois classes. La
+   * facette compte donc les JETONS, sans quoi elle rendrait deux pastilles
+   * qui se recouvrent et aucun moyen de demander « tout ce qui convient à
+   * des MS ».
+   *
+   * Elle ne compte que les LIVRETS : un conte n'a pas de niveau, et les
+   * inclure ferait un dénominateur qui ne veut rien dire.
+   */
+  niveaux: Facette[];
   origines: Facette[];
   age: { min: number | null; max: number | null };
   langues: string[];
@@ -212,6 +224,33 @@ export interface ApercuCommande {
     prix_unitaire: number;
     /** Le prix unitaire formaté par le SERVEUR, seule autorité sur les décimales. */
     prix_affichage: string;
+    /**
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ TROIS CHAMPS D'AFFICHAGE, ET AUCUN N'OUVRE DE DROIT.                │
+     * │                                                                      │
+     * │ Le tiroir de panier du prototype montre une couverture de 62 × 90 et │
+     * │ une ligne « 5–10 ans · 20 pages » sous chaque titre. Une ligne de    │
+     * │ panier ne les portait pas : le tiroir affichait donc trois titres    │
+     * │ nus, que rien ne distinguait d'une liste de courses.                 │
+     * │                                                                      │
+     * │ Ils sont OPTIONNELS et purement descriptifs. Un titre sans           │
+     * │ couverture — en cours d'ingestion — rend `null`, et l'interface pose │
+     * │ son substitut. Le prix, lui, reste formaté par le serveur : ces      │
+     * │ champs n'autorisent aucun calcul de plus dans le navigateur.         │
+     * │                                                                      │
+     * │ L'âge et la pagination sortent en NOMBRES, jamais en phrase          │
+     * │ composée : « 5–10 ans · 20 pages » se traduit, et cette route ne     │
+     * │ connaît pas la langue de l'interface — seulement celle du contenu    │
+     * │ commandé, qui n'est pas la même chose. `metaLivre` compose la ligne  │
+     * │ à l'affichage, au même endroit que pour les cartes du catalogue.     │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    couverture: string | null;
+    age_min: number | null;
+    age_max: number | null;
+    nb_pages: number | null;
+    /** Le slug, pour que la ligne mène à la fiche. */
+    slug: string | null;
   }[];
   refusees: LigneRefusee[];
   zone: string;

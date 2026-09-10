@@ -21,7 +21,7 @@ import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users'
 let abonne: TestUser;
 
 function params(recherche: Record<string, string> = {}): Request {
-  const url = new URLSearchParams(recherche);
+  const url = new URLSearchParams({ type: 'conte', ...recherche });
   return get(`/api/catalog?${url.toString()}`);
 }
 

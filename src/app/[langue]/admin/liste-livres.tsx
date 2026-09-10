@@ -166,12 +166,25 @@ export async function ListeLivres({
   };
 
   /*
-   * La fiche d'édition est LA MÊME pour les deux supports, et son adresse ne
-   * change pas selon l'onglet d'où l'on vient. Elle adapte ses libellés au
-   * `type_document` du titre ouvert, et son bouton de retour ramène à
-   * l'onglet correspondant — c'est ce qui rend l'adresse commune indolore.
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA FICHE EST LA MÊME, SON ADRESSE SUIT LE SUPPORT DU TITRE.           │
+   * │                                                                        │
+   * │ Un seul écran d'édition pour les deux supports — mêmes champs, mêmes   │
+   * │ prix, mêmes versions linguistiques —, et il adapte ses libellés au     │
+   * │ `type_document` du titre ouvert.                                       │
+   * │                                                                        │
+   * │ Son ADRESSE, elle, suit désormais le support : `/admin/livrets/<id>`   │
+   * │ pour un livret, `/admin/contes/<id>` pour un conte. L'adresse commune  │
+   * │ n'était pas indolore — elle se lit comme une erreur de rangement, et   │
+   * │ elle a été signalée comme telle le 7 septembre 2026.                   │
+   * │                                                                        │
+   * │ Elle se décide LIGNE PAR LIGNE, sur la donnée, et non sur l'onglet où  │
+   * │ l'on se trouve : la liste générale mêle les deux supports, et un       │
+   * │ livret y aurait sinon gardé l'adresse des contes.                      │
+   * └────────────────────────────────────────────────────────────────────────┘
    */
-  const fiche = `/${langue}/admin/contes`;
+  const ficheDe = (type: TypeDocument): string =>
+    `/${langue}/admin/${type === 'livret_pedagogique' ? 'livrets' : 'contes'}`;
 
   return (
     <GabaritAdmin
@@ -322,7 +335,7 @@ export async function ListeLivres({
                         qui en a déjà : le nom du titre EST ce sur quoi on
                         clique pour l'ouvrir, partout ailleurs dans le produit.
                       */}
-                      <a href={`${fiche}/${livre.id}`}>{livre.slug}</a>
+                      <a href={`${ficheDe(livre.type_document)}/${livre.id}`}>{livre.slug}</a>
 
                       {/*
                         Les manques ne s'affichent QUE s'il y en a. Une ligne

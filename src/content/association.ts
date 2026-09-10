@@ -82,6 +82,46 @@ export const VIDEO_PRESENTATION = {
   affiche: 'apprendre-ensemble.jpg',
 } as const;
 
+/**
+ * UN AXE DE L'ACTION DE TERRAIN — la bande sombre en porte trois.
+ *
+ * Le `numero` est ÉCRIT, il n'est pas calculé depuis le rang : « 01 » n'est
+ * pas `1`, et un rang recalculé à l'affichage se décalerait le jour où
+ * l'association en ajoute un quatrième au milieu.
+ */
+export interface AxeAssociation {
+  numero: string;
+  titre: string;
+  corps: string;
+}
+
+/**
+ * UNE FAÇON DE SOUTENIR SANS ADHÉRER.
+ *
+ * `cle` choisit le PICTOGRAMME, jamais le texte. Un nom de fichier ou un
+ * caractère d'émoji posé dans ce fichier ferait entrer du dessin dans une
+ * donnée éditoriale ; le composant tient la table des tracés, et une clé
+ * inconnue n'affiche simplement pas de pictogramme.
+ */
+export interface SoutienAssociation {
+  cle: 'partager' | 'ateliers' | 'campagnes';
+  titre: string;
+  corps: string;
+}
+
+/**
+ * UNE PHOTOGRAPHIE DU COLLAGE DU HÉROS.
+ *
+ * `alt` est une donnée éditoriale NOMMÉE POUR CET USAGE — c'est l'exception
+ * que `tests/unit/images-discipline.test.ts` énonce lui-même, au même titre
+ * que `logoAlt`. Il décrit ce que la photographie montre, et ne recopie aucun
+ * texte déjà à l'écran.
+ */
+export interface PhotoAssociation {
+  fichier: string;
+  alt: string;
+}
+
 export interface PresentationAssociation {
   /** Petite capitale au-dessus du titre. */
   oeil: string;
@@ -93,6 +133,45 @@ export interface PresentationAssociation {
   logoAlt: string;
   /** Mission, adhésion, soutien — dans cet ordre. */
   sections: Section[];
+  /**
+   * Le SECOND paragraphe du héros : ce que l'association fait, après ce
+   * qu'elle est. Il double le premier paragraphe de `sections[0]`, à un mot
+   * près — « elle » plutôt que « l'association » —, parce qu'il est lu sans
+   * le titre de section qui le précède ailleurs.
+   */
+  chapeauSecond: string;
+  /** Le second bouton du héros : il descend aux contenus. */
+  actionRecits: string;
+  /** Les deux photographies du collage, à droite du titre. */
+  collage: readonly PhotoAssociation[];
+  /** Le sur-titre de la bande sombre. Son titre est celui de `sections[0]`. */
+  axesOeil: string;
+  axes: readonly AxeAssociation[];
+  /** Le titre de la carte de mises en garde, en regard d'« Adhérer ». */
+  notesTitre: string;
+  /**
+   * Les trois façons de soutenir autrement.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ CES TROIS-LÀ REDISENT `sections[2].points`, ET C'EST ASSUMÉ.          │
+   * │                                                                        │
+   * │ Les deux formes ne se déduisent pas l'une de l'autre : la puce de la   │
+   * │ V2 est une phrase, la carte de la V3 est un titre PLUS un corps qui    │
+   * │ porte une clause de plus. Une fonction qui fabriquerait l'une depuis   │
+   * │ l'autre découperait sur un deux-points et mettrait une majuscule en    │
+   * │ minuscule — elle marcherait sur ces six phrases et abîmerait la        │
+   * │ septième, celle qui commencerait par un nom propre.                    │
+   * │                                                                        │
+   * │ La duplication est donc VOLONTAIRE et bornée : elle vit à trente       │
+   * │ lignes de son double, dans le même fichier, sous les yeux du relecteur.│
+   * │ Elle disparaît le jour où la V2 de cet écran est retirée.              │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  soutiens: readonly SoutienAssociation[];
+  /** La citation qui ferme la page, guillemets compris. */
+  citation: string;
+  /** Ce qu'elle demande au lecteur, sous elle. */
+  citationRelance: string;
   videoLegende: string;
   /** Le bloc d'appel à l'adhésion, sous les sections. */
   appel: {
@@ -147,6 +226,64 @@ const FR: PresentationAssociation = {
       ],
     },
   ],
+  chapeauSecond:
+    'Elle porte des initiatives concrètes pour rendre l’éducation inclusive et accessible à tous, en concevant des solutions adaptées et en soutenant activement les communautés.',
+  actionRecits: 'Lire nos récits de terrain',
+  collage: [
+    {
+      fichier: 'kit-pedagogique.jpg',
+      alt: 'Un enfant et une éducatrice, souriants devant un imagier posé sur le pupitre',
+    },
+    {
+      fichier: 'classes-inclusives.jpg',
+      alt: 'Trois scènes de classe : construction en cubes, lecture à voix haute, atelier de peinture',
+    },
+  ],
+  axesOeil: 'Pourquoi chaque action compte',
+  axes: [
+    {
+      numero: '01',
+      titre: 'Briser l’isolement',
+      corps:
+        'Offrir à un enfant en situation de handicap ou de difficulté d’apprentissage les moyens de participer comme les autres.',
+    },
+    {
+      numero: '02',
+      titre: 'Soutenir les familles',
+      corps:
+        'Apporter aux parents des solutions concrètes et rassurantes pour accompagner le quotidien à la maison.',
+    },
+    {
+      numero: '03',
+      titre: 'Semer l’espoir',
+      corps:
+        'Prouver que chaque communauté, même rurale ou défavorisée, mérite un accès égal à l’excellence éducative.',
+    },
+  ],
+  notesTitre: 'Ce qu’il faut savoir',
+  soutiens: [
+    {
+      cle: 'partager',
+      titre: 'Partager et faire connaître',
+      corps:
+        'Parler de nos actions autour de vous, partager nos publications, en parler à un proche : c’est déjà offrir de la visibilité à notre cause.',
+    },
+    {
+      cle: 'ateliers',
+      titre: 'Participer aux ateliers',
+      corps:
+        'Rejoindre nos séminaires, nos formations ou nos ateliers, en présentiel ou en ligne, pour enrichir vos pratiques.',
+    },
+    {
+      cle: 'campagnes',
+      titre: 'Soutenir les campagnes',
+      corps:
+        'Contribuer à la production et à la distribution de nos kits pédagogiques pour équiper les enfants dans les zones prioritaires.',
+    },
+  ],
+  citation: '« Seul on va plus vite, ensemble on va plus loin. »',
+  citationRelance:
+    'Rejoignez le mouvement et devenez, vous aussi, un acteur de la révolution éducative.',
   videoLegende: 'L’Association DAVE en vidéo.',
   appel: {
     titre: 'Rejoindre le mouvement',
@@ -201,6 +338,62 @@ const EN: PresentationAssociation = {
       ],
     },
   ],
+  chapeauSecond:
+    'It runs concrete initiatives to make education inclusive and accessible to everyone, by designing adapted solutions and actively supporting communities.',
+  actionRecits: 'Read our field reports',
+  collage: [
+    {
+      fichier: 'kit-pedagogique.jpg',
+      alt: 'A child and an educator, smiling over a picture board laid on the desk',
+    },
+    {
+      fichier: 'classes-inclusives.jpg',
+      alt: 'Three classroom scenes: building with blocks, reading aloud, a painting workshop',
+    },
+  ],
+  axesOeil: 'Why every action counts',
+  axes: [
+    {
+      numero: '01',
+      titre: 'Breaking isolation',
+      corps:
+        'Giving a child with a disability or a learning difficulty the means to take part like the others.',
+    },
+    {
+      numero: '02',
+      titre: 'Supporting families',
+      corps: 'Giving parents concrete, reassuring answers for everyday life at home.',
+    },
+    {
+      numero: '03',
+      titre: 'Sowing hope',
+      corps:
+        'Proving that every community, however rural or underserved, deserves equal access to educational excellence.',
+    },
+  ],
+  notesTitre: 'What to know',
+  soutiens: [
+    {
+      cle: 'partager',
+      titre: 'Share and spread the word',
+      corps:
+        'Talking about our work around you, sharing our posts, mentioning it to someone close: that alone gives our cause visibility.',
+    },
+    {
+      cle: 'ateliers',
+      titre: 'Join the workshops',
+      corps:
+        'Joining our seminars, training sessions or workshops, in person or online, to enrich your practice.',
+    },
+    {
+      cle: 'campagnes',
+      titre: 'Support the campaigns',
+      corps:
+        'Helping produce and distribute our teaching kits to equip children in priority areas.',
+    },
+  ],
+  citation: '“Alone we go faster, together we go further.”',
+  citationRelance: 'Join the movement and become, in turn, an actor of the educational revolution.',
   videoLegende: 'The DAVE Association on video.',
   appel: {
     titre: 'Join the movement',

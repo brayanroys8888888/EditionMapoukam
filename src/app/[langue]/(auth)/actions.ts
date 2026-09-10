@@ -1,6 +1,6 @@
 'use server';
 
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { langueValide, type LangueInterface } from '@/i18n';
@@ -37,7 +37,19 @@ interface ReponseApi {
 }
 
 async function appeler(chemin: string, charge: unknown, jeton?: string): Promise<ReponseApi> {
-  const reponse = await fetch(`${getServerEnv().NEXT_PUBLIC_APP_URL}${chemin}`, {
+  let baseUrl = getServerEnv().NEXT_PUBLIC_APP_URL;
+  try {
+    const enTetes = await headers();
+    const host = enTetes.get('host');
+    if (host) {
+      const proto = enTetes.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+      baseUrl = `${proto}://${host}`;
+    }
+  } catch {
+    // repli
+  }
+
+  const reponse = await fetch(`${baseUrl}${chemin}`, {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
@@ -133,7 +145,23 @@ export async function connexion(langueBrute: string, donnees: FormData): Promise
   if (reponse.statut !== 200) repartirEnErreur(langue, 'connexion', reponse);
 
   await poserSession(reponse.corps);
-  redirect(`/${langue}/catalogue`);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ON ARRIVE DANS UN RAYON, PAS DANS LE FONDS ENTIER.                    │
+   * │                                                                        │
+   * │ La connexion menait à `/catalogue`, qui mêle les deux supports. C'est  │
+   * │ l'écran de RECHERCHE — celui où l'on va quand on sait déjà ce qu'on    │
+   * │ cherche et qu'on veut filtrer. Y déposer quelqu'un qui vient           │
+   * │ simplement d'ouvrir sa session lui demande de trier avant d'avoir      │
+   * │ regardé.                                                               │
+   * │                                                                        │
+   * │ `/contes` est le rayon d'entrée : c'est le premier de la navigation,   │
+   * │ et ce que le public visé vient chercher. Les livrets restent à un      │
+   * │ clic, dans la même liste déroulante.                                   │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  redirect(`/${langue}/contes?toast=connexion`);
 }
 
 export async function renvoyerCode(langueBrute: string, donnees: FormData): Promise<void> {
@@ -177,7 +205,7 @@ export async function inscription(langueBrute: string, donnees: FormData): Promi
   // serait un cul-de-sac : le code n'a jamais été émis, et l'écran demanderait
   // indéfiniment quelque chose qui n'arrivera pas.
   if (getServerEnv().AUTH_CONFIRMATION_AUTOMATIQUE) {
-    redirect(`/${langue}/connexion?inscrit=1`);
+    redirect(`/${langue}/connexion?inscrit=1&toast=inscription`);
   }
 
   redirect(`/${langue}/confirmation?envoye=1`);
@@ -201,7 +229,7 @@ export async function demanderReinitialisation(
   const langue = langueValide(langueBrute);
 
   await appeler('/api/auth/password/reset', { email: texte(donnees, 'email') });
-  redirect(`/${langue}/nouveau-mot-de-passe?envoye=1`);
+  redirect(`/${langue}/nouveau-mot-de-passe?envoye=1&toast=motDePasse`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

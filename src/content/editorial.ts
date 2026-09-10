@@ -146,9 +146,25 @@ const FR: Record<SlugEditorial, PageEditoriale> = {
         ],
       },
       {
-        titre: 'Pourquoi certaines nouveautés ne sont-elles pas dans l’abonnement ?',
+        /*
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ CETTE RÉPONSE A ÉTÉ CORRIGÉE : ELLE DÉCRIVAIT UNE RÈGLE RETIRÉE. │
+         * │                                                                  │
+         * │ Elle disait « les nouveautés sont d'abord vendues seules pendant  │
+         * │ quelques mois, puis rejoignent l'abonnement ». Cette règle a été  │
+         * │ supprimée le 2 septembre 2026 sur décision de l'éditeur — la      │
+         * │ migration `0064` a effacé `fenetre_nouveaute_jours`,              │
+         * │ `abonnement_a_partir_du` et `fenetre_de_vente_ecoulee`, et le     │
+         * │ cahier des charges §3.2 porte la décision.                        │
+         * │                                                                  │
+         * │ La réponse promettait donc une date d'entrée qui n'existe plus    │
+         * │ sur aucune fiche. Ce qui subsiste est la vraie frontière :        │
+         * │ `inclus_abonnement`, posé titre par titre, sans délai.            │
+         * └──────────────────────────────────────────────────────────────────┘
+         */
+        titre: 'Toutes les nouveautés sont-elles dans l’abonnement ?',
         paragraphes: [
-          'Les nouveautés sont d’abord vendues seules pendant quelques mois, puis rejoignent l’abonnement. La date d’entrée est indiquée sur la fiche du conte.',
+          'Il n’y a aucun délai : un titre publié et inclus dans l’abonnement est lisible par un abonné à l’instant même. En revanche, l’inclusion se décide titre par titre — la fiche de chaque conte indique s’il est compris dans l’abonnement, vendu à l’unité, ou les deux.',
         ],
       },
       {
@@ -324,9 +340,11 @@ const EN: Record<SlugEditorial, PageEditoriale> = {
         ],
       },
       {
-        titre: 'Why are some new releases not in the subscription?',
+        // Corrigée en même temps que la version française : voir l'encadré
+        // qui s'y trouve. La règle du délai a été retirée le 2 septembre 2026.
+        titre: 'Are all new releases in the subscription?',
         paragraphes: [
-          'New releases are sold on their own for a few months, then join the subscription. The date they join is shown on the tale’s page.',
+          'There is no delay: a title that is published and included in the subscription is readable by a subscriber straight away. Inclusion is decided title by title, though — each tale’s page says whether it is part of the subscription, sold on its own, or both.',
         ],
       },
       {

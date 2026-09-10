@@ -67,6 +67,8 @@ const BASE: EntreeCatalogue = {
   age_max: 9,
   origine_culturelle: 'conte akan — Ghana',
   themes: ['ruse'],
+  niveau: null,
+  objectifs: [],
   type_document: 'conte',
   orientation: 'portrait',
   couverture_url: null,
@@ -463,6 +465,11 @@ const FACETTES: ReponseFacettes = {
   themes: [
     { valeur: 'ruse', nombre: 4 },
     { valeur: 'animaux', nombre: 2 },
+  ],
+  // Les niveaux ne comptent que les livrets — migration 0083.
+  niveaux: [
+    { valeur: 'MS', nombre: 2 },
+    { valeur: 'GS', nombre: 1 },
   ],
   origines: [{ valeur: 'Ghana', nombre: 1 }],
   age: { min: 3, max: 12 },

@@ -189,7 +189,7 @@ interface ProprietesEntete extends ProprietesMenuCompte {
 }
 
 /**
- * Les deux rayons du catalogue, et le fonds entier.
+ * Les deux rayons du catalogue.
  *
  * La même liste que dans `v2.tsx`, dans le même ordre et sur les mêmes clés.
  * Elle est écrite deux fois parce que les deux en-têtes sont deux composants —
@@ -199,7 +199,6 @@ interface ProprietesEntete extends ProprietesMenuCompte {
 const RAYONS: { cle: CleTraduction; chemin: string }[] = [
   { cle: 'documents.contes', chemin: 'contes' },
   { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
-  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
 ];
 
 export function Entete({ langue, utilisateur, chemin, requete }: ProprietesEntete): ReactNode {

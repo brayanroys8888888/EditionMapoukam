@@ -1,0 +1,407 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * LES OFFRES — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `Site EditionMapoukam.dc.html`, lignes 924 à 964.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS CARTES DE MÊME GABARIT, ET UNE SEULE QUI CHANGE DE FOND.          │
+ * │                                                                          │
+ * │ Le prototype ne grossit pas la carte du milieu : il la fait SOMBRE. Les  │
+ * │ trois gardent le même rayon, le même rembourrage, la même colonne, et    │
+ * │ c'est l'alignement qui rend les trois prix comparables — ce qui est tout │
+ * │ l'objet de la page. Une carte agrandie aurait cassé cet alignement, et   │
+ * │ un lecteur ne compare plus ce qu'il ne peut plus superposer du regard.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ══ Le bandeau ═══════════════════════════════════════════════════════════ */
+
+/*
+ * Sa colonne fait 820 px, et non 1240.
+ *
+ * Le prototype écrit DEUX `max-width` sur la même boîte — `1240px` puis
+ * `820px` — et c'est la seconde qui l'emporte. Ce n'est pas une inattention :
+ * un chapeau de 18,5 px étalé sur 1184 px fait des lignes de cent vingt
+ * caractères, illisibles. La formule de gouttière est donc la même que
+ * partout, sur une largeur plus étroite.
+ */
+.bandeau {
+  background: var(--fond-doux);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.bandeauInterieur {
+  padding: 60px max(28px, (100% - 820px) / 2 + 28px) 56px;
+}
+
+.oeil {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+.titre {
+  font-size: clamp(38px, 4.4vw, 60px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  margin: 14px 0 16px;
+}
+
+.chapeau {
+  font-size: 18.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/* ══ Les trois formules ═══════════════════════════════════════════════════ */
+
+.sectionFormules {
+  padding: 60px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 40px;
+}
+
+.formules {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 22px;
+}
+
+/*
+ * `display: flex` en colonne, et non un simple bloc : c'est ce qui permet au
+ * bouton de coller au bas de la carte (`margin-top: auto`) quel que soit le
+ * nombre de lignes incluses. Sans lui, trois cartes de hauteurs égales
+ * portaient trois boutons à trois hauteurs différentes.
+ */
+.formule {
+  display: flex;
+  flex-direction: column;
+  border-radius: 34px;
+  padding: 34px;
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.formule:hover {
+  transform: translateY(-4px);
+}
+
+.clair,
+.accent {
+  border: 1px solid var(--bordure);
+  color: var(--encre);
+  box-shadow: var(--ombre-s);
+}
+
+.clair {
+  background: var(--surface);
+}
+
+/*
+ * La troisième prend le crème de BANDE plutôt que le crème de carte : elle
+ * n'est pas une formule de lecture, elle ouvre un autre contenu. Un demi-ton
+ * suffit à le dire sans la sortir de l'alignement.
+ */
+.accent {
+  background: var(--fond-doux);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE SOMBRE LIT LES JETONS DU CHROME, Y COMPRIS SON ANNEAU DE FOCUS. │
+ * │                                                                          │
+ * │ `--focus-couleur` vaut l'encre de PAGE, faite pour la crème : sur        │
+ * │ l'olive elle disparaît, et le focus clavier existe alors sans se voir —  │
+ * │ le pire des deux mondes, puisque rien ne signale la panne.               │
+ * │                                                                          │
+ * │ Le filet EXISTE, et il n'est pas transparent — le prototype l'écrit       │
+ * │ ainsi, mais le prototype n'a pas de thème sombre. La nuit, l'olive de     │
+ * │ cette carte et le fond de la page ne sont séparés que par six unités de   │
+ * │ luminance : sans arête, la carte ne se lit plus comme une carte, elle se  │
+ * │ lit comme un TROU entre ses deux voisines, qui ont leur filet.            │
+ * │                                                                          │
+ * │ Une encre de chrome à 16 % dessine cette arête la nuit et disparaît le    │
+ * │ jour, où le contraste entre l'olive et la crème s'en charge déjà. Et le   │
+ * │ filet garde son pixel : sans lui, la carte mesure deux pixels de moins    │
+ * │ que ses voisines et les trois cessent de s'aligner.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.sombre {
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 16%, transparent);
+  box-shadow: var(--ombre-l);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE DE LANCEMENT CENTRE SON CONTENU, ET C'EST NÉCESSAIRE.          │
+ * │                                                                          │
+ * │ Fermée, elle porte quatre lignes là où ses voisines en portent quinze —  │
+ * │ et la grille les étire toutes trois à la même hauteur. Alignée en haut,  │
+ * │ elle laisse alors quatre cents pixels de vide sous son texte : une carte │
+ * │ qui a l'air d'avoir échoué à charger, sur le seul emplacement de la page │
+ * │ qui attire l'œil.                                                        │
+ * │                                                                          │
+ * │ Centrée, le vide se partage et le bloc se lit comme une annonce. C'est   │
+ * │ un cas que le prototype ne dessine pas — il n'a pas d'interrupteur       │
+ * │ commercial — et que le produit rencontre tous les jours, puisque         │
+ * │ `abonnement_ouvert` vaut faux aujourd'hui.                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.ferme {
+  justify-content: center;
+}
+
+.formuleOeil {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+/*
+ * Sur l'olive, le sur-titre prend `--accent-sur-chrome` : la terre cuite du
+ * jour n'y vaut que 3,34:1, sous le seuil pour un texte de 11 px. Voir
+ * l'encadré du jeton dans `tokens.css`.
+ */
+.sombre .formuleOeil {
+  color: var(--accent-sur-chrome);
+}
+
+.formuleTitre {
+  font-size: 26px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 14px 0 12px;
+}
+
+/*
+ * Le prix est en police de TITRE, et il ne porte pas d'interligne propre : le
+ * prototype le laisse prendre celui du corps. Un prix serré à 1,15 gagnait
+ * onze pixels sur la carte, et les trois cartes avec lui.
+ */
+.prix {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 34px;
+  color: var(--action-texte);
+  margin: 0 0 4px;
+}
+
+.sombre .prix {
+  color: var(--chrome-encre);
+}
+
+.prixNote {
+  font-size: 13.5px;
+  opacity: 0.7;
+  margin: 0 0 24px;
+}
+
+/*
+ * Le corps ne paraît que sur la carte de LANCEMENT, à la place du prix et de
+ * la liste : il n'y a rien à tarifer tant que la formule n'est pas ouverte, et
+ * une carte vide se lit comme une panne.
+ */
+.corps {
+  font-size: 15.5px;
+  line-height: 1.65;
+  opacity: 0.82;
+  margin: 4px 0 24px;
+}
+
+.inclusListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.inclus {
+  display: flex;
+  gap: 11px;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 11px;
+}
+
+/*
+ * La coche est posée sur la ligne de base du texte, pas centrée : à
+ * `margin-top: 5px` elle s'aligne sur la première ligne, quel que soit le
+ * nombre de lignes qui suivent.
+ */
+.coche {
+  flex: none;
+  margin-top: 5px;
+  opacity: 0.6;
+}
+
+/*
+ * `currentColor` sur le filet, et c'est le prototype : la ligne change donc de
+ * teinte avec la carte, claire sur l'olive et sombre sur la crème, sans qu'un
+ * second jeton ait à le dire.
+ */
+.limite {
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin: 20px 0 24px;
+  padding-top: 18px;
+  border-top: 1px solid currentColor;
+  opacity: 0.55;
+}
+
+.formuleAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Il colle au bas de la carte, quelle que soit la longueur du texte. */
+  margin-top: auto;
+  width: 100%;
+  border-radius: 999px;
+  padding: 16px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15.5px;
+  /* `normal` : le prototype écrit ces boutons en `<button>`, qui n'hérite pas
+     de l'interligne du corps. Ici ce sont des liens, qui en héritent. */
+  line-height: normal;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.formuleAction:hover {
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/* Sur l'olive, l'olive ne se voit plus : le bouton passe à la terre cuite. */
+.sombre .formuleAction {
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.sombre .formuleAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/* ══ Les questions fréquentes ═════════════════════════════════════════════ */
+
+.questions {
+  margin-top: 34px;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 30px;
+  padding: 36px;
+}
+
+.questionsTitre {
+  font-size: 24px;
+  /* 1,12 : le prototype ne pose pas d'interligne ici, et son titre hérite
+     donc de celui d'Organic. À 1,15 la ligne gagnait sept dixièmes de pixel,
+     et le bloc entier descendait d'autant. */
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 20px;
+}
+
+.questionsGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+  gap: 26px;
+}
+
+/*
+ * La colonne d'une question. Le prototype ne lui donne aucun style ; elle en a
+ * quand même besoin d'un : `min-width: 0` autorise une colonne de grille à
+ * descendre sous la largeur de son plus long mot. Sans lui, une question qui
+ * porte une adresse ou un mot composé élargit la colonne et déborde la carte.
+ *
+ * (Et la classe doit EXISTER : déclarée nulle part, `styles.question` vaut
+ * `undefined` et React rend `class="undefined"` — c'est le défaut que
+ * `tests/unit/classes-css.test.ts` attrape, et c'est le relevé qui l'a trouvé
+ * ici, la sonde ne trouvant rien à mesurer.)
+ */
+.question {
+  min-width: 0;
+}
+
+.questionIntitule {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 17px;
+  margin: 0 0 8px;
+}
+
+.questionReponse {
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+.questionReponse + .questionReponse {
+  margin-top: 8px;
+}
+
+/*
+ * Le prototype n'a pas ce lien, et il lui manque : le dépôt porte une page
+ * entière de questions, celle vers laquelle mène déjà le pied. Six réponses
+ * dans un encart, c'est un aperçu — dire où se trouve le reste coûte une
+ * ligne.
+ */
+.questionsLien {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 24px;
+  font-size: 15px;
+  color: var(--action-texte);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ══ Les deux points de rupture de `02-layout-responsive.md` ══════════════ */
+
+@media (max-width: 760px) {
+  .bandeauInterieur {
+    padding: 44px 20px 40px;
+  }
+
+  .sectionFormules {
+    padding: 40px 20px 32px;
+  }
+
+  .formule {
+    padding: 26px;
+  }
+
+  .questions {
+    padding: 26px;
+  }
+}
+
+/*
+ * Le mouvement se coupe. Le filet général de `tokens.css` ramène toute
+ * transition à 0,01 ms, ce qui suffit pour une couleur mais pas pour un
+ * déplacement : les cartes sauteraient de quatre pixels au lieu d'y glisser.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .formule:hover,
+  .formuleAction:hover {
+    transform: none;
+  }
+}

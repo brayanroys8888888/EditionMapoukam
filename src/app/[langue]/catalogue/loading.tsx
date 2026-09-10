@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { langueValide, traduire } from '@/i18n';
 import { Squelette } from '@/components/etats';
 import { SqueletteGrille } from '@/components/etats/squelettes-v2';
-import { versionDesign } from '@/design/version';
+import { structureRefondue } from '@/design/version';
 
 /**
  * Chargement de la boutique.
@@ -20,7 +20,7 @@ import { versionDesign } from '@/design/version';
 export default async function ChargementCatalogue() {
   const langue = langueValide((await headers()).get('x-langue'));
 
-  if (versionDesign() !== 'v2') {
+  if (!structureRefondue()) {
     return <Squelette lignes={8} libelle={traduire(langue, 'catalogue.chargement')} />;
   }
 

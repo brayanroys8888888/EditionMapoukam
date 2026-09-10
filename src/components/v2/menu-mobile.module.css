@@ -18,14 +18,14 @@
   place-items: center;
   border: 0;
   border-radius: 50%;
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--marque);
+  color: var(--marque-encre);
   transition: background var(--transition-couleur);
 }
 
 .bouton:hover {
-  background: var(--v2-vert-clair);
-  color: var(--v2-fond);
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
 }
 
 @media (max-width: 900px) {
@@ -36,14 +36,43 @@
 
 /* ── Le panneau ─────────────────────────────────────────────────────────── */
 
-.panneau {
+/*
+ * Le voile — invisible sous la V2, où le panneau le recouvre entièrement.
+ *
+ * Il n'est dessiné que par la V3, dont la feuille laisse voir la page. Le
+ * rendre dans les deux cas évite au composant de connaître la direction :
+ * c'est le CSS qui décide s'il se voit, comme partout ailleurs.
+ */
+.voile {
   position: fixed;
   inset: 0;
-  z-index: 95;
+  z-index: 9999;
+  background: rgb(24 20 12 / 45%);
+}
+
+/* La poignée de la feuille V3 — sans dessin ici, elle ne prend aucune place. */
+.poignee {
+  display: none;
+}
+
+.panneau {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
   display: flex;
   flex-direction: column;
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  color: var(--chrome-encre);
   padding: 18px 20px 26px;
   animation: entree 0.24s ease;
 }
@@ -78,14 +107,14 @@
   border: 1.5px solid rgb(251 247 239 / 40%);
   border-radius: 50%;
   background: transparent;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-2xl);
   line-height: 1;
 }
 
 .fermer:hover {
-  border-color: var(--v2-fond);
-  color: var(--v2-fond);
+  border-color: var(--chrome-encre);
+  color: var(--chrome-encre);
 }
 
 /* ── Les liens ──────────────────────────────────────────────────────────── */
@@ -117,7 +146,7 @@
   font-size: 26px;
   font-weight: var(--graisse-forte);
   letter-spacing: -0.015em;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .lien:hover {
@@ -146,13 +175,13 @@
   padding: 12px 18px;
   border: 1.5px solid rgb(251 247 239 / 30%);
   border-radius: var(--rayon-bouton);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-l);
 }
 
 .recherche:hover {
-  border-color: var(--v2-fond);
-  color: var(--v2-fond);
+  border-color: var(--chrome-encre);
+  color: var(--chrome-encre);
 }
 
 .connexion {
@@ -191,16 +220,16 @@
   justify-content: center;
   min-height: var(--cible-min);
   padding: 12px 22px;
-  border: 1.5px solid var(--v2-ocre);
+  border: 1.5px solid var(--action);
   border-radius: var(--rayon-bouton);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
 }
 
 .administration:hover {
-  background: var(--v2-ocre);
-  color: var(--v2-fond);
+  background: var(--action);
+  color: var(--action-encre);
 }
 
 /*
@@ -210,7 +239,8 @@
  * élargit la fenêtre, il masquerait tout le site derrière un vert plein.
  */
 @media (min-width: 901px) {
-  .panneau {
+  .panneau,
+  .voile {
     display: none;
   }
 }
@@ -236,19 +266,184 @@
   padding: 10px 16px;
   border: 1.5px solid rgb(251 247 239 / 30%);
   border-radius: var(--rayon-bouton);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-demi);
 }
 
 .langue:hover {
-  border-color: var(--v2-fond);
-  color: var(--v2-fond);
+  border-color: var(--chrome-encre);
+  color: var(--chrome-encre);
 }
 
 .langueActive {
-  background: var(--v2-fond);
-  border-color: var(--v2-fond);
-  color: var(--v2-vert);
+  background: var(--fond);
+  border-color: var(--chrome-encre);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE PANNEAU PLEIN ÉCRAN DEVIENT UNE FEUILLE MONTANTE.                ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PAS UN CHANGEMENT DE DÉCOR, C'EST UN CHANGEMENT DE PROMESSE.   │
+ * │                                                                          │
+ * │ Un panneau plein écran dit « tu as quitté la page ». Une feuille dit     │
+ * │ « ta page est toujours là, dessous » — et c'est vrai, puisqu'on la voit  │
+ * │ à travers le voile. Le geste de retour n'est plus une croix à viser en   │
+ * │ haut : c'est toucher n'importe où au-dessus.                             │
+ * │                                                                          │
+ * │ Elle monte donc du BAS, du côté du pouce, et la barre d'onglets qu'elle │
+ * │ recouvre est exactement l'endroit d'où l'ouverture est partie.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+:global(:root[data-design='v3']) .panneau {
+  /*
+   * `inset: auto 0 0 0` — la feuille se cale en bas et prend la hauteur de son
+   * contenu, plafonnée à 82 dvh. Sans le plafond, un menu de huit entrées sur
+   * un téléphone bas de gamme redeviendrait un panneau plein écran, c'est-à-
+   * dire exactement ce dont on sort.
+   */
+  inset: auto 0 0 0;
+  max-height: 82vh;
+  max-height: 82dvh;
+  overflow-y: auto;
+  padding: 14px 20px 30px;
+  border-radius: 32px 32px 0 0;
+  background: var(--surface);
+  color: var(--encre);
+  /*
+   * La feuille V3 est CLAIRE : l'anneau de focus reprend l'encre de page.
+   * Le panneau V2 qu'elle remplace est sombre et pose la crème — hériter
+   * de lui donnerait un anneau crème sur une feuille crème.
+   */
+  --focus-couleur: var(--accent-encre);
+  /*
+   * L'ombre monte, elle ne descend pas. `--ombre-flottante` la porte vers le
+   * bas — sous une feuille collée au bord inférieur, elle serait hors écran,
+   * c'est-à-dire absente là où elle sert : sur l'arête haute, la seule que le
+   * lecteur voit.
+   */
+  box-shadow: 0 -14px 40px rgb(20 16 8 / 28%);
+  animation: monteeFeuille 0.38s var(--ease);
+}
+
+/*
+ * `translateY(103%)` et non 100 % : les trois pour cent de rabiot emportent
+ * l'ombre portée avec la feuille. À 100 %, l'ombre reste visible en bas de
+ * l'écran quand la feuille est sortie — une barre grise qui n'appartient à
+ * rien.
+ */
+@keyframes monteeFeuille {
+  from {
+    transform: translateY(103%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(:root[data-design='v3']) .panneau {
+    animation: none;
+  }
+}
+
+/* La poignée : 44 × 4 px, centrée. Elle ne fait rien — elle DIT quoi faire. */
+:global(:root[data-design='v3']) .poignee {
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: 0 auto 18px;
+  border-radius: var(--rayon-pastille);
+  background: var(--bordure);
+}
+
+/*
+ * L'en-tête de la feuille disparaît : le mot-symbole est déjà dans la barre
+ * qu'on vient de quitter, à quelques pixels au-dessus, et la croix est
+ * remplacée par le voile. Deux redites en moins sur l'écran le plus étroit.
+ */
+:global(:root[data-design='v3']) .entete {
+  display: none;
+}
+
+/* ── Les rangées : une icône ronde, puis le libellé ──────────────────────── */
+
+:global(:root[data-design='v3']) .liens {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: visible;
+}
+
+/*
+ * Le filet entre les rangées tombe. Il séparait des lignes de 26 px composées
+ * comme un sommaire ; ici les rangées sont des boutons de 16 px espacés de
+ * 6 px, et un filet entre deux boutons les recolle au lieu de les distinguer.
+ */
+:global(:root[data-design='v3']) .liens li + li {
+  border-top: 0;
+}
+
+:global(:root[data-design='v3']) .lien {
+  min-height: var(--cible-min);
+  padding: 14px 12px;
+  border-radius: var(--rayon-bloc);
+  font-family: var(--police-interface);
+  font-variation-settings: normal;
+  font-size: 16px;
+  font-weight: var(--graisse-demi);
+  letter-spacing: normal;
+  color: var(--encre);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+:global(:root[data-design='v3']) .lien:hover {
+  background: var(--fond-doux);
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .lienActif {
+  background: var(--fond-doux);
+  color: var(--accent-encre);
+  font-weight: var(--graisse-forte);
+}
+
+/* ── Le pied de la feuille ───────────────────────────────────────────────── */
+
+:global(:root[data-design='v3']) .pied {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--bordure);
+}
+
+/*
+ * Les trois commandes du pied quittent le contour crème — qui n'existait que
+ * pour tenir sur l'aplat vert — et prennent le fond de bande d'Organic.
+ */
+:global(:root[data-design='v3']) .recherche,
+:global(:root[data-design='v3']) .langue {
+  background: var(--fond-doux);
+  border-color: transparent;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .recherche:hover,
+:global(:root[data-design='v3']) .langue:hover {
+  background: var(--fond-doux);
+  border-color: var(--bordure);
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .langueActive,
+:global(:root[data-design='v3']) .langueActive:hover {
+  background: var(--action);
+  border-color: transparent;
+  color: var(--action-encre);
+}
+
+:global(:root[data-design='v3']) .administration {
+  color: var(--action-texte);
 }

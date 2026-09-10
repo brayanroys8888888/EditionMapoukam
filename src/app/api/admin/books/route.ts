@@ -99,6 +99,24 @@ const modificationSchema = z
     age_min: z.int().min(0).max(18).optional(),
     age_max: z.int().min(0).max(18).optional(),
     nb_pages_extrait: z.int().min(1).max(100).optional(),
+    /*
+     * LE NIVEAU ET LES OBJECTIFS — colonnes de la 0079, écrivables depuis
+     * la 0081.
+     *
+     * Le niveau accepte la CHAÎNE VIDE, et c'est la seule chaîne vide acceptée
+     * par ce schéma. Ailleurs, `min(1)` : effacer un auteur ou une origine
+     * retiendrait la publication, l'éditeur n'a donc rien à y gagner. Le
+     * niveau, lui, ne retient rien — un livret sans niveau reste publiable —
+     * et l'éditeur doit pouvoir le retirer d'un titre où il n'a pas de sens.
+     * `admin_modifier_livre` lit cette chaîne vide comme « efface » ; `null`
+     * y voudrait dire « ne touche pas », et n'effacerait donc jamais rien.
+     *
+     * Les objectifs gardent leur ORDRE : ce sont les étapes d'un livret. Le
+     * nettoyage — vides retirés — est fait en base, une fois, comme pour les
+     * thèmes ; la seule chose que la base ne leur fait PAS est le tri.
+     */
+    niveau: z.string().trim().max(120).optional(),
+    objectifs: z.array(z.string().trim().min(1).max(200)).max(12).optional(),
   })
   .refine((v) => v.age_min === undefined || v.age_max === undefined || v.age_min <= v.age_max, {
     message: 'L’âge minimum ne peut pas dépasser l’âge maximum.',
@@ -138,6 +156,8 @@ export async function PATCH(request: Request): Promise<Response> {
     ...(champs.nb_pages_extrait !== undefined
       ? { nbPagesExtrait: champs.nb_pages_extrait }
       : {}),
+    ...(champs.niveau !== undefined ? { niveau: champs.niveau } : {}),
+    ...(champs.objectifs !== undefined ? { objectifs: champs.objectifs } : {}),
   });
   if (!resultat.ok) return refusEnReponse(resultat.raison);
 

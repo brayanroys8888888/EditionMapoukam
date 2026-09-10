@@ -1,0 +1,706 @@
+/*
+ * L'ESPACE PERSONNEL — DIRECTION ORGANIC (V3).
+ *
+ * Reproduit la maquette profil V3 :
+ * - Header utilisateur (Avatar + Nom + Statuts)
+ * - Menu latéral avec onglets arrondis et icône dans badge orange/neutre
+ * - Panneaux de contenu arrondis avec ombres et typographie Fraunces
+ */
+
+.page {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: clamp(28px, 4vw, 44px) 20px clamp(56px, 7vw, 80px);
+}
+
+/* ── L'en-tête profil : Avatar, Nom, Email & Statuts ─────────────────── */
+
+.enteteProfil {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: clamp(24px, 3.5vw, 36px);
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  background: var(--surface);
+  box-shadow: var(--ombre-carte);
+}
+
+.identiteContainer {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatarCercle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-size: 28px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.identiteTexte {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nomProfil {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.emailProfil {
+  margin: 0;
+  font-size: 14.5px;
+  color: var(--encre-douce);
+  overflow-wrap: anywhere;
+}
+
+.statsContainer {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.statPill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 110px;
+  padding: 14px 22px;
+  border-radius: 20px;
+  background: var(--fond-doux);
+  gap: 2px;
+}
+
+.statValeur {
+  font-family: var(--police-titre);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--encre);
+}
+
+.statLibelle {
+  font-size: 12px;
+  color: var(--encre-douce);
+}
+
+/* ── Disposition 2 colonnes : Menu latéral + Contenu ───────────────────── */
+
+.grilleDisposition {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 32px;
+  margin-top: 32px;
+  align-items: start;
+}
+
+@media (width <= 840px) {
+  .grilleDisposition {
+    grid-template-columns: 1fr;
+  }
+}
+
+.menuNav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.listeOnglets {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ongletItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-radius: 22px;
+  font-family: var(--police-interface);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--encre-douce);
+  text-decoration: none;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.ongletItem:hover {
+  color: var(--encre);
+}
+
+.ongletActif {
+  border: 1px solid var(--bordure);
+  background: var(--surface) !important;
+  color: var(--encre) !important;
+  font-weight: 700;
+  box-shadow: var(--ombre-carte);
+}
+
+.iconeBadgeActif {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--action);
+  color: var(--action-encre);
+  flex-shrink: 0;
+}
+
+.iconeBadgeInactif {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--fond-doux);
+  color: var(--encre-douce);
+  flex-shrink: 0;
+}
+
+.libelleOnglet {
+  flex-grow: 1;
+}
+
+.contenuPanneau {
+  min-width: 0;
+}
+
+/* ── Les panneaux du contenu ──────────────────────────────────────────── */
+
+.panneau {
+  margin: 0 0 20px;
+  padding: clamp(24px, 3vw, 36px);
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  background: var(--surface);
+  box-shadow: var(--ombre-carte);
+}
+
+.panneauAttention {
+  border-left: 4px solid var(--accent-encre);
+}
+
+.panneauTitre {
+  margin: 0 0 14px;
+  font-family: var(--police-titre);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.panneauTexte {
+  margin: 0;
+  line-height: 1.65;
+  color: var(--encre-douce);
+}
+
+.sousTitre {
+  margin: 0 0 18px;
+  font-family: var(--police-titre);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.intro {
+  margin: 0 0 22px;
+  max-width: 62ch;
+  line-height: 1.65;
+  color: var(--encre-douce);
+}
+
+/* ── Formulaire d'informations ────────────────────────────────────────── */
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.champGroupe {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.champLibelle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+.champSaisie {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--fond-doux);
+  font-family: var(--police-interface);
+  font-size: 16px;
+  color: var(--encre);
+  outline: none;
+}
+
+.champSaisie:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+}
+
+.optionsPilules {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.piluleChoix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 24px;
+  border-radius: var(--rayon-pastille);
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  font-family: var(--police-interface);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--encre);
+  cursor: pointer;
+}
+
+.piluleChoixActive {
+  background: var(--chrome) !important;
+  color: var(--chrome-encre) !important;
+  border-color: transparent !important;
+}
+
+.caseCocherLabel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  color: var(--encre);
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.actionsFormulaire {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+/* ── Les listes de titres ─────────────────────────────────────────────── */
+
+.liste {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carteTitre {
+  display: grid;
+  grid-template-columns: 86px 1fr auto;
+  gap: 20px;
+  align-items: center;
+  padding: 20px 24px;
+  border: 1px solid var(--bordure);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--ombre-carte);
+}
+
+.vignette {
+  width: 86px;
+  height: 114px;
+  border-radius: 14px;
+  object-fit: cover;
+  background: var(--fond-doux);
+}
+
+.corps {
+  min-width: 0;
+}
+
+.categorieBadge {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin-bottom: 4px;
+}
+
+.nom {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.note {
+  display: block;
+  margin-top: 6px;
+  font-size: 14.5px;
+  color: var(--encre-douce);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.bouton,
+.boutonContour {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 12px 24px;
+  border-radius: var(--rayon-pastille);
+  font-family: var(--police-titre);
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: var(--traque-titre);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bouton {
+  border: 0;
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.bouton:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+.boutonContour {
+  border: 1.5px solid var(--encre);
+  background: transparent;
+  color: var(--encre);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonContour:hover {
+  background: var(--encre);
+  color: var(--surface);
+}
+
+.boutonCercleIcone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: 1.5px solid var(--encre);
+  background: transparent;
+  color: var(--encre);
+  cursor: pointer;
+}
+
+.boutonCercleIcone:hover {
+  background: var(--encre);
+  color: var(--surface);
+}
+
+/* ── Cartes de Commandes ──────────────────────────────────────────────── */
+
+.listeCommandes {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carteCommande {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 28px;
+  border: 1px solid var(--bordure);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombre-carte);
+}
+
+.commandeIdentifiant {
+  font-weight: 700;
+  color: var(--encre-douce);
+  font-size: 15px;
+  min-width: 100px;
+}
+
+.commandeDetail {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.commandeTitre {
+  font-family: var(--police-titre);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--encre);
+}
+
+.commandeMeta {
+  font-size: 14px;
+  color: var(--encre-douce);
+}
+
+.commandeDroits {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.badgePayee {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 16px;
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+.commandeMontant {
+  font-family: var(--police-titre);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--action-encre);
+  white-space: nowrap;
+}
+
+/* ── Cartes d'Abonnement et Adhésion ─────────────────────────────────── */
+
+.grilleAbonnements {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.carteAbonnementClaire {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 32px;
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  background: var(--surface);
+  box-shadow: var(--ombre-carte);
+}
+
+.carteAbonnementSombre {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 32px;
+  border-radius: 32px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  box-shadow: var(--ombre-carte);
+}
+
+.abonnementEnteteRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kickerClair {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+}
+
+.kickerSombre {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--action);
+}
+
+.badgeInactif {
+  display: inline-flex;
+  padding: 4px 14px;
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--encre-douce);
+}
+
+.badgeActifOrange {
+  display: inline-flex;
+  padding: 4px 14px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--action-encre);
+}
+
+.titreAbonnementClair {
+  font-family: var(--police-titre);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--encre);
+  margin: 0;
+}
+
+.titreAbonnementSombre {
+  font-family: var(--police-titre);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--chrome-encre);
+  margin: 0;
+}
+
+.descAbonnementClair {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+.descAbonnementSombre {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--chrome-encre);
+  opacity: 0.9;
+  margin: 0;
+}
+
+.prixAbonnementClair {
+  font-family: var(--police-titre);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--encre);
+  margin-top: auto;
+}
+
+.prixAbonnementSombre {
+  font-family: var(--police-titre);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--chrome-encre);
+  margin-top: auto;
+}
+
+.boutonSombre {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 14px 28px;
+  border-radius: var(--rayon-pastille);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-size: 15.5px;
+  font-weight: 700;
+  border: 0;
+  text-decoration: none;
+}
+
+/* ── L'état vide ──────────────────────────────────────────────────────── */
+
+.vide {
+  padding: clamp(30px, 4vw, 44px);
+  border: 1px dashed var(--bordure);
+  border-radius: 28px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.videTitre {
+  margin: 0 0 8px;
+  font-family: var(--police-titre);
+  font-size: 20px;
+  color: var(--encre);
+}
+
+.videCorps {
+  margin: 0 auto 20px;
+  max-width: 46ch;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+@media (width <= 620px) {
+  .carteTitre {
+    grid-template-columns: 70px 1fr;
+  }
+
+  .vignette {
+    width: 70px;
+    height: 94px;
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+
+  .carteCommande {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .commandeDroits {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

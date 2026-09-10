@@ -77,7 +77,7 @@
 
 .carte:hover {
   transform: translateY(-6px);
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
   box-shadow: var(--ombre-carte-survol);
   color: var(--encre);
 }
@@ -87,7 +87,7 @@
  * un contour dessiné autour d'un pseudo-élément invisible ne se verrait pas.
  */
 .carte:focus-within {
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
 }
 
 .carte:has(.lienEtire:focus-visible) {
@@ -229,7 +229,7 @@
 .voileTexte {
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -252,7 +252,7 @@
   font-weight: var(--graisse-forte);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .puce {
@@ -298,7 +298,7 @@
   font-variation-settings: var(--titre-variations);
   font-size: var(--taille-3xl);
   font-weight: var(--graisse-forte);
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   font-variant-numeric: tabular-nums;
 }
 
@@ -310,7 +310,7 @@
 .accesPossede {
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 /* ── Ajouter au panier ──────────────────────────────────────────────────── */
@@ -370,18 +370,18 @@
   justify-content: center;
   min-height: var(--cible-min);
   padding: 11px 18px;
-  border: 2px solid var(--v2-vert);
+  border: 2px solid var(--accent-encre);
   border-radius: var(--rayon-bouton);
   background: transparent;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), color var(--transition-couleur);
 }
 
 .lireCarte:hover {
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--marque);
+  color: var(--marque-encre);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -505,7 +505,7 @@
   border: 1.5px solid var(--bordure-forte);
   border-radius: 50%;
   background: var(--fond);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-3xl);
   line-height: 1;
   transition: background var(--transition-couleur), color var(--transition-couleur),
@@ -513,9 +513,9 @@
 }
 
 .carrouselFleche:hover:not(:disabled) {
-  background: var(--v2-vert);
-  border-color: var(--v2-vert);
-  color: var(--fond);
+  background: var(--marque);
+  border-color: var(--marque);
+  color: var(--marque-encre);
   transform: translateY(-2px);
 }
 
@@ -526,4 +526,862 @@
 .carrouselFleche:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LA CARTE DE LIVRE, ET SON GESTE DE SIGNATURE.                       ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * `10-animation-spec.md` l'appelle « the signature move » : au survol, la
+ * couverture se soulève de 10 px ET pivote de 1,4°. Le pivot est ce qui fait
+ * la différence — sans lui c'est un effet de carte générique ; avec lui, on
+ * dirait un livre qu'on décolle d'une étagère.
+ *
+ * Rien ici ne touche la V2 : chaque règle est fermée par `[data-design='v3']`.
+ */
+
+:global(:root[data-design='v3']) .cadreCouverture {
+  /*
+   * Le rapport 2/3 du dossier, et non le 3/4 de la V2 : c'est le format d'un
+   * livre imprimé, et c'est celui des couvertures livrées.
+   */
+  aspect-ratio: 2 / 3;
+  border-radius: var(--rayon-image);
+  /*
+   * Le débordement redevient visible : une couverture qui pivote hors de son
+   * cadre serait TRONQUÉE par le coin, ce qui a l'air d'un défaut de calage.
+   * L'ombre portée a besoin de la même place.
+   */
+  overflow: visible;
+}
+
+:global(:root[data-design='v3']) .couverture {
+  border-radius: var(--rayon-image);
+  box-shadow: var(--ombre-carte);
+  transition: transform 0.45s var(--ease), box-shadow 0.45s ease;
+}
+
+:global(:root[data-design='v3']) .carte:hover .couverture {
+  transform: translateY(-10px) rotate(-1.4deg);
+  box-shadow: var(--ombre-couverture);
+}
+
+:global(:root[data-design='v3']) .carte:hover .carteTitre {
+  color: var(--accent-encre);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE GESTE NE S'APPLIQUE QU'AUX POINTEURS QUI SURVOLENT VRAIMENT.         │
+ * │                                                                          │
+ * │ Sur un écran tactile, `:hover` se déclenche au TOUCHER et reste collé    │
+ * │ jusqu'au toucher suivant : la carte qu'on vient de quitter reste         │
+ * │ soulevée et penchée, indéfiniment. `10-animation-spec.md` le demande     │
+ * │ explicitement — « Guard with @media (hover: hover) ».                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (hover: none) {
+  :global(:root[data-design='v3']) .carte:hover .couverture {
+    transform: none;
+    box-shadow: var(--ombre-carte);
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE BOUTON D'AJOUT APPARAÎT AU SURVOL — ET AU FOCUS CLAVIER.             │
+ * │                                                                          │
+ * │ Le dossier ne demande que le survol. Ce serait un piège d'accessibilité : │
+ * │ un bouton à `opacity: 0` reste focusable, et l'utilisateur au clavier    │
+ * │ tabule alors sur une commande INVISIBLE — le focus disparaît de l'écran  │
+ * │ sans que rien n'explique où il est passé.                                │
+ * │                                                                          │
+ * │ `10-animation-spec.md` a vu le problème et donne la règle :              │
+ * │ « Keep the add button focusable and visible on :focus-within ».          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CORRIGÉ : LE BOUTON NE SE CACHE PLUS. LA MAQUETTE L'ÉCRIT NOIR SUR       │
+ * │ BLANC.                                                                   │
+ * │                                                                          │
+ * │ Le style en ligne du dossier porte `opacity:1;transform:none` sur ce      │
+ * │ bouton précis — deux déclarations qui ne servent à rien SAUF à dire que   │
+ * │ l'auteur a délibérément annulé une révélation au survol.                  │
+ * │                                                                          │
+ * │ Le raisonnement du bloc précédent tenait pour la V2, dont le bouton est   │
+ * │ large et posé sur un voile vert : le montrer en permanence aurait couvert │
+ * │ le bas de chaque couverture. Le disque de 46 px d'Organic ne couvre rien. │
+ * │                                                                          │
+ * │ Et le défaut que la révélation créait était réel : à `opacity: 0`, le     │
+ * │ bouton reste HIT-TESTABLE. Il répondait au clic, il occupait le coin de   │
+ * │ la couverture, et il ne se voyait pas — mesuré à l'écran avant            │
+ * │ correction, le style calculé disait « visible, terre cuite », et rien     │
+ * │ n'était peint. C'est le pire des trois états possibles.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .formAjout {
+  opacity: 1;
+  transform: none;
+}
+
+/* Le prix reprend la terre cuite assombrie — lisible, et c'est l'accent. */
+:global(:root[data-design='v3']) .prix {
+  color: var(--action-texte);
+}
+
+/* ══ LA CARTE EN RANGÉE — la vue LISTE du catalogue ═══════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA MÊME CARTE, REDISTRIBUÉE PAR `grid-template-areas`.                  │
+ * │                                                                          │
+ * │ Aucun élément n'est ajouté, aucun n'est retiré : ce sont les six mêmes   │
+ * │ pièces, replacées. C'est la seule façon de garantir que la rangée dit    │
+ * │ exactement ce que dit la carte — même règle d'accès, même prix formaté   │
+ * │ par le serveur, même bouton conditionnel.                                │
+ * │                                                                          │
+ * │ Le geste de survol de la V3 — la couverture qui se soulève et pivote —   │
+ * │ n'est PAS repris ici : une vignette de 96 px qui bascule dans une        │
+ * │ rangée serrée fait trembler la ligne entière. Le survol y déplace le     │
+ * │ titre vers l'accent, et c'est tout ce dont une liste a besoin.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Cette mise en page vaut pour TOUTE direction qui demande la vue liste : elle
+ * ne lit que des jetons, et rien ici n'est fermé par `[data-design]`.
+ */
+.carteListe {
+  display: grid;
+  /*
+   * QUATRE colonnes, et la quatrième compte : le prix et l'action ne peuvent
+   * pas partager la même. Écrites sur une seule zone, les deux se sont
+   * superposées — le bouton par-dessus le prix — et l'écart ne se voyait que
+   * sur les titres PAYANTS, puisqu'un titre gratuit n'a pas de bouton pour
+   * le cacher. C'est-à-dire : invisible sur exactement la moitié du corpus
+   * de démonstration.
+   */
+  grid-template-columns: 96px minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'couverture theme prix action'
+    'couverture titre prix action'
+    'couverture meta prix action';
+  align-items: center;
+  column-gap: 20px;
+  height: auto;
+  padding: 14px 18px;
+}
+
+.carteListe .cadreCouverture {
+  grid-area: couverture;
+  aspect-ratio: 2 / 3;
+  margin-bottom: 0;
+}
+
+.carteListe .origine {
+  grid-area: theme;
+  margin-bottom: 4px;
+}
+
+.carteListe .carteTitre {
+  grid-area: titre;
+  font-size: var(--taille-xl);
+  margin-bottom: 4px;
+}
+
+.carteListe .carteMeta {
+  grid-area: meta;
+  margin-bottom: 0;
+}
+
+/*
+ * Le pied de prix cesse d'être poussé en bas par `margin-top: auto` : dans une
+ * rangée, il n'y a plus de bas — il y a une droite.
+ */
+.carteListe .cartePied {
+  grid-area: prix;
+  margin-top: 0;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.carteListeAction {
+  grid-area: action;
+  justify-self: end;
+  align-self: center;
+  min-width: 168px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 640 px, LA RANGÉE N'EST PLUS UNE RANGÉE.                           │
+ * │                                                                          │
+ * │ Trois colonnes sur 390 px, c'est un titre coupé à deux mots par ligne et │
+ * │ un bouton de 168 px qui déborde. La colonne d'action passe donc SOUS le  │
+ * │ texte, et le prix la rejoint : deux colonnes, la couverture et le reste. │
+ * │                                                                          │
+ * │ La bascule reste offerte au téléphone — c'est là qu'une liste est le     │
+ * │ plus utile, puisqu'une grille à deux colonnes y montre quatre titres par │
+ * │ écran quand une liste en montre six.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 640px) {
+  .carteListe {
+    grid-template-columns: 76px minmax(0, 1fr);
+    grid-template-areas:
+      'couverture theme'
+      'couverture titre'
+      'couverture meta'
+      'couverture prix'
+      'action action';
+    /* La quatrième colonne disparaît avec la rangée : voir ci-dessus. */
+    align-items: start;
+    row-gap: 2px;
+    column-gap: 14px;
+  }
+
+  .carteListe .cartePied {
+    justify-content: flex-start;
+    text-align: left;
+    margin-top: 6px;
+  }
+
+  .carteListeAction {
+    justify-self: stretch;
+    min-width: 0;
+    margin-top: 12px;
+  }
+}
+
+/*
+ * En rangée, le bouton d'ajout est toujours là — la révélation au survol de la
+ * V3 ne s'applique qu'à la grille, où le bouton se pose SUR la couverture.
+ * Sans cette reprise, la colonne d'action serait vide jusqu'au survol : une
+ * rangée avec un trou à droite, et rien pour dire qu'il s'y trouve un bouton.
+ */
+@media (hover: hover) {
+  :global(:root[data-design='v3']) .carteListe .formAjout {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* La vignette ne bascule pas dans une rangée. */
+:global(:root[data-design='v3']) .carteListe:hover .couverture {
+  transform: none;
+  box-shadow: var(--ombre-carte);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA CARTE DE LA MAQUETTE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE VOILE VERT EST UNE INVENTION DE LA V2. IL S'EN VA.                   │
+ * │                                                                          │
+ * │ La V2 recouvre le bas de la couverture d'un dégradé vert qui monte au    │
+ * │ survol et porte un bouton large. La maquette d'Organic ne fait rien de   │
+ * │ tel : la couverture reste nue, et l'action est un DISQUE de 46 px posé   │
+ * │ dans son coin, visible en permanence.                                    │
+ * │                                                                          │
+ * │ « Visible en permanence » est le point qui compte, et il vaut mieux que  │
+ * │ le voile : une action révélée au survol n'existe pas au doigt. La V2 le  │
+ * │ corrigeait par un `@media (hover: none)` ; ici la question ne se pose    │
+ * │ plus, le bouton est toujours là.                                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/*
+ * Le voile cesse d'être un décor et redevient ce qu'il est : la boîte qui
+ * place le bouton. Sans action à porter, il ne rend plus rien du tout.
+ */
+:global(:root[data-design='v3']) .voile {
+  inset: auto 12px 12px auto;
+  width: auto;
+  padding: 0;
+  background: none;
+  opacity: 1;
+  transform: none;
+}
+
+:global(:root[data-design='v3']) .voile[aria-hidden='true'] {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .formAjout {
+  width: auto;
+}
+
+/*
+ * Le disque de 46 px. `--cible-min` vaut 44 : il passe la règle des cibles
+ * tactiles sans qu'on ait à l'invoquer, et la maquette le voulait déjà.
+ */
+:global(:root[data-design='v3']) .ajouter {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: var(--ombre-carte);
+}
+
+:global(:root[data-design='v3']) .ajouter:hover {
+  background: var(--action-survol);
+  transform: none;
+}
+
+/*
+ * Le « + », dessiné en deux barres.
+ *
+ * Il pouvait être une SVG dans le composant. Deux raisons de le laisser en
+ * CSS : il n'existe que sous cette direction, et un pseudo-élément ne peut
+ * pas entrer en concurrence avec le nom accessible du bouton — ce qu'une
+ * `<svg>` mal étiquetée ferait.
+ */
+:global(:root[data-design='v3']) .ajouter::before,
+:global(:root[data-design='v3']) .ajouter::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  background: currentcolor;
+  border-radius: 2px;
+}
+
+:global(:root[data-design='v3']) .ajouter::before {
+  width: 18px;
+  height: 3px;
+  transform: translate(-50%, -50%);
+}
+
+:global(:root[data-design='v3']) .ajouter::after {
+  width: 3px;
+  height: 18px;
+  transform: translate(-50%, -50%);
+}
+
+/*
+ * Le libellé sort de la scène, il ne sort PAS du document : c'est lui qui
+ * nomme le bouton. Voir l'encadré de `carte-conte.tsx`.
+ */
+:global(:root[data-design='v3']) .ajouterTexte {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * « Lire » garde ses mots.
+ *
+ * Un titre déjà détenu n'appelle pas la même action, et un second disque —
+ * une flèche, un livre — demanderait au lecteur de deviner lequel des deux
+ * il regarde. La pilule reste, simplement plus compacte.
+ */
+:global(:root[data-design='v3']) .lireCarte {
+  padding: 10px 16px;
+  font-size: var(--taille-m);
+  box-shadow: var(--ombre-carte);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EFFET 3 DU DOSSIER — « the signature move ».                          │
+ * │                                                                          │
+ * │ `.bookcard:hover .bookcover{transform:translateY(-10px) rotate(-1.4deg)}` │
+ * │                                                                          │
+ * │ C'est la couverture qui bouge, pas la carte : le titre, le prix et le    │
+ * │ bouton restent en place. Une carte entière qui se soulève emporte sa     │
+ * │ cible avec elle, et le bouton d'ajout se dérobe sous le curseur au       │
+ * │ moment où on le vise.                                                    │
+ * │                                                                          │
+ * │ La règle globale `@media (hover: none)` de `global.css` la neutralise    │
+ * │ au doigt, où un survol reste collé.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .cadreCouverture {
+  border-radius: 16px;
+  box-shadow: var(--ombre-carte);
+  transition: transform 0.45s var(--courbe-douce, ease), box-shadow 0.45s ease;
+}
+
+:global(:root[data-design='v3']) .carte:hover .cadreCouverture {
+  transform: translateY(-10px) rotate(-1.4deg);
+  box-shadow: var(--ombre-carte-survol);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE SOULEVEMENT RENDAIT « AJOUTER AU PANIER » INCLIQUABLE A LA SOURIS.   │
+ * │                                                                          │
+ * │ Le defaut etait invisible au repos et systematique a l'usage : il ne se  │
+ * │ declenchait qu'AU SURVOL — c'est-a-dire toujours, puisqu'on survole      │
+ * │ avant de cliquer. Le clic partait sur la fiche du conte au lieu          │
+ * │ d'ajouter au panier. Mesure : `elementFromPoint` au centre du bouton     │
+ * │ rend le BUTTON sans survol, et le lien du titre avec.                    │
+ * │                                                                          │
+ * │ La chaine est celle-ci, et elle ne doit rien au hasard :                 │
+ * │                                                                          │
+ * │  1. la regle ci-dessus pose un `transform` sur `.cadreCouverture` ;      │
+ * │  2. un element transforme CREE UN CONTEXTE D'EMPILEMENT ;                │
+ * │  3. le `z-index: 1` de `.formAjout`, qui vit dans ce cadre, cesse alors  │
+ * │     d'etre compare aux freres de la carte : il est enferme ;             │
+ * │  4. le `::after` du lien etire — pose plus loin dans l'arbre, donc       │
+ * │     peint plus tard a `z-index: auto` — repasse au-dessus de tout le     │
+ * │     cadre, bouton compris.                                               │
+ * │                                                                          │
+ * │ LA CORRECTION, en deux temps, parce qu'une seule ne suffit pas :         │
+ * │                                                                          │
+ * │  · `z-index: 1` sur le cadre le fait peindre au-dessus du `::after`,     │
+ * │    ce qui remet le bouton devant ;                                       │
+ * │  · mais cela mettrait AUSSI la couverture devant le lien etire, et       │
+ * │    cliquer une couverture n'ouvrirait plus le conte. `pointer-events:    │
+ * │    none` sur le cadre laisse donc les clics le TRAVERSER jusqu'au lien,  │
+ * │    et le formulaire seul les reprend.                                    │
+ * │                                                                          │
+ * │ On garde ainsi les trois comportements : la couverture se souleve, la    │
+ * │ couverture ouvre le conte, le bouton ajoute au panier.                   │
+ * │                                                                          │
+ * │ `scripts/essai-interactions.mjs` clique SANS `force` : il echouerait de  │
+ * │ nouveau si l'un des trois se reperdait.                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .cadreCouverture {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+:global(:root[data-design='v3']) .cadreCouverture .formAjout {
+  pointer-events: auto;
+}
+
+/* Le titre prend l'accent au survol — l'autre moitié de l'effet 3. */
+:global(:root[data-design='v3']) .carteTitre {
+  transition: color var(--transition-couleur);
+}
+
+:global(:root[data-design='v3']) .carte:hover .carteTitre {
+  color: var(--accent-encre);
+}
+
+/*
+ * Le thème passe à la sauge, en capitales espacées — la maquette écrit
+ * `font-size:11px; letter-spacing:.14em; text-transform:uppercase`.
+ */
+:global(:root[data-design='v3']) .origine {
+  margin-top: 16px;
+  /*
+   * La maquette écrit `margin: 16px 0 0` sur le sur-titre : l'écart avec le
+   * titre vient ENTIÈREMENT de la marge haute du titre (7 px sur un conte,
+   * 8 sur un livret). La V2 y ajoutait 8 px de marge basse, si bien que
+   * l'écart réel valait 15 px au lieu de 7 — sur chaque carte du site, et
+   * jamais assez pour qu'on le voie autrement qu'en mesurant.
+   *
+   * La `gap` part pour la même raison : elle espaçait le sur-titre de sa
+   * puce, et la puce n'existe plus sous cette direction.
+   */
+  margin-bottom: 0;
+  gap: 0;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--second-encre);
+}
+
+/*
+ * Le titre d'une carte est un `<a>`, pas un `<h3>` — voir l'encadré du lien
+ * étiré. La traque des titres ne lui vient donc pas de `global.css`, qui ne
+ * la pose que sur `h1..h3` : elle s'écrit ici, avec le même jeton.
+ */
+:global(:root[data-design='v3']) .carteTitre {
+  margin-top: 7px;
+  font-size: 19px;
+  line-height: 1.15;
+  letter-spacing: var(--traque-titre);
+}
+
+:global(:root[data-design='v3']) .carteMeta {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--encre-douce);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE PERD SON PANNEAU — LA COUVERTURE EST LA CARTE.                 │
+ * │                                                                          │
+ * │ La V2 enferme chaque titre dans un cadre crème : fond, filet de 1,5 px,  │
+ * │ rembourrage de 14 et ombre. La maquette d'Organic n'en a aucun. La       │
+ * │ couverture est posée à même le fond de page, le texte tombe dessous, et  │
+ * │ c'est l'OMBRE de la couverture qui la détache — pas une boîte.           │
+ * │                                                                          │
+ * │ La différence n'est pas décorative. Un cadre autour d'une illustration   │
+ * │ en met deux à l'écran : celui du livre et celui de la carte. Sur une     │
+ * │ grille de vingt titres, ce sont vingt rectangles de plus que l'œil doit  │
+ * │ écarter avant de voir les dessins qu'il est venu regarder.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .carte {
+  background: none;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+/* Sans panneau, il n'y a plus de survol de panneau à jouer : c'est la
+   couverture qui se soulève. Voir l'effet 3, plus haut. */
+:global(:root[data-design='v3']) .carte:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/*
+ * La puce s'en va avec le panneau.
+ *
+ * Elle marquait le thème d'un point de couleur, ce que la maquette ne fait
+ * pas : le thème y est écrit en capitales espacées, à la sauge, et c'est la
+ * CASSE qui le distingue du titre — pas un signe de plus.
+ */
+:global(:root[data-design='v3']) .puce {
+  display: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 268 / 403 — LE RATIO DES COUVERTURES, ET CE QU'IL ALIGNE.               │
+ * │                                                                          │
+ * │ La V2 pose `3 / 4`. La maquette pose `268 / 403`, soit 1:1,504 contre    │
+ * │ 1:1,333 — un cadre plus élancé, qui est celui des couvertures réelles.   │
+ * │                                                                          │
+ * │ Ce n'est pas qu'une proportion : c'est ce qui met tous les titres du     │
+ * │ carrousel sur la MÊME ligne de base. Sans cadre imposé, chaque           │
+ * │ couverture garde son ratio propre, les hauteurs diffèrent de quelques    │
+ * │ dizaines de pixels, et la rangée de titres ondule sous les images. On    │
+ * │ le voit tout de suite, sans savoir le nommer — la grille a l'air mal     │
+ * │ montée.                                                                  │
+ * │                                                                          │
+ * │ `object-fit: cover` est déjà posé plus haut sur l'image : le cadre       │
+ * │ recadre, il ne déforme pas.                                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .cadreCouverture {
+  aspect-ratio: 268 / 403;
+}
+
+/* La grille aussi doit aligner ses lignes, sinon le cadre ne sert à rien. */
+:global(:root[data-design='v3']) .carte {
+  align-content: start;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'IMAGE SORT DU FLUX, SANS QUOI `aspect-ratio` NE SERT À RIEN.          │
+ * │                                                                          │
+ * │ `.couverture` porte `height: 100%`. Un pourcentage se résout contre la   │
+ * │ hauteur du PARENT — et cette hauteur-là vient d'`aspect-ratio`, qui ne   │
+ * │ s'applique que si le contenu n'impose rien. Le raisonnement tourne en    │
+ * │ rond : le navigateur retombe donc sur la hauteur INTRINSÈQUE du fichier. │
+ * │                                                                          │
+ * │ Mesuré sur le carrousel : 361, 385, 362, 389, 361 px pour cinq cadres    │
+ * │ larges de 240. Trois tombaient juste par coïncidence — leur fichier a le │
+ * │ ratio annoncé — et deux non. La rangée de titres ondulait de vingt-huit  │
+ * │ pixels sous les images, et rien dans la feuille ne le disait.            │
+ * │                                                                          │
+ * │ Sortie du flux, l'image ne peut plus rien imposer : le cadre tient son   │
+ * │ ratio, `object-fit: cover` recadre, et les cinq titres s'alignent.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .cadreCouverture > *:not(.voile) {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+/*
+ * Le voile cesse d'être une boîte flex pour redevenir un bloc.
+ *
+ * En flex, le formulaire s'étire sur toute la hauteur du voile et le bouton
+ * se centre dedans : mesuré, il tombait à 19 px du bas de la couverture au
+ * lieu des 12 du dossier. En bloc, la boîte épouse le bouton et l'écart est
+ * celui qu'on a écrit.
+ */
+:global(:root[data-design='v3']) .voile {
+  display: block;
+  line-height: 0;
+}
+
+/* Declaration locale pure — voir `classes-css.test.ts`. */
+.ajouterTexte {
+  white-space: nowrap;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LA CARTE DE LIVRET, COUCHÉE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Prototype, lignes 1155 à 1178. Toutes les cotes ci-dessous en sont
+ * transcrites : rayon 28, couverture en 16/11, corps `22px 24px 24px`,
+ * rangée de pied séparée par un filet, bouton d'ajout de 40 px.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLE REPREND LE PANNEAU QUE LA CARTE DE CONTE A PERDU.                  │
+ * │                                                                          │
+ * │ Deux paragraphes plus haut, la carte de conte abandonne son cadre : la   │
+ * │ couverture EST la carte, et l'ombre suffit à la détacher. Ce             │
+ * │ raisonnement ne vaut que pour une illustration pleine page. La           │
+ * │ couverture d'un livret est une fiche d'activités — du blanc, des traits, │
+ * │ un titre — et posée nue sur un fond crème, elle n'a plus de bord du      │
+ * │ tout : elle fond dans la page. Le panneau lui rend son bord.             │
+ * │                                                                          │
+ * │ C'est aussi ce que fait la maquette, et ce n'est donc pas une            │
+ * │ interprétation : les deux cartes y sont dessinées séparément.            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.carteLivret {
+  overflow: hidden;
+}
+
+:global(:root[data-design='v3']) .carteLivret {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 28px;
+  padding: 0;
+  box-shadow: var(--ombre-s);
+  align-content: stretch;
+}
+
+/*
+ * Ici c'est la CARTE qui se soulève, pas la couverture.
+ *
+ * L'effet 3 fait pivoter la couverture d'un conte de −1,4° et la sort de son
+ * cadre — c'est ce qui donne l'album posé de travers. Dans un panneau à
+ * `overflow: hidden`, la même rotation se ferait rogner sur les quatre bords :
+ * on verrait une image qui glisse sous une fenêtre, pas un objet qu'on
+ * soulève. Le prototype le dit autrement mais dit la même chose — la carte de
+ * livret y porte `lift`, qui translate le PANNEAU de 4 px.
+ */
+:global(:root[data-design='v3']) .carteLivret:hover {
+  transform: translateY(-4px);
+  border-color: var(--action);
+  box-shadow: var(--ombre-l);
+}
+
+:global(:root[data-design='v3']) .carteLivret:hover .cadreCouverture {
+  transform: none;
+  box-shadow: none;
+}
+
+:global(:root[data-design='v3']) .carteLivret .cadreCouverture {
+  aspect-ratio: 16 / 11;
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 0;
+  background: var(--fond-doux);
+}
+
+/*
+ * Les deux pastilles sortent de la règle qui étire tout au cadre.
+ *
+ * `.cadreCouverture > *:not(.voile)` pose `position: absolute; inset: 0;
+ * height: 100%` — c'est ce qui empêche l'image d'imposer sa hauteur et de
+ * défaire l'`aspect-ratio`. Appliquée telle quelle à une pastille, elle en
+ * ferait un rectangle de la taille de la couverture. Elles restent donc
+ * absolues, mais posées à leur coin et à leur taille propre.
+ */
+:global(:root[data-design='v3']) .cadreCouverture > .badgeLivret {
+  position: absolute;
+  /*
+   * Les quatre côtés dans UNE déclaration, et non un `inset: auto` suivi d'un
+   * `top`/`left` ailleurs : `inset` est un raccourci, il écrase les quatre
+   * longuepieds. Écrit dans une règle plus spécifique que celle qui pose les
+   * coins, il les annulait — la pastille retombait dans le coin haut gauche
+   * du cadre, et le relevé l'a trouvée à 22 px de sa place.
+   */
+  inset: 14px auto auto 14px;
+  width: auto;
+  height: auto;
+}
+
+:global(:root[data-design='v3']) .cadreCouverture > .niveauLivret {
+  position: absolute;
+  inset: auto auto 14px 14px;
+  width: auto;
+  height: auto;
+}
+
+.badgeLivret {
+  display: inline-block;
+}
+
+:global(:root[data-design='v3']) .badgeLivret {
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 6px 13px;
+  /*
+   * `normal`, et non l'interligne du corps.
+   *
+   * Une pastille n'a qu'une ligne : l'interligne n'y sert pas a espacer, il
+   * n'y sert qu'a la GRANDIR. A 1,6 sur 11 px, elle mesurait 32,4 px de haut
+   * au lieu des 26 du prototype — six pixels sur une pastille de vingt-six,
+   * soit un quart de trop, et deux pastilles voisines qui ne s'alignent plus
+   * sur le meme bord d'image.
+   */
+  line-height: normal;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+  box-shadow: var(--ombre-s);
+}
+
+.niveauLivret {
+  display: inline-block;
+}
+
+/*
+ * La pastille de niveau est un aplat SOMBRE posé sur l'image.
+ *
+ * Le prototype y écrit l'olive à 72 % d'opacité, avec la crème du chrome
+ * dessus — soit exactement le couple `--chrome` / `--chrome-encre`, qui porte
+ * déjà tout l'en-tête. Le `color-mix` reproduit la dilution sans figer une
+ * teinte : la valeur littérale du prototype n'est pas recopiée, parce que le
+ * test `design-tokens` lit aussi les commentaires, et à raison — une couleur
+ * citée est une couleur que quelqu'un finira par coller dans une déclaration.
+ *
+ * L'opacité porte sur le FOND seul, jamais sur la pastille : `opacity` sur la
+ * boîte diluerait aussi le texte, et le contraste tomberait avec lui.
+ */
+:global(:root[data-design='v3']) .niveauLivret {
+  background: color-mix(in srgb, var(--chrome) 72%, transparent);
+  color: var(--chrome-encre);
+  border-radius: 999px;
+  padding: 6px 13px;
+  /*
+   * Pas de `line-height: normal` ici, contrairement a la pastille du panneau
+   * mis en avant : celle-la vit dans un `<button>` du prototype et herite donc
+   * de `normal` ; celle-ci vit dans un `<div>` et herite bien de l'interligne
+   * du corps. Mesure : 30,4 px de haut des deux cotes. Deux pastilles qui se
+   * ressemblent, deux heritages differents — la seule facon de le savoir est
+   * de le relever.
+   */
+  font-size: 11.5px;
+}
+
+.corpsLivret {
+  display: flex;
+}
+
+:global(:root[data-design='v3']) .corpsLivret {
+  flex-direction: column;
+  flex: 1;
+  padding: 22px 24px 24px;
+}
+
+/* Le sur-titre n'a plus la marge haute qu'il prend sous une couverture nue :
+   le rembourrage du corps la porte déjà. */
+:global(:root[data-design='v3']) .carteLivret .origine {
+  margin-top: 0;
+}
+
+:global(:root[data-design='v3']) .carteLivret .carteTitre {
+  margin: 8px 0 6px;
+  font-size: 20px;
+  line-height: 1.18;
+}
+
+.resumeLivret {
+  margin: 0;
+}
+
+:global(:root[data-design='v3']) .resumeLivret {
+  margin-bottom: 14px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+}
+
+/*
+ * La rangée de pied — `margin-top: auto` la colle en bas.
+ *
+ * C'est elle qui aligne les cartes entre elles : deux livrets aux résumés de
+ * longueurs différentes gardent leur prix et leur bouton sur la même ligne,
+ * parce que le corps est une colonne flex et que cette rangée pousse le vide
+ * au-dessus d'elle.
+ */
+.piedLivret {
+  display: flex;
+}
+
+:global(:root[data-design='v3']) .piedLivret {
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid var(--bordure);
+}
+
+.piedLivretActions {
+  display: flex;
+}
+
+:global(:root[data-design='v3']) .piedLivretActions {
+  align-items: center;
+  gap: 12px;
+}
+
+/* Dans la rangée de pied, la méta et le prix cessent d'être des blocs
+   empilés : ils prennent chacun leur place sur la ligne. */
+:global(:root[data-design='v3']) .carteLivret .carteMeta {
+  margin: 0;
+  font-size: 13px;
+}
+
+:global(:root[data-design='v3']) .carteLivret .cartePied {
+  margin: 0;
+}
+
+:global(:root[data-design='v3']) .carteLivret .prix {
+  font-size: 17px;
+}
+
+/*
+ * Le bouton d'ajout descend de 46 px à 40 : il n'est plus posé sur une
+ * couverture, il partage une ligne avec un prix. Le plancher de cible reste
+ * respecté — `--cible-min` vaut 36 px à la souris et 44 au doigt, et cette
+ * carte-là n'existe qu'à partir de 330 px de large, c'est-à-dire jamais sur
+ * une colonne de téléphone où le doigt viserait 40.
+ */
+:global(:root[data-design='v3']) .carteLivret .ajouter {
+  position: static;
+  width: 40px;
+  height: 40px;
+}
+
+:global(:root[data-design='v3']) .carteLivret .formAjout {
+  display: block;
+  line-height: 0;
+}
+
+/*
+ * La planche DEBOUT se contient — voir l'encadré de `carte-conte.tsx`.
+ *
+ * Le fond du cadre reste le crème doux : c'est lui qui remplit ce que la
+ * planche ne remplit pas, et il est déjà la couleur du papier. Une planche
+ * blanche letterboxée de crème se lit comme une feuille posée sur une table ;
+ * letterboxée de noir, elle se lirait comme une photo mal cadrée.
+ */
+:global(:root[data-design='v3']) .carteLivret[data-orientation='portrait'] .couverture {
+  object-fit: contain;
 }

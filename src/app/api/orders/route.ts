@@ -7,6 +7,7 @@ import { createServiceClient } from '@/lib/supabase/clients';
 import { apercu, creerCommande, type ApercuCommande } from '@/lib/orders/orders';
 import { ZONES } from '@/domain/orders/types';
 import { formateur, lireDevise } from '@/lib/money/affichage';
+import { urlsCouverture } from '@/lib/storage/covers';
 
 /**
  * Commandes — §4.2 F9, docs/PLAN.md D4.
@@ -74,6 +75,79 @@ async function titresParLivreEtLangue(
 }
 
 /**
+ * De quoi DESSINER une ligne de panier : couverture, âge, pagination, slug.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ QUATRE CHAMPS D'AFFICHAGE, ET PAS UN DE PLUS.                           │
+ * │                                                                          │
+ * │ Le tiroir du prototype montre une couverture et une ligne « 5–10 ans ·   │
+ * │ 20 pages » ; sans elles, trois titres nus les uns sous les autres.       │
+ * │                                                                          │
+ * │ Ces champs ne conditionnent AUCUN droit et ne servent à aucun calcul :   │
+ * │ le prix reste formaté par le serveur, la disponibilité reste décidée par │
+ * │ la tarification. Les lire ici ne rouvre donc rien — c'est une lecture de │
+ * │ plus, sur des titres que l'utilisateur a lui-même mis dans son panier.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+interface VignetteLivre {
+  couverture: string | null;
+  age_min: number | null;
+  age_max: number | null;
+  nb_pages: number | null;
+  slug: string | null;
+}
+
+/**
+ * La clé est `livre:langue`, comme pour les titres.
+ *
+ * La pagination vit sur `book_translations` et non sur `books` : deux versions
+ * linguistiques d'un même conte n'ont pas forcément le même nombre de pages.
+ * Chercher `nb_pages` sur `books` ne compile même pas — le type généré depuis
+ * le schéma le refuse, ce qui est le comportement voulu.
+ */
+async function vignettesDesLivres(
+  client: ReturnType<typeof createServiceClient>,
+  livres: readonly string[],
+): Promise<Map<string, VignetteLivre>> {
+  const resultat = new Map<string, VignetteLivre>();
+  if (livres.length === 0) return resultat;
+
+  const { data } = await client
+    .from('book_translations')
+    .select('book_id, langue, nb_pages, books(slug, couverture_jeton, age_min, age_max)')
+    .in('book_id', [...livres]);
+
+  for (const ligne of data ?? []) {
+    const livre = ligne.books as unknown as {
+      slug: string;
+      couverture_jeton: string | null;
+      age_min: number | null;
+      age_max: number | null;
+    } | null;
+    if (!livre) continue;
+
+    resultat.set(`${ligne.book_id}:${ligne.langue}`, {
+      // `urlsCouverture` est le SEUL endroit qui connaisse la convention de
+      // chemin — la reconstituer ici la ferait vivre à deux endroits.
+      couverture: urlsCouverture(livre.couverture_jeton)?.vignette ?? null,
+      age_min: livre.age_min,
+      age_max: livre.age_max,
+      nb_pages: ligne.nb_pages,
+      slug: livre.slug,
+    });
+  }
+  return resultat;
+}
+
+const VIGNETTE_ABSENTE: VignetteLivre = {
+  couverture: null,
+  age_min: null,
+  age_max: null,
+  nb_pages: null,
+  slug: null,
+};
+
+/**
  * Mise en forme commune, pour que l'aperçu et le refus disent la même chose.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -91,6 +165,11 @@ async function titresParLivreEtLangue(
 async function corpsApercu(vue: ApercuCommande): Promise<Record<string, unknown>> {
   const afficher = formateur(await lireDevise(vue.total.devise));
 
+  const vignettes = await vignettesDesLivres(
+    createServiceClient(),
+    vue.total.lignes.map((ligne) => ligne.bookId),
+  );
+
   return {
     lignes: vue.total.lignes.map((ligne) => ({
       livre_id: ligne.bookId,
@@ -98,6 +177,7 @@ async function corpsApercu(vue: ApercuCommande): Promise<Record<string, unknown>
       langue: ligne.langue,
       prix_unitaire: ligne.prixUnitaire,
       prix_affichage: afficher(ligne.prixUnitaire),
+      ...(vignettes.get(`${ligne.bookId}:${ligne.langue}`) ?? VIGNETTE_ABSENTE),
     })),
     refusees: vue.refusees.map((refus) => ({
       livre_id: refus.bookId,

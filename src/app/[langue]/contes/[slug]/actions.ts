@@ -107,7 +107,22 @@ export async function deposerAvis(
   }
 
   revalidatePath(ecran);
-  redirect(`${ecran}?avis=enregistre#avis`);
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ `?avis=enregistre` NE DISAIT RIEN À PERSONNE.                          │
+   * │                                                                        │
+   * │ Le paramètre était posé depuis le début, et aucun écran ne le lisait :  │
+   * │ déposer un avis reconduisait sur la fiche, en silence, sans que rien    │
+   * │ confirme que le texte était parti. Le geste le plus incertain de la     │
+   * │ fiche — un avis passe en modération, il n'apparaît donc pas — était     │
+   * │ celui qui n'accusait aucune réception.                                  │
+   * │                                                                        │
+   * │ Il devient `?toast=avisDepose`, c'est-à-dire un code de la liste        │
+   * │ fermée du `Toaster`. Le message vient du dictionnaire ; le paramètre    │
+   * │ n'en porte que la clé. Voir l'encadré de `components/toast/index.tsx`.  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  redirect(`${ecran}?toast=avisDepose#avis`);
 }
 
 /** Retirer son avis — un droit, y compris une fois publié. */
@@ -126,5 +141,5 @@ export async function retirerAvis(
   }
 
   revalidatePath(ecran);
-  redirect(`${ecran}?avis=retire#avis`);
+  redirect(`${ecran}?toast=avisRetire#avis`);
 }

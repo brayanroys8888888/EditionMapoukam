@@ -56,18 +56,28 @@
 .enteteSuperpose {
   position: fixed;
   inset: 0 0 auto 0;
+  /*
+   * La gouttière laissée par la barre de défilement pendant qu'une boîte
+   * modale est ouverte. Le corps se compense en marge ; un élément `fixed`,
+   * lui, ne voit pas cette marge et s'élargirait tout seul — l'en-tête
+   * glisserait de quinze pixels à l'ouverture du tiroir, et de quinze en sens
+   * inverse à sa fermeture. Voir `tiroir-panier.tsx`.
+   *
+   * Absente hors modale, la variable vaut `0px` par le repli.
+   */
+  padding-right: var(--gouttiere-modale, 0px);
 }
 
 .entetePose {
   background: transparent;
   border-bottom-color: transparent;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .marque,
 .entetePose .navigation a,
 .entetePose .montant {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .navigation a:hover,
@@ -79,12 +89,12 @@
    de contour à teinter, c'est leur fond qui porte l'état. */
 .entetePose .carreAction {
   background: rgb(251 247 239 / 16%);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .carreAction:hover {
   background: rgb(251 247 239 / 30%);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .langues {
@@ -118,23 +128,23 @@
 }
 
 .entetePose .langue {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .langueActive {
-  background: var(--v2-fond);
-  color: var(--v2-vert);
+  background: var(--fond);
+  color: var(--accent-encre);
 }
 
 .entetePose .langueActive:hover {
-  background: var(--v2-fond);
-  color: var(--v2-vert);
+  background: var(--fond);
+  color: var(--accent-encre);
 }
 
 /* Le sceau du logo s'éclaircit pour rester lisible sur l'image. */
 .entetePose .marque {
-  --sceau-fond: var(--v2-fond);
-  --sceau-encre: var(--v2-vert);
+  --sceau-fond: var(--chrome-encre);
+  --sceau-encre: var(--accent-encre);
 }
 
 /*
@@ -182,12 +192,12 @@
   font-size: var(--taille-xl);
   font-weight: var(--graisse-forte);
   letter-spacing: -0.02em;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   line-height: 1.05;
 }
 
 .marque:hover {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .logo {
@@ -195,7 +205,7 @@
   height: 34px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--v2-vert);
+  background: var(--chrome);
   display: grid;
   place-items: center;
 }
@@ -278,7 +288,7 @@
 }
 
 .navigation a:hover {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .navigation a:hover::after,
@@ -287,7 +297,7 @@
 }
 
 .navigation a[aria-current='page'] {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
 }
 
@@ -362,7 +372,7 @@
 }
 
 .rayonsResume:hover {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .rayonsResume:hover::after,
@@ -372,7 +382,7 @@
 }
 
 .rayonsResume[aria-current='true'] {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
 }
 
@@ -415,7 +425,7 @@
 
 .rayonsListe a[aria-current='page'] {
   background: var(--fond-doux);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-forte);
 }
 
@@ -425,7 +435,7 @@
  * de l'image, et du texte clair sur du clair y serait illisible.
  */
 .entetePose .rayonsResume {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .entetePose .rayonsResume:hover,
@@ -452,7 +462,7 @@
 .montant {
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-variant-numeric: tabular-nums;
 }
 
@@ -483,7 +493,7 @@
   place-items: center;
   border: 0;
   border-radius: var(--rayon-controle);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   color: var(--encre);
   transition: background var(--transition-couleur), color var(--transition-couleur),
     transform var(--transition-forme);
@@ -497,8 +507,8 @@
 }
 
 .carreAction:hover {
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--marque);
+  color: var(--marque-encre);
   transform: translateY(-2px);
 }
 
@@ -531,16 +541,16 @@
   min-height: var(--cible-min);
   padding: 10px 18px;
   border-radius: var(--rayon-bouton);
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--marque);
+  color: var(--marque-encre);
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), transform var(--transition-forme);
 }
 
 .lienTexte:hover {
-  background: var(--v2-vert-clair);
-  color: var(--fond);
+  background: var(--marque-survol);
+  color: var(--marque-encre);
   transform: translateY(-2px);
 }
 
@@ -552,7 +562,7 @@
   display: flex;
   border: 0;
   border-radius: var(--rayon-controle);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   overflow: hidden;
 }
 
@@ -575,13 +585,13 @@
 }
 
 .langueActive {
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--chrome);
+  color: var(--chrome-encre);
 }
 
 .langueActive:hover {
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--chrome);
+  color: var(--chrome-encre);
 }
 
 .langue:focus-visible {
@@ -617,8 +627,18 @@
  * liens qu'on cherche quand on hésite à acheter.
  */
 .pied {
-  background: var(--v2-vert-nuit);
-  color: var(--fond);
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
   margin-top: 0;
 }
 
@@ -663,7 +683,7 @@
 .piedLosange {
   width: 12px;
   height: 12px;
-  background: var(--v2-vert-nuit);
+  background: var(--chrome-2);
   transform: rotate(45deg);
   display: block;
 }
@@ -846,7 +866,7 @@
 }
 
 .piedBarre .langue {
-  color: var(--fond);
+  color: var(--chrome-encre);
   opacity: 0.8;
 }
 
@@ -888,9 +908,9 @@
   align-items: center;
   min-height: var(--cible-min);
   padding: 10px 16px;
-  border: 1.5px solid var(--v2-ocre);
+  border: 1.5px solid var(--action);
   border-radius: var(--rayon-bouton);
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   font-size: var(--taille-s);
   font-weight: var(--graisse-forte);
   white-space: nowrap;
@@ -898,8 +918,8 @@
 }
 
 .raccourciAdmin:hover {
-  background: var(--v2-ocre);
-  color: var(--v2-ocre-encre);
+  background: var(--action);
+  color: var(--action-texte);
   transform: translateY(-2px);
 }
 
@@ -958,4 +978,962 @@
   .montant {
     display: none;
   }
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE CHROME D'ORGANIC, POSÉ SUR LA STRUCTURE DE LA V2.                ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CE BLOC EST ICI ET NON DANS `v3.module.css`.                   │
+ * │                                                                          │
+ * │ Les modules CSS hachent leurs noms de classe : `.entete` compilé ici     │
+ * │ n'est pas le même sélecteur qu'un `.entete` écrit ailleurs. Une feuille  │
+ * │ séparée ne pourrait viser ces classes qu'en `:global`, c'est-à-dire en   │
+ * │ pariant sur un nom haché qui change à chaque compilation.                │
+ * │                                                                          │
+ * │ Ce que la V3 REDÉFINIT vit donc à côté de ce qu'elle redéfinit ; ce      │
+ * │ qu'elle AJOUTE — barre utilitaire, onglets — vit dans `v3.module.css`.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Rien ici ne touche la V2 : chaque règle est fermée par `[data-design='v3']`.
+ */
+
+/* ── L'en-tête : 76 px, translucide, flouté ──────────────────────────────── */
+
+:global(:root[data-design='v3']) .entete {
+  /*
+   * Le fond translucide est ce qui fait tenir la superposition : le contenu
+   * passe DESSOUS en restant deviné, au lieu de disparaître sous un bandeau
+   * opaque. Le `saturate` compense la désaturation qu'induit le flou.
+   */
+  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--bordure);
+  transition: border-color 0.2s ease;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE FILET N'APPARAÎT QU'UNE FOIS LA PAGE DÉFILÉE — ET AUCUNE OMBRE.      │
+ * │                                                                          │
+ * │ Le dossier est explicite : « The border-bottom fades in after ~8px of    │
+ * │ scroll, 200ms — subtle, do not add a shadow. » Une ombre sous un en-tête │
+ * │ FLOUTÉ se lit comme une salissure : le flou dit déjà que le contenu      │
+ * │ passe dessous, l'ombre le redirait plus fort et moins bien.              │
+ * │                                                                          │
+ * │ `data-sommet` est posé par `SuiviDefilement`, et son absence est l'état  │
+ * │ SÛR : sans JavaScript, le filet est là. Voir l'encadré du composant.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3'][data-sommet]) .entete {
+  border-bottom-color: transparent;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SANS FLOU, UN FOND OPAQUE — ET NON UN FOND TRANSLUCIDE.                 │
+ * │                                                                          │
+ * │ `backdrop-filter` n'est pas universel, et il est précisément absent des  │
+ * │ navigateurs Android anciens qui sont une part réelle du public (§5.1).   │
+ * │ Là, un fond à 88 % laisse lire le texte qui défile dessous à travers la  │
+ * │ navigation : les deux se mélangent, et c'est illisible aux deux étages.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@supports not (backdrop-filter: blur(1px)) {
+  :global(:root[data-design='v3']) .entete {
+    background: var(--fond);
+  }
+}
+
+:global(:root[data-design='v3']) .enteteInterieur {
+  min-height: 76px;
+  padding: 0 28px;
+  /*
+   * 34 px, la valeur du prototype. La navigation étant poussée à droite par
+   * `margin-left: auto`, cette gouttière ne se voit qu'entre la marque et le
+   * premier onglet, et entre le dernier onglet et les actions.
+   */
+  gap: 34px;
+}
+
+/*
+ * ── Les actions ──────────────────────────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES RONDS SONT CREUX, ET C'EST CE QUI LES DISTINGUE DU BOUTON PLEIN.    │
+ * │                                                                          │
+ * │ La V2 leur donne l'aplat crème du fond doux. Le prototype les laisse     │
+ * │ transparents avec un filet d'un pixel, et réserve l'aplat au survol :    │
+ * │ dans une rangée qui finit par « Se connecter », trois pastilles pleines  │
+ * │ font trois boutons d'égale importance, alors qu'un seul appelle l'action.│
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .actions {
+  gap: 8px;
+}
+
+:global(:root[data-design='v3']) .carreAction {
+  border: 1px solid var(--bordure);
+  background: transparent;
+}
+
+:global(:root[data-design='v3']) .carreAction:hover {
+  background: var(--fond-doux);
+  color: var(--encre);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ « SE CONNECTER » EST OLIVE, ET NON TERRE CUITE.                         │
+ * │                                                                          │
+ * │ `.lienTexte` lit `--marque`, que la V3 fait pointer sur la terre cuite — │
+ * │ le jeton porte lui-même la supposition, écrite en clair : « sous Organic │
+ * │ les deux se rejoignent sur la terre cuite ». Le prototype dit le         │
+ * │ contraire : son bouton d'en-tête est l'olive profond, et la terre cuite  │
+ * │ reste à l'ACTION d'achat.                                                │
+ * │                                                                          │
+ * │ La distinction se corrige ici plutôt que sur le jeton : `--marque` sert  │
+ * │ aussi ailleurs, et la déplacer d'un cran ferait bouger des surfaces      │
+ * │ qu'aucune mesure n'a encore vérifiées.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .lienTexte {
+  min-height: 0;
+  padding: 12px 20px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-size: 14px;
+  font-weight: var(--graisse-normale);
+  /*
+   * `normal`, comme au prototype, qui ne pose pas d’interligne sur ce bouton.
+   * Avec celui du corps — 1,6 — la pastille passait de 40 à 46 px de haut et
+   * dépassait la rangée d’icônes qu’elle est censée accompagner.
+   */
+  line-height: normal;
+  box-shadow: var(--ombre-s);
+}
+
+:global(:root[data-design='v3']) .lienTexte:hover {
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
+}
+
+/*
+ * ── La marque ────────────────────────────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLE N'EST PAS DESSINÉE ICI, ET C'EST UNE CORRECTION.                   │
+ * │                                                                          │
+ * │ Le lot 3 avait écrit la pastille de 44 px sur `.logo` — une classe de    │
+ * │ CETTE feuille, que l'en-tête V2 ne rend pas : il rend `<Marque>`, qui    │
+ * │ porte ses propres classes depuis `marque.module.css`. La règle était     │
+ * │ donc morte, et personne ne pouvait le voir : le sceau avait déjà l'olive │
+ * │ par son repli `var(--sceau-fond, var(--chrome))`, si bien que le         │
+ * │ résultat ressemblait exactement à ce qui était demandé.                  │
+ * │                                                                          │
+ * │ C'est le thème SOMBRE qui l'a révélé : l'olive de nuit sur le fond de    │
+ * │ nuit, le sceau disparaissait. La règle vit maintenant dans               │
+ * │ `marque.module.css`, à côté de la classe qu'elle vise.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ── La navigation : poussée à droite, et soulignée au passage ───────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE MONTANT DU PANIER QUITTE L'EN-TÊTE.                                  │
+ * │                                                                          │
+ * │ La V2 l'écrit en toutes lettres à côté du panier — c'était sa réponse au │
+ * │ « 0,00 € » permanent du site d'origine : n'afficher un montant que       │
+ * │ lorsqu'il y en a un.                                                     │
+ * │                                                                          │
+ * │ Organic répond autrement : une PASTILLE de comptage sur le bouton, et    │
+ * │ le montant dans le tiroir, à l'endroit où on le vérifie. Le prototype    │
+ * │ n'écrit aucun prix dans l'en-tête (lignes 110 à 121).                    │
+ * │                                                                          │
+ * │ Ce n'est pas qu'une question de place : le montant change de largeur     │
+ * │ selon le panier, et la barre d'actions se décalait donc d'un écran à     │
+ * │ l'autre — l'écart de cinquante pixels que la passe au pixel a mesuré     │
+ * │ vient de là autant que du rond de compte manquant.                       │
+ * │                                                                          │
+ * │ Il n'est pas RETIRÉ du document : le nombre reste sur la pastille, et le │
+ * │ total reste dans le tiroir et sur l'écran du panier.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .montant {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .navigation {
+  margin: 0 0 0 auto;
+  gap: 26px;
+  font-size: 14.5px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE REMBOURRAGE HORIZONTAL TOMBE, PARCE QUE L'ÉCART EST DÉJÀ DANS LE GAP.│
+ * │                                                                          │
+ * │ La V2 espace ses entrées par un `padding: 8px 9px` sur chaque lien.      │
+ * │ Organic demande 26 px ENTRE les entrées. Garder les deux donne 44 px     │
+ * │ d'écart réel : à 1440 px, la navigation déborde de sa boîte et la        │
+ * │ dernière entrée passe SOUS la loupe. Le débordement ne coupe rien — il   │
+ * │ superpose, ce qui a l'air d'un défaut de police plutôt que de largeur.   │
+ * │                                                                          │
+ * │ La hauteur de cible, elle, est tenue par `min-height` et non par le      │
+ * │ rembourrage : elle ne bouge pas.                                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ET LE REMBOURRAGE VERTICAL AVEC LUI — LE SOULIGNEMENT EN DÉPEND.        │
+ * │                                                                          │
+ * │ Le prototype ne pose AUCUN rembourrage ni hauteur minimale sur ces       │
+ * │ entrées : leur boîte est la ligne de texte, 23 px. La V2 leur donne 8 px │
+ * │ de haut et de bas plus une hauteur de cible de 40, soit une boîte de     │
+ * │ 40 px.                                                                    │
+ * │                                                                          │
+ * │ Ce n'est pas qu'une hauteur. Le filet de survol est posé à `bottom:      │
+ * │ -6px` de la BOÎTE : sur une boîte de 40 px, il tombe huit pixels sous    │
+ * │ l'endroit où il devrait être — assez pour ne plus appartenir au mot      │
+ * │ qu'il souligne, sans qu'aucune mesure de la navigation ne le signale.    │
+ * │                                                                          │
+ * │ La cible de 44 px n'est pas perdue : cette navigation disparaît sous     │
+ * │ 900 px, et c'est la barre d'onglets qui prend le relais sur téléphone —  │
+ * │ là où `tests/rendu/v2.spec.ts` mesure les cibles.                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .navigation a,
+:global(:root[data-design='v3']) .rayonsResume {
+  min-height: 0;
+  padding: 0;
+  border-radius: 0;
+  /* 14,5 px au prototype, sans graisse et sans resserrement : la V2 les
+     portait en 15 px demi-gras, ce qui élargissait la barre de onze pixels. */
+  font-size: 14.5px;
+  font-weight: var(--graisse-normale);
+  letter-spacing: normal;
+}
+
+/*
+ * Le soulignement CROÎT de la gauche vers la droite : `right` passe de 100 %
+ * à 0. Une transition sur `width` ferait la même chose, mais `width` sur un
+ * pseudo-élément absolu déclenche une remise en page à chaque image ; `right`
+ * reste sur le compositeur.
+ */
+:global(:root[data-design='v3']) .navigation a,
+:global(:root[data-design='v3']) .rayonsResume {
+  position: relative;
+}
+
+:global(:root[data-design='v3']) .navigation a::after,
+:global(:root[data-design='v3']) .rayonsResume::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 100%;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--action);
+  /*
+   * La V2 cache ce filet par `transform: scaleX(0)` ; la V3 le cache par
+   * `right: 100%`. Les deux mécanismes cumulés marchent — par accident, et
+   * seulement tant que la V2 pense à remettre `scaleX(1)` sur chaque état
+   * actif. On neutralise donc le premier : un seul mécanisme, celui d'ici.
+   */
+  transform: none;
+  transition: right var(--transition-forme);
+}
+
+:global(:root[data-design='v3']) .navigation a:hover::after,
+:global(:root[data-design='v3']) .navigation a[aria-current='page']::after,
+:global(:root[data-design='v3']) .rayonsResume:hover::after,
+:global(:root[data-design='v3']) .rayonsResume[aria-current='true']::after {
+  right: 0;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ENTRÉE COURANTE GARDE L'ENCRE — C'EST LE FILET QUI LA DÉSIGNE.        │
+ * │                                                                          │
+ * │ La V2 peint l'entrée active en accent ET la met en gras. Le prototype ne │
+ * │ fait ni l'un ni l'autre : `data-on` n'allume que le soulignement.        │
+ * │                                                                          │
+ * │ Ce n'est pas un détail de goût. Le gras ÉLARGIT le mot, donc décale      │
+ * │ tout ce qui le suit : la navigation n'a pas la même largeur selon la     │
+ * │ page qu'on regarde, et les six entrées bougent en changeant d'écran.     │
+ * │ `aria-current` continue de porter l'information pour qui écoute.         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .navigation a[aria-current='page'],
+:global(:root[data-design='v3']) .rayonsResume[aria-current='true'] {
+  color: var(--encre);
+  font-weight: var(--graisse-normale);
+}
+
+/*
+ * Le chevron du prototype occupe DOUZE pixels, pas six.
+ *
+ * La V2 le dessine avec deux bords d'un carré de 6 px pivoté à 45° ; Organic
+ * pose un tracé Lucide dans une boîte de 12. La boîte tournée mesure bien
+ * 8,5 px en diagonale, mais elle n'en RÉSERVE que 6 : « Boutique » et son
+ * chevron mesuraient donc six pixels de moins que la maquette, et les six
+ * entrées suivantes remontaient d'autant vers la gauche. Le dessin ne change
+ * pas — il est le même à l'œil ; c'est sa boîte qui est remise à la cote.
+ */
+:global(:root[data-design='v3']) .rayonsResume::before {
+  width: 12px;
+  height: 12px;
+  /*
+   * Le trait reste au bord bas-droit de la boîte agrandie : sans ce recadrage
+   * le chevron descendrait de trois pixels sous la ligne de texte.
+   */
+  box-sizing: border-box;
+  border-width: 0 2.75px 2.75px 0;
+  transform: translate(-2px, -3px) rotate(45deg) scale(0.62);
+}
+
+:global(:root[data-design='v3']) .rayons[open] > .rayonsResume::before {
+  transform: translate(-2px, 1px) rotate(-135deg) scale(0.62);
+}
+
+/* ── Le menu déroulant de la boutique ────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 290 px, ET DÉBORDANT DE 18 px SUR LA GAUCHE.                            │
+ * │                                                                          │
+ * │ Le décalage n'est pas une fantaisie : sans lui, le menu s'aligne sur le  │
+ * │ bord du MOT « Boutique », et ses entrées — qui ont, elles, 18 px de      │
+ * │ rembourrage — paraissent décalées vers la droite par rapport au mot      │
+ * │ qu'elles prolongent. `left: -18px` réaligne le TEXTE sur le texte, ce    │
+ * │ qui est la seule chose que l'œil compare.                                │
+ * │                                                                          │
+ * │ `min-width` devient `width` : 290 px est une cote, pas un plancher. Sur  │
+ * │ « Livrets pédagogiques », un plancher aurait laissé le menu s'élargir et │
+ * │ la largeur aurait dépendu de la langue servie.                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .rayonsListe {
+  top: calc(100% + 14px);
+  left: -18px;
+  width: 290px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: var(--rayon-bloc);
+  box-shadow: var(--ombre-carte-survol);
+}
+
+:global(:root[data-design='v3']) .rayonsListe a {
+  padding: 12px 14px;
+  border-radius: var(--rayon-controle);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE MENU DESCEND À L'OUVERTURE — ET REMONTE D'UN COUP À LA FERMETURE.    │
+ * │                                                                          │
+ * │ `10-animation-spec.md` décrit une transition d'opacité et de position    │
+ * │ dans les deux sens. Elle suppose un menu toujours présent, masqué par    │
+ * │ `visibility`. Ici c'est un `<details>` : le navigateur retire son        │
+ * │ contenu du rendu, et il n'y a rien à faire disparaître en douceur.       │
+ * │                                                                          │
+ * │ C'est un choix qu'on garde. Un `<details>` s'ouvre au clic ET au         │
+ * │ clavier, annonce son état, et fonctionne sans une ligne de script — la   │
+ * │ condition réelle d'une partie du public (§5.1). Le dossier lui-même      │
+ * │ écrit que la chorégraphie de sortie « is not required ».                 │
+ * │                                                                          │
+ * │ Reste l'entrée, qui est celle qu'on regarde : une image-clé la joue.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .rayons[open] > .rayonsListe {
+  animation: descenteMenu 0.25s var(--ease);
+}
+
+@keyframes descenteMenu {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(:root[data-design='v3']) .rayons[open] > .rayonsListe {
+    animation: none;
+  }
+}
+
+/* ── Le pied : l'olive profond, et quatre colonnes inégales ──────────────── */
+
+:global(:root[data-design='v3']) .pied {
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .piedHaut {
+  padding: 66px 28px 40px;
+  gap: 44px;
+  /*
+   * `1.4fr` pour l'identité, puis trois colonnes égales — et non quatre
+   * colonnes identiques. La première porte le mot-symbole et une phrase ;
+   * lui donner la même largeur qu'une liste de cinq liens ferait casser la
+   * phrase à chaque mot.
+   */
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+}
+
+/*
+ * Sous 860 px, les quatre colonnes ne tiennent plus : on revient au
+ * remplissage automatique de la V2, qui gère seul le nombre de colonnes.
+ */
+@media (max-width: 860px) {
+  :global(:root[data-design='v3']) .piedHaut {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    padding: 48px 20px 32px;
+    gap: 32px;
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 760 px, LA V2 MASQUE LE SÉLECTEUR DE LANGUE — LA V3 NE PEUT PAS.  │
+ * │                                                                          │
+ * │ La règle d'origine vidait un en-tête étroit de ses commandes secondaires,│
+ * │ et c'était juste : elles étaient reprises dans le menu plein écran.      │
+ * │                                                                          │
+ * │ Sous la V3 le sélecteur a déménagé dans la barre utilitaire, qui n'a rien│
+ * │ d'étroit — elle ne porte que deux réglages. La règle de la V2 l'atteint  │
+ * │ quand même, par son nom de classe, et le ferait disparaître sur tout     │
+ * │ téléphone : le site deviendrait monolingue sur la moitié du public.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .langues {
+    display: inline-flex;
+  }
+}
+
+/*
+ * ── La pastille de langue de la barre utilitaire ─────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ QUARANTE-DEUX PIXELS DANS UNE BARRE QUI EN FAIT TRENTE-HUIT.            │
+ * │                                                                          │
+ * │ `.langue` porte `min-height: 42px` : c'est la cible tactile de l'EN-TÊTE │
+ * │ de la V2, où le sélecteur vivait. Sous Organic il a déménagé dans la     │
+ * │ barre utilitaire, que `02-layout-responsive.md` fixe à 38 px — et la     │
+ * │ hauteur minimale l'emportait, en silence. La barre mesurait 42 px, et    │
+ * │ TOUTES les pages du site descendaient de quatre pixels : un décalage     │
+ * │ constant, invisible page par page, impossible à rattraper ailleurs.      │
+ * │                                                                          │
+ * │ La cible de 44 px n'est pas perdue pour autant : la règle ne s'applique  │
+ * │ qu'à la variante `abrege`, et la barre utilitaire disparaît de l'écran   │
+ * │ tactile — c'est la barre d'onglets qui prend le relais, avec ses cibles  │
+ * │ pleines. Elle est ici une commande de bureau, à la souris.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * L'attribut, plutôt qu'une seconde classe : une classe déclarée UNIQUEMENT
+ * sous `:global(...)` n'est pas exportée par le module, et `styles.x` vaudrait
+ * alors `undefined`. Voir `tests/unit/classes-css.test.ts`.
+ *
+ * Les valeurs viennent du prototype, ligne 78 : conteneur translucide à
+ * `border-radius: 999px` et `padding: 3px`, pastilles à `3px 11px`,
+ * `font-size: 11.5px`, `letter-spacing: .06em`.
+ */
+:global(:root[data-design='v3']) .langues[data-abrege] {
+  align-self: center;
+  border-radius: 999px;
+  padding: 3px;
+  /* Le prototype y pose l’encre du chrome à 10 % d’opacité. */
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  overflow: visible;
+}
+
+:global(:root[data-design='v3']) .langues[data-abrege] .langue {
+  min-height: 0;
+  border-radius: 999px;
+  padding: 3px 11px;
+  font-size: 11.5px;
+  /*
+   * Le prototype ne graisse pas ces deux mots — la V2 les portait en 700.
+   *
+   * À 11,5 px sur un aplat translucide, le gras ne se lit pas comme une
+   * emphase : il épaissit deux pastilles de trois lettres jusqu'à ce
+   * qu'elles pèsent plus lourd que la phrase de promesse qu'elles côtoient.
+   */
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.06em;
+  color: var(--chrome-encre);
+  opacity: 0.7;
+}
+
+:global(:root[data-design='v3']) .langues[data-abrege] .langue:hover {
+  background: transparent;
+  color: var(--chrome-encre);
+  opacity: 1;
+}
+
+/*
+ * La langue courante prend la terre cuite — et l'encre par-dessus, jamais le
+ * blanc du prototype : c'est l'écart n° 1 de `tokens.css`, déjà mesuré.
+ */
+:global(:root[data-design='v3']) .langues[data-abrege] .langueActive,
+:global(:root[data-design='v3']) .langues[data-abrege] .langueActive:hover {
+  background: var(--action);
+  color: var(--action-encre);
+  opacity: 1;
+}
+
+/* ── L'en-tête mobile : 60 px, et le rembourrage du dossier ──────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SEIZE PIXELS DE MOINS, ET C'EST BEAUCOUP.                               │
+ * │                                                                          │
+ * │ `02-layout-responsive.md` fixe 60 px de haut et `12px 18px` de           │
+ * │ rembourrage sur téléphone, là où l'écran large en demande 76.            │
+ * │                                                                          │
+ * │ Sur un téléphone, l'en-tête et la barre d'onglets prélèvent tous deux    │
+ * │ leur hauteur sur les 600 px utiles d'un écran ordinaire : 76 + 96, c'est │
+ * │ presque un tiers de la page consacré à ne rien montrer. La barre         │
+ * │ utilitaire, elle, ne colle pas — elle sort de l'écran et ne se reprend   │
+ * │ jamais cette hauteur.                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 860px) {
+  :global(:root[data-design='v3']) .enteteInterieur {
+    min-height: 60px;
+    padding: 12px 18px;
+  }
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — L'EN-TÊTE NE SE POSE PAS SUR LE HERO
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA MAQUETTE N'A QU'UN SEUL ÉTAT D'EN-TÊTE : COLLANT, FLOUTÉ, CRÈME.     │
+ * │                                                                          │
+ * │ `position:sticky;top:0;background:color-mix(in srgb,var(--ground) 88%,   │
+ * │ transparent);backdrop-filter:blur(14px)` — et rien d'autre. Il n'y a ni  │
+ * │ en-tête fixe, ni état transparent, ni encre claire posée sur une image.  │
+ * │                                                                          │
+ * │ Ces trois-là existaient pour la photographie du hero de la V2, et ils    │
+ * │ deviennent NUISIBLES sans elle : `entetePose` peint la navigation en     │
+ * │ `--chrome-encre`, c'est-à-dire en crème. Sur le hero crème d'Organic,    │
+ * │ l'en-tête entier disparaissait — marque, liens, panier — jusqu'au        │
+ * │ premier défilement.                                                      │
+ * │                                                                          │
+ * │ C'est le défaut qu'on ne trouve qu'en regardant : rien n'échoue, rien    │
+ * │ n'est vide, le contraste calculé est juste puisque les jetons sont       │
+ * │ justes. Seule la COMBINAISON est fausse.                                 │
+ * │                                                                          │
+ * │ On neutralise donc l'état posé plutôt que de retirer la classe côté      │
+ * │ composant : `EnteteReactif` sert les trois directions, et la V2 garde    │
+ * │ sa photographie et son en-tête transparent.                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .enteteSuperpose {
+  position: sticky;
+}
+
+:global(:root[data-design='v3']) .entetePose {
+  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  border-bottom-color: var(--bordure);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .entetePose .marque,
+:global(:root[data-design='v3']) .entetePose .navigation a,
+:global(:root[data-design='v3']) .entetePose .montant,
+:global(:root[data-design='v3']) .entetePose .langue {
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .entetePose .navigation a:hover,
+:global(:root[data-design='v3']) .entetePose .navigation a[aria-current='page'] {
+  color: var(--accent-encre);
+}
+
+/*
+ * Les aplats translucides suivent le même raisonnement que l'encre.
+ *
+ * `rgb(251 247 239 / 16%)` est une crème diluée : posée sur l'image sombre de
+ * la V2, elle dessine un carré clair ; posée sur la crème d'Organic, elle est
+ * de la crème sur de la crème. Les icônes perdaient leur fond, donc leur
+ * cible, donc leur état de survol.
+ */
+:global(:root[data-design='v3']) .entetePose .carreAction {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .entetePose .carreAction:hover {
+  background: var(--creme);
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .entetePose .langues {
+  background: var(--surface);
+}
+
+:global(:root[data-design='v3']) .entetePose .langueActive {
+  background: var(--creme);
+  color: var(--accent-encre);
+}
+
+/*
+ * Le sceau reprend l'olive plein de la maquette — `background:var(--deep);
+ * color:var(--onDeep)`. La V2 l'éclaircissait pour le détacher de l'image ;
+ * sur la crème, c'est l'inverse qu'il faut.
+ */
+:global(:root[data-design='v3']) .entetePose .marque {
+  --sceau-fond: var(--chrome);
+  --sceau-encre: var(--chrome-encre);
+}
+
+/*
+ * « Se connecter » garde son aplat : la pilule terre cuite de la maquette se
+ * détache aussi bien sur la crème que sur l'image. Seule sa règle de survol
+ * est réaffirmée, l'état posé de la V2 la redéfinissant plus haut.
+ */
+:global(:root[data-design='v3']) .entetePose .lienTexte {
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LE PIED DE PAGE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * `padding:66px 0 0`, l'olive PROFOND et non le second, et une grille
+ * `1.4fr repeat(3,1fr)` : la colonne d'identité vaut presque une fois et
+ * demie une colonne de liens.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `auto-fit minmax(200px,1fr)` NE DONNE PAS CETTE GRILLE-LÀ.              │
+ * │                                                                          │
+ * │ La V2 répartit ses quatre blocs à parts égales, et laisse le navigateur  │
+ * │ décider du nombre de colonnes. Deux conséquences : la colonne de marque  │
+ * │ a la largeur d'une colonne de liens — trop étroite pour la phrase        │
+ * │ qu'elle porte — et le nombre de colonnes change avec la fenêtre, si bien │
+ * │ que le pied ne ressemble à lui-même qu'à certaines largeurs.             │
+ * │                                                                          │
+ * │ Le dossier fixe les quatre colonnes et leur rapport. Le repli étroit est │
+ * │ écrit à part, plus bas, plutôt que délégué à `auto-fit`.                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .pied {
+  background: var(--chrome);
+  padding: 66px 0 0;
+}
+
+:global(:root[data-design='v3']) .piedHaut {
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 44px;
+  max-width: var(--largeur-page);
+  padding: 0 28px 52px;
+}
+
+/* La marque et sa phrase : 18 px sous le mot-symbole, puis 24 sous la phrase. */
+:global(:root[data-design='v3']) .piedIdentite {
+  display: block;
+}
+
+/*
+ * La marque du pied passe en BLOC — sinon ses 18 px de marge n’en font que 8.
+ *
+ * `.marque` est `inline-flex` : dans un conteneur en bloc, elle est posée sur
+ * une ligne dont la hauteur vaut l’interligne, soit 21 px. Le sceau de 44 px
+ * déborde donc de sa propre ligne par le bas, et ce débordement mange la
+ * marge — qui est bien appliquée, mais à partir du bas de la LIGNE et non du
+ * bas du dessin. Le défaut ne se voit qu’à la règle : dix pixels manquants
+ * entre le mot-symbole et la phrase.
+ */
+.marquePied {
+  display: flex;
+  width: fit-content;
+  margin-bottom: var(--espace-4);
+}
+
+:global(:root[data-design='v3']) .marquePied {
+  margin-bottom: 18px;
+}
+
+:global(:root[data-design='v3']) .piedBaseline {
+  margin: 0;
+  max-width: 300px;
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--chrome-encre);
+  opacity: 0.72;
+}
+
+/*
+ * ── La lettre des nouveautés ─────────────────────────────────────────────
+ *
+ * Cotes du prototype, lignes 1630 à 1634 : un sur-titre de 12 px espacé de
+ * .14 em à 55 % d'opacité, 24 px sous la phrase de marque, puis une rangée de
+ * 330 px au plus, à 8 px d'écart.
+ *
+ * Le bloc n'existe que sous la V3 : la V2 n'a jamais eu de lettre, et lui en
+ * ajouter une au passage changerait une direction livrée.
+ */
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CHAQUE CLASSE EST DÉCLARÉE LOCALEMENT, MÊME QUAND ELLE NE SERT QU'EN V3.│
+ * │                                                                          │
+ * │ Un module CSS n'exporte que les classes qu'il déclare LOCALEMENT. Une    │
+ * │ classe écrite uniquement sous `:global(:root[data-design='v3'])` n'est   │
+ * │ pas dans l'objet rendu : `styles.lettreTitre` vaut `undefined`, et le    │
+ * │ `class` posé sur l'élément est la chaîne « undefined ». Rien ne le       │
+ * │ signale — ni le build, ni `tsc`, ni l'exécution — et la règle V3 ne      │
+ * │ trouve alors plus rien à peindre.                                        │
+ * │                                                                          │
+ * │ Les cinq classes de ce bloc portent donc leur déclaration de base ici,   │
+ * │ et le bloc entier est caché hors V3 : la V2 n'a jamais eu de lettre, et  │
+ * │ lui en ajouter une au passage changerait une direction livrée.           │
+ * │                                                                          │
+ * │ `tests/unit/classes-css.test.ts` existe pour ce piège précis.            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.lettre {
+  display: none;
+}
+
+/*
+ * La déclaration de base ne cache RIEN : c'est `.lettre` qui est `display:
+ * none` hors V3, et le bloc entier disparaît avec elle. Poser `display: none`
+ * ici aussi aurait survécu à la V3 — les règles V3 de ces quatre classes ne
+ * redéclarent pas toutes un `display`, et le titre comme les deux commandes
+ * seraient restés invisibles là où on les veut.
+ */
+.lettreTitre,
+.lettreRangee,
+.lettreChamp,
+.lettreAction {
+  margin: 0;
+}
+
+:global(:root[data-design='v3']) .lettre {
+  display: block;
+  margin-top: 24px;
+}
+
+:global(:root[data-design='v3']) .lettreTitre {
+  margin: 0 0 10px;
+  font-family: var(--police-interface);
+  font-size: 12px;
+  font-weight: var(--graisse-normale);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--chrome-encre);
+  opacity: 0.55;
+}
+
+:global(:root[data-design='v3']) .lettreRangee {
+  display: flex;
+  gap: 8px;
+  max-width: 330px;
+}
+
+/*
+ * Le champ est TRANSLUCIDE, il n'est pas crème.
+ *
+ * Un aplat clair dans un pied olive attire l'œil plus que le bouton qui le
+ * suit, et c'est le bouton qu'on veut voir. L'encre du chrome à 10 % pour le
+ * fond, à 20 % pour le trait : c'est ce qu'écrit le prototype, et c'est la
+ * même paire que la barre utilitaire emploie pour ses deux pastilles.
+ */
+:global(:root[data-design='v3']) .lettreChamp {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 20%, transparent);
+  border-radius: 999px;
+  padding: 13px 18px;
+  font: inherit;
+  font-size: 14.5px;
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .lettreChamp::placeholder {
+  color: var(--chrome-encre);
+  opacity: 0.5;
+}
+
+:global(:root[data-design='v3']) .lettreAction {
+  flex: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 20px;
+  font-family: var(--police-titre);
+  font-size: 14.5px;
+  /* Un bouton n'hérite pas de l'interligne : celui du prototype vaut donc
+     `normal`, et non les 1,6 du corps. */
+  line-height: normal;
+  background: var(--action);
+  color: var(--action-encre);
+  cursor: pointer;
+  transition: transform var(--transition-mouvement, 0.35s ease);
+}
+
+@media (hover: hover) {
+  :global(:root[data-design='v3']) .lettreAction:hover {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :global(:root[data-design='v3']) .lettreAction {
+    transition: none;
+  }
+
+  :global(:root[data-design='v3']) .lettreAction:hover {
+    transform: none;
+  }
+}
+
+/*
+ * Le sceau du pied est TERRE CUITE, alors que celui de l'en-tête est olive.
+ *
+ * Ce n'est pas une incohérence de la maquette : l'olive du sceau disparaîtrait
+ * sur l'olive du pied. Chaque sceau prend la couleur qui le détache de la
+ * surface qui le porte — c'est la règle, pas l'exception.
+ */
+:global(:root[data-design='v3']) .pied .sceau {
+  --sceau-fond: var(--action);
+  --sceau-encre: var(--action-encre);
+}
+
+/* `font-size:11.5px;letter-spacing:.16em`, et la terre cuite VIVE. */
+:global(:root[data-design='v3']) .piedTitre {
+  margin: 0 0 18px;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  color: var(--action);
+}
+
+:global(:root[data-design='v3']) .piedListe {
+  gap: 12px;
+}
+
+:global(:root[data-design='v3']) .piedListe a {
+  font-size: 15px;
+  color: var(--chrome-encre);
+  opacity: 0.76;
+}
+
+:global(:root[data-design='v3']) .piedListe a:hover {
+  color: var(--action);
+  opacity: 1;
+}
+
+/* La barre du bas : filet crème à 16 %, `22px 0 30px`, 13 px à 0,62. */
+:global(:root[data-design='v3']) .piedBarre {
+  border-top: 0;
+}
+
+:global(:root[data-design='v3']) .piedBarreInterieur {
+  max-width: var(--largeur-page);
+  padding: 22px 28px 30px;
+  border-top: 1px solid color-mix(in srgb, var(--chrome-encre) 16%, transparent);
+  font-size: 13px;
+  color: var(--chrome-encre);
+  opacity: 0.62;
+  gap: 20px;
+}
+
+:global(:root[data-design='v3']) .piedBarreLiens {
+  gap: 22px;
+}
+
+/*
+ * Les liens de la barre du bas prennent les 13 px de leur barre.
+ *
+ * `.piedBarre a` porte `var(--taille-m)`, soit 14 : un pixel de plus par
+ * ligne, et la barre entière grandissait de deux — l'écart précis qu'un
+ * relevé trouve et qu'un œil ne trouve pas.
+ */
+:global(:root[data-design='v3']) .piedBarre a {
+  font-size: inherit;
+}
+
+/*
+ * Le repli étroit — écrit, et non laissé à `auto-fit`.
+ *
+ * `02-layout-responsive.md` coupe à 1120 puis à 760. Entre les deux, les
+ * trois colonnes de liens tiennent encore ; en dessous, elles s'empilent.
+ */
+@media (max-width: 1120px) {
+  :global(:root[data-design='v3']) .piedHaut {
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 32px;
+  }
+
+  :global(:root[data-design='v3']) .piedIdentite {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .piedHaut {
+    grid-template-columns: 1fr;
+    gap: 28px;
+    padding: 0 20px 40px;
+  }
+
+  :global(:root[data-design='v3']) .piedBarreInterieur {
+    padding: 22px 20px 30px;
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES LIENS DU PIED SE RESSERRENT — À LA SOURIS SEULEMENT.                │
+ * │                                                                          │
+ * │ La maquette écrit `gap:12px` entre des liens de 15 px. Le dépôt pose     │
+ * │ `min-height: var(--cible-min)` sur chacun, soit 44 px, et l'écart réel   │
+ * │ montait à 56 : la colonne s'étirait sur presque deux fois la hauteur du  │
+ * │ dossier.                                                                 │
+ * │                                                                          │
+ * │ Les 44 px ne sont pas une lubie : c'est la taille minimale d'une cible   │
+ * │ tactile, et un test Playwright la vérifie. Mais la liste d'acceptation   │
+ * │ dit « no hit target under 44×44px ON MOBILE ». À la souris, le curseur   │
+ * │ vise au pixel.                                                           │
+ * │                                                                          │
+ * │ Le partage se fait donc sur `pointer: fine` — la CAPACITÉ de l'appareil, │
+ * │ jamais une largeur d'écran : un portable étroit a une souris, une        │
+ * │ tablette large n'en a pas.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (pointer: fine) {
+  :global(:root[data-design='v3']) .piedListe a {
+    min-height: 0;
+  }
+
+  /*
+   * La barre du bas suit la même règle, et pour un motif de plus.
+   *
+   * Le prototype n'y met pas des liens mais des `<span>` : « Conditions
+   * générales » et « Confidentialité » n'y mènent nulle part. Ici ce sont de
+   * vraies pages, donc de vrais liens — et leurs 44 px de cible faisaient une
+   * barre de 89 px là où le dossier en dessine 74.
+   */
+  :global(:root[data-design='v3']) .piedBarre a {
+    min-height: 0;
+  }
+}
+
+/* Le lieu, à droite de la barre du bas. */
+.piedLieu {
+  margin: 0;
 }

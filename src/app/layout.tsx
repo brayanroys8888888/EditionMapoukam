@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 import { langueValide } from '@/i18n';
-import { versionDesign } from '@/design/version';
+import { COOKIE_THEME, estV3, themeValide, versionDesign } from '@/design/version';
 import '@/design/tokens.css';
 // Les `@font-face` : ils ne dépendent d'aucun jeton, mais les jetons les
 // nomment (`--police-titre: 'Fraunces'`). Déclarés ici, jamais dans un écran.
@@ -40,6 +40,24 @@ import '@/design/global.css';
 export default async function RootLayout({ children }: { children: ReactNode }) {
   const langue = langueValide((await headers()).get('x-langue'));
 
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE THÈME VIENT D'UN COOKIE, ET IL EST JUSTE AU PREMIER RENDU.        │
+   * │                                                                      │
+   * │ `09-nextjs-implementation.md` l'exige et interdit l'alternative :     │
+   * │ « never with a blocking inline script ». Un script qui corrige la     │
+   * │ couleur après la première peinture produit exactement le             │
+   * │ clignotement blanc que le thème sombre existe pour éviter — et il le  │
+   * │ produit sur la connexion lente du §5.1, où la fenêtre est la plus     │
+   * │ longue.                                                              │
+   * │                                                                      │
+   * │ Un cookie est lisible par le SERVEUR : l'attribut part déjà juste     │
+   * │ dans le HTML. `localStorage` ne l'est pas — c'est pourquoi il ne      │
+   * │ porte pas ce choix, alors qu'il portera le panier.                    │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const theme = themeValide((await cookies()).get(COOKIE_THEME)?.value);
+
   return (
     /*
      * ┌──────────────────────────────────────────────────────────────────────┐
@@ -55,8 +73,23 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
      * │ changer de direction sans qu'une ligne de leur code bouge.           │
      * └──────────────────────────────────────────────────────────────────────┘
      */
-    <html lang={langue} data-design={versionDesign()}>
+    <html lang={langue} data-design={versionDesign()} data-theme={theme ?? undefined}>
       <head>
+        {/*
+         * ┌────────────────────────────────────────────────────────────────┐
+         * │ `color-scheme` N'EST PAS DÉCORATIF.                            │
+         * │                                                                │
+         * │ Il dit au navigateur de peindre SES surfaces — barres de       │
+         * │ défilement, champs natifs, fond avant la feuille de style —    │
+         * │ dans le bon sens. Sans lui, un thème sombre garde une barre de │
+         * │ défilement blanche et un éclair clair au chargement.           │
+         * │                                                                │
+         * │ Quand le visiteur n'a rien choisi, on annonce `light dark` :   │
+         * │ c'est-à-dire « les deux me vont, suis la préférence système » — │
+         * │ exactement ce que fait la requête média des jetons.            │
+         * └────────────────────────────────────────────────────────────────┘
+         */}
+        {estV3() ? <meta name="color-scheme" content={theme ?? 'light dark'} /> : null}
         {/*
          * ┌────────────────────────────────────────────────────────────────┐
          * │ L'ICÔNE D'ONGLET EST LE LOGO SUR UN DISQUE VERT.              │
@@ -83,20 +116,49 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
          * toujours récupérée en mode CORS, et sans cet attribut le navigateur
          * télécharge le fichier DEUX FOIS — une pour rien.
          */}
-        <link
-          rel="preload"
-          href="/fonts/nunito-latin-wght-normal.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-        <link
-          rel="preload"
-          href="/fonts/fraunces-latin-full-normal.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
+        {/*
+         * Les DEUX familles PRÉCHARGÉES suivent la direction servie.
+         *
+         * Précharger Fraunces et Nunito sous la V3 ferait payer 160 Ko à un
+         * visiteur qui ne verra ni l'une ni l'autre — et retarderait d'autant
+         * les deux polices qu'il attend vraiment. Le préchargement n'est utile
+         * que s'il porte sur ce que la page va effectivement peindre.
+         */}
+        {estV3() ? (
+          <>
+            <link
+              rel="preload"
+              href="/fonts/figtree-latin-wght-normal.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="preload"
+              href="/fonts/caprasimo-latin-400-normal.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+          </>
+        ) : (
+          <>
+            <link
+              rel="preload"
+              href="/fonts/nunito-latin-wght-normal.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+            <link
+              rel="preload"
+              href="/fonts/fraunces-latin-full-normal.woff2"
+              as="font"
+              type="font/woff2"
+              crossOrigin="anonymous"
+            />
+          </>
+        )}
       </head>
       <body>{children}</body>
     </html>

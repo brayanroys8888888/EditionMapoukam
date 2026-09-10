@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { langueValide, type LangueInterface } from '@/i18n';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 
 /**
  * GARDE DES ÉCRANS D'ADMINISTRATION.
@@ -35,7 +35,7 @@ import { identifierAppelant } from '@/lib/auth/session';
 export async function exigerAdministrateur(langueBrute: string): Promise<LangueInterface> {
   const langue = langueValide(langueBrute);
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 

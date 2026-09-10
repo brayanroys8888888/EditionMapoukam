@@ -27,9 +27,21 @@ import type * as NavigationNext from 'next/navigation';
  */
 vi.mock('next/navigation', async (importOriginal) => {
   const reel = await importOriginal<typeof NavigationNext>();
-  const { routeurSimule } = await import('./routeur');
+  const { routeurSimule, adresseSimulee } = await import('./routeur');
 
-  return { ...reel, useRouter: () => routeurSimule };
+  return {
+    ...reel,
+    useRouter: () => routeurSimule,
+    /*
+     * `usePathname` et `useSearchParams` exigent le même contexte absent, et
+     * pour la même raison. Ils sont fournis ici plutôt que dans chaque test
+     * qui en a besoin : un SECOND remplacement de `next/navigation`, posé
+     * dans un fichier de test, fait mourir le worker sans message utile.
+     * Voir l'encadré d'`adresseSimulee`.
+     */
+    usePathname: () => adresseSimulee.chemin,
+    useSearchParams: () => new URLSearchParams(adresseSimulee.requete),
+  };
 });
 
 /**
@@ -50,8 +62,13 @@ afterEach(async () => {
   // Les espions du routeur sont PARTAGÉS entre les tests : sans remise à zéro,
   // un test lirait les navigations d'un autre — la même classe de défaut que
   // celle contre laquelle `cleanup()` protège le DOM.
-  const { routeurSimule } = await import('./routeur');
+  const { routeurSimule, adresseSimulee } = await import('./routeur');
   for (const espion of Object.values(routeurSimule)) espion.mockClear();
+
+  // L'adresse est PARTAGÉE elle aussi : un test qui la pose la laisserait au
+  // suivant, lequel passerait ou tomberait selon l'ordre d'exécution.
+  adresseSimulee.chemin = '/fr';
+  adresseSimulee.requete = '';
 });
 
 /**

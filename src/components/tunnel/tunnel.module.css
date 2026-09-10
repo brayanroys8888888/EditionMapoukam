@@ -360,3 +360,103 @@
   flex-wrap: wrap;
   gap: var(--espace-3);
 }
+
+/* ── Le monogramme du moyen de paiement ─────────────────────────────────── */
+
+/*
+ * Un disque de 44 px, avec deux lettres dedans.
+ *
+ * Il ne sert pas à identifier — le nom complet est écrit à côté. Il sert à
+ * DISTINGUER : trois rangées de texte identiquement composées se confondent
+ * du coin de l'œil, et l'on clique la deuxième en croyant prendre la
+ * première. Trois disques donnent trois points d'ancrage.
+ */
+.moyenSigle {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+  color: var(--action-texte);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.02em;
+}
+
+/*
+ * La carte passe à trois colonnes : le disque, le texte, puis « Choisir ».
+ *
+ * Le disque occupe les deux rangées de texte, ce qui le centre sur l'ensemble
+ * plutôt que sur la première ligne — sans quoi il flotterait en haut de la
+ * carte, désaligné de tout.
+ */
+.moyenLien {
+  grid-template-columns: auto 1fr auto;
+  column-gap: var(--espace-4);
+}
+
+.moyenNom,
+.moyenNote {
+  grid-column: 2;
+}
+
+.moyenChoisir {
+  grid-column: 3;
+}
+
+@media (max-width: 480px) {
+  .moyenLien {
+    grid-template-columns: auto 1fr;
+  }
+
+  .moyenChoisir {
+    grid-column: 2;
+    grid-row: auto;
+  }
+}
+
+/* ── Le sceau d'issue ───────────────────────────────────────────────────── */
+
+/*
+ * 86 px, la cote du dossier. C'est grand, et c'est le but : cet élément
+ * répond, de l'autre bout de la pièce, à la seule question qu'on se pose en
+ * arrivant sur cet écran.
+ */
+.sceauReussi,
+.sceauEchoue {
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  margin: 0 auto var(--espace-4);
+  border-radius: var(--rayon-pastille);
+}
+
+/*
+ * La SAUGE pour la réussite, et non le vert d'une palette de statut.
+ *
+ * `--second-encre` est le second accent de chaque direction : le vert clair
+ * de la V2, la sauge d'Organic. Le prendre ici plutôt qu'une couleur de
+ * statut écrite en dur garantit que le sceau suit la direction servie — et
+ * le thème sombre avec elle.
+ */
+.sceauReussi {
+  background: color-mix(in srgb, var(--second-encre) 16%, transparent);
+  color: var(--second-encre);
+}
+
+/*
+ * L'échec ne prend PAS de rouge d'alerte : un paiement qui n'aboutit pas
+ * n'est pas une erreur du client, et le peindre en rouge le lui reprocherait.
+ * L'encre sourde dit « ça n'a pas marché » sans accuser personne — le bouton
+ * de retour au panier, juste dessous, dit quoi faire.
+ */
+.sceauEchoue {
+  background: var(--fond-doux);
+  color: var(--encre-douce);
+}

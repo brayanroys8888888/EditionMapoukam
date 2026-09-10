@@ -2,7 +2,8 @@
   "marque": {
     "_commentaire": "SETTLED on 3 August 2026: the trade name is « EditionMapoukam ». It lives here, in ONE key, and nowhere else — header, footer, page titles, metadata AND emails all read it from here. A test fails if it is hard-coded anywhere else. The value is identical in both languages: a proper noun is not translated.",
     "nom": "EditionMapoukam",
-    "baseline": "African heritage tales, illustrated and retold for today's children."
+    "baseline": "African heritage tales, illustrated and retold for today's children.",
+    "signature": "Tales from Africa"
   },
   "etats": {
     "chargement": "Loading…",
@@ -68,7 +69,16 @@
     "deconnexion": "Sign out",
     "recherche": "Search for a tale",
     "allerAuContenu": "Skip to content",
-    "administration": "Administration"
+    "administration": "Administration",
+    "onglets": {
+      "accueil": "Home",
+      "compte": "Account",
+      "contes": "Tales",
+      "libelle": "Main navigation",
+      "livrets": "Kits",
+      "panier": "Cart"
+    },
+    "promesse": "Instant digital delivery · PDF and EPUB, yours to keep"
   },
   "langue": {
     "selecteur": "Site language",
@@ -159,14 +169,32 @@
     "emailNonVerifieRenvoye": "If your account exists and is not yet confirmed, a new code has just been sent.",
     "attendre": "Too many attempts. Try again in {secondes} seconds.",
     "continuer": "Continue",
-    "allerAuCatalogue": "Browse the catalogue"
+    "allerAuCatalogue": "Browse the catalogue",
+    "accepterConditions": "I accept the terms and conditions",
+    "accepterConditionsRequis": "Tick the terms and conditions to create your account.",
+    "afficherMotDePasse": "Show the password",
+    "connexionIntro": "Enter your details to find your library again.",
+    "emailExemple": "you@example.com",
+    "inscriptionIntro": "A few seconds, and your tales follow you everywhere.",
+    "masquerMotDePasse": "Hide the password",
+    "nomExemple": "First name and surname",
+    "note": "We never ask for any information about children. No account is needed to read the first pages of a tale.",
+    "ongletsLibelle": "Sign in or create an account",
+    "preuveAchats": "What you buy stays available, with no time limit.",
+    "preuveCompte": "One account for home and for the classroom.",
+    "preuveLecture": "Reading picks up where the child left off.",
+    "promesseSurTitre": "Your library",
+    "promesseTexte": "An account keeps the tales you have bought, the kits you have downloaded and your reading progress — on a phone as in a classroom.",
+    "promesseTitre": "Your library follows you everywhere"
   },
   "contes": {
     "titre": "Tales",
     "intro": "Stories from African heritage, illustrated, to read online or keep as PDF and EPUB.",
     "compteTous": "{total} tales available",
     "compteUn": "1 tale available",
-    "lien": "Tales"
+    "lien": "Tales",
+    "compteCarte": "illustrated titles",
+    "videTitre": "No tale matches"
   },
   "livrets": {
     "_commentaire": "The learning-booklet shelf — the SAME catalogue with `type_document` applied. The count reads on the shelf, never on the whole catalogue.",
@@ -174,7 +202,18 @@
     "intro": "Activity material to print or project, drawn from the tales in the catalogue.",
     "compteTous": "{total} learning booklets available",
     "compteUn": "1 learning booklet available",
-    "lien": "Learning booklets"
+    "lien": "Learning booklets",
+    "compteCarte": "booklets available",
+    "compteFormatLibelle": "print-ready",
+    "compteFormatValeur": "A4",
+    "miseEnAvantBadge": "Free · {n} sheets",
+    "miseEnAvantBadgeUne": "Free · 1 sheet",
+    "miseEnAvantFeuilleter": "Preview",
+    "miseEnAvantOuvrir": "Open the kit",
+    "surMesureAction": "See the bespoke offer",
+    "surMesureCorps": "We design tailored materials — activity books, teaching guides, visual aids — from the editorial concept to a print-ready layout.",
+    "surMesureTitre": "A bespoke booklet for your school?",
+    "videTitre": "No booklet matches"
   },
   "catalogue": {
     "_commentaire": "The card carries THREE access lines, not two — see the French dictionary, which carries the reasoning.",
@@ -219,7 +258,13 @@
     "parAuteur": "by {auteur}",
     "trancheAge": "ages {min} and up",
     "trancheAgeBornee": "ages {min} to {max}",
-    "nbPages": "{pages} pages"
+    "nbPages": "{pages} pages",
+    "nbPagesUne": "1 page",
+    "niveauTous": "All levels",
+    "niveaux": "School level",
+    "vue": "View",
+    "vueGrille": "Grid",
+    "vueListe": "List"
   },
   "fiche": {
     "_commentaire": "Actions are driven by `acces.canRead` and `acces.canDownload`, NEVER inferred from `reason` — see the French dictionary, which carries the reasoning.",
@@ -338,7 +383,23 @@
     "associationNote": "Some of the contents stay readable without joining.",
     "bientot": "Coming soon",
     "oui": "Yes",
-    "non": "No"
+    "non": "No",
+    "abonnementLimite": "Does not grant the right to download the books: that remains reserved to a purchase.",
+    "abonnementOeil": "Online reading",
+    "abonnementPrixNote": "No commitment, cancel in one click.",
+    "abonnementTitreCarte": "Reading subscription",
+    "achatLimite": "Does not open online reading of the whole catalogue.",
+    "achatOeil": "Single purchase",
+    "achatPrixNote": "One payment, the file is yours.",
+    "associationDonne1": "The reserved contents: detailed field reports, workshop write-ups.",
+    "associationDonne2": "The support resources and adapted materials.",
+    "associationDonne3": "The invitations to seminars and training sessions.",
+    "associationLimite": "Does not open online reading of the catalogue.",
+    "associationOeil": "DAVE Association",
+    "associationPrixNote": "Membership is separate from the reading subscription.",
+    "associationTitreCarte": "Join the association",
+    "oeil": "Our offers",
+    "questionsToutes": "All the questions"
   },
   "accueil": {
     "surtitre": "Illustrated tales for ages 4–10",
@@ -402,7 +463,8 @@
     "refus_promo_deja_utilise": "You have already used this code.",
     "refus_promo_zone": "This code does not apply to your billing zone.",
     "refus_promo_montant_minimum": "Your basket is below the minimum amount required by this code.",
-    "zoneDivergente": "The country of your payment method changes the applicable price list. The amount above is what will be charged."
+    "zoneDivergente": "The country of your payment method changes the applicable price list. The amount above is what will be charged.",
+    "ajoutEnCours": "Adding to the basket…"
   },
   "paiement": {
     "_commentaire": "A SIMULATION SCREEN, AND IT SAYS SO — see the French dictionary.",
@@ -415,7 +477,21 @@
     "remboursee": "This order has been refunded.",
     "versBibliotheque": "See my library",
     "versPanier": "Back to the basket",
-    "payerMontant": "Pay {montant}"
+    "payerMontant": "Pay {montant}",
+    "choisirDabord": "Choose a payment method first.",
+    "confirmationTitre": "Thank you, your order is confirmed",
+    "continuer": "Continue",
+    "echoueeTitre": "The payment did not go through",
+    "fichiersTitre": "Your files",
+    "lire": "Read online",
+    "livraison": "Delivery",
+    "livraisonImmediate": "Immediate delivery: your files are available as soon as the payment is confirmed.",
+    "livraisonOfferte": "Free",
+    "rassurance": "Secure payment. We keep no bank details of our own.",
+    "recapTitre": "Your order",
+    "rembourseeTitre": "Order refunded",
+    "retourAccueil": "Back to home",
+    "titreRegler": "Pay for your order"
   },
   "compte": {
     "_commentaire": "THE CENTRAL STATE OF THIS PROJECT IS « EXPIRED SUBSCRIPTION + STOCKED LIBRARY » — see the French dictionary, which carries the reasoning.",
@@ -446,7 +522,21 @@
     "perteAbonnementPourquoi": "The subscription opened the reading, never the file.",
     "perteAbonnementAction": "Subscribe again",
     "choixLangue": "Language",
-    "choixFormat": "Format"
+    "choixFormat": "Format",
+    "trouverConte": "Find a new tale",
+    "langueLecture": "Reading language",
+    "recevoirNouveautes": "Receive news by email",
+    "changerMotDePasse": "Change password",
+    "abonnementEtAdhesion": "Subscription and membership",
+    "lectureEnLigne": "ONLINE READING",
+    "activeJusquAu": "Active until {date}",
+    "gererAdhesion": "Manage my membership",
+    "activerAbonnement": "Activate subscription",
+    "gererAbonnement": "Manage my subscription",
+    "nomComplet": "Full name",
+    "adresseEmail": "Email address",
+    "telephone": "Phone number",
+    "enregistrer": "Save"
   },
   "lecteur": {
     "_commentaire": "A 403 hors_extrait ON A TITLE OWNED AT LOAD TIME IS TREATED AS A LOST SESSION, NEVER AS A REFUSED PURCHASE — see the French dictionary, which carries the reasoning.",
@@ -462,7 +552,10 @@
     "finExtraitAction": "Get the full tale",
     "retourFiche": "Back to the tale",
     "interfaceEffacee": "Tap the screen to bring the buttons back",
-    "pageIndisponible": "This page could not be displayed. Please try again shortly."
+    "pageIndisponible": "This page could not be displayed. Please try again shortly.",
+    "extraitLibre": "Free extract. The rest opens with a subscription or by buying this title.",
+    "pleinEcran": "Full screen",
+    "quitterPleinEcran": "Leave full screen"
   },
   "abonnement": {
     "_commentaire": "The screen shows `statut` — the OBSERVED status — never `statut_rapporte`. See the French dictionary.",
@@ -506,7 +599,11 @@
     "aproposStudio": "About the studio",
     "aideEtQuestions": "Help and questions",
     "mentionsLegales": "Legal notice",
-    "droits": "© {annee} {marque}"
+    "droits": "© {annee} {marque}",
+    "lettreAction": "Subscribe",
+    "lettreChamp": "Your email",
+    "lettreSujet": "Subscribing to the new releases letter",
+    "lettreTitre": "Get the new releases"
   },
   "v2": {
     "precedent": "Previous",
@@ -564,6 +661,7 @@
     "assoLire": "Read",
     "assoMinutes": "{minutes} min read",
     "assoRetour": "All contents",
+    "assoSuiteTitre": "Read next",
     "assoVide": "No content yet.",
     "assoReserve": "Members only",
     "assoMurTitre": "This content is reserved for members",
@@ -624,7 +722,47 @@
     "aproposCatalogueTitre": "The stories we publish",
     "aproposFondatrice": "Mapoukam Foka",
     "aproposFondatriceRole": "Founder",
-    "themesOeil": "By theme"
+    "themesOeil": "By theme",
+    "aproposSignature": "Enjoy exploring our site, and discovering our worlds!",
+    "assoContenusOeil": "Our content",
+    "compteThemes": "themes",
+    "compteTitres": "illustrated titles",
+    "contactAdresse": "Address",
+    "contactCourriel": "Email",
+    "contactEmailIndice": "you@example.com",
+    "contactFormNote": "Fields marked with a dot are the ones we need in order to reply.",
+    "contactMessageIndice": "Tell us everything…",
+    "contactNomIndice": "First and last name",
+    "contactSujet": "Your message is about",
+    "contactSujetAssociation": "The association",
+    "contactSujetConsulting": "Consulting",
+    "contactSujetLivre": "A book",
+    "contactSujetLivret": "A teaching kit for my class",
+    "contactTelephone": "Phone",
+    "filAriane": "Breadcrumb",
+    "heroEventailCorps": "Named themes, not empty shelves",
+    "heroEventailTitre": "{n} titles in the catalogue",
+    "heroPreuveContes": "titles in the catalogue",
+    "heroPreuveFormats": "formats to keep: PDF and EPUB",
+    "heroPreuveThemes": "themes to explore",
+    "histoireBadge": "Named themes, stated age ranges",
+    "themesVoir": "See the tales",
+    "ficheApports": "What this title brings",
+    "ficheAuteur": "Author",
+    "ficheContinuerLecture": "Resume reading",
+    "ficheFeuilleter": "Read the first pages",
+    "ficheObjectifs": "Learning objectives",
+    "ficheOngletAvis": "Reviews",
+    "ficheOngletDetails": "Details",
+    "ficheOngletExtrait": "Extract",
+    "ficheOngletsLibelle": "More about this title",
+    "livretApercu": "Sheet {n} of {total}",
+    "livretApercuAide": "preview of the first sheets",
+    "livretAutres": "Other teaching booklets",
+    "livretFormat": "Format",
+    "livretFormatValeur": "PDF and EPUB, ready to print",
+    "livretPrixNote": "One-off purchase, download included",
+    "livretVignette": "Sheet {n}"
   },
   "pages": {
     "introuvableTitre": "This page doesn’t exist",
@@ -1000,7 +1138,11 @@
     "temoignageModifie": "Testimonial saved.",
     "temoignagePublie": "Testimonial published.",
     "temoignageDepublie": "Testimonial removed from the home page.",
-    "temoignageSupprime": "Testimonial deleted."
+    "temoignageSupprime": "Testimonial deleted.",
+    "livretNiveau": "School level",
+    "livretNiveauAide": "The level the booklet targets, written as the publisher says it — “PS · MS\r\n--- auth.note.fr  [ce0cb8f1]\r\n    e = Aucun compte n’est nécessaire pour nous écrire, et nous ne demandons jamais d’information sur les enfants.\\n--- pied ---\",\"is_error\":false}]},\"uuid\":\"68557b99-205e-44ee-80b6-88192193d50b\",\"timestamp\":\"2026-09-05T11:58:42.764Z\",\"toolUseResult\":{\"stdout\":\"contactOeil = Écrivez-nous\\ncontactTitre = Contactez-nous\\ncontactTexte = Une question sur nos livres,\r\n--- surMesureCorps.fr  [ce0cb8f1]\r\n    font-size:16.5px;line-height:1.65;opacity:.8;margin:0\">Nous concevons des supports personnalisés — cahier d’activités, guide, supports visuels — de la conception intellectuelle à la maquette prête à imprimer.</p>\\n        </div>\\n        <button onClick=\"{{ goConsulting }}\" class=\"lift\" style=\"justify-self:start;background:var(--terra);color:#fff;border:0;bo\r\n--- surMesureCorps.en  [ce0cb8f1]\r\n    spoke booklet for your school?\",\\n    ",
+    "livretObjectifs": "Learning objectives",
+    "livretObjectifsAide": "One objective per line, in the order they follow. They appear with a checkmark on the shelf’s featured panel. Clearing the box removes them all."
   },
   "tunnel": {
     "progressionAchat": "Order progress",
@@ -1109,5 +1251,34 @@
     "corps": "A real provider produces three outcomes, and all three deserve a screen. The main button simulates success; the other two are there to exercise what happens next.",
     "echouer": "Simulate a failure",
     "abandonner": "Simulate an abandon"
+  },
+  "recherche": {
+    "aucun": "No title goes by that name. Try a theme, or an age.",
+    "echap": "Esc",
+    "fermer": "Close search",
+    "placeholder": "A title, a theme, an age…",
+    "suggestions": "Suggestions",
+    "titre": "Search the catalogue"
+  },
+  "theme": {
+    "jour": "Day",
+    "libelle": "Site theme",
+    "nuit": "Night",
+    "versClair": "Switch to light theme",
+    "versSombre": "Switch to dark theme"
+  },
+  "toast": {
+    "avisDepose": "Your review has gone to moderation.",
+    "avisRetire": "Your review has been removed.",
+    "connexion": "Signed in.",
+    "deconnexion": "Your session is closed.",
+    "inscription": "Account created — welcome!",
+    "motDePasse": "A reset link has just been sent by email.",
+    "panierAjout": "Added to basket.",
+    "panierAjoutTitre": "“{titre}” added to your basket",
+    "panierRefus": "That title could not be added.",
+    "panierRetrait": "Removed from basket.",
+    "profil": "Details saved.",
+    "reprise": "Resuming at page {n}."
   }
 }

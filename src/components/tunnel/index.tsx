@@ -39,12 +39,7 @@ import styles from './tunnel.module.css';
 export type ParcoursTunnel = 'achat' | 'abonnement';
 
 const ETAPES: Record<ParcoursTunnel, readonly CleTraduction[]> = {
-  achat: [
-    'tunnel.etapePanier',
-    'tunnel.etapeRecapitulatif',
-    'tunnel.etapePaiement',
-    'tunnel.etapeConfirmation',
-  ],
+  achat: ['tunnel.etapeRecapitulatif', 'tunnel.etapePaiement', 'tunnel.etapeConfirmation'],
   abonnement: ['tunnel.etapeFormule', 'tunnel.etapePaiement', 'tunnel.etapeConfirmation'],
 };
 
@@ -149,6 +144,22 @@ export function BandeauSimulation({ langue }: { langue: LangueInterface }): Reac
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
+ * Deux lettres tirées d'un libellé — « Orange Money » → « OM ».
+ *
+ * Deux au plus, et jamais trois : « MTN Mobile Money » donnerait « MMM », ce
+ * qui n'abrège rien et remplit mal un disque. Un libellé d'un seul mot rend sa
+ * première lettre.
+ */
+export function monogramme(libelle: string): string {
+  return libelle
+    .split(/\s+/)
+    .filter((mot) => mot.length > 0)
+    .slice(0, 2)
+    .map((mot) => (mot[0] ?? '').toUpperCase())
+    .join('');
+}
+
+/**
  * Les trois moyens, en cartes-liens.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -180,12 +191,31 @@ export function ChoixMoyens({
       <p className={styles.sectionIntro}>{traduire(langue, 'moyens.intro')}</p>
 
       <ul className={styles.moyens}>
-        {MOYENS_PAIEMENT.map((moyen) => (
+        {MOYENS_PAIEMENT.map((moyen) => {
+          const nom = traduire(langue, `moyens.${moyen}` as CleTraduction);
+
+          return (
           <li key={moyen} className={styles.moyen}>
             <a className={styles.moyenLien} href={lienDuMoyen(moyen)}>
-              <span className={styles.moyenNom}>
-                {traduire(langue, `moyens.${moyen}` as CleTraduction)}
+              {/*
+               * ┌────────────────────────────────────────────────────────┐
+               * │ LE MONOGRAMME EST TIRÉ DU LIBELLÉ, PAS D'UNE TABLE.   │
+               * │                                                        │
+               * │ « Orange Money » donne OM, « Carte bancaire » donne    │
+               * │ CB — et « Bank card », BC. Une table d'abréviations    │
+               * │ écrite à la main aurait affiché « CB » sur le site     │
+               * │ anglais, où ces deux lettres ne veulent rien dire.     │
+               * │                                                        │
+               * │ Il est DÉCORATIF : le nom complet est juste à côté, et │
+               * │ deux lettres épelées par un lecteur d'écran avant       │
+               * │ chaque moyen n'ajouteraient que du bruit.              │
+               * └────────────────────────────────────────────────────────┘
+               */}
+              <span className={styles.moyenSigle} aria-hidden="true">
+                {monogramme(nom)}
               </span>
+
+              <span className={styles.moyenNom}>{nom}</span>
               <span className={styles.moyenNote}>
                 {traduire(langue, `moyens.${moyen}Note` as CleTraduction)}
               </span>
@@ -194,7 +224,8 @@ export function ChoixMoyens({
               </span>
             </a>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </section>
   );
@@ -384,3 +415,41 @@ export function ChampsCoordonnees({
 }
 
 export { styles as stylesTunnel };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LE SCEAU D'ISSUE
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Le disque qui ouvre l'écran d'issue — payée, échouée, remboursée.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN ÉCRAN D'ISSUE SE LIT AVANT D'ÊTRE LU.                                │
+ * │                                                                          │
+ * │ Jusqu'ici, « Votre paiement a été accepté » et « Votre paiement a        │
+ * │ échoué » se présentaient de la MÊME façon : un paragraphe en gras dans   │
+ * │ un panneau. Il fallait lire la phrase pour savoir si l'on avait payé.    │
+ * │                                                                          │
+ * │ `03-screens-desktop.md` demande un disque de 86 px. Ce n'est pas un      │
+ * │ ornement : c'est le seul élément de la page qui répond à la question     │
+ * │ qu'on se pose en arrivant dessus, et il y répond de l'autre bout de la   │
+ * │ pièce.                                                                   │
+ * │                                                                          │
+ * │ Il est DÉCORATIF pour les technologies d'assistance : la phrase juste    │
+ * │ en dessous dit déjà ce qu'il montre, et une coche annoncée deux fois     │
+ * │ n'aide personne.                                                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function SceauIssue({ issue }: { issue: 'reussie' | 'echouee' }): ReactNode {
+  return (
+    <span
+      className={issue === 'reussie' ? styles.sceauReussi : styles.sceauEchoue}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor"
+        strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        {issue === 'reussie' ? <path d="M4 12.5 9.5 18 20 6.5" /> : <path d="M6 6l12 12M18 6 6 18" />}
+      </svg>
+    </span>
+  );
+}

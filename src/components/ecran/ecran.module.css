@@ -499,3 +499,95 @@
   color: var(--lien-survol);
   text-decoration-color: var(--lien-survol);
 }
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LES TROIS PLANS D'ORGANIC, SUR LES ÉCRANS UTILITAIRES.              ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CETTE FEUILLE SERT LE PANIER, LE PAIEMENT, LE COMPTE ET LES PAGES        │
+ * │ ÉDITORIALES — SOIT LES LOTS 7, 8 ET 9 D'UN SEUL COUP.                   │
+ * │                                                                          │
+ * │ Ce n'est pas de l'économie : c'est la raison pour laquelle elle existe.  │
+ * │ Un panneau de récapitulatif et une carte de commande sont la MÊME chose  │
+ * │ vue sur deux écrans, et leur donner deux feuilles serait la promesse     │
+ * │ qu'ils divergent — sur les écrans où l'on paie.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Ce que la V3 change tient en une idée : la V2 pose ses panneaux SUR le fond
+ * de page et les détache par un filet. Organic les pose sur un troisième plan
+ * — `--surface`, un crème plus clair — et le filet devient discret.
+ */
+
+:global(:root[data-design='v3']) .panneau,
+:global(:root[data-design='v3']) .vide,
+:global(:root[data-design='v3']) .lignes,
+:global(:root[data-design='v3']) .totaux {
+  background: var(--surface);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE BOUTON PRIMAIRE PASSE EN PILULE — ET IL FAUT LE DIRE ICI.            │
+ * │                                                                          │
+ * │ Son rayon est écrit en dur, `11px`, et non tiré d'un jeton : la V1 et la │
+ * │ V2 le veulent ainsi. Sous Organic, tout ce sur quoi on peut agir est en  │
+ * │ pilule — c'est la règle la plus visible de la direction, et un bouton    │
+ * │ carré au milieu de vingt pilules a l'air d'un oubli.                     │
+ * │                                                                          │
+ * │ On ne « corrige » donc pas le `11px` en jeton : on le laisse à la V2, à  │
+ * │ qui il appartient, et la V3 déclare le sien.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .boutonPrimaire,
+:global(:root[data-design='v3']) .boutonSecondaire,
+:global(:root[data-design='v3']) .boutonDiscret {
+  border-radius: var(--rayon-bouton);
+}
+
+/*
+ * Les champs de saisie prennent le rayon groupé du dossier — 16 à 18 px, et
+ * non la pilule. Une pilule sur un champ de plusieurs lignes de texte donne
+ * des angles où le curseur n'atteint pas le texte.
+ */
+:global(:root[data-design='v3']) .saisie {
+  border-radius: 18px;
+  padding: 14px 18px;
+  background: var(--surface);
+  border-color: var(--bordure);
+}
+
+/*
+ * Le total final quitte la crème pour l'olive.
+ *
+ * C'est la ligne qu'on cherche sur un récapitulatif, et jusqu'ici rien ne la
+ * distinguait des autres qu'un filet et un corps plus gros. Sur l'olive, elle
+ * est la seule chose sombre de l'écran — on la trouve sans la lire.
+ */
+:global(:root[data-design='v3']) .totalFinal {
+  margin: var(--espace-3) -16px calc(var(--espace-5) * -1);
+  padding: var(--espace-4) 16px;
+  border-top: 0;
+  border-radius: 0 0 var(--rayon-carte) var(--rayon-carte);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+/* La bordure des panneaux s'efface d'un cran : la surface fait déjà le travail. */
+:global(:root[data-design='v3']) .panneau,
+:global(:root[data-design='v3']) .vide,
+:global(:root[data-design='v3']) .lignes,
+:global(:root[data-design='v3']) .totaux {
+  border-color: var(--bordure);
+}
+
+/*
+ * `overflow: hidden` sur le bloc des totaux — sans quoi la bande d'olive
+ * ci-dessus déborde des angles arrondis du panneau. Le défaut est
+ * caractéristique : deux petits coins carrés en bas d'une carte, qu'on
+ * attribue à un rayon mal réglé plutôt qu'à un enfant qui dépasse.
+ */
+:global(:root[data-design='v3']) .totaux {
+  overflow: hidden;
+}

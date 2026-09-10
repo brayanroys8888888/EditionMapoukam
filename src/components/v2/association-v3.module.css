@@ -1,0 +1,951 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * L'ASSOCIATION DAVE — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `Site EditionMapoukam.dc.html`, lignes 674 à 784.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PAGE ALTERNE TROIS FONDS, ET C'EST CE QUI LA DÉCOUPE.                │
+ * │                                                                          │
+ * │ Crème de bande au héros, olive plein pour l'action de terrain, crème de  │
+ * │ page pour tout le reste. Aucune de ces trois sections n'a de titre de    │
+ * │ rubrique : c'est le FOND qui dit qu'on a changé de sujet, et c'est       │
+ * │ pourquoi la bande sombre ne peut pas devenir une carte de plus.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Le rembourrage horizontal reprend la forme employée par les autres écrans
+ * de la passe : la boîte va d'un bord à l'autre, et sa marge intérieure
+ * absorbe à la fois le centrage du conteneur de 1240 et ses 28 px propres.
+ * Sans les « + 28px », le contenu mesure 1240 là où la maquette rend 1184.
+ */
+
+/* ══ Le héros — l'argument à gauche, le collage à droite ══════════════════ */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--fond-doux);
+  border-bottom: 1px solid var(--bordure);
+}
+
+/*
+ * Le disque sauge qui déborde du coin haut-droit, derrière le collage.
+ *
+ * 24 % d'opacité : c'est le plus appuyé des trois disques de la passe — celui
+ * d'« à propos » vaut 12, celui d'« expertise » 18. Il a de quoi : ici il ne
+ * décore pas un aplat, il porte le collage, et sans lui les trois images
+ * flottent sur la crème.
+ */
+.heroCercle {
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--second) 24%, transparent);
+  pointer-events: none;
+}
+
+.heroInterieur {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  padding: 60px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 70px;
+}
+
+/*
+ * Le sur-titre reste EN LIGNE — voir l'encadré du même nom dans
+ * `contact.module.css` : en bloc, la hauteur de sa ligne viendrait de sa
+ * propre fonte et non de celle du conteneur, et la ligne perdrait 4 px.
+ */
+.oeil {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+/* Le point terre cuite du prototype, six pixels, purement décoratif. */
+.point {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 99px;
+  background: var(--action);
+}
+
+.titre {
+  font-size: clamp(38px, 4.6vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  margin: 16px 0 18px;
+}
+
+.chapeau {
+  font-size: 19px;
+  line-height: 1.65;
+  color: var(--encre-douce);
+  margin: 0 0 16px;
+  max-width: 560px;
+}
+
+.chapeauSecond {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+  margin: 0 0 30px;
+  max-width: 560px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.boutonPrincipal,
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 17px 28px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16px;
+  /*
+   * `normal` : le prototype écrit ces deux boutons en `<button>`, qui n'hérite
+   * pas de l'interligne du corps. Ici ce sont des liens, qui en héritent — la
+   * différence est donc écrite, sans quoi chaque bouton gagne sept pixels.
+   */
+  line-height: normal;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease),
+    color 0.35s var(--ease);
+}
+
+.boutonPrincipal {
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  box-shadow: var(--ombre-m);
+}
+
+.boutonPrincipal:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+/* Le second est un contour d'ENCRE qui s'inverse au survol. */
+.boutonSecondaire {
+  background: transparent;
+  color: var(--encre);
+  border: 1.5px solid var(--encre);
+}
+
+.boutonSecondaire:hover {
+  background: var(--encre);
+  color: var(--fond);
+  transform: translateY(-4px);
+}
+
+/* ── Le collage ──────────────────────────────────────────────────────────
+ *
+ * Deux colonnes égales de 16 px de gouttière : le logo occupe la rangée
+ * entière, les deux photographies se partagent celle du dessous.
+ */
+.collage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE LOGO EST SUR SON PROPRE CARTON BLANC, ET IL N'EST PAS LAVÉ.          │
+ * │                                                                          │
+ * │ Il porte le nom de l'association ET sa devise, en pixels. Le traitement  │
+ * │ `.lave` — désaturé, contrasté à 85 %, éclairci de 10 % — pâlirait ces    │
+ * │ mots jusqu'à l'illisible. C'est la même règle que pour l'illustration    │
+ * │ d'« à propos », et pour les couvertures de livres : ce qui porte une     │
+ * │ information reste franc.                                                 │
+ * │                                                                          │
+ * │ `height: auto` casse l'effet des attributs `width`/`height` de la        │
+ * │ balise, qui valent une hauteur EMPLOYÉE : sans lui, le logo s'affiche à  │
+ * │ ses 1024 px de fichier et fait exploser la rangée. Les attributs         │
+ * │ restent — ils réservent la place avant que l'image n'arrive.             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.logo {
+  grid-column: span 2;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 280px;
+  justify-self: center;
+  border-radius: 24px;
+  background: var(--surface);
+  padding: 14px;
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * Les deux photographies, elles, sont LAVÉES — c'est le traitement que le
+ * dossier pose sur chaque photographie de contenu, pour qu'elle cesse de se
+ * battre avec la palette.
+ */
+.photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 22px;
+  box-shadow: var(--ombre-s);
+  filter: saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94);
+}
+
+/* ══ La bande sombre — l'action de terrain ════════════════════════════════ */
+
+/*
+ * L'anneau de focus prend l'encre du chrome : `--focus-couleur` vaut l'encre
+ * de PAGE, faite pour la crème, et elle disparaît sur l'olive. Le focus
+ * existerait alors sans se voir — le pire des deux mondes.
+ */
+.bande {
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  padding: 70px 0;
+}
+
+.bandeInterieur {
+  padding: 0 max(28px, (100% - var(--largeur-page)) / 2 + 28px);
+}
+
+.bandeEnTete {
+  max-width: 620px;
+  margin-bottom: 44px;
+}
+
+/*
+ * Le sur-titre prend `--accent-sur-chrome`, et non `--action`.
+ *
+ * La terre cuite du jour sur l'olive du jour ne vaut que 3,34:1 — sous le
+ * seuil, pour un texte de 11,5 px. Le jeton porte la terre cuite de nuit,
+ * plus claire, qui tient les deux thèmes. Voir son encadré dans `tokens.css`.
+ */
+.oeilSurChrome {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-sur-chrome);
+}
+
+.bandeTitre {
+  font-size: clamp(30px, 3.2vw, 42px);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+  margin: 12px 0 0;
+}
+
+.axes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
+  gap: 22px;
+}
+
+/*
+ * La carte est une surface à peine détachée de l'olive — 7 % d'encre au fond,
+ * 14 % au filet. C'est ce qui la fait lire comme un aparté et non comme une
+ * carte posée sur la page.
+ */
+.axe {
+  background: color-mix(in srgb, var(--chrome-encre) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 14%, transparent);
+  border-radius: 28px;
+  padding: 30px;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.axe:hover {
+  background: color-mix(in srgb, var(--chrome-encre) 11%, transparent);
+  transform: translateY(-4px);
+}
+
+.axeNumero {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 19px;
+}
+
+.axeTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 21px;
+  margin: 20px 0 10px;
+}
+
+.axeCorps {
+  font-size: 15.5px;
+  line-height: 1.65;
+  opacity: 0.78;
+  margin: 0;
+}
+
+/* ══ Adhérer, et ce qu'il faut savoir ═════════════════════════════════════ */
+
+.sectionAdhesion {
+  padding: 80px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 20px;
+}
+
+/*
+ * `align-items: start` et non `center` : la carte de droite est plus courte
+ * que la prose de gauche, et centrée elle décollerait du titre qu'elle
+ * complète. Le prototype l'écrit ainsi.
+ */
+.adhesion {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.adhesionTitre {
+  font-size: clamp(28px, 3vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 16px;
+}
+
+.adhesionTexte {
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+  margin: 0 0 14px;
+}
+
+.adhesionTexte:last-child {
+  margin-bottom: 0;
+}
+
+.notes {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 30px;
+  padding: 32px;
+  box-shadow: var(--ombre-s);
+}
+
+.notesTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 19px;
+  margin: 0 0 18px;
+}
+
+.notesListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/*
+ * La DERNIÈRE note garde sa marge basse, et ce n'est pas un oubli : le
+ * prototype la garde. La retirer faisait perdre quatorze pixels à la carte —
+ * et comme la section les perdait avec elle, tout ce qui suivait remontait
+ * d'autant. Quatorze pixels invisibles sur une capture isolée, et lisibles
+ * dès qu'on superpose les deux.
+ */
+.note {
+  display: flex;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0 0 14px;
+}
+
+/*
+ * Le tiret remplace la puce, et il est posé sur la ligne de base du texte
+ * plutôt que centré : à 11 px du haut il s'aligne sur la première ligne, quel
+ * que soit le nombre de lignes qui suivent.
+ */
+.tiret {
+  width: 18px;
+  height: 2px;
+  flex: none;
+  margin-top: 11px;
+  background: var(--action);
+}
+
+/* ══ Soutenir autrement, puis la citation ═════════════════════════════════ */
+
+.sectionSoutien {
+  padding: 56px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 30px;
+}
+
+/*
+ * Le titre de la rangée existe pour les lecteurs d'écran seulement : le
+ * prototype n'en pose aucun, et sans lui la section n'a pas d'étiquette dans
+ * la liste des repères.
+ */
+.titreCache {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.soutiens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+}
+
+/*
+ * Sans filet, contrairement aux autres cartes de la page : c'est le crème de
+ * bande sur le crème de page qui la détache, et un filet en plus la ferait
+ * peser autant que le panneau de citation qui la suit.
+ */
+.soutien {
+  background: var(--fond-doux);
+  border-radius: 26px;
+  padding: 28px;
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.soutien:hover {
+  box-shadow: var(--ombre-m);
+  transform: translateY(-4px);
+}
+
+.soutienIcone {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: var(--second);
+  color: var(--second-contre);
+}
+
+.soutienTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 19px;
+  margin: 18px 0 8px;
+}
+
+.soutienCorps {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/* ── Le panneau de clôture ───────────────────────────────────────────────── */
+
+.panneau {
+  margin-top: 34px;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  padding: 44px;
+  text-align: center;
+  box-shadow: var(--ombre-s);
+}
+
+.citation {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: clamp(24px, 2.6vw, 34px);
+  line-height: 1.6;
+  margin: 0 auto 12px;
+  max-width: 640px;
+}
+
+.citationRelance {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0 auto 26px;
+  max-width: 560px;
+}
+
+.panneauAction {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 17px 30px;
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16px;
+  line-height: normal;
+  box-shadow: var(--ombre-m);
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.panneauAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+/* ══ Les contenus de l'association ════════════════════════════════════════ */
+
+.sectionArticles {
+  padding: 70px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 96px;
+}
+
+.articlesEnTete {
+  margin-bottom: 32px;
+}
+
+.oeilClair {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+.articlesTitre {
+  font-size: clamp(30px, 3.2vw, 42px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 10px 0 8px;
+}
+
+.articlesTexte {
+  font-size: 16.5px;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+.vide {
+  font-size: 16.5px;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN CONTENU EN GRAND, LES AUTRES EN LIGNES — ET CE N'EST PAS UN CHOIX    │
+ * │ ÉDITORIAL FAIT ICI.                                                      │
+ * │                                                                          │
+ * │ L'ordre vient de la base : `lireContenusAssociatifs` rend la liste déjà  │
+ * │ triée, et le premier élément est celui que l'éditeur a mis en avant.     │
+ * │ Cet écran ne le choisit pas, il le lit — comme il lit `peutLire`.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.articles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 22px;
+  align-items: stretch;
+}
+
+.principal {
+  display: flex;
+}
+
+.principalLien {
+  --focus-couleur: var(--chrome-encre);
+  position: relative;
+  overflow: hidden;
+  /*
+   * `flex` et non `block` : le corps doit occuper toute la carte pour que son
+   * `justify-content: flex-end` colle le texte en bas. Une hauteur en
+   * pourcentage ne suffit pas — elle réclame une hauteur DÉFINIE au parent, et
+   * `min-height` n'en est pas une.
+   */
+  display: flex;
+  width: 100%;
+  min-height: 420px;
+  border-radius: 32px;
+  box-shadow: var(--ombre-m);
+  color: var(--chrome-encre);
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.principalLien:hover {
+  color: var(--chrome-encre);
+  box-shadow: var(--ombre-l);
+  transform: translateY(-4px);
+}
+
+.principalImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94);
+}
+
+/*
+ * Le voile est ce qui rend le titre lisible, et il ne peut donc pas être une
+ * transparence uniforme : à 92 % en bas et 25 % aux deux tiers, la photo
+ * reste une photo là où il n'y a pas de texte.
+ *
+ * Il prend l'olive du chrome dans les deux thèmes. Le fond de la carte ne
+ * suit PAS le thème du site : c'est une photographie, et un voile qui
+ * s'éclaircirait la nuit ferait disparaître le texte clair posé dessus.
+ */
+.voile {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--chrome) 92%, transparent) 12%,
+    color-mix(in srgb, var(--chrome) 25%, transparent) 65%
+  );
+}
+
+.principalCorps {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 36px;
+}
+
+.etiquette {
+  align-self: flex-start;
+  background: var(--action);
+  color: var(--action-encre);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.principalTitre {
+  font-size: clamp(26px, 2.6vw, 34px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+  margin: 18px 0 12px;
+  max-width: 520px;
+}
+
+.principalExtrait {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.84;
+  margin: 0 0 16px;
+  max-width: 520px;
+}
+
+.principalMeta {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 0;
+}
+
+/*
+ * Les contenus au-delà du troisième, en deux colonnes égales : la même
+ * carte-ligne, à une largeur voisine de celle de la colonne du haut (581 px
+ * contre 484), pour qu'on lise une suite et non un second bloc.
+ */
+.reste {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: grid;
+  /*
+   * `min(420px, 100%)` et non `420px` : un `minmax` dont le minimum dépasse
+   * la place disponible ne se replie pas, il DÉBORDE. À 430 px de fenêtre, la
+   * grille réclamait ses 420 px dans 390 px utiles, et toute la page prenait
+   * dix pixels de défilement horizontal — que rien d'autre ne signalait.
+   */
+  grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
+  gap: 22px;
+}
+
+/* ── La colonne des contenus secondaires ────────────────────────────────── */
+
+.colonne {
+  display: flex;
+}
+
+.colonneListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+
+/*
+ * `flex: 1` sur chaque ligne : les deux — ou les cinq — se partagent la
+ * hauteur du contenu principal, quel que soit leur nombre. C'est ce qui tient
+ * les deux colonnes à la même hauteur sans qu'aucune ne l'impose.
+ */
+.secondaire {
+  display: flex;
+  flex: 1;
+}
+
+.secondaireLien {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 28px;
+  padding: 22px;
+  color: var(--encre);
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease),
+    border-color 0.35s var(--ease);
+}
+
+.secondaireLien:hover {
+  color: var(--encre);
+  border-color: var(--action);
+  box-shadow: var(--ombre-m);
+  transform: translateY(-4px);
+}
+
+.secondaireImage {
+  width: 112px;
+  height: 112px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 20px;
+  filter: saturate(0.6) contrast(0.85) brightness(1.1) opacity(0.94);
+}
+
+.secondaireCorps {
+  display: block;
+}
+
+/*
+ * La sauge en TEXTE prend `--second-encre`, jamais `--second` : l'aplat sauge
+ * ne porte pas de texte, c'est le douzième rôle de la palette qui le dit.
+ */
+.secondaireEtiquette {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--second-encre);
+}
+
+.secondaireTitre {
+  font-size: 20px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 8px 0;
+}
+
+.secondaireMeta {
+  display: block;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PASTILLE DE RÉSERVE N'EXISTE PAS DANS LE PROTOTYPE.                  │
+ * │                                                                          │
+ * │ Elle existe dans le produit, et elle doit : une partie des contenus est  │
+ * │ réservée aux adhérents, et la maquette — qui n'a ni base ni droits — ne  │
+ * │ pouvait pas le savoir. Sans elle, un visiteur clique et se heurte à un   │
+ * │ mur qu'aucun signe n'annonçait.                                          │
+ * │                                                                          │
+ * │ Elle ne paraît que sur ce qui est FERMÉ À CE LECTEUR : un adhérent n'en  │
+ * │ voit aucune, parce que `peutLire` est vrai pour lui — et c'est la base   │
+ * │ qui l'a dit.                                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.reserve {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  align-self: flex-start;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--second) 22%, transparent);
+  color: var(--second-encre);
+}
+
+/* Sur la carte principale, la pastille se pose sur le voile sombre. */
+.principalCorps .reserve {
+  background: color-mix(in srgb, var(--chrome-encre) 18%, transparent);
+  color: var(--chrome-encre);
+}
+
+/* ══ Les deux points de rupture de `02-layout-responsive.md` ══════════════ */
+
+/* ≤ 1120 px — « every 2-column content grid collapses to 1 column ». */
+@media (max-width: 1120px) {
+  .heroInterieur,
+  .adhesion {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  /*
+   * Les contenus se replient aussi, mais gardent leur gouttière de 22 px : la
+   * carte principale et les lignes secondaires forment alors une seule pile,
+   * et 36 px y feraient un trou au milieu d'une liste.
+   *
+   * Le COLLAGE, lui, garde ses deux colonnes : replié à une seule, le logo et
+   * les deux photographies feraient neuf cents pixels de haut sous le titre.
+   */
+  .articles {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ≤ 760 px — les têtes de page se resserrent. */
+@media (max-width: 760px) {
+  /*
+   * Le disque redescend à 260 px, et il se retire dans le coin.
+   *
+   * À 430 px de fenêtre, un cercle de 420 posé à −80 du bord droit couvre le
+   * titre ET les deux paragraphes : ce n'est plus un accent de coin, c'est un
+   * second fond. Le prototype mobile ne tranche pas — il remplace ces pages
+   * par un gabarit générique sans décor — donc c'est l'INTENTION du disque qui
+   * décide, et son intention est d'habiller un angle.
+   */
+  .heroCercle {
+    width: 260px;
+    height: 260px;
+    top: -110px;
+    right: -110px;
+  }
+
+  .heroInterieur {
+    padding: 44px 20px 52px;
+  }
+
+  .bandeInterieur {
+    padding: 52px 20px;
+  }
+
+  .axe {
+    padding: 24px;
+  }
+
+  .sectionAdhesion {
+    padding: 48px 20px 20px;
+  }
+
+  .notes {
+    padding: 26px;
+  }
+
+  .sectionSoutien {
+    padding: 40px 20px 24px;
+  }
+
+  .panneau {
+    padding: 32px 24px;
+  }
+
+  .sectionArticles {
+    padding: 48px 20px 72px;
+  }
+
+  .principalLien,
+  .principalCorps {
+    min-height: 340px;
+  }
+
+  .principalCorps {
+    padding: 26px;
+  }
+
+  /*
+   * La ligne secondaire passe en colonne : à 390 px, une vignette de 112 px
+   * plus vingt de gouttière ne laisse que 190 px au titre, soit trois mots
+   * par ligne.
+   */
+  .secondaireLien {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .secondaireImage {
+    width: 100%;
+    height: 160px;
+  }
+}
+
+/*
+ * Le mouvement se coupe. Le filet général de `tokens.css` ramène toute
+ * transition à 0,01 ms, ce qui suffit pour une couleur mais pas pour un
+ * déplacement : les cartes sauteraient de quatre pixels au lieu d'y glisser.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .boutonPrincipal:hover,
+  .boutonSecondaire:hover,
+  .axe:hover,
+  .soutien:hover,
+  .panneauAction:hover,
+  .principalLien:hover,
+  .secondaireLien:hover {
+    transform: none;
+  }
+}

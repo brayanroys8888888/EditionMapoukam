@@ -589,7 +589,29 @@ describe('version unitaire et version par lot', () => {
         reason: attendu.reason,
       });
     }
-    expect(lot.length).toBe(10);
+    /*
+     * ┌────────────────────────────────────────────────────────────────────┐
+     * │ QUATORZE DEPUIS LE 7 SEPTEMBRE 2026 — ET LE NOMBRE COMPTE.        │
+     * │                                                                    │
+     * │ Le jeu de demonstration porte dix contes plus QUATRE livrets       │
+     * │ pedagogiques, deposes pour que l'ecran `/livrets` soit construit   │
+     * │ contre de vraies donnees — il n'y en avait aucun.                  │
+     * │                                                                    │
+     * │ Un seul est couche (« Je trace et j'ecris : les bases             │
+     * │ graphiques », quatre planches) ; les trois autres sont des feuilles │
+     * │ d'activite DEBOUT, d'une page. Ce n'est pas un detail de contenu :  │
+     * │ c'est ce qui a fait apparaitre qu'une planche portrait dans un      │
+     * │ cadre 16/11 doit se CONTENIR et non se recadrer.                   │
+     * │                                                                    │
+     * │ Ce n'est pas une verification cosmetique : c'est la garde qui      │
+     * │ empeche un lot de resolution de rendre moins de titres qu'on lui   │
+     * │ en demande. `CLAUDE.md` avertit qu'un titre ingere a l'essai fait  │
+     * │ echouer ce test sans qu'aucun message ne parle d'ingestion — c'est │
+     * │ exactement ce qui est arrive, et la correction est ici plutot que  │
+     * │ dans la base parce que les livrets, eux, sont voulus.              │
+     * └────────────────────────────────────────────────────────────────────┘
+     */
+    expect(lot.length).toBe(14);
   });
 
   it('résout un lot de quarante titres en une seule requête', async () => {

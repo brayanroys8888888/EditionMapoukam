@@ -30,7 +30,7 @@
 /* ── La présentation, en tête ───────────────────────────────────────────── */
 
 .presentation {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -77,7 +77,7 @@
 /* ── Les titres de section ──────────────────────────────────────────────── */
 
 .sectionTitre {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto 8px;
   padding: 0 24px;
   font-family: var(--police-titre);
@@ -86,7 +86,7 @@
 }
 
 .sectionTexte {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto 32px;
   padding: 0 24px;
   color: var(--encre-douce);
@@ -124,7 +124,7 @@
 }
 
 .prestation:hover {
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
   box-shadow: var(--ombre-carte-survol);
 }
 
@@ -138,7 +138,7 @@
   margin-bottom: 14px;
   border-radius: var(--rayon-pastille);
   background: var(--fond-doux);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   font-variant-numeric: tabular-nums;
@@ -171,7 +171,7 @@
   font-family: var(--police-titre);
   font-size: 1.15rem;
   line-height: 1.25;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .tarifPrecision {

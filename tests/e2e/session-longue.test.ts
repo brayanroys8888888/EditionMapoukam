@@ -101,7 +101,8 @@ beforeAll(async () => {
 
   const publie = await query<{ id: string; slug: string }>(
     `select b.id, b.slug from public.books b
-      where b.statut = 'publie' and b.gratuit = true
+      join public.book_translations bt on b.id = bt.book_id
+      where b.statut = 'publie' and b.gratuit = true and bt.nb_pages >= 4
       order by b.slug limit 1`,
   );
   livreId = publie[0]?.id ?? '';

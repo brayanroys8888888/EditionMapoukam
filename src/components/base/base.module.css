@@ -321,13 +321,13 @@
  * un bouton cerné d'encre y ressemblerait à un champ.
  */
 :global(:root[data-design='v2']) .secondaire {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
 }
 
 :global(:root[data-design='v2']) .secondaire:hover:not(:disabled) {
-  background: var(--v2-vert);
-  color: var(--fond);
+  background: var(--marque);
+  color: var(--marque-encre);
 }
 
 /* Les champs s'arrondissent et respirent — c'est ce qui rend un formulaire
@@ -339,7 +339,7 @@
 }
 
 :global(:root[data-design='v2']) .saisie:focus {
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
 }
 
 :global(:root[data-design='v2']) .libelle {

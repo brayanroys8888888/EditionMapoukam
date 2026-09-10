@@ -3,9 +3,9 @@ import { headers } from 'next/headers';
 
 import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { catalogQuerySchema, trancheAgeCoherente } from '@/domain/catalog/schemas';
-import type { TypeDocument } from '@/domain/catalog/types';
+import type { EntreeCatalogue, TypeDocument } from '@/domain/catalog/types';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Pagination } from '@/components/base';
 import { Erreur } from '@/components/etats';
 import {
@@ -19,8 +19,8 @@ import {
   type FiltresCatalogue,
 } from '@/components/catalogue';
 import { teinteDuTheme } from '@/components/motif';
-import { BoutiqueV2 } from '@/components/v2/boutique';
-import { versionDesign } from '@/design/version';
+import { BoutiqueV2, vueDepuisRequete } from '@/components/v2/boutique';
+import { estV3, structureRefondue } from '@/design/version';
 import { ajouterAuPanier } from './panier/actions';
 import styles from '@/components/catalogue/catalogue.module.css';
 
@@ -62,6 +62,20 @@ export interface ClesRayon {
   compteTous: CleTraduction;
   /** « 1 conte disponible ». */
   compteUn: CleTraduction;
+  /**
+   * Le titre de l'etat vide, et le libelle de la carte de compte.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ UN RAYON PARLE DE CE QU'IL RANGE.                                      │
+   * │                                                                        │
+   * │ L'ecran des livrets affichait « Aucun CONTE ne correspond » et « 0      │
+   * │ titres illustres » : les deux phrases viennent du catalogue des contes, │
+   * │ et elles sont fausses ici. Le vocabulaire d'un rayon lui appartient —   │
+   * │ c'est deja ce que `compteTous` et `compteUn` etablissent.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  videTitre: CleTraduction;
+  compteCarte: CleTraduction;
 }
 
 /**
@@ -85,6 +99,9 @@ export async function Rayon({
   type,
   base,
   cles,
+  apresGrille,
+  misEnAvant,
+  compteSupplementaire,
 }: {
   langue: LangueInterface;
   /** Les paramètres de l'URL, déjà aplatis par la page. */
@@ -94,6 +111,29 @@ export async function Rayon({
   /** Chemin de l'écran, préfixe de langue compris — `/fr/contes`. */
   base: string;
   cles: ClesRayon;
+  /** Un bloc propre au rayon, rendu apres la grille. Voir `BoutiqueV2`. */
+  apresGrille?: ReactNode;
+  /**
+   * Le panneau de mise en avant, dessiné À PARTIR d'un titre du rayon.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ C'EST LE RAYON QUI CHOISIT LE TITRE, PAS L'ÉCRAN.                     │
+   * │                                                                        │
+   * │ La maquette met en avant le kit offert du rayon des livrets. L'écran   │
+   * │ ne peut pas le désigner : il n'a pas la liste, c'est ici qu'elle est   │
+   * │ lue. Il fournit donc la FORME, et reçoit le titre en argument.         │
+   * │                                                                        │
+   * │ Deux gardes, et les deux comptent :                                    │
+   * │                                                                        │
+   * │ — rien n'est mis en avant dès qu'un filtre est posé. Un panneau qui    │
+   * │   survit au filtrage montrerait un titre que la recherche vient        │
+   * │   d'écarter, juste au-dessus d'une grille qui ne le contient pas ;     │
+   * │ — rien au-delà de la première page, pour la même raison.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  misEnAvant?: (entree: EntreeCatalogue) => ReactNode;
+  /** Une troisieme carte de banniere. Voir `BoutiqueV2`. */
+  compteSupplementaire?: { valeur: string; libelle: string };
 }): Promise<ReactNode> {
   /*
    * `type` ne voyage pas dans les liens de cet écran : il est dans le chemin.
@@ -113,7 +153,7 @@ export async function Rayon({
     ? query
     : { ...query, age_min: undefined, age_max: undefined };
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 
@@ -152,6 +192,7 @@ export async function Rayon({
   const filtres: FiltresCatalogue = {
     q: parametres.q,
     type,
+    niveau: parametres.niveau,
     themes: parametres.themes,
     origine: parametres.origine,
     age_min: parametres.age_min,
@@ -178,6 +219,21 @@ export async function Rayon({
         themes: restants.length > 0 ? restants.join(',') : undefined,
         page: undefined,
       }),
+    });
+  }
+
+  /*
+   * Le NIVEAU est retirable comme les autres — migration 0083.
+   *
+   * Il est posé avant l'accès pour une raison de lecture : sur le rayon des
+   * livrets, c'est le seul filtre que la barre offre, et c'est donc lui qu'on
+   * cherche d'abord dans la liste des filtres actifs.
+   */
+  if (filtres.niveau) {
+    poses.push({
+      cle: 'niveau',
+      libelle: filtres.niveau,
+      retrait: lien({ niveau: undefined, page: undefined }),
     });
   }
 
@@ -232,7 +288,42 @@ export async function Rayon({
       .replace('{total}', String(totalRayon));
   })();
 
-  if (versionDesign() === 'v2') {
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LE TITRE MIS EN AVANT : LE PLUS FOURNI DES OFFERTS.                    │
+   * │                                                                        │
+   * │ Deux critères, et l'ordre entre eux compte.                            │
+   * │                                                                        │
+   * │ OFFERT d'abord : c'est la seule propriété qui justifie d'occuper le    │
+   * │ haut de l'écran, puisque le panneau invite à ouvrir le kit             │
+   * │ sur-le-champ — ce qu'aucun titre payant ne permettrait.                │
+   * │                                                                        │
+   * │ LE PLUS DE PAGES ensuite. « Le premier offert » suffisait tant qu'il   │
+   * │ n'y en avait qu'un ; à quatre, il désignait la dernière feuille        │
+   * │ déposée — une page de coloriage — pendant que le vrai cahier de        │
+   * │ quatre planches attendait dans la grille. Le nombre de pages est ce    │
+   * │ qu'on a de plus proche de « le plus fourni », et il est LU, jamais     │
+   * │ deviné : aucune colonne ne dit « mets celui-ci en avant », et en       │
+   * │ inventer une serait poser une règle éditoriale que personne n'a        │
+   * │ demandée.                                                              │
+   * │                                                                        │
+   * │ À égalité, l'ordre du rayon tranche — c'est-à-dire la nouveauté.       │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const aMettreEnAvant =
+    misEnAvant !== undefined && poses.length === 0 && page.page === 1
+      ? page.entrees
+          .filter((entree) => entree.gratuit)
+          .reduce<EntreeCatalogue | undefined>(
+            (meilleur, entree) =>
+              meilleur === undefined || (entree.nb_pages ?? 0) > (meilleur.nb_pages ?? 0)
+                ? entree
+                : meilleur,
+            undefined,
+          )
+      : undefined;
+
+  if (structureRefondue()) {
     return (
       <BoutiqueV2
         langue={langue}
@@ -243,6 +334,16 @@ export async function Rayon({
         lien={lien}
         base={base}
         compte={compte}
+        videTitre={traduire(langue, cles.videTitre)}
+        {...(apresGrille === undefined ? {} : { apresGrille })}
+        {...(estV3() && aMettreEnAvant !== undefined && misEnAvant !== undefined
+          ? { avantFiltres: misEnAvant(aMettreEnAvant) }
+          : {})}
+        {...(estV3() && compteSupplementaire !== undefined
+          ? { compteSupplementaire }
+          : {})}
+        libelleCompte={traduire(langue, cles.compteCarte)}
+        {...(estV3() ? { vue: vueDepuisRequete(brut) } : {})}
         titre={traduire(langue, cles.titre)}
         texte={traduire(langue, cles.intro)}
         actionAjout={(livreId) => ajouterAuPanier.bind(null, langue, livreId, langue)}
@@ -277,10 +378,19 @@ export async function Rayon({
       </div>
 
       {page.entrees.length === 0 ? (
-        <CatalogueVide langue={langue} lienSansFiltres={base} />
+        <CatalogueVide
+          langue={langue}
+          lienSansFiltres={base}
+          titre={traduire(langue, cles.videTitre)}
+        />
       ) : (
         <>
-          <GrilleCatalogue langue={langue} entrees={page.entrees} dense />
+          <GrilleCatalogue
+            langue={langue}
+            entrees={page.entrees}
+            dense
+            recherche={filtres.q}
+          />
 
           <Pagination
             langue={langue}

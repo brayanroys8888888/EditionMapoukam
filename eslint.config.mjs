@@ -55,6 +55,13 @@ export default tseslint.config(
       // aux règles du projet ferait échouer la porte sur des fichiers que
       // personne ne déploie.
       'update_design/**',
+      // Dossier de passation Claude Design (voir `docs/REFONTE-V3.md`). Même
+      // raison qu'`update_design/`, et le dossier le dit lui-même de son
+      // `support.js` : « prototype runtime, reference only, do not port ».
+      // C'est du JavaScript de navigateur, hors module, que personne ne
+      // déploie — le soumettre aux règles du projet fait échouer la porte sur
+      // 99 erreurs qui ne parlent d'aucun code de l'application.
+      'design_handoff_edition_mapoukam/**',
       'next-env.d.ts',
       // Artefacts générés par `supabase start` (fonctions edge de démonstration).
       'supabase/.temp/**',
@@ -163,6 +170,23 @@ export default tseslint.config(
     },
     rules: {
       'no-console': 'off',
+    },
+  },
+
+  // ---- Captures d'écran : deux environnements dans un seul fichier ----
+  //
+  // Le script tourne sous Node, mais les fonctions passées à `evaluate` et
+  // `waitForFunction` sont sérialisées et exécutées DANS LA PAGE. Elles y
+  // lisent `document`, qui n'existe évidemment pas côté Node — et qu'il serait
+  // faux de déclarer pour tous les scripts d'outillage. L'exception est donc
+  // nominative, comme celle de `scripts/audit/`.
+  {
+    files: ['scripts/captures-ecrans.mjs'],
+    languageOptions: {
+      globals: {
+        document: 'readonly',
+        HTMLImageElement: 'readonly',
+      },
     },
   },
 );

@@ -80,6 +80,24 @@ export interface DemandeRemboursement {
  * les traduira ici.
  */
 export type TypeEvenementPaiement =
+  /**
+   * L'ÉVÉNEMENT AUTHENTIQUE QUI NE NOUS CONCERNE PAS.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ IGNORER N'EST PAS REFUSER, ET LA DIFFÉRENCE SE PAIE EN REJEUX.        │
+   * │                                                                        │
+   * │ Un prestataire réel émet bien plus que ce qu'on traite — Notch Pay     │
+   * │ envoie `payment.created` dès l'ouverture du tunnel, puis les           │
+   * │ événements de virement et de client. Les faire échouer à la lecture    │
+   * │ rendrait un 400, et le prestataire réémettrait sans fin un événement   │
+   * │ qui ne deviendra jamais applicable.                                    │
+   * │                                                                        │
+   * │ Traduit en `evenement.ignore`, il est authentifié, JOURNALISÉ — donc   │
+   * │ consultable — et acquitté par un 200. C'est le cas `default` du        │
+   * │ gestionnaire, rendu explicite plutôt que subi.                         │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  | 'evenement.ignore'
   | 'paiement.reussi'
   | 'paiement.echoue'
   | 'paiement.abandonne'
@@ -157,6 +175,36 @@ export type ResultatVerificationWebhook =
  */
 export interface PaymentProvider {
   readonly nom: string;
+
+  /**
+   * Le prestataire est-il un SIMULACRE local ?
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ C'EST UNE PROPRIÉTÉ DU CONTRAT, ET NON UN `instanceof` DISPERSÉ.      │
+   * │                                                                        │
+   * │ Trois endroits doivent le savoir, et aucun n'a à connaître la classe   │
+   * │ qui répond : la console de `/dev`, le bandeau « paiement simulé » de   │
+   * │ l'écran de règlement, et l'écran lui-même — qui règle sur place face   │
+   * │ au faux prestataire, et redirige vers le tunnel hébergé face à un      │
+   * │ vrai.                                                                  │
+   * │                                                                        │
+   * │ Écrit `provider instanceof FakePaymentProvider`, ce test oblige chaque │
+   * │ appelant à importer la classe simulée — c'est-à-dire à l'embarquer     │
+   * │ dans le bundle de production.                                          │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  readonly simule: boolean;
+
+  /**
+   * Nom de l'en-tête HTTP qui porte la signature de ses webhooks.
+   *
+   * Chaque prestataire a le sien — `x-webhook-signature` pour le nôtre,
+   * `x-notch-signature` chez Notch Pay. Le gestionnaire de webhooks le
+   * DEMANDE au prestataire plutôt que de connaître une constante : sinon, le
+   * jour du branchement, la route lit un en-tête absent et rejette tout, avec
+   * pour seul symptôme « signature invalide ».
+   */
+  readonly enteteSignature: string;
 
   /**
    * Pays du moyen de paiement du client — code ISO 3166-1 alpha-2.

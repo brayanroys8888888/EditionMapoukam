@@ -71,6 +71,29 @@ export const catalogQuerySchema = z.object({
   acces: z.enum(TYPES_ACCES).optional(),
 
   /**
+   * NIVEAU scolaire — un seul jeton à la fois : « MS », « CP ».
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ C'EST LE FILTRE DU RAYON DES LIVRETS, ET DE LUI SEUL.                 │
+   * │                                                                        │
+   * │ Rien ne l'interdit ailleurs — le schéma ne connaît pas les écrans —    │
+   * │ mais il n'y trouve rien : la colonne est nulle sur un conte. C'est le  │
+   * │ symétrique de ce qui a fait sortir la région du catalogue à la 0071,   │
+   * │ une facette qui ne s'applique qu'à une partie du fonds fait            │
+   * │ disparaître le reste dès qu'on clique dessus.                          │
+   * │                                                                        │
+   * │ UN seul niveau, et non une liste comme les thèmes : les thèmes se      │
+   * │ cumulent — on cherche « ruse ET animaux » —, les niveaux s'excluent.   │
+   * │ On enseigne dans UNE classe, et « MS ou GS » est déjà ce que rend      │
+   * │ « MS » sur un livret marqué « PS · MS · GS ».                          │
+   * │                                                                        │
+   * │ La comparaison se fait au JETON, en base : demander « MS » rend        │
+   * │ « PS · MS · GS » comme « MS · GS ». Voir `niveaux_du_livre`, 0083.     │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  niveau: z.string().trim().min(1).max(60).optional(),
+
+  /**
    * Zone d'AFFICHAGE, provisoire et sans effet financier (docs/PLAN.md D4
    * point 5). La zone d'encaissement est déterminée au paiement, depuis le pays
    * réel du moyen de paiement, et elle seule est enregistrée sur la commande.

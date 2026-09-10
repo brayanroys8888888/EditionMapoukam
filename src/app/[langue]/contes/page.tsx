@@ -27,6 +27,8 @@ const CLES: ClesRayon = {
   intro: 'contes.intro',
   compteTous: 'contes.compteTous',
   compteUn: 'contes.compteUn',
+  videTitre: 'contes.videTitre',
+  compteCarte: 'contes.compteCarte',
 };
 
 interface Parametres {

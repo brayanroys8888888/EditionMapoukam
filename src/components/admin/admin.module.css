@@ -28,7 +28,7 @@
   align-items: flex-start;
   gap: 0;
   min-height: 100vh;
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 /*
@@ -57,8 +57,8 @@
   .gabarit {
     background: linear-gradient(
       to right,
-      var(--v2-vert-nuit) 0 236px,
-      var(--v2-fond-doux) 236px
+      var(--chrome-2) 0 236px,
+      var(--fond-doux) 236px
     );
   }
 }
@@ -66,10 +66,20 @@
 /* ── Colonne de navigation ──────────────────────────────────────────────── */
 
 .rail {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
   flex: 0 0 236px;
   align-self: stretch;
-  background: var(--v2-vert-nuit);
-  color: var(--v2-fond);
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
   padding: 24px 16px;
   position: sticky;
   top: 0;
@@ -84,11 +94,11 @@
   margin-bottom: 8px;
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 .marque:hover {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 /*
@@ -135,7 +145,7 @@
   /* Le logo occupe 72 % du disque : au-delà il touche les bords, en deçà il
      flotte. La même proportion que le mot-symbole du site public. */
   inset: 14%;
-  background: var(--v2-vert-nuit);
+  background: var(--chrome-2);
   mask-image: url('/images/logo-mapoukam.png');
   mask-repeat: no-repeat;
   mask-position: center;
@@ -167,7 +177,7 @@
   min-height: var(--cible-min);
   padding: 10px 14px;
   border-radius: var(--rayon-controle);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-base);
   font-weight: var(--graisse-demi);
   opacity: 0.82;
@@ -176,7 +186,7 @@
 
 .lien:hover {
   background: rgb(251 247 239 / 12%);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   opacity: 1;
 }
 
@@ -200,7 +210,7 @@
   min-height: var(--cible-min);
   padding: 0 14px;
   font-size: var(--taille-m);
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   opacity: 0.7;
 }
 
@@ -406,7 +416,7 @@
 }
 
 .tableau thead {
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 .tableau th {
@@ -435,7 +445,7 @@
 }
 
 .tableau tbody tr:hover {
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 .cellulePrincipale {
@@ -477,7 +487,7 @@
 }
 
 .etatBrouillon {
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   border: 1.5px solid var(--bordure-forte);
   color: var(--encre-douce);
 }
@@ -585,13 +595,35 @@
  * Le point bat, et c'est le SEUL mouvement autonome de l'administration.
  *
  * Il dit ce qu'aucun mot ne dirait aussi vite : l'écran est vivant, ces
- * chiffres ne sont pas une photographie. Sous `prefers-reduced-motion`,
- * `tokens.css` réduit toute animation à 0,01 ms — le point reste alors
- * simplement vert, ce qui suffit à distinguer les deux états.
+ * chiffres ne sont pas une photographie.
  */
 .directPouls {
   background: var(--region-afrique_ouest-accent);
   animation: battement 2.4s ease-in-out infinite;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ARRÊTÉ EXPLICITEMENT, ET PAS SEULEMENT PAR LA RÈGLE GÉNÉRALE.           │
+ * │                                                                          │
+ * │ `tokens.css` ramène toute animation à 0,01 ms sous                       │
+ * │ `prefers-reduced-motion` : le point cesse effectivement de battre, et    │
+ * │ cette règle-ci ne change donc rien à l'écran.                            │
+ * │                                                                          │
+ * │ Elle est écrite quand même parce que la promesse du produit se VÉRIFIE : │
+ * │ un test d'architecture exige que chaque `@keyframes` du dépôt soit       │
+ * │ nommément neutralisée dans son propre fichier. Une seule exception       │
+ * │ tolérée, et la règle devient une liste d'exceptions — c'est-à-dire une   │
+ * │ promesse qu'il faut relire pour savoir si elle tient.                    │
+ * │                                                                          │
+ * │ Le point reste vert et visible : un mouvement retiré n'est pas un        │
+ * │ indicateur retiré, et les deux états se distinguent toujours.            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (prefers-reduced-motion: reduce) {
+  .directPouls {
+    animation: none;
+  }
 }
 
 .directArret {
@@ -640,19 +672,19 @@
 }
 
 .filtre:hover {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
 }
 
 .filtreActif {
-  background: var(--v2-vert);
-  border-color: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  border-color: var(--chrome);
+  color: var(--chrome-encre);
   font-weight: var(--graisse-forte);
 }
 
 .filtreActif:hover {
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 @media (pointer: coarse) {
@@ -748,7 +780,7 @@
   width: 22px;
   height: 22px;
   margin-top: 2px;
-  accent-color: var(--v2-vert);
+  accent-color: var(--action);
 }
 
 .interrupteurNom {
@@ -818,15 +850,15 @@
 }
 
 .boutonPrimaire {
-  border: 1.5px solid var(--v2-vert);
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  border: 1.5px solid var(--marque);
+  background: var(--marque);
+  color: var(--marque-encre);
 }
 
 .boutonPrimaire:hover {
-  background: var(--v2-vert-clair);
-  border-color: var(--v2-vert-clair);
-  color: var(--v2-fond);
+  background: var(--chrome-clair);
+  border-color: var(--chrome-clair);
+  color: var(--chrome-encre);
 }
 
 .boutonSecondaire {
@@ -836,8 +868,8 @@
 }
 
 .boutonSecondaire:hover {
-  border-color: var(--v2-vert);
-  color: var(--v2-vert);
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
 }
 
 .boutonDiscret {
@@ -849,7 +881,7 @@
 }
 
 .boutonDiscret:hover {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 /*
@@ -1072,12 +1104,22 @@
  */
 
 .barre {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
   display: block;
   height: 8px;
   min-width: 2px;
   margin-top: 5px;
   border-radius: var(--rayon-pastille);
-  background: var(--v2-vert);
+  background: var(--chrome);
 }
 
 .barreDouce {
@@ -1119,7 +1161,7 @@
   align-self: flex-start;
   padding: 2px 9px;
   border-radius: var(--rayon-pastille);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   color: var(--encre-douce);
   font-size: var(--taille-s);
   font-weight: var(--graisse-forte);
@@ -1197,7 +1239,7 @@
 }
 
 .graphiqueBarre {
-  fill: var(--v2-vert);
+  fill: var(--accent-encre);
 }
 
 .graphiqueBarreAccent {

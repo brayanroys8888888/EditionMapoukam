@@ -123,6 +123,32 @@ function themes(donnees: FormData, nom: string): string[] {
 }
 
 /**
+ * Un bloc d'OBJECTIFS, une phrase par ligne, rendu en tableau.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ PAR LIGNES, ET NON PAR VIRGULES.                                        │
+ * │                                                                          │
+ * │ Les thèmes se saisissent sur une ligne séparés par des virgules — ce     │
+ * │ sont des mots. Un objectif est une PHRASE, et une phrase contient des    │
+ * │ virgules : « Développer la motricité fine, puis le tracé » aurait donné  │
+ * │ deux objectifs dont aucun ne veut rien dire.                             │
+ * │                                                                          │
+ * │ L'ORDRE est conservé jusqu'en base : ce sont les étapes d'un livret. La  │
+ * │ base retire les lignes vides mais ne TRIE pas, contrairement aux thèmes. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Rend toujours un tableau, vide compris : le vide efface les objectifs.
+ */
+function lignes(donnees: FormData, nom: string): string[] {
+  const valeur = donnees.get(nom);
+  if (typeof valeur !== 'string') return [];
+  return valeur
+    .split('\n')
+    .map((ligne) => ligne.trim())
+    .filter((ligne) => ligne.length > 0);
+}
+
+/**
  * Une case à cocher NON cochée n'est pas envoyée par le navigateur.
  *
  * C'est le piège classique des formulaires à interrupteurs : sans champ témoin,
@@ -244,23 +270,56 @@ export async function deposerLivret(langueBrute: string, donnees: FormData): Pro
   const identifiant = corps?.['livre_id'];
   if (typeof identifiant !== 'string') redirect(`${depot}?erreur=erreur_interne`);
 
-  const catalogue = `/${langue}/admin/contes`;
+  /*
+   * Le livret déposé s'ouvre dans SON rayon.
+   *
+   * La fiche d'édition est la même pour les deux supports — mêmes champs,
+   * mêmes prix, mêmes versions linguistiques —, et en dupliquer une seconde
+   * n'aurait fait diverger que la copie. Elle a en revanche DEUX adresses
+   * depuis le 7 septembre 2026, et un livret déposé qui s'ouvrait sous
+   * `/admin/contes/<id>` laissait croire que le support avait été perdu au
+   * passage.
+   */
+  const catalogue = `/${langue}/admin/livrets`;
   revalidatePath(catalogue);
-
-  // L'écran d'édition est CELUI DES CONTES, et c'est voulu : un livret y a les
-  // mêmes champs métier, les mêmes prix, les mêmes versions linguistiques. En
-  // dupliquer un second n'aurait fait diverger que la copie.
   redirect(`${catalogue}/${identifiant}?depose=1`);
 }
 
 /** Modifie les champs métier d'un titre. */
+/**
+ * Le RAYON d'où vient le titre — `/contes` ou `/livrets`.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ IL EST LIÉ PAR L'ÉCRAN, JAMAIS LU DU FORMULAIRE.                        │
+ * │                                                                          │
+ * │ Ce paramètre choisit une DESTINATION DE REDIRECTION. Posé en champ       │
+ * │ caché, il serait modifiable depuis le navigateur, et une action          │
+ * │ d'administration renverrait où l'on veut. L'écran le tient du support du │
+ * │ titre ouvert, et le lie à l'action ; il ne traverse jamais le réseau     │
+ * │ dans le sens client → serveur.                                           │
+ * │                                                                          │
+ * │ Il existait déjà sur `supprimerConte`, où son absence ramenait dans le   │
+ * │ rayon des contes après avoir supprimé un livret. La fiche a maintenant   │
+ * │ DEUX adresses — `/admin/contes/<id>` et `/admin/livrets/<id>` — et       │
+ * │ chaque action doit revenir à celle d'où l'on vient : atterrir sur        │
+ * │ l'autre après un enregistrement ferait croire que le support a changé.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export type RayonAdmin = '/contes' | '/livrets';
+
+/** L'adresse de la fiche, dans le rayon d'où l'on vient. */
+function ecranLivre(langue: string, rayon: RayonAdmin, livreId: string): string {
+  return `/${langue}/admin${rayon}/${livreId}`;
+}
+
 export async function modifierConte(
   langueBrute: string,
   livreId: string,
+  rayon: RayonAdmin,
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
 
   const reponse = await appeler('/api/admin/books', 'PATCH', {
     id: livreId,
@@ -287,6 +346,20 @@ export async function modifierConte(
      * commodité de saisie, pas une règle. Le nettoyage, lui, est en base.
      */
     themes: themes(donnees, 'themes'),
+    /*
+     * LE NIVEAU ET LES OBJECTIFS — rendus par la fiche pour les seuls livrets.
+     *
+     * Ils sont donc ABSENTS du formulaire d'un conte, et `texte()` rend alors
+     * `undefined` : la base laisse les colonnes intactes. C'est ce qui permet
+     * à un conte requalifié en livret de retrouver ce qu'on lui avait saisi.
+     *
+     * Sur un livret, le niveau est TOUJOURS envoyé, chaîne vide comprise :
+     * c'est la seule manière de l'effacer, `null` voulant dire « ne touche
+     * pas » partout dans `admin_modifier_livre`. Même raison pour le tableau
+     * vide des objectifs.
+     */
+    ...(donnees.has('niveau') ? { niveau: texteOuVide(donnees, 'niveau') } : {}),
+    ...(donnees.has('objectifs') ? { objectifs: lignes(donnees, 'objectifs') } : {}),
     /*
      * LE TYPE DE SUPPORT ET L'ORIENTATION.
      *
@@ -321,7 +394,7 @@ export async function modifierConte(
   if (reponse.statut !== 200) redirect(`${ecran}?erreur=${codeErreur(reponse.corps)}`);
 
   revalidatePath(ecran);
-  revalidatePath(`/${langue}/admin/contes`);
+  revalidatePath(`/${langue}/admin${rayon}`);
   redirect(`${ecran}?enregistre=champs`);
 }
 
@@ -335,10 +408,11 @@ export async function modifierConte(
 export async function definirPrixConte(
   langueBrute: string,
   livreId: string,
+  rayon: RayonAdmin,
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
 
   const reponse = await appeler(`/api/admin/books/${livreId}/prices`, 'PUT', {
     zone: donnees.get('zone'),
@@ -367,10 +441,11 @@ export async function definirPrixConte(
 export async function changerPublicationConte(
   langueBrute: string,
   livreId: string,
+  rayon: RayonAdmin,
   statut: 'brouillon' | 'publie' | 'archive',
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
 
   const reponse = await appeler('/api/admin/books/publication', 'PUT', {
     book_ids: [livreId],
@@ -380,7 +455,7 @@ export async function changerPublicationConte(
   if (reponse.statut !== 200) redirect(`${ecran}?erreur=${codeErreur(reponse.corps)}`);
 
   revalidatePath(ecran);
-  revalidatePath(`/${langue}/admin/contes`);
+  revalidatePath(`/${langue}/admin${rayon}`);
   redirect(`${ecran}?enregistre=publication`);
 }
 
@@ -401,11 +476,12 @@ export async function changerPublicationConte(
 export async function modifierVersionConte(
   langueBrute: string,
   livreId: string,
+  rayon: RayonAdmin,
   traductionId: string,
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
 
   const reponse = await appeler(`/api/admin/books/${livreId}/translations`, 'PATCH', {
     translation_id: traductionId,
@@ -429,7 +505,7 @@ export async function modifierVersionConte(
   if (reponse.statut !== 200) redirect(`${ecran}?erreur=${codeErreur(reponse.corps)}`);
 
   revalidatePath(ecran);
-  revalidatePath(`/${langue}/admin/contes`);
+  revalidatePath(`/${langue}/admin${rayon}`);
   redirect(`${ecran}?enregistre=version`);
 }
 
@@ -452,10 +528,11 @@ export async function modifierVersionConte(
 export async function ajouterVersionConte(
   langueBrute: string,
   livreId: string,
+  rayon: RayonAdmin,
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
 
   const file = donnees.get('fichier');
   if (!(file instanceof File)) {
@@ -482,7 +559,7 @@ export async function ajouterVersionConte(
   if (reponse.status !== 201) redirect(`${ecran}?erreur=${codeErreur(corps)}`);
 
   revalidatePath(ecran);
-  revalidatePath(`/${langue}/admin/contes`);
+  revalidatePath(`/${langue}/admin${rayon}`);
   redirect(`${ecran}?enregistre=version_ajoutee`);
 }
 
@@ -515,11 +592,11 @@ export async function supprimerConte(
    * Sans lui, supprimer un livret ramenait dans le rayon des contes, sur un
    * message qui parlait d'un conte.
    */
-  rayon: '/contes' | '/livrets',
+  rayon: RayonAdmin,
   donnees: FormData,
 ): Promise<void> {
   const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/contes/${livreId}`;
+  const ecran = ecranLivre(langue, rayon, livreId);
   const liste = `/${langue}/admin${rayon}`;
 
   const reponse = await appeler(`/api/admin/books/${livreId}`, 'DELETE', {

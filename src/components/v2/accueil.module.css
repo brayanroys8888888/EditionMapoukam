@@ -65,7 +65,7 @@
  */
 .hero {
   position: relative;
-  background-color: var(--v2-vert);
+  background-color: var(--chrome);
   background-image: linear-gradient(
       100deg,
       rgb(22 55 31 / 94%) 0%,
@@ -77,7 +77,7 @@
   background-size: cover;
   background-position: center 62%;
   background-repeat: no-repeat;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   overflow: hidden;
 }
 
@@ -152,7 +152,7 @@
   letter-spacing: -0.03em;
   text-wrap: balance;
   margin-bottom: 22px;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
 }
 
 /* Le mot qui compte prend l'ocre — un seul par titre, jamais deux. */
@@ -165,7 +165,7 @@
   line-height: 1.6;
   max-width: 52ch;
   margin-bottom: 32px;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   opacity: 0.9;
 }
 
@@ -218,7 +218,7 @@
   border: 2px solid rgb(251 247 239 / 55%);
   border-radius: var(--rayon-bouton);
   background: transparent;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   font-size: var(--taille-xl);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), border-color var(--transition-couleur);
@@ -226,8 +226,8 @@
 
 .boutonClair:hover {
   background: rgb(251 247 239 / 14%);
-  border-color: var(--v2-fond);
-  color: var(--v2-fond);
+  border-color: var(--chrome-encre);
+  color: var(--chrome-encre);
 }
 
 .boutonVert {
@@ -236,19 +236,19 @@
   justify-content: center;
   min-height: var(--cible-min);
   padding: 14px 28px;
-  border: 2px solid var(--v2-vert);
+  border: 2px solid var(--marque);
   border-radius: var(--rayon-bouton);
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--marque);
+  color: var(--marque-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), transform var(--transition-forme);
 }
 
 .boutonVert:hover {
-  background: var(--v2-vert-clair);
-  border-color: var(--v2-vert-clair);
-  color: var(--v2-fond);
+  background: var(--chrome-clair);
+  border-color: var(--chrome-clair);
+  color: var(--chrome-encre);
   transform: translateY(-2px);
 }
 
@@ -258,24 +258,24 @@
   justify-content: center;
   min-height: var(--cible-min);
   padding: 14px 28px;
-  border: 2px solid var(--v2-vert);
+  border: 2px solid var(--accent-encre);
   border-radius: var(--rayon-bouton);
   background: transparent;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
   transition: background var(--transition-couleur), color var(--transition-couleur);
 }
 
 .boutonContour:hover {
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--marque);
+  color: var(--marque-encre);
 }
 
 /* ── Bandeau de réassurance ─────────────────────────────────────────────── */
 
 .reassurance {
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   border-bottom: 1px solid var(--bordure);
 }
 
@@ -301,8 +301,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  background: var(--chrome);
+  color: var(--chrome-encre);
 }
 
 .gageTitre {
@@ -325,7 +325,7 @@
 }
 
 .sectionDouce {
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
 }
 
 .enteteSection {
@@ -343,7 +343,7 @@
   font-weight: var(--graisse-forte);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   margin-bottom: 10px;
 }
 
@@ -375,7 +375,7 @@
   border-radius: var(--rayon-panneau);
   overflow: hidden;
   aspect-ratio: 4 / 5;
-  background: var(--v2-vert);
+  background: var(--chrome);
   box-shadow: var(--ombre-carte-survol);
 }
 
@@ -434,7 +434,7 @@
 
 .tradition:hover {
   transform: translateY(-5px);
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
   box-shadow: var(--ombre-carte-survol);
   color: var(--encre);
 }
@@ -456,7 +456,7 @@
 .traditionCompte {
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
 }
 
 /* ── Avis ───────────────────────────────────────────────────────────────── */
@@ -533,7 +533,7 @@
   font-weight: var(--graisse-forte);
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .avisRole {
@@ -549,8 +549,18 @@
 /* ── Appel final ────────────────────────────────────────────────────────── */
 
 .appel {
-  background: var(--v2-vert);
-  color: var(--v2-fond);
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome);
+  color: var(--chrome-encre);
 }
 
 .appelInterieur {
@@ -567,14 +577,14 @@
 .appelTitre {
   font-size: clamp(28px, 3.4vw, 42px);
   letter-spacing: -0.02em;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   max-width: 22ch;
 }
 
 .appelCorps {
   font-size: var(--taille-xl);
   line-height: 1.6;
-  color: var(--v2-fond);
+  color: var(--chrome-encre);
   opacity: 0.88;
   max-width: 56ch;
 }
@@ -585,4 +595,1098 @@
   gap: 14px;
   justify-content: center;
   margin-top: 8px;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LE HERO DE LA MAQUETTE, ENFIN
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE FICHIER NE PORTAIT AUCUNE RÈGLE V3. C'ÉTAIT LE DÉFAUT.               │
+ * │                                                                          │
+ * │ L'accueil sous Organic était, à la lettre, l'accueil V2 avec d'autres    │
+ * │ jetons : même photographie de fond, même colonne unique, mêmes espaces.  │
+ * │ Les onze fichiers Markdown du dossier décrivent bien cette page, mais    │
+ * │ ils la RÉSUMENT — et le résumé ne dit ni l'éventail, ni les preuves, ni  │
+ * │ que le fond est la crème. Ces valeurs-ci sont relevées dans              │
+ * │ `Site EditionMapoukam.dc.html`, à la ligne près.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PHOTOGRAPHIE S'EN VA, ET AVEC ELLE TOUT CE QU'ELLE IMPOSAIT.         │
+ * │                                                                          │
+ * │ `hero-village.jpg` n'apparaît dans AUCUNE maquette. Elle venait de la    │
+ * │ V2, et elle entraînait tout le reste : un en-tête transparent à encre    │
+ * │ claire posé dessus, une colonne unique parce qu'une image de fond ne     │
+ * │ partage pas la place, et la suppression de l'éventail parce que deux     │
+ * │ images se disputaient la section.                                        │
+ * │                                                                          │
+ * │ Le fond redevient la crème, et les deux disques flous de la maquette la  │
+ * │ ponctuent. Ils n'entrent dans aucun arbre d'accessibilité : ce sont des  │
+ * │ pseudo-éléments, et un pseudo-élément n'est pas un nœud.                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .hero {
+  background-color: var(--creme);
+  background-image: none;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .hero::before,
+:global(:root[data-design='v3']) .hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+/* Le disque sauge, en haut à droite — 520 px, dilué à 26 %. */
+:global(:root[data-design='v3']) .hero::before {
+  top: -140px;
+  right: -90px;
+  width: 520px;
+  height: 520px;
+  background: color-mix(in srgb, var(--second) 26%, transparent);
+}
+
+/* Et le disque terre cuite, en bas à gauche — plus petit, plus discret. */
+:global(:root[data-design='v3']) .hero::after {
+  bottom: -180px;
+  left: -120px;
+  width: 380px;
+  height: 380px;
+  background: color-mix(in srgb, var(--action) 14%, transparent);
+}
+
+/*
+ * Deux colonnes, `1.05fr .95fr` — le texte l'emporte d'un cheveu sur l'image,
+ * et c'est ce qui empêche l'éventail de devenir le sujet de la page.
+ */
+:global(:root[data-design='v3']) .heroGrille {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+  max-width: var(--largeur-page);
+  padding: 82px 28px 92px;
+}
+
+/*
+ * La pastille reprend la carte, pas une crème translucide.
+ *
+ * Sur la photographie de la V2, elle était un voile clair posé sur du sombre.
+ * Sur la crème, un voile clair ne se voit plus : il lui faut son propre aplat,
+ * son filet et son ombre — c'est ce que la maquette écrit.
+ */
+:global(:root[data-design='v3']) .surtitre {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  box-shadow: var(--ombre-carte);
+  color: var(--accent-encre);
+  font-size: var(--taille-xs);
+  letter-spacing: 0.12em;
+  padding: 8px 16px;
+}
+
+/* La puce terre cuite qui ouvre la pastille. */
+:global(:root[data-design='v3']) .surtitre::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--action);
+}
+
+:global(:root[data-design='v3']) .heroTitre {
+  margin: 26px 0 0;
+  font-size: clamp(46px, 5.4vw, 78px);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--encre);
+}
+
+/*
+ * La maquette casse la ligne avant l'accent. Sans cette bascule, la mesure du
+ * titre dépendrait de la langue : « ressemblent » et « like them » ne tombent
+ * pas au même endroit.
+ */
+:global(:root[data-design='v3']) .heroAccent {
+  display: block;
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .heroAccroche {
+  margin: 24px 0 0;
+  max-width: 520px;
+  font-size: 18.5px;
+  color: var(--encre-douce);
+  opacity: 1;
+}
+
+:global(:root[data-design='v3']) .heroActions {
+  margin-top: 34px;
+  gap: 14px;
+}
+
+/*
+ * Le bouton clair de la V2 était une pilule crème sur une photographie. Sur la
+ * crème, il disparaîtrait dans le fond qu'il est censé trancher : il devient
+ * le contour d'encre de la maquette.
+ */
+:global(:root[data-design='v3']) .boutonClair {
+  background: transparent;
+  border: 1.5px solid var(--encre);
+  color: var(--encre);
+  box-shadow: none;
+}
+
+:global(:root[data-design='v3']) .boutonClair:hover {
+  background: var(--encre);
+  color: var(--creme);
+}
+
+/* ── Les trois preuves ──────────────────────────────────────────────────── */
+
+/*
+ * Rendues seulement sous Organic — le composant ne les monte pas ailleurs.
+ * La règle de repli existe quand même : une liste sans style hériterait des
+ * puces du navigateur si elle venait à être rendue par erreur.
+ */
+.preuves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  margin: 42px 0 0;
+  padding: 26px 0 0;
+  border-top: 1px solid var(--bordure);
+  list-style: none;
+}
+
+.preuve {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.preuveValeur {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 26px;
+  color: var(--accent-encre);
+}
+
+.preuveLibelle {
+  max-width: 120px;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--encre-douce);
+}
+
+/* ── L'éventail ─────────────────────────────────────────────────────────── */
+
+.eventail {
+  position: relative;
+  height: 520px;
+}
+
+/*
+ * Les trois couvertures, à leur place exacte.
+ *
+ * `data-rang` plutôt que trois classes : la position EST un rang, et un
+ * attribut le dit mieux que trois noms qui répéteraient « premier »,
+ * « deuxième », « troisième » sans que rien ne garantisse l'ordre.
+ */
+.eventailCarte {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: var(--ombre-couverture);
+}
+
+.eventailCarte img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 268 / 403;
+  object-fit: cover;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EFFET 4 DU DOSSIER — CELUI QUI AVAIT ÉTÉ DÉCLARÉ « SANS OBJET ».      │
+ * │                                                                          │
+ * │ « Applied to the fanned covers with staggered animation-delay (0s, .6s,  │
+ * │ 1.2s) and animation-duration: 6s, ease-in-out, infinite. »               │
+ * │                                                                          │
+ * │ Le DÉCALAGE est ce qui compte : trois couvertures qui montent ensemble   │
+ * │ ne flottent pas, elles tremblent.                                        │
+ * │                                                                          │
+ * │ L'inclinaison est reportée dans chaque trame, et c'est la raison des     │
+ * │ trois animations au lieu d'une : `transform` est une propriété UNIQUE.   │
+ * │ Une trame qui ne poserait que `translateY` écraserait la rotation dès la │
+ * │ première image, et les trois couvertures se redresseraient d'un coup.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.eventailCarte[data-rang='0'] {
+  left: 2%;
+  top: 10%;
+  z-index: 1;
+  width: 58%;
+  transform: rotate(-8deg);
+  animation: flotteA 6s ease-in-out infinite;
+}
+
+.eventailCarte[data-rang='1'] {
+  left: 26%;
+  top: 0;
+  z-index: 3;
+  width: 62%;
+  transform: rotate(4deg);
+  animation: flotteB 6s ease-in-out 0.6s infinite;
+}
+
+.eventailCarte[data-rang='2'] {
+  left: 54%;
+  top: 16%;
+  z-index: 2;
+  width: 54%;
+  transform: rotate(11deg);
+  animation: flotteC 6s ease-in-out 1.2s infinite;
+}
+
+@keyframes flotteA {
+  0%,
+  100% {
+    transform: rotate(-8deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-8deg) translateY(-9px);
+  }
+}
+
+@keyframes flotteB {
+  0%,
+  100% {
+    transform: rotate(4deg) translateY(0);
+  }
+  50% {
+    transform: rotate(4deg) translateY(-9px);
+  }
+}
+
+@keyframes flotteC {
+  0%,
+  100% {
+    transform: rotate(11deg) translateY(0);
+  }
+  50% {
+    transform: rotate(11deg) translateY(-9px);
+  }
+}
+
+/*
+ * Arrêté nommément, comme chaque animation du dépôt : la règle générale de
+ * `tokens.css` ramène la durée à 0,01 ms, ce qui suffirait ici puisque le
+ * mouvement est cyclique — mais une exception tolérée est une promesse qu'il
+ * faut relire. Voir `tests/unit/mouvement-reduit.test.ts`.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .eventailCarte[data-rang='0'],
+  .eventailCarte[data-rang='1'],
+  .eventailCarte[data-rang='2'] {
+    animation: none;
+  }
+}
+
+/* ── La pastille flottante de l'éventail ────────────────────────────────── */
+
+.eventailBadge {
+  position: absolute;
+  bottom: 14px;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 14px 18px;
+  border: 1px solid var(--bordure);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: var(--ombre-flottante);
+}
+
+/*
+ * Le sceau sauge — il ne porte QU'UN DESSIN, jamais un mot.
+ *
+ * Le seuil d'un tracé est 3:1, celui d'un texte 4,5:1, et cet aplat ne passe
+ * que le premier. Voir l'encadré du douzième rôle dans `tokens.css`.
+ */
+.eventailSceau {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: var(--second);
+  color: var(--second-contre);
+}
+
+.eventailBadgeTitre {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--encre);
+}
+
+.eventailBadgeCorps {
+  display: block;
+  font-size: 12.5px;
+  line-height: 1.25;
+  color: var(--encre-douce);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 1120 px, L'ÉVENTAIL SE RANGE — LE DOSSIER LE DEMANDE MOT POUR MOT. │
+ * │                                                                          │
+ * │ « Disabled entirely ≤1120px (the fan becomes a static centred row). »    │
+ * │                                                                          │
+ * │ Trois images superposées et inclinées dans une colonne de téléphone se   │
+ * │ recouvrent au lieu de se répondre. Elles reprennent le fil, à plat,      │
+ * │ centrées — et la pastille rentre dans le flux plutôt que de flotter sur  │
+ * │ un bord qui n'existe plus.                                               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 1120px) {
+  :global(:root[data-design='v3']) .heroGrille {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .eventail {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 12px;
+    height: auto;
+  }
+
+  .eventailCarte,
+  .eventailCarte[data-rang='0'],
+  .eventailCarte[data-rang='1'],
+  .eventailCarte[data-rang='2'] {
+    position: static;
+    width: 30%;
+    max-width: 168px;
+    transform: none;
+    animation: none;
+  }
+
+  .eventailBadge {
+    position: static;
+    justify-content: center;
+    margin-top: 22px;
+  }
+}
+
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .heroGrille {
+    padding: 96px 20px 56px;
+  }
+
+  :global(:root[data-design='v3']) .preuves {
+    gap: 18px;
+  }
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ORGANIC — LES CINQ SECTIONS QUI SUIVENT LE HERO
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Toutes les valeurs de ce bloc sont relevées dans les styles en ligne de
+ * `Site EditionMapoukam.dc.html`. Là où une valeur diffère du dossier, un
+ * encadré dit laquelle et pourquoi — il n'y en a qu'un, sur les teintes.
+ */
+
+/* ── 2. La bande de réassurance ─────────────────────────────────────────── */
+
+/* `background:var(--deep);color:var(--onDeep)` — sans marge, collée au hero. */
+:global(:root[data-design='v3']) .reassurance {
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+:global(:root[data-design='v3']) .reassuranceGrille {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+:global(:root[data-design='v3']) .gage {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 28px 26px 28px 0;
+}
+
+/* 46 px, crème diluée à 10 %, et le tracé en terre cuite. */
+:global(:root[data-design='v3']) .gagePastille {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--action);
+}
+
+:global(:root[data-design='v3']) .gageTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 16.5px;
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .gageCorps {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--chrome-encre);
+  opacity: 0.72;
+}
+
+/* ── Les en-têtes de section, communes à trois d'entre elles ────────────── */
+
+/* `font-size:11.5px;letter-spacing:.16em;text-transform:uppercase` */
+:global(:root[data-design='v3']) .oeil {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+:global(:root[data-design='v3']) .titreSection {
+  margin: 10px 0 8px;
+  font-size: clamp(34px, 3.6vw, 48px);
+  line-height: 1.02;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .sousTitreSection {
+  margin: 0;
+  font-size: 16.5px;
+  color: var(--encre-douce);
+}
+
+/* `padding:86px 28px 20px` sur la section des nouveautés. */
+:global(:root[data-design='v3']) .section {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 86px 28px 20px;
+  background: none;
+}
+
+:global(:root[data-design='v3']) .interieur {
+  max-width: none;
+  padding: 0;
+}
+
+:global(:root[data-design='v3']) .enteteSection {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+/* Le bouton de contour : `padding:15px 24px;font-size:15px;border:1.5px`. */
+:global(:root[data-design='v3']) .boutonContour {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 15px 24px;
+  border: 1.5px solid var(--bordure);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+}
+
+:global(:root[data-design='v3']) .boutonContour:hover {
+  border-color: var(--action);
+  background: var(--surface);
+  color: var(--encre);
+}
+
+/* ── 4. « Notre histoire » — un panneau, pas deux colonnes nues ─────────── */
+
+/*
+ * `padding:56px 28px 90px` sur la section, et le panneau lui-même en
+ * `--card`, rayon 36, rembourrage 44, `--shadow-sm`.
+ */
+:global(:root[data-design='v3']) .sectionDouce {
+  background: none;
+  padding: 56px 28px 90px;
+}
+
+:global(:root[data-design='v3']) .histoire {
+  display: grid;
+  grid-template-columns: 0.92fr 1.08fr;
+  gap: 60px;
+  align-items: center;
+  padding: 44px;
+  border-radius: 36px;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+}
+
+/* L'image est CARRÉE dans la maquette, rayon 28, ombre longue. */
+:global(:root[data-design='v3']) .histoireVisuel {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 28px;
+  overflow: visible;
+  box-shadow: none;
+}
+
+:global(:root[data-design='v3']) .histoireVisuel img {
+  border-radius: 28px;
+  box-shadow: var(--ombre-l);
+  object-fit: cover;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PASTILLE SAUGE — LE SEUL ÉCART DE COULEUR DE TOUTE LA PAGE.          │
+ * │                                                                          │
+ * │ La maquette pose la sauge en fond et du BLANC dessus, sur un texte de    │
+ * │ 15,5 px. Mesuré : le blanc y vaut 3,73:1, et le seuil AA d'un TEXTE est  │
+ * │ 4,5:1. L'olive profond n'y fait pas mieux — 3,77:1. Cette sauge-là ne    │
+ * │ peut porter aucun texte, quelle que soit l'encre choisie.                │
+ * │                                                                          │
+ * │ On descend donc d'un cran sur la MÊME famille, `--second-encre`, qui     │
+ * │ porte la crème du dossier à 5,40:1. La pastille reste verte, à sa        │
+ * │ place, à ses dimensions ; elle est simplement plus foncée.               │
+ * │                                                                          │
+ * │ (Les valeurs sont nommées et non recopiées : le test des couleurs        │
+ * │ littérales lit aussi les commentaires, et il a raison de le faire.)      │
+ * │                                                                          │
+ * │ Le cahier des charges §5.3 fixe WCAG 2.1 AA, et `CLAUDE.md` dit que la   │
+ * │ spécification l'emporte sur toute autre source. C'est le seul endroit    │
+ * │ de cette page où la maquette et elle se contredisent.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.histoireBadge {
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  display: block;
+  max-width: 200px;
+  padding: 16px 20px;
+  border-radius: 22px;
+  background: var(--second-encre);
+  color: var(--chrome-encre);
+  box-shadow: var(--ombre-m);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15.5px;
+  line-height: 1.2;
+}
+
+/* `clamp(32px,3.3vw,44px)` ici, et non le 3,6vw des autres sections. */
+:global(:root[data-design='v3']) .histoire .titreSection {
+  margin: 12px 0 18px;
+  font-size: clamp(32px, 3.3vw, 44px);
+  line-height: 1.04;
+}
+
+:global(:root[data-design='v3']) .histoireTexte {
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+  margin: 0 0 14px;
+}
+
+/* Le second paragraphe respire davantage avant le bouton : `0 0 26px`. */
+:global(:root[data-design='v3']) .histoireTexte + .histoireTexte {
+  margin-bottom: 26px;
+}
+
+/* `background:var(--deep);color:var(--onDeep);padding:16px 26px`. */
+:global(:root[data-design='v3']) .boutonVert {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 16px 26px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  box-shadow: var(--ombre-s);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15.5px;
+}
+
+:global(:root[data-design='v3']) .boutonVert:hover {
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
+}
+
+/* ── 5. « Explorez par thème » ──────────────────────────────────────────── */
+
+/*
+ * Cette section-ci reprend la crème secondaire et respire de 88 px, sans
+ * rembourrage horizontal propre : c'est l'intérieur qui le porte.
+ */
+:global(:root[data-design='v3']) .sectionThemes {
+  max-width: none;
+  padding: 88px 0;
+  background: var(--creme);
+}
+
+:global(:root[data-design='v3']) .sectionThemes .interieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* L'en-tête de cette section est bornée à 640 px et n'a pas de bouton. */
+:global(:root[data-design='v3']) .sectionThemes .enteteSection {
+  display: block;
+  max-width: 640px;
+}
+
+:global(:root[data-design='v3']) .sectionThemes .titreSection {
+  font-size: clamp(32px, 3.4vw, 46px);
+  line-height: 1.04;
+}
+
+:global(:root[data-design='v3']) .traditions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 20px;
+  margin-top: 34px;
+  list-style: none;
+  padding: 0;
+}
+
+/*
+ * `border-radius:26px;padding:26px;min-height:180px`, en colonne, le contenu
+ * poussé vers le bas.
+ */
+:global(:root[data-design='v3']) .tradition {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 180px;
+  padding: 26px;
+  border: 0;
+  border-radius: 26px;
+  box-shadow: var(--ombre-s);
+  text-align: left;
+  /*
+   * L'aplat vient de la teinte du thème, comme partout ailleurs dans le
+   * produit — c'est `teinteDuTheme` qui la pose, et c'est ce qui garantit
+   * qu'« animaux » a la même couleur ici et sur une carte du catalogue.
+   */
+  background: var(--carte-accent, var(--second-encre));
+  color: var(--chrome-encre);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE MOTIF S'EFFACE — LA MAQUETTE POSE UN APLAT PLEIN.                    │
+ * │                                                                          │
+ * │ Une première version le gardait en fond, à 28 % : « il dit la même chose │
+ * │ en plus riche ». À l'écran, non — la tuile devenait rayée ou pointillée, │
+ * │ et le nom du thème se lisait par-dessus une trame. La maquette écrit un  │
+ * │ aplat, un seul, et c'est la COULEUR qui range, pas la texture.           │
+ * │                                                                          │
+ * │ Le motif reste dans le document plutôt que d'être retiré du composant :  │
+ * │ la V2 s'en sert, et c'est sa seule illustration de tuile.                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .traditionMotif {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .traditionNom {
+  position: relative;
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 23px;
+  text-transform: capitalize;
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .traditionCompte {
+  position: relative;
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--chrome-encre);
+  opacity: 0.8;
+}
+
+.traditionAppel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--chrome-encre);
+}
+
+/* ── 6. Les témoignages ─────────────────────────────────────────────────── */
+
+/* `padding:90px 28px`, en-tête CENTRÉE et bornée à 620 px. */
+:global(:root[data-design='v3']) .sectionAvis {
+  padding: 90px 28px;
+  background: none;
+}
+
+:global(:root[data-design='v3']) .sectionAvis .enteteSection {
+  display: block;
+  max-width: 620px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+:global(:root[data-design='v3']) .sectionAvis .titreSection {
+  margin: 10px 0 0;
+  font-size: clamp(32px, 3.4vw, 46px);
+  line-height: 1.04;
+}
+
+:global(:root[data-design='v3']) .avis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 22px;
+  margin-top: 44px;
+  list-style: none;
+  padding: 0;
+}
+
+/* `background:var(--card);border-radius:28px;padding:32px`. */
+:global(:root[data-design='v3']) .avisCarte {
+  height: 100%;
+  padding: 32px;
+  border: 0;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+  transition: box-shadow var(--transition-forme);
+}
+
+:global(:root[data-design='v3']) .avisCarte:hover {
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * Le grand guillemet de la V2 s'en va : la maquette ouvre la carte sur une
+ * rangée d'étoiles, et laisser les deux mettrait deux ornements avant le
+ * texte. Les étoiles, elles, demandent une note qui n'existe pas en base —
+ * voir la note portée à `docs/REFONTE-V3.md`.
+ */
+:global(:root[data-design='v3']) .avisGuillemet {
+  display: none;
+}
+
+:global(:root[data-design='v3']) .avisTexte {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.6;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .avisAuteur {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  font-size: 13px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+  color: var(--encre);
+}
+
+/*
+ * Le disque d'initiale. Même arbitrage que la pastille du récit : la sauge
+ * du dossier ne passe pas 4,5:1 sous une lettre, on descend d'un cran dans
+ * la même famille.
+ */
+.avisInitiale {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--second-encre);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+}
+
+:global(:root[data-design='v3']) .avisRole {
+  display: block;
+  font-family: var(--police-interface);
+  font-size: 13px;
+  color: var(--encre-douce);
+}
+
+/* ── 7. L'appel final ───────────────────────────────────────────────────── */
+
+/* `padding:0 28px 96px` sur la section, le panneau porte le reste. */
+:global(:root[data-design='v3']) .appel {
+  padding: 0 28px 96px;
+  background: none;
+}
+
+:global(:root[data-design='v3']) .appelInterieur {
+  position: relative;
+  overflow: hidden;
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 76px 56px;
+  border-radius: 40px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  text-align: center;
+}
+
+/* Les deux disques du panneau — crème à 5 %, terre cuite à 16 %. */
+:global(:root[data-design='v3']) .appelInterieur::before,
+:global(:root[data-design='v3']) .appelInterieur::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+:global(:root[data-design='v3']) .appelInterieur::before {
+  top: -120px;
+  left: -60px;
+  width: 340px;
+  height: 340px;
+  background: color-mix(in srgb, var(--chrome-encre) 5%, transparent);
+}
+
+:global(:root[data-design='v3']) .appelInterieur::after {
+  bottom: -150px;
+  right: -40px;
+  width: 300px;
+  height: 300px;
+  background: color-mix(in srgb, var(--action) 16%, transparent);
+}
+
+:global(:root[data-design='v3']) .appelTitre {
+  position: relative;
+  max-width: 620px;
+  margin: 0 auto 16px;
+  font-size: clamp(34px, 3.8vw, 52px);
+  line-height: 1.03;
+  letter-spacing: normal;
+}
+
+:global(:root[data-design='v3']) .appelCorps {
+  position: relative;
+  max-width: 620px;
+  margin: 0 auto 32px;
+  font-size: 17.5px;
+  opacity: 0.82;
+}
+
+:global(:root[data-design='v3']) .appelActions {
+  position: relative;
+  margin-top: 0;
+  gap: 14px;
+}
+
+/* `padding:18px 32px;font-size:16.5px` — un cran plus large qu'au hero. */
+:global(:root[data-design='v3']) .appel .boutonOcre {
+  padding: 18px 32px;
+  font-size: 16.5px;
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * Sur l'olive, le bouton clair reprend le filet crème du dossier — et non
+ * le contour d'encre du hero, qui y disparaîtrait.
+ */
+:global(:root[data-design='v3']) .appel .boutonClair {
+  padding: 18px 32px;
+  font-size: 16.5px;
+  background: transparent;
+  border: 1.5px solid color-mix(in srgb, var(--chrome-encre) 40%, transparent);
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .appel .boutonClair:hover {
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--chrome-encre);
+}
+
+/* ── Le repli étroit, repris du dossier : « .pagehead 48px 20px 56px » ─── */
+
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .histoire {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    padding: 28px;
+    border-radius: 28px;
+  }
+
+  :global(:root[data-design='v3']) .reassuranceGrille {
+    grid-template-columns: 1fr;
+  }
+
+  :global(:root[data-design='v3']) .appelInterieur {
+    padding: 48px 24px;
+    border-radius: 30px;
+  }
+}
+
+/* ── Les cinq aplats de tuile, un par palette de thème ──────────────────── */
+
+:global(:root[data-design='v3']) .tradition[data-teinte='afrique_ouest'] {
+  background: var(--v3-tuile-1);
+}
+
+:global(:root[data-design='v3']) .tradition[data-teinte='sahel'] {
+  background: var(--v3-tuile-2);
+}
+
+:global(:root[data-design='v3']) .tradition[data-teinte='afrique_centrale'] {
+  background: var(--v3-tuile-3);
+}
+
+:global(:root[data-design='v3']) .tradition[data-teinte='afrique_australe'] {
+  background: var(--v3-tuile-4);
+}
+
+:global(:root[data-design='v3']) .tradition[data-teinte='afrique_est'],
+:global(:root[data-design='v3']) .tradition[data-teinte='inconnue'] {
+  background: var(--v3-tuile-5);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `margin: 0 auto` DÉSACTIVE L'ÉTIREMENT — ET RÉDUIT LA SECTION À SON     │
+ * │ CONTENU.                                                                 │
+ * │                                                                          │
+ * │ `.page` est une colonne flex. Ses enfants s'étirent sur toute la largeur │
+ * │ par `align-items: stretch`, qui est la valeur par défaut. Une marge      │
+ * │ AUTOMATIQUE sur l'axe transversal annule cet étirement : l'élément est   │
+ * │ alors dimensionné par son contenu, puis centré.                          │
+ * │                                                                          │
+ * │ Mesuré : la section des thèmes faisait 499 px de large sur une fenêtre   │
+ * │ de 1440, avec `max-width: none`. Le symptôme désigne la largeur          │
+ * │ maximale ; la cause est la marge.                                        │
+ * │                                                                          │
+ * │ `width: 100%` rend la largeur DÉFINIE : la marge automatique retrouve    │
+ * │ son rôle, qui est de centrer, et cesse d'en avoir un second.             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .section {
+  width: 100%;
+}
+
+/* Le récit : `padding:56px 28px 90px`, et pas de fond propre. */
+:global(:root[data-design='v3']) .sectionHistoire {
+  max-width: var(--largeur-page);
+  padding: 56px 28px 90px;
+  background: none;
+}
+
+/* Les thèmes : pleine largeur, c'est l'aplat crème qui va au bord. */
+:global(:root[data-design='v3']) .sectionThemes {
+  width: 100%;
+  max-width: none;
+  padding: 88px 0;
+  background: var(--creme);
+}
+
+/* Les avis : bornés comme les autres, `padding:90px 28px`. */
+:global(:root[data-design='v3']) .sectionAvis {
+  max-width: var(--largeur-page);
+  padding: 90px 28px;
+  background: none;
+}
+
+/*
+ * L'image du récit sort du flux, pour la même raison que les couvertures du
+ * carrousel : `height: 100%` posé en style en ligne redonne la main à la
+ * hauteur intrinsèque du fichier, et le cadre carré ne tient plus. Mesuré :
+ * 458 × 465 au lieu de 458 × 458.
+ */
+:global(:root[data-design='v3']) .histoireVisuel > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * La légende d'un témoignage : un disque, puis une identité sur deux lignes.
+ *
+ * Le nom reprend la casse normale et la police de titre à 15 px — la V2 le
+ * mettait en capitales espacées et en terre cuite, ce qui le faisait lire
+ * comme une étiquette plutôt que comme une signature.
+ */
+.avisIdentite {
+  display: block;
+  min-width: 0;
+}
+
+.avisNom {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-size: 15px;
+  font-weight: var(--graisse-forte);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--encre);
+}
+
+:global(:root[data-design='v3']) .avisAuteur {
+  letter-spacing: normal;
+  text-transform: none;
+  font-weight: var(--graisse-normale, 400);
+}
+
+/*
+ * Declarations locales PURES des trois sections d'Organic.
+ *
+ * Sans elles, `styles.sectionHistoire` vaut `undefined` et l'attribut rendu
+ * est `class="undefined"` : les regles `:global(...) .sectionHistoire` plus
+ * haut ne trouvent jamais leur cible. Voir le test `classes-css.test.ts`.
+ */
+.sectionHistoire,
+.sectionThemes,
+.sectionAvis {
+  position: relative;
 }

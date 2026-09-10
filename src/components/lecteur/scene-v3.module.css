@@ -1,0 +1,633 @@
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ LA SCÈNE DE LECTURE — LES MESURES DU PROTOTYPE, LIGNES 642 À 672.        ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 1120 PX, ET NON 1240 — LE SEUL ÉCRAN QUI ÉCRIT SA PROPRE LARGEUR.       │
+ * │                                                                          │
+ * │ `--largeur-page` vaut 1240 sous Organic, et c'est la mesure de toutes    │
+ * │ les pages. Le prototype donne 1120 au lecteur, et l'écrit en clair sur   │
+ * │ le conteneur : une planche de conte n'a rien à gagner à s'étaler, et     │
+ * │ cent vingt pixels de marge de plus font une page qu'on regarde plutôt    │
+ * │ qu'un site qu'on parcourt.                                               │
+ * │                                                                          │
+ * │ `docs/REFONTE-V3.md` §9 le note déjà : « Le lecteur garde ses 1120 px,   │
+ * │ qu'il écrit lui-même. »                                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE COULEUR N'EST ÉCRITE ICI, SAUF UNE OMBRE, ET ELLE EST EXPLIQUÉE. │
+ * │                                                                          │
+ * │ Toutes les teintes translucides sortent de `color-mix()` sur             │
+ * │ `--encre-lecture` — la crème posée sur l'olive profond. Le prototype     │
+ * │ écrit la crème en clair, diluée à dix pour cent ; la lire du jeton la    │
+ * │ fait suivre le thème sombre, que le prototype n'avait pas à              │
+ * │ servir.                                                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.scene {
+  /*
+   * L'anneau de focus suit l'encre de la scène : sur l'olive profond, celui de
+   * la page disparaîtrait — et les flèches et les pastilles sont les seules
+   * commandes de l'écran.
+   */
+  --focus-couleur: var(--encre-lecture);
+  display: block;
+  background: var(--fond-lecture);
+  color: var(--encre-lecture);
+  /*
+   * 114 px : la barre utilitaire et l'en-tête. La valeur est celle du
+   * prototype ; elle évite que la scène laisse voir la crème de la page sous
+   * elle sur un écran haut.
+   */
+  min-height: calc(100vh - 114px);
+  padding: 30px 0 60px;
+}
+
+.interieur {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ── La barre de tête ───────────────────────────────────────────────────── */
+
+.barre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+  color: var(--encre-lecture);
+}
+
+.retour {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 20px;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--encre-lecture) 10%, transparent);
+  color: var(--encre-lecture);
+  font-family: var(--police-titre);
+  font-size: 14.5px;
+  letter-spacing: var(--traque-titre);
+  white-space: nowrap;
+  transition: background var(--transition-couleur);
+}
+
+.retour:hover {
+  background: color-mix(in srgb, var(--encre-lecture) 18%, transparent);
+  color: var(--encre-lecture);
+}
+
+/*
+ * Le titre en police de titre — c'est un titre, pas un élément d'interface.
+ *
+ * `min-width: 0` est indispensable : un élément en `flex: 1 1 auto` refuse de
+ * rétrécir sous la largeur de son texte, et l'ellipse ne se produit jamais. La
+ * barre déborderait alors sur un titre long.
+ */
+.titreLecteur {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+  font-family: var(--police-titre);
+  font-size: 19px;
+  letter-spacing: var(--traque-titre);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cote {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.position {
+  margin: 0;
+  font-size: 13.5px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+/*
+ * Le bouton de plein écran — la seule commande que le prototype n'a pas.
+ *
+ * Il emprunte le dessin de la pastille de retour, en plus discret : c'est un
+ * confort, pas la sortie de l'écran. Les 44 px de hauteur minimale sont la
+ * cible tactile du §5.3.
+ */
+.pleinEcran {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--cible-min);
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--encre-lecture) 22%, transparent);
+  border-radius: var(--rayon-pastille);
+  background: transparent;
+  color: var(--encre-lecture);
+  font-size: 13.5px;
+  font-weight: var(--graisse-demi);
+  white-space: nowrap;
+  transition: background var(--transition-couleur), border-color var(--transition-couleur);
+}
+
+.pleinEcran:hover {
+  background: color-mix(in srgb, var(--encre-lecture) 12%, transparent);
+  border-color: color-mix(in srgb, var(--encre-lecture) 40%, transparent);
+  color: var(--encre-lecture);
+}
+
+/* ── Le plateau ─────────────────────────────────────────────────────────── */
+
+/*
+ * `touch-action: pan-y` autorise le défilement vertical de la page et laisse
+ * le balayage HORIZONTAL au lecteur — sans quoi tourner la page au doigt
+ * ferait défiler l'écran.
+ */
+.plateau {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 520px;
+  padding: 34px;
+  border: 1px solid color-mix(in srgb, var(--encre-lecture) 14%, transparent);
+  border-radius: 32px;
+  background: color-mix(in srgb, var(--encre-lecture) 6%, transparent);
+  touch-action: pan-y;
+}
+
+.planche {
+  max-width: 100%;
+  max-height: 460px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 14px;
+  /*
+   * L'OMBRE EST ÉCRITE ICI, ET C'EST LE PROTOTYPE QUI L'ÉCRIT AUSSI.
+   *
+   * Les trois échelons d'Organic — `--ombre-s/m/l` — sont réglés sur le fond
+   * crème des pages. Posés sur l'olive profond de la scène, ils ne se voient
+   * pas : une ombre grise sur un fond sombre ne détache rien. Le prototype
+   * pose donc un noir franc à quarante-cinq pour cent, décalé de 24 px et
+   * diffusé sur 50 — et c'est la seule mesure de cette feuille qui ne vienne
+   * pas d'un jeton.
+   */
+  box-shadow: 0 24px 50px rgb(0 0 0 / 45%);
+  display: block;
+}
+
+/* ── Les flèches ────────────────────────────────────────────────────────── */
+
+/*
+ * Une extrémité atteinte DÉSACTIVE la flèche, sans la faire disparaître.
+ *
+ * Elle reste à sa place : un bouton qui s'évapore en première page déplace
+ * l'autre, et l'enfant qui visait « suivante » touche autre chose.
+ */
+.fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: var(--surface);
+  color: var(--encre);
+  box-shadow: var(--ombre-m);
+  transition: opacity 0.3s, background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.fleche:hover:not(:disabled) {
+  background: var(--marque);
+  color: var(--marque-encre);
+}
+
+.fleche:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.flechePrecedente {
+  left: 18px;
+}
+
+.flecheSuivante {
+  right: 18px;
+}
+
+/* ── Progression et pastilles ───────────────────────────────────────────── */
+
+.progression {
+  height: 5px;
+  margin: 22px 0 16px;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--encre-lecture) 16%, transparent);
+  overflow: hidden;
+}
+
+/* `--part` est un rapport sans unité, posé par le composant. */
+.progressionRemplie {
+  height: 100%;
+  width: calc(var(--part, 0) * 100%);
+  border-radius: var(--rayon-pastille);
+  background: var(--marque);
+  transition: width 0.35s ease;
+}
+
+.pastilles {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pastille {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--encre-lecture) 20%, transparent);
+  border-radius: 14px;
+  background: transparent;
+  color: color-mix(in srgb, var(--encre-lecture) 75%, transparent);
+  font-size: 14px;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.pastille:hover:not(.pastilleActive) {
+  background: color-mix(in srgb, var(--encre-lecture) 10%, transparent);
+  color: var(--encre-lecture);
+}
+
+/*
+ * L'ENCRE DE LA PASTILLE ACTIVE N'EST PAS LE BLANC DU PROTOTYPE.
+ *
+ * Le dossier écrit du BLANC PUR sur la terre cuite. Mesuré, ce couple vaut
+ * 3,4:1 — sous le seuil AA du §5.3, et `design-tokens.test.ts` le refuse
+ * explicitement. `--marque-encre` est l'encre que la direction a choisie pour
+ * ce fond, et elle passe. C'est le même écart, assumé, que sur les boutons de
+ * paiement et d'authentification.
+ */
+.pastilleActive {
+  background: var(--marque);
+  color: var(--marque-encre);
+  border-color: var(--marque);
+}
+
+.mention {
+  margin: 24px 0 0;
+  text-align: center;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--encre-lecture) 60%, transparent);
+}
+
+/* ── Messages plein cadre ───────────────────────────────────────────────── */
+
+.message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espace-4);
+  max-width: 34rem;
+  padding: var(--espace-6);
+  text-align: center;
+}
+
+.messageTexte {
+  margin: 0;
+  font-family: var(--police-lecture);
+  font-size: var(--taille-xl);
+  line-height: 1.6;
+  color: var(--encre-lecture);
+}
+
+.messageAction {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 13px 24px;
+  border: 0;
+  border-radius: var(--rayon-bouton);
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-titre);
+  font-size: var(--taille-l);
+  letter-spacing: var(--traque-titre);
+}
+
+.messageAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ LE PLEIN ÉCRAN — RIEN AUTOUR, ET DEUX BOUTONS.                          ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ATTRIBUT, ET NON `:fullscreen`.                                        │
+ * │                                                                          │
+ * │ `:fullscreen` dirait la même chose au navigateur, et rien du tout aux    │
+ * │ tests : jsdom ne l'implémente pas. `data-plein` est posé depuis          │
+ * │ `document.fullscreenElement` — donc depuis la même autorité — et il se   │
+ * │ lit des deux côtés. Le composant ne le DEVINE pas : il le relit à chaque │
+ * │ `fullscreenchange`, Échap compris.                                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.scene[data-plein='oui'] {
+  min-height: 100vh;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+/*
+ * Le fond que le navigateur peint DERRIÈRE l'élément mis en plein écran est
+ * noir par défaut. On lui donne l'olive de la scène : sans cette ligne, un
+ * liseré noir apparaît le temps de la transition, puis sur les côtés d'une
+ * planche à l'italienne.
+ */
+.scene[data-plein='oui']::backdrop {
+  background: var(--fond-lecture);
+}
+
+.scene[data-plein='oui'] .interieur {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  display: grid;
+}
+
+/*
+ * TOUT CE QUI N'EST PAS LA PAGE DISPARAÎT.
+ *
+ * C'est la demande, mot pour mot : « rien autour, juste des boutons pour
+ * avancer ou reculer ». La barre de tête, la progression, les pastilles et la
+ * mention d'extrait sont autant de choses qui ne sont pas la page.
+ */
+.scene[data-plein='oui'] .barre,
+.scene[data-plein='oui'] .progression,
+.scene[data-plein='oui'] .pastilles,
+.scene[data-plein='oui'] .mention {
+  display: none;
+}
+
+.scene[data-plein='oui'] .plateau {
+  min-height: 100vh;
+  height: 100%;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.scene[data-plein='oui'] .planche {
+  /*
+   * `dvh` puis `vh` : sur mobile, `vh` compte la barre d'adresse rétractée et
+   * rogne le bas de la page. La déclaration `vh` reste au-dessus comme repli
+   * pour les navigateurs qui ignorent `dvh`.
+   */
+  max-height: 100vh;
+  max-height: 100dvh;
+  max-width: 100vw;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.scene[data-plein='oui'] .fleche {
+  left: 24px;
+}
+
+.scene[data-plein='oui'] .flecheSuivante {
+  left: auto;
+  right: 24px;
+}
+
+/* ── La barre flottante ─────────────────────────────────────────────────── */
+
+.flottante {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--encre-lecture) 18%, transparent);
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--fond-lecture) 86%, transparent);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--ombre-l);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.flottanteBouton {
+  width: var(--cible-min);
+  height: var(--cible-min);
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: transparent;
+  color: var(--encre-lecture);
+  transition: background var(--transition-couleur);
+}
+
+.flottanteBouton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--encre-lecture) 16%, transparent);
+  color: var(--encre-lecture);
+}
+
+.flottanteBouton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.flottantePosition {
+  margin: 0;
+  padding: 0 10px;
+  font-size: 13.5px;
+  font-weight: var(--graisse-demi);
+  color: var(--encre-lecture);
+  white-space: nowrap;
+}
+
+.flottanteSortie {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--cible-min);
+  padding: 10px 16px;
+  margin-left: 4px;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--encre-lecture) 14%, transparent);
+  color: var(--encre-lecture);
+  font-size: 13.5px;
+  font-weight: var(--graisse-demi);
+  white-space: nowrap;
+  transition: background var(--transition-couleur);
+}
+
+.flottanteSortie:hover {
+  background: color-mix(in srgb, var(--encre-lecture) 26%, transparent);
+  color: var(--encre-lecture);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EFFACEMENT SE FAIT EN OPACITÉ, JAMAIS EN `display: none`.             │
+ * │                                                                          │
+ * │ `display: none` retire l'élément du flux : au retour, les commandes      │
+ * │ sauteraient. `opacity` plus `pointer-events: none` masque et neutralise  │
+ * │ sans rien déplacer, et `visibility: hidden` en fin de transition les     │
+ * │ sort de l'ordre de tabulation — un bouton invisible mais focalisable est │
+ * │ pire qu'un bouton absent.                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.efface {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.flottante.efface {
+  transform: translate(-50%, 8px);
+}
+
+/* ── La note d'aide, une seule fois ─────────────────────────────────────── */
+
+.aide {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  z-index: 4;
+  margin: 0;
+  padding: 9px 16px;
+  border: 1px solid color-mix(in srgb, var(--encre-lecture) 20%, transparent);
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--fond-lecture) 92%, transparent);
+  color: var(--encre-lecture);
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  transition: opacity 0.6s;
+}
+
+.aideEffacee {
+  opacity: 0;
+}
+
+/* ── Format étroit ──────────────────────────────────────────────────────── */
+
+/*
+ * Sous 640 px, les flèches latérales mangeraient la planche : elles cèdent la
+ * place au balayage et aux pastilles, atteignables au pouce. Le plein écran,
+ * lui, les GARDE — c'est là qu'il n'y a plus rien d'autre pour tourner la
+ * page, et la demande les nomme explicitement.
+ */
+@media (max-width: 640px) {
+  .scene {
+    padding: 18px 0 40px;
+  }
+
+  .interieur {
+    padding: 0 16px;
+  }
+
+  .barre {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .titreLecteur {
+    order: -1;
+    flex: 1 0 100%;
+    text-align: left;
+    font-size: var(--taille-2xl);
+  }
+
+  .plateau {
+    min-height: 340px;
+    padding: 16px;
+    border-radius: var(--rayon-hero);
+  }
+
+  .planche {
+    max-height: 58vh;
+  }
+
+  .scene:not([data-plein='oui']) .fleche {
+    display: none;
+  }
+
+  .scene[data-plein='oui'] .fleche {
+    left: 10px;
+    width: var(--cible-min);
+    height: var(--cible-min);
+  }
+
+  .scene[data-plein='oui'] .flecheSuivante {
+    left: auto;
+    right: 10px;
+  }
+
+  .flottanteSortie {
+    padding: 10px 12px;
+  }
+}
+
+/* ── Le fondu d'une page à l'autre ──────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN FONDU, ET JAMAIS UN GLISSEMENT.                                      │
+ * │                                                                          │
+ * │ `10-animation-spec.md` le précise : « crossfade 220ms (opacity), no      │
+ * │ slide ». Le glissement imite le papier, et c'est le piège : une page qui │
+ * │ glisse suggère qu'on peut la retenir. Ici elle ne fait que se remplacer. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.planche {
+  animation: fonduPlanche 0.22s ease;
+}
+
+@keyframes fonduPlanche {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planche {
+    animation: none;
+  }
+
+  .progressionRemplie,
+  .flottante,
+  .efface {
+    transition: none;
+  }
+}

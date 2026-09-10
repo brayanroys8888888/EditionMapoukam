@@ -5,11 +5,13 @@ import { redirect } from 'next/navigation';
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
 import { lireBibliotheque } from '@/lib/account/bibliotheque';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
 import { Motif } from '@/components/motif';
 import { teintesTheme } from '@/components/catalogue';
 import { GabaritEspace } from '@/components/espace';
+import { GabaritEspaceV3, stylesEspaceV3 as e3 } from '@/components/v2/espace-v3';
+import { estV3 } from '@/design/version';
 import { BoutonTelechargement } from '@/components/espace/BoutonTelechargement';
 import espace from '@/components/espace/espace.module.css';
 import ecran from '@/components/ecran/ecran.module.css';
@@ -55,7 +57,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
   const brut = requete['erreur'];
   const erreur = Array.isArray(brut) ? brut[0] : brut;
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
   if (!appelant) redirect(`/${langue}/connexion`);
@@ -85,6 +87,301 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
   // └────────────────────────────────────────────────────────────────────────┘
   const abonnementPerdu =
     abonnement !== null && abonnement.statutEffectif !== 'actif' && abonnement.statutEffectif !== 'essai';
+
+  const nomComplet = appelant.nom_complet || appelant.email.split('@')[0] || 'Utilisateur';
+  const initiales =
+    nomComplet
+      .split(' ')
+      .filter(Boolean)
+      .map((p) => p[0]?.toUpperCase())
+      .slice(0, 2)
+      .join('') || 'EM';
+  const dateMembre = appelant.cree_le
+    ? new Date(appelant.cree_le).toLocaleDateString(langue === 'fr' ? 'fr-FR' : 'en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'mars 2026';
+  const nbTitres = bibliotheque.achats.length;
+  const nbLivretsGratuits = bibliotheque.achats.filter(
+    (a) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit'),
+  ).length;
+  const langueLecture = (appelant.langue_preferee || langue).toUpperCase();
+
+  if (estV3()) {
+    return (
+      <GabaritEspaceV3
+        langue={langue}
+        onglet="compte/bibliotheque"
+        email={appelant.email}
+        titre={traduire(langue, 'compte.bibliotheque')}
+        nomComplet={nomComplet}
+        initiales={initiales}
+        dateMembre={dateMembre}
+        nbTitres={nbTitres}
+        nbLivretsGratuits={nbLivretsGratuits}
+        langueLecture={langueLecture}
+      >
+        <div className={e3.enteteSection} style={{ marginBottom: '24px', alignItems: 'center' }}>
+          <div>
+            <h2 className={e3.sousTitre} style={{ margin: 0 }}>{traduire(langue, 'compte.bibliotheque')}</h2>
+            <p className={e3.intro} style={{ margin: '6px 0 0' }}>{traduire(langue, 'compte.bibliothequeIntro')}</p>
+          </div>
+          <a className={e3.boutonContour} href={`/${langue}/contes`}>
+            {traduire(langue, 'compte.trouverConte')}
+          </a>
+        </div>
+
+        {erreur ? (
+          <p className={`${e3.panneau} ${e3.panneauAttention}`} role="alert">
+            {messageErreur(langue, erreur)}
+          </p>
+        ) : null}
+
+        {/* ── Abonnement expiré : les trois questions ─────────────────── */}
+        {abonnementPerdu ? (
+          <section className={`${e3.panneau} ${e3.panneauAttention}`}>
+            <h2 className={e3.panneauTitre}>
+              {traduire(langue, 'compte.perteAbonnementTitre')}
+            </h2>
+
+            {/* Ce que j'ai perdu. */}
+            <p className={e3.panneauTexte}>
+              {traduire(langue, 'compte.perteAbonnementPerdu')}
+            </p>
+
+            {/*
+              Ce que je GARDE — c'est la phrase qui évite la réclamation, et
+              elle s'affiche même sur une bibliothèque vide : un abonné expiré
+              sans achat doit lire la perte.
+            */}
+            <p className={e3.valeur} style={{ textAlign: 'left', margin: '12px 0' }}>
+              {traduire(langue, 'compte.perteAbonnementGarde')}
+            </p>
+
+            {/* Pourquoi. */}
+            <p className={e3.panneauTexte}>
+              {traduire(langue, 'compte.perteAbonnementPourquoi')}
+            </p>
+
+            {/* Mène au TUNNEL : qui lit cette phrase a déjà été abonné, il n'a
+                aucun comparatif à redécouvrir. */}
+            <p className={e3.actions} style={{ marginTop: '18px' }}>
+              <a className={e3.bouton} href={`/${langue}/abonnement/souscrire`}>
+                {traduire(langue, 'compte.perteAbonnementAction')}
+              </a>
+            </p>
+          </section>
+        ) : null}
+
+        {/* ── Reprendre ma lecture ─────────────────────────────────────── */}
+        {bibliotheque.en_cours.length > 0 ? (
+          <section>
+            <h2 className={e3.sousTitre}>{traduire(langue, 'compte.enCoursTitre')}</h2>
+
+            <ul className={e3.liste}>
+              {bibliotheque.en_cours.map((entree) => (
+                <li
+                  key={entree.livre_id}
+                  className={e3.carteTitre}
+                  style={teintesTheme(entree.themes)}
+                >
+                  {entree.couverture ? (
+                    <img
+                      src={entree.couverture.vignette}
+                      width={200}
+                      height={300}
+                      loading="lazy"
+                      decoding="async"
+                      alt=""
+                      className={e3.vignette}
+                    />
+                  ) : (
+                    <span className={e3.vignette} aria-hidden="true" />
+                  )}
+
+                  <div className={e3.corps}>
+                    <a className={e3.nom} href={`/${langue}/contes/${entree.slug}`}>
+                      {entree.titre}
+                    </a>
+
+                    {/*
+                      « Page 7 », et RIEN de plus. La maquette ajoutait un
+                      prénom d'enfant, que la règle de conformité interdit et
+                      que le schéma ne porte nulle part.
+                    */}
+                    {entree.reprise ? (
+                      <span className={e3.note}>
+                        {traduire(langue, 'compte.reprisePage').replace(
+                          '{page}',
+                          String(entree.reprise.page),
+                        )}
+                      </span>
+                    ) : null}
+                  </div>
+
+                  {/*
+                    La progression SURVIT à la perte d'accès : un ancien abonné
+                    voit sa page de reprise sans pouvoir rouvrir le conte. On ne
+                    propose donc « Reprendre » que si le moteur de droits le
+                    permet — une porte qui se referme au nez de qui la pousse
+                    est pire que pas de porte du tout.
+                  */}
+                  <div className={e3.actions}>
+                    {entree.acces.canRead ? (
+                      <a className={e3.bouton} href={`/${langue}/lire/${entree.slug}`}>
+                        {traduire(langue, 'compte.lire')}
+                      </a>
+                    ) : (
+                      <span className={e3.note}>
+                        {traduire(langue, 'compte.plusAccessible')}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        {/* ── Mes titres achetés ───────────────────────────────────────── */}
+        <section>
+          <div className={e3.enteteSection}>
+            <h2 className={e3.sousTitre}>{traduire(langue, 'compte.achatsTitre')}</h2>
+
+            {bibliotheque.achats.length > 0 ? (
+              <p className={e3.compte}>
+                {traduire(langue, 'compte.achatsCompte').replace(
+                  '{nombre}',
+                  String(bibliotheque.achats.length),
+                )}
+              </p>
+            ) : null}
+          </div>
+
+          {bibliotheque.achats.length === 0 ? (
+            /* Jamais un bloc vide : dire ce qui manque, et donner une action. */
+            <div className={e3.vide}>
+              <p className={e3.videTitre}>{traduire(langue, 'compte.achatsVide')}</p>
+              <p className={e3.videCorps}>{traduire(langue, 'compte.achatsVideCorps')}</p>
+
+              <a className={e3.boutonContour} href={`/${langue}/contes`}>
+                {traduire(langue, 'compte.achatsVideAction')}
+              </a>
+            </div>
+          ) : (
+            <ul className={e3.liste}>
+              {bibliotheque.achats.map((entree) => (
+                <li
+                  key={entree.livre_id}
+                  className={e3.carteTitre}
+                  style={teintesTheme(entree.themes)}
+                >
+                  {entree.couverture ? (
+                    <img
+                      src={entree.couverture.vignette}
+                      width={320}
+                      height={480}
+                      loading="lazy"
+                      decoding="async"
+                      alt=""
+                      className={e3.vignette}
+                    />
+                  ) : (
+                    <span className={e3.vignette} aria-hidden="true" />
+                  )}
+
+                  <div className={e3.corps}>
+                    {/*
+                      LE THÈME À LA PLACE DE LA RÉGION — migration 0071. Un
+                      thème est de la saisie libre : il s'affiche tel que
+                      l'éditeur l'a écrit, sans passer par le dictionnaire.
+                    */}
+                    {entree.themes[0] !== undefined ? (
+                      <p className={e3.theme}>
+                        <span className={e3.puce} aria-hidden="true" />
+                        {entree.themes[0]}
+                      </p>
+                    ) : null}
+
+                    <a className={e3.nom} href={`/${langue}/contes/${entree.slug}`}>
+                      {entree.titre}
+                    </a>
+
+                    {/*
+                      Dit explicitement : c'est la réponse à « qu'est-ce que je
+                      garde ? », posée avant même que la question ne se pose.
+                    */}
+                    <span className={e3.note}>
+                      {entree.source === 'offert'
+                        ? traduire(langue, 'compte.offert')
+                        : entree.peut_telecharger
+                          ? traduire(langue, 'compte.conserveSansLimite')
+                          : ''}
+                    </span>
+                  </div>
+
+                  <div className={e3.actions}>
+                    {entree.acces.canRead ? (
+                      <a className={e3.bouton} href={`/${langue}/lire/${entree.slug}`}>
+                        {traduire(langue, 'compte.lire')}
+                      </a>
+                    ) : (
+                      <span className={e3.note}>
+                        {traduire(langue, 'compte.plusAccessible')}
+                      </span>
+                    )}
+
+                    {entree.peut_telecharger ? (
+                      <div className={e3.telechargement}>
+                        {entree.langues.length > 1 ? (
+                          <span className={e3.choix}>
+                            <label
+                              className={e3.choixLibelle}
+                              htmlFor={`v3-langue-${entree.livre_id}`}
+                            >
+                              {traduire(langue, 'compte.choixLangue')}
+                            </label>
+                            <select
+                              className={e3.choixListe}
+                              id={`v3-langue-${entree.livre_id}`}
+                              name="langue_contenu"
+                              defaultValue={entree.langues[0]}
+                            >
+                              {entree.langues.map((codeLangue) => (
+                                <option key={codeLangue} value={codeLangue}>
+                                  {traduire(langue, `langue.${codeLangue}` as CleTraduction)}
+                                </option>
+                              ))}
+                            </select>
+                          </span>
+                        ) : (
+                          <input
+                            type="hidden"
+                            name="langue_contenu"
+                            value={entree.langues[0]}
+                          />
+                        )}
+
+                        <BoutonTelechargement
+                          langue={langue}
+                          livreId={entree.livre_id}
+                          libelle={traduire(langue, 'compte.telecharger')}
+                          className={e3.boutonContour}
+                          formats={['pdf', 'epub']}
+                          actionServer={telechargerConte.bind(null, langue, entree.livre_id)}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </GabaritEspaceV3>
+    );
+  }
 
   return (
     <GabaritEspace langue={langue} onglet="compte/bibliotheque" email={appelant.email}>
@@ -320,10 +617,7 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                     affichait donc du JSON brut dans le navigateur.
                   */}
                   {entree.peut_telecharger ? (
-                    <form
-                      className={espace.achatTelechargement}
-                      action={telechargerConte.bind(null, langue, entree.livre_id)}
-                    >
+                    <div className={espace.achatTelechargement}>
                       {entree.langues.length > 1 ? (
                         <span className={espace.achatChoix}>
                           <label
@@ -349,26 +643,14 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                         <input type="hidden" name="langue_contenu" value={entree.langues[0]} />
                       )}
 
-                      <span className={espace.achatChoix}>
-                        <label
-                          className={espace.achatChoixLibelle}
-                          htmlFor={`format-${entree.livre_id}`}
-                        >
-                          {traduire(langue, 'compte.choixFormat')}
-                        </label>
-                        <select
-                          className={espace.achatChoixListe}
-                          id={`format-${entree.livre_id}`}
-                          name="format"
-                          defaultValue="pdf"
-                        >
-                          <option value="pdf">PDF</option>
-                          <option value="epub">EPUB</option>
-                        </select>
-                      </span>
-
-                      <BoutonTelechargement libelle={traduire(langue, 'compte.telecharger')} />
-                    </form>
+                      <BoutonTelechargement
+                        langue={langue}
+                        livreId={entree.livre_id}
+                        libelle={traduire(langue, 'compte.telecharger')}
+                        formats={['pdf', 'epub']}
+                        actionServer={telechargerConte.bind(null, langue, entree.livre_id)}
+                      />
+                    </div>
                   ) : null}
                 </div>
               </li>

@@ -1,3 +1,5 @@
+import { estV3 } from './version';
+
 /**
  * QUELLE ENVELOPPE POUR QUELLE PAGE.
  *
@@ -40,6 +42,29 @@ export type SorteEnveloppe =
    */
   | 'nue';
 
+/**
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS ORGANIC, L'AUTHENTIFICATION REPREND SON EN-TÊTE ET SON PIED.       │
+ * │                                                                          │
+ * │ La V2 les retirait, et l'argument tenait : cinq écrans qui n'ont qu'une  │
+ * │ tâche, et chaque lien est une occasion de partir ailleurs au moment      │
+ * │ précis où l'on demande un mot de passe.                                  │
+ * │                                                                          │
+ * │ Le prototype tranche autrement — il rend l'écran de connexion AVEC le    │
+ * │ chrome complet (`03-screens-desktop.md`, `auth` : « Persistent chrome »  │
+ * │ vaut pour tous les écrans, et la capture le montre). Ce n'est pas une    │
+ * │ étourderie : la connexion n'est pas un tunnel de paiement, on y arrive   │
+ * │ souvent sans y être obligé, et un écran nu au milieu d'un site donne     │
+ * │ l'impression d'avoir quitté le site — exactement l'inquiétude qu'on ne   │
+ * │ veut pas au moment de taper un mot de passe.                             │
+ * │                                                                          │
+ * │ La décision reste ICI, dans l'unique table : c'est la direction qui      │
+ * │ change, pas l'écran. L'administration, elle, garde son écran nu sous     │
+ * │ toutes les directions — son rail est une seconde navigation, et deux     │
+ * │ navigations concurrentes restent deux navigations concurrentes.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
 /** Les segments d'authentification, sous `(auth)`. */
 const AUTHENTIFICATION = new Set([
   'connexion',
@@ -63,7 +88,7 @@ export function sorteEnveloppe(chemin: string): SorteEnveloppe {
   if (premier === undefined) return 'transparente';
 
   if (premier === 'admin') return 'nue';
-  if (AUTHENTIFICATION.has(premier)) return 'nue';
+  if (AUTHENTIFICATION.has(premier)) return estV3() ? 'complete' : 'nue';
 
   return 'complete';
 }

@@ -56,8 +56,18 @@ const ONGLET_CONTES = readFileSync(
 
 const RAIL = readFileSync(join(RACINE, 'src', 'components', 'admin', 'index.tsx'), 'utf8');
 
+/*
+ * La fiche d'édition a QUITTÉ `contes/[id]/page.tsx` le 7 septembre 2026.
+ *
+ * Elle a désormais deux adresses — `/admin/contes/<id>` et
+ * `/admin/livrets/<id>` — et son corps vit dans un composant partagé, chaque
+ * `page.tsx` ne portant plus que la garde d'administration en toutes lettres.
+ * C'est ce composant que ce fichier de tests doit lire : ce qui est éprouvé
+ * ci-dessous — les mots choisis sur `type_document`, le rayon de retour — est
+ * dans le corps, pas dans la garde.
+ */
 const FICHE = readFileSync(
-  join(RACINE, 'src', 'app', '[langue]', 'admin', 'contes', '[id]', 'page.tsx'),
+  join(RACINE, 'src', 'app', '[langue]', 'admin', 'fiche-livre.tsx'),
   'utf8',
 );
 

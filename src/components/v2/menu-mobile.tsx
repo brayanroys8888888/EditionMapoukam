@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 import { LANGUES_INTERFACE, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { IconeLoupe } from '@/components/icones';
@@ -32,8 +33,8 @@ interface EntreeMenu {
 /*
  * Les deux rayons sont énumérés à PLAT, sans la liste déroulante de l'en-tête.
  *
- * Ce panneau occupe déjà tout l'écran : il n'a rien à gagner à replier trois
- * liens derrière un quatrième, et un menu dans un menu se manipule mal au
+ * Ce panneau occupe déjà tout l'écran : il n'a rien à gagner à replier deux
+ * liens derrière un troisième, et un menu dans un menu se manipule mal au
  * pouce. Ce qui doit rester vrai, en revanche, c'est que les MEMES écrans
  * soient joignables ici et depuis l'en-tête large — sans quoi la largeur de la
  * fenêtre déciderait de ce que le site contient.
@@ -42,7 +43,6 @@ interface EntreeMenu {
 const ENTREES: EntreeMenu[] = [
   { cle: 'documents.contes', chemin: 'contes' },
   { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
-  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
   { cle: 'navigation.offres', chemin: 'offres' },
   { cle: 'navigation.association', chemin: 'association' },
   { cle: 'navigation.expertise', chemin: 'expertise' },
@@ -170,107 +170,146 @@ export function MenuMobile({
         </svg>
       </button>
 
-      {ouvert ? (
-        <div
-          ref={panneau}
-          className={styles.panneau}
-          role="dialog"
-          aria-modal="true"
-          aria-label={traduire(langue, 'navigation.principal')}
-        >
-          <div className={styles.entete}>
-            <Marque langue={langue} ton="sombre" petite />
+      {ouvert
+        ? createPortal(
+            <>
+              {/*
+               * ┌────────────────────────────────────────────────────────────────┐
+               * │ LE VOILE FERME AU DOIGT — ET IL EST DÉCORATIF.                │
+               * │                                                                │
+               * │ Sous la V2 le panneau occupe TOUT l'écran : le voile est       │
+               * │ derrière lui, invisible, et ne coûte rien. Sous la V3 le       │
+               * │ panneau est une feuille montante qui laisse voir la page :     │
+               * │ toucher à côté doit refermer, c'est ce que fait n'importe      │
+               * │ quelle feuille depuis dix ans.                                 │
+               * │                                                                │
+               * │ `aria-hidden` : les chemins accessibles sont `Escape` et le    │
+               * │ bouton de fermeture, tous deux déjà là.                        │
+               * │ Un troisième bouton sans nom ne ferait qu'allonger la liste    │
+               * │ annoncée. C'est la règle qu'applique déjà le voile de la       │
+               * │ feuille de filtres, dans `boutique.tsx`.                       │
+               * │                                                                │
+               * │ PORTAIL : rendu directement dans `document.body` pour sortir   │
+               * │ du contexte d'empilement du `<header>` (position: sticky,      │
+               * │ z-index: 50). Sans portail, la barre d'onglets fixe (z: 55,   │
+               * │ mais dans le contexte racine) peint par-dessus le voile (z:    │
+               * │ 9999 dans le contexte de l'en-tête), et les touches sur la     │
+               * │ barre ne ferment pas le panneau.                               │
+               * └────────────────────────────────────────────────────────────────┘
+               */}
+              <div
+                className={styles.voile}
+                onClick={fermer}
+                aria-hidden="true"
+                role="presentation"
+              />
 
-            <button
-              type="button"
-              className={styles.fermer}
-              onClick={fermer}
-              aria-label={traduire(langue, 'v2.tiroirFermer')}
-            >
-              <span aria-hidden="true">×</span>
-            </button>
-          </div>
+              <div
+                ref={panneau}
+                className={styles.panneau}
+                role="dialog"
+                aria-modal="true"
+                aria-label={traduire(langue, 'navigation.principal')}
+              >
+                {/* La poignée de la feuille : dessinée par la V3 seule. */}
+                <span className={styles.poignee} aria-hidden="true" />
 
-          <ul className={styles.liens}>
-            {ENTREES.map((entree) => {
-              const actif = entree.chemin === segment;
-              return (
-                <li key={entree.chemin}>
-                  <a
-                    className={actif ? `${styles.lien} ${styles.lienActif}` : styles.lien}
-                    href={`/${langue}/${entree.chemin}`}
-                    aria-current={actif ? 'page' : undefined}
+                <div className={styles.entete}>
+                  <Marque langue={langue} ton="sombre" petite />
+
+                  <button
+                    type="button"
+                    className={styles.fermer}
+                    onClick={fermer}
+                    aria-label={traduire(langue, 'v2.tiroirFermer')}
                   >
-                    {traduire(langue, entree.cle)}
+                    <span aria-hidden="true">×</span>
+                  </button>
+                </div>
+
+                <ul className={styles.liens}>
+                  {ENTREES.map((entree) => {
+                    const actif = entree.chemin === segment;
+                    return (
+                      <li key={entree.chemin}>
+                        <a
+                          className={actif ? `${styles.lien} ${styles.lienActif}` : styles.lien}
+                          href={`/${langue}/${entree.chemin}`}
+                          aria-current={actif ? 'page' : undefined}
+                        >
+                          {traduire(langue, entree.cle)}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <div className={styles.pied}>
+                  {/*
+                   * ┌────────────────────────────────────────────────────────────┐
+                   * │ LE SÉLECTEUR DE LANGUE, LÀ OÙ ON LE CHERCHE.               │
+                   * │                                                            │
+                   * │ L'en-tête étroit ne garde que le menu et le panier. Le      │
+                   * │ pied de page porte bien un second sélecteur — mais il est   │
+                   * │ au bout d'une page entière, et personne ne défile jusqu'en  │
+                   * │ bas pour changer de langue.                                 │
+                   * │                                                            │
+                   * │ Le doublon est donc VOULU : §5.5 fait des deux langues une  │
+                   * │ promesse du produit, et une promesse qu'il faut chercher    │
+                   * │ n'en est pas une.                                           │
+                   * └────────────────────────────────────────────────────────────┘
+                   */}
+                  <div
+                    className={styles.langues}
+                    role="group"
+                    aria-label={traduire(langue, 'langue.selecteur')}
+                  >
+                    {LANGUES_INTERFACE.map((code) =>
+                      code === langue ? (
+                        <span
+                          key={code}
+                          className={`${styles.langue} ${styles.langueActive}`}
+                          aria-current="true"
+                        >
+                          {traduire(langue, `langue.${code}`)}
+                        </span>
+                      ) : (
+                        <a
+                          key={code}
+                          className={styles.langue}
+                          href={versLangue(code)}
+                          hrefLang={code}
+                          lang={code}
+                        >
+                          {traduire(langue, `langue.${code}`)}
+                        </a>
+                      ),
+                    )}
+                  </div>
+
+                  <a className={styles.recherche} href={`/${langue}/catalogue`}>
+                    <IconeLoupe taille={18} />
+                    {traduire(langue, 'navigation.recherche')}
                   </a>
-                </li>
-              );
-            })}
-          </ul>
 
-          <div className={styles.pied}>
-            {/*
-             * ┌────────────────────────────────────────────────────────────┐
-             * │ LE SÉLECTEUR DE LANGUE, LÀ OÙ ON LE CHERCHE.               │
-             * │                                                            │
-             * │ L'en-tête étroit ne garde que le menu et le panier. Le      │
-             * │ pied de page porte bien un second sélecteur — mais il est   │
-             * │ au bout d'une page entière, et personne ne défile jusqu'en  │
-             * │ bas pour changer de langue.                                 │
-             * │                                                            │
-             * │ Le doublon est donc VOULU : §5.5 fait des deux langues une  │
-             * │ promesse du produit, et une promesse qu'il faut chercher    │
-             * │ n'en est pas une.                                           │
-             * └────────────────────────────────────────────────────────────┘
-             */}
-            <div
-              className={styles.langues}
-              role="group"
-              aria-label={traduire(langue, 'langue.selecteur')}
-            >
-              {LANGUES_INTERFACE.map((code) =>
-                code === langue ? (
-                  <span
-                    key={code}
-                    className={`${styles.langue} ${styles.langueActive}`}
-                    aria-current="true"
-                  >
-                    {traduire(langue, `langue.${code}`)}
-                  </span>
-                ) : (
+                  {administrateur ? (
+                    <a className={styles.administration} href={`/${langue}/admin`}>
+                      {traduire(langue, 'navigation.administration')}
+                    </a>
+                  ) : null}
+
                   <a
-                    key={code}
-                    className={styles.langue}
-                    href={versLangue(code)}
-                    hrefLang={code}
-                    lang={code}
+                    className={styles.connexion}
+                    href={`/${langue}/${connecte ? 'compte' : 'connexion'}`}
                   >
-                    {traduire(langue, `langue.${code}`)}
+                    {traduire(langue, connecte ? 'navigation.compte' : 'navigation.connexion')}
                   </a>
-                ),
-              )}
-            </div>
-
-            <a className={styles.recherche} href={`/${langue}/catalogue`}>
-              <IconeLoupe taille={18} />
-              {traduire(langue, 'navigation.recherche')}
-            </a>
-
-            {administrateur ? (
-              <a className={styles.administration} href={`/${langue}/admin`}>
-                {traduire(langue, 'navigation.administration')}
-              </a>
-            ) : null}
-
-            <a
-              className={styles.connexion}
-              href={`/${langue}/${connecte ? 'compte' : 'connexion'}`}
-            >
-              {traduire(langue, connecte ? 'navigation.compte' : 'navigation.connexion')}
-            </a>
-          </div>
-        </div>
-      ) : null}
+                </div>
+              </div>
+            </>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

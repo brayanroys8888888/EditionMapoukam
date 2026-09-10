@@ -1,11 +1,14 @@
 import type { CSSProperties, ReactNode } from 'react';
 
+import Link from 'next/link';
 import { messageErreur, traduire, type LangueInterface } from '@/i18n';
 import type { EntreeCatalogue, TypeDocument } from '@/domain/catalog/types';
 import type { ReponseFacettes } from '@/domain/api/contract';
 import { TRIS } from '@/domain/catalog/schemas';
 import { Motif, teinteDepuisThemes, teinteDuTheme, type Palette } from '@/components/motif';
 import { Couverture, SubstitutCouverture } from './couverture';
+import { Surligne } from './surlignage';
+import { metaLivre, trancheAge } from './meta';
 import styles from './catalogue.module.css';
 import { RechercheInstantanee } from './recherche-instantanee';
 
@@ -39,6 +42,14 @@ export interface FiltresCatalogue {
   /** Contes, livrets pédagogiques, ou absent — c'est-à-dire les deux. */
   type?: TypeDocument;
   themes?: string[];
+  /**
+   * NIVEAU scolaire — UN jeton, « MS » ou « CP » — migration 0083.
+   *
+   * Le filtre du rayon des livrets, et de lui seul : la colonne est nulle sur
+   * un conte. Un seul à la fois, contrairement aux thèmes qui se cumulent —
+   * on enseigne dans UNE classe.
+   */
+  niveau?: string;
   origine?: string;
   age_min?: number;
   age_max?: number;
@@ -213,33 +224,6 @@ export function teintesTheme(themes: readonly string[]): CSSProperties {
   return teintesPalette(teinteDepuisThemes(themes));
 }
 
-/** « 5–8 ans » — la tranche d'âge seule, telle que la maquette l'écrit. */
-function ageConte(langue: LangueInterface, entree: EntreeCatalogue): string | null {
-  if (entree.age_min === null) return null;
-
-  return entree.age_max === null
-    ? traduire(langue, 'catalogue.trancheAgeCourteOuverte').replace('{min}', String(entree.age_min))
-    : traduire(langue, 'catalogue.trancheAgeCourte')
-        .replace('{min}', String(entree.age_min))
-        .replace('{max}', String(entree.age_max));
-}
-
-/** « 5–8 ans · 16 pages » — la ligne de métadonnées des maquettes. */
-function metaConte(langue: LangueInterface, entree: EntreeCatalogue): string {
-  const morceaux: string[] = [];
-
-  const age = ageConte(langue, entree);
-  if (age !== null) morceaux.push(age);
-
-  if (entree.nb_pages !== null) {
-    morceaux.push(traduire(langue, 'catalogue.nbPages').replace('{pages}', String(entree.nb_pages)));
-  }
-
-  // Le point médian sépare, il ne s'ajoute jamais en tête ni en queue : une
-  // carte sans pagination afficherait sinon « 5–8 ans · ».
-  return morceaux.join(' · ');
-}
-
 /**
  * CARTE DE CONTE — le composant le plus réutilisé du produit.
  *
@@ -261,9 +245,17 @@ export function CarteLivre({
   langue,
   entree,
   dense = false,
+  recherche,
 }: {
   langue: LangueInterface;
   entree: EntreeCatalogue;
+  /**
+   * La requête courante, pour marquer dans le titre ce qui a été cherché.
+   *
+   * Facultative, et absente partout ailleurs qu'au catalogue : l'accueil et
+   * les rayons liés montrent la même carte sans aucune recherche derrière.
+   */
+  recherche?: string | undefined;
   /**
    * La variante du CATALOGUE : plus resserrée, l'âge en pastille neutre.
    *
@@ -274,8 +266,8 @@ export function CarteLivre({
   dense?: boolean;
 }): ReactNode {
   const ligne = ligneAcces(entree);
-  const meta = metaConte(langue, entree);
-  const age = ageConte(langue, entree);
+  const meta = metaLivre(langue, entree);
+  const age = trancheAge(langue, entree);
 
   return (
     <a
@@ -336,7 +328,9 @@ export function CarteLivre({
           </p>
         ) : null}
 
-        <h3 className={styles.titre}>{entree.titre}</h3>
+        <h3 className={styles.titre}>
+          <Surligne texte={entree.titre} recherche={recherche} />
+        </h3>
 
         {dense ? (
           <div className={styles.ligneDense}>
@@ -374,16 +368,19 @@ export function GrilleCatalogue({
   langue,
   entrees,
   dense = false,
+  recherche,
 }: {
   langue: LangueInterface;
   entrees: readonly EntreeCatalogue[];
   dense?: boolean;
+  /** La requête courante — voir `CarteLivre`. */
+  recherche?: string | undefined;
 }): ReactNode {
   return (
     <ul className={dense ? `${styles.grille} ${styles.grilleDense}` : styles.grille}>
       {entrees.map((entree) => (
         <li key={entree.id}>
-          <CarteLivre langue={langue} entree={entree} dense={dense} />
+          <CarteLivre langue={langue} entree={entree} dense={dense} recherche={recherche} />
         </li>
       ))}
     </ul>
@@ -415,8 +412,29 @@ export function PastilleFiltre({
   children: ReactNode;
 }): ReactNode {
   return (
-    <a
+    /*
+     * ┌────────────────────────────────────────────────────────────────────────┐
+     * │ `Link` ET NON `<a>` — LE FILTRE CESSE DE RECHARGER LA PAGE.           │
+     * │                                                                        │
+     * │ Un `<a href>` nu provoque une navigation COMPLÈTE : le document est     │
+     * │ rejeté, les feuilles et les polices sont réévaluées, la position de     │
+     * │ défilement saute, et l'écran blanchit une fraction de seconde. Sur la   │
+     * │ connexion lente du §5.1, poser trois filtres coûtait trois pages.       │
+     * │                                                                        │
+     * │ `Link` rend le MÊME `<a href>` — l'adresse reste partageable, le clic   │
+     * │ milieu ouvre toujours un onglet, et sans JavaScript le lien fonctionne  │
+     * │ exactement comme avant. Ce qui change, c'est qu'AVEC JavaScript, Next   │
+     * │ ne redemande que l'arbre serveur : la grille se renouvelle, le reste    │
+     * │ de la page ne bouge pas.                                                │
+     * │                                                                        │
+     * │ `scroll={false}` : on filtre en regardant la grille. Remonter en haut   │
+     * │ de page à chaque pastille la ferait disparaître sous les yeux — c'est   │
+     * │ déjà le choix fait pour la recherche instantanée.                       │
+     * └────────────────────────────────────────────────────────────────────────┘
+     */
+    <Link
       href={href}
+      scroll={false}
       className={[
         styles.pastilleFiltre,
         teinte ? styles.pastilleRegion : null,
@@ -435,7 +453,7 @@ export function PastilleFiltre({
        */}
       {teinte ? <span className={styles.puce} aria-hidden="true" /> : null}
       {children}
-    </a>
+    </Link>
   );
 }
 
@@ -569,7 +587,22 @@ export function BarreFiltres({
                 href={lien({ type: actif ? undefined : valeur, page: undefined })}
                 actif={actif}
               >
-                {traduire(langue, clePluriel(valeur))} ({facette.nombre})
+                {/*
+                 * ┌────────────────────────────────────────────────────────┐
+                 * │ LE NOMBRE SORT DE LA SCENE SOUS ORGANIC.              │
+                 * │                                                        │
+                 * │ La maquette ecrit « Nature », pas « nature (2) ». Le   │
+                 * │ compte double la largeur de chaque pastille et pousse  │
+                 * │ la barre sur trois rangees ; il dit surtout ce que la  │
+                 * │ grille montre deja une ligne plus bas.                 │
+                 * │                                                        │
+                 * │ Il n'est pas SUPPRIME : il reste annonce aux lecteurs  │
+                 * │ d'ecran, pour qui la grille n'est pas un coup d'oeil.  │
+                 * │ Sous les autres directions, il reste visible.          │
+                 * └────────────────────────────────────────────────────────┘
+                 */}
+                {traduire(langue, clePluriel(valeur))}{' '}
+                <span className={styles.compteFacette}>({facette.nombre})</span>
               </PastilleFiltre>
             );
           })}
@@ -610,7 +643,8 @@ export function BarreFiltres({
                 actif={actif}
                 teinte={teinteDuTheme(facette.valeur)}
               >
-                {facette.valeur} ({facette.nombre})
+                {facette.valeur}{' '}
+                <span className={styles.compteFacette}>({facette.nombre})</span>
               </PastilleFiltre>
             );
           })}
@@ -758,7 +792,17 @@ export function ChampRecherche({
 export function CatalogueVide({
   langue,
   lienSansFiltres,
+  titre,
 }: {
+  /**
+   * Le titre de l'état vide, quand le rayon en a un à lui.
+   *
+   * « Aucun conte ne correspond » est faux sur l'écran des livrets. Le
+   * vocabulaire d'un rayon lui appartient — c'est déjà ce qu'établissent
+   * `compteTous` et `compteUn`. Absent, on retombe sur le libellé du
+   * catalogue entier, qui parle de contes parce que c'est ce qu'il range.
+   */
+  titre?: string;
   langue: LangueInterface;
   lienSansFiltres: string;
 }): ReactNode {
@@ -773,7 +817,7 @@ export function CatalogueVide({
       <Motif teinte="vide" place="plein" rayon="16px" className={styles.videMotif} />
 
       <div className={styles.videTexte}>
-        <h2 className={styles.videTitre}>{traduire(langue, 'catalogue.videTitre')}</h2>
+        <h2 className={styles.videTitre}>{titre ?? traduire(langue, 'catalogue.videTitre')}</h2>
         <p className={styles.videCorps}>{traduire(langue, 'catalogue.videCorps')}</p>
         <a className={styles.videAction} href={lienSansFiltres}>
           {traduire(langue, 'catalogue.videAction')}

@@ -19,11 +19,12 @@ import styles from './espace.module.css';
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-/** Les trois onglets, et leur chemin. */
+/** Les onglets, et leur chemin. */
 const ONGLETS = [
   { cle: 'compte.bibliotheque', chemin: 'compte/bibliotheque' },
-  { cle: 'compte.abonnement', chemin: 'compte/abonnement' },
   { cle: 'compte.parametres', chemin: 'compte' },
+  { cle: 'compte.commandes', chemin: 'compte/commandes' },
+  { cle: 'compte.abonnement', chemin: 'compte/abonnement' },
 ] as const;
 
 export type OngletEspace = (typeof ONGLETS)[number]['chemin'];

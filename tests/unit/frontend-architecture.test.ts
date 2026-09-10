@@ -240,7 +240,25 @@ describe('ÉTATS ET COMPOSANTS PARTAGÉS, JAMAIS RECOPIÉS', () => {
     // La COUCHE PARTAGÉE est celle qui a le droit de fabriquer : c'est sa
     // fonction. La règle vise les écrans et les composants de domaine, qui
     // doivent la consommer.
-    const partages = ['etats', 'base'].map((dossier) =>
+    //
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ `toast` EST UNE TROISIÈME COUCHE PARTAGÉE, PAS UN ÉCRAN.           │
+    // │                                                                    │
+    // │ Il porte un `role="status"`, ce que ce test lit comme la           │
+    // │ fabrication d'un indicateur — et c'en est un, au sens strict : une │
+    // │ région vivante annoncée par les lecteurs d'écran.                  │
+    // │                                                                    │
+    // │ Mais il n'appartient à aucun écran. Il est monté UNE fois dans     │
+    // │ l'enveloppe, comme le commutateur de thème, et toute l'application │
+    // │ y dépose ses messages par `poserToast`. Lui demander d'importer    │
+    // │ `@/components/etats` n'aurait aucun sens : il ne consomme rien, il │
+    // │ EST ce que les autres consomment.                                  │
+    // │                                                                    │
+    // │ La liste s'allonge donc d'un dossier plutôt que de tolérer une     │
+    // │ exception nommée — une exception aurait couvert le fichier entier, │
+    // │ y compris le jour où il se mettrait à recopier un rotor.           │
+    // └────────────────────────────────────────────────────────────────────┘
+    const partages = ['etats', 'base', 'toast'].map((dossier) =>
       join(RACINE, 'src', 'components', dossier).replace(/\\/g, '/'),
     );
 

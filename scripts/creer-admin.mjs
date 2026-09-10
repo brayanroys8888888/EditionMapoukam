@@ -1,6 +1,19 @@
 #!/usr/bin/env node
 /**
- * Crée — ou promeut — un compte administrateur sur la base LOCALE.
+ * Crée — ou remet à niveau — un compte sur la base LOCALE, avec son RÔLE.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN SEUL SCRIPT POUR LES DEUX RÔLES, ET C'EST DÉLIBÉRÉ.                  │
+ * │                                                                          │
+ * │ Il ne faisait que des administrateurs. Un second script pour les comptes │
+ * │ ordinaires aurait recopié les deux garde-fous qui comptent — le refus en │
+ * │ production et le refus sur une base distante — et c'est précisément la   │
+ * │ copie qui finit par diverger : celle qu'on oublie de durcir.             │
+ * │                                                                          │
+ * │ Le rôle est donc un ARGUMENT, `admin` par défaut pour que la commande    │
+ * │ historique `npm run admin:creer` continue de faire ce qu'elle a toujours │
+ * │ fait.                                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ LE MÊME CHEMIN QUE L'APPLICATION, JAMAIS UNE INSERTION DIRECTE.         │
@@ -28,6 +41,7 @@
  *   node scripts/creer-admin.mjs
  *   node scripts/creer-admin.mjs mon.adresse@exemple.fr
  *   node scripts/creer-admin.mjs mon.adresse@exemple.fr MonMotDePasse123
+ *   node scripts/creer-admin.mjs parent@exemple.fr MonMotDePasse123 user
  */
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -81,9 +95,24 @@ if (!estLocale) {
 
 // ── Arguments ──────────────────────────────────────────────────────────────
 
-const [emailDemande, motDePasseDemande] = process.argv.slice(2);
+const [emailDemande, motDePasseDemande, roleDemande] = process.argv.slice(2);
 
-const email = emailDemande ?? 'admin@editionmapoukam.test';
+/**
+ * Le rôle, borné à ce que la base accepte.
+ *
+ * Une valeur libre ferait échouer la mise à jour plus loin, sur un message de
+ * contrainte SQL que personne ne relie à une faute de frappe en ligne de
+ * commande. On refuse ici, où l'on peut encore dire ce qui était attendu.
+ */
+const ROLES = ['admin', 'user'];
+const role = roleDemande ?? 'admin';
+
+if (!ROLES.includes(role)) {
+  console.error(`Rôle inconnu : ${role}. Attendu : ${ROLES.join(' ou ')}.`);
+  process.exit(1);
+}
+
+const email = emailDemande ?? (role === 'admin' ? 'admin@editionmapoukam.test' : 'parent@editionmapoukam.test');
 
 /**
  * Un mot de passe ALÉATOIRE par défaut, jamais une valeur écrite dans le code.
@@ -95,7 +124,8 @@ const email = emailDemande ?? 'admin@editionmapoukam.test';
  * Les règles du projet exigent dix caractères, une lettre et un chiffre : la
  * forme ci-dessous les tient par construction.
  */
-const motDePasse = motDePasseDemande ?? `Adm-${randomBytes(9).toString('base64url')}-7`;
+const prefixe = role === 'admin' ? 'Adm' : 'Usr';
+const motDePasse = motDePasseDemande ?? `${prefixe}-${randomBytes(9).toString('base64url')}-7`;
 
 const service = createClient(urlSupabase, cleService, {
   auth: { persistSession: false, autoRefreshToken: false },
@@ -136,7 +166,7 @@ if (existant) {
     // Confirmée d'emblée : sans cela, la connexion échouerait sur
     // `email_non_verifie` et il faudrait aller relever le code dans `.mails/`.
     email_confirm: true,
-    user_metadata: { nom_complet: 'Administration' },
+    user_metadata: { nom_complet: role === 'admin' ? 'Administration' : 'Compte de démonstration' },
   });
 
   if (error || !data.user) {
@@ -149,9 +179,9 @@ if (existant) {
 }
 
 // Le rôle est posé par la clé de service, jamais par le client.
-const { error: erreurRole } = await service.from('users').update({ role: 'admin' }).eq('id', id);
+const { error: erreurRole } = await service.from('users').update({ role }).eq('id', id);
 if (erreurRole) {
-  console.error(`Promotion en administrateur impossible : ${erreurRole.message}`);
+  console.error(`Pose du rôle « ${role} » impossible : ${erreurRole.message}`);
   process.exit(1);
 }
 
@@ -159,14 +189,20 @@ if (erreurRole) {
 
 const langue = 'fr';
 console.log('');
-console.log(cree ? '  Compte administrateur CRÉÉ.' : '  Compte existant PROMU administrateur.');
+console.log(
+  cree ? `  Compte CRÉÉ, rôle « ${role} ».` : `  Compte existant MIS À JOUR, rôle « ${role} ».`,
+);
 console.log('');
 console.log(`    Adresse       ${email}`);
 console.log(`    Mot de passe  ${motDePasse}`);
 console.log(`    Identifiant   ${id}`);
 console.log('');
+console.log(`    Rôle          ${role}`);
+console.log('');
 console.log(`    Connexion     http://localhost:3000/${langue}/connexion`);
-console.log(`    Administration http://localhost:3000/${langue}/admin`);
+if (role === 'admin') {
+  console.log(`    Administration http://localhost:3000/${langue}/admin`);
+}
 console.log('');
 console.log(
   "  Ce mot de passe n'est écrit nulle part dans le dépôt : notez-le maintenant.\n" +

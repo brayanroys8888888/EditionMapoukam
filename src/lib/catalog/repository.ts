@@ -36,6 +36,9 @@ interface LigneCatalogue {
   age_max: number | null;
   origine_culturelle: string | null;
   themes: string[];
+  /** Migration 0079 — nuls ou vides sur un conte. */
+  niveau: string | null;
+  objectifs: string[];
   couverture_url: string | null;
   inclus_abonnement: boolean;
   disponible_achat: boolean;
@@ -209,6 +212,9 @@ export async function listerCatalogue(
     p_origine: query.origine ?? null,
     p_type_document: query.type ?? null,
     p_acces: query.acces ?? null,
+    // Migration 0083. La comparaison au jeton est faite EN BASE : ecrite ici,
+    // elle aurait a connaitre le separateur, et il y en aurait deux.
+    p_niveau: query.niveau ?? null,
     p_zone: query.zone,
     p_tri: query.tri,
     p_page: query.page,
@@ -319,6 +325,10 @@ function versEntree(
     age_max: ligne.age_max,
     origine_culturelle: ligne.origine_culturelle,
     themes: ligne.themes,
+    niveau: ligne.niveau,
+    // `?? []` et non `!` : une ligne venue d'un appel plus ancien que la 0079
+    // n'a pas la colonne, et un tableau absent ferait echouer chaque `.map`.
+    objectifs: ligne.objectifs ?? [],
     // Le repli sur « conte » ne couvre qu'un cas : la ligne d'affichage
     // introuvable. La colonne, elle, est NOT NULL — le titre en a toujours un.
     type_document: affichage?.typeDocument ?? 'conte',
@@ -359,6 +369,7 @@ export async function lireFiche(
     .from('books')
     .select(
       `id, slug, auteur, illustrateur, age_min, age_max, origine_culturelle, themes,
+       niveau, objectifs,
        type_document, orientation, couverture_url, couverture_jeton,
        inclus_abonnement, disponible_achat, gratuit, nb_pages_extrait,
        publie_le, statut,
@@ -418,6 +429,8 @@ export async function lireFiche(
     resume: traduction.resume,
     auteur: livre.auteur,
     illustrateur: livre.illustrateur,
+    niveau: livre.niveau,
+    objectifs: livre.objectifs ?? [],
     age_min: livre.age_min,
     age_max: livre.age_max,
     origine_culturelle: livre.origine_culturelle,

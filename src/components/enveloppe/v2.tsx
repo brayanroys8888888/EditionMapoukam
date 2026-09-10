@@ -4,9 +4,12 @@ import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
 import type { Utilisateur } from '@/domain/api/contract';
 import { IconeCompte, IconeLoupe, IconePanier, IconeReglages } from '@/components/icones';
 import { TiroirPanier } from '@/components/v2/tiroir-panier';
+import { RechercheGlobale } from '@/components/v2/recherche-globale';
 import { Marque } from '@/components/v2/marque';
 import { MenuMobile } from '@/components/v2/menu-mobile';
 import { EnteteReactif } from '@/components/v2/entete-reactif';
+import { estV3 } from '@/design/version';
+import { IDENTITE_EDITEUR } from '@/content/editorial';
 import styles from './v2.module.css';
 
 /**
@@ -52,8 +55,41 @@ export function SelecteurLangueV2({
     return `${segments.join('/')}${requete}`;
   }
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ `abrege` DIT AUSSI OÙ LE SÉLECTEUR EST POSÉ, ET PAS SEULEMENT SA     │
+   * │ LONGUEUR.                                                            │
+   * │                                                                      │
+   * │ « FR / EN » plutôt que « Français / English », c'est ce qu'on met     │
+   * │ dans une barre serrée — jamais dans le pied de page, qui a la place   │
+   * │ d'écrire les noms en entier. Les deux emplacements ne demandent donc  │
+   * │ pas le même dessin : sous Organic, la barre utilitaire porte une      │
+   * │ pastille translucide de 30 px sur l'olive, quand le pied garde le     │
+   * │ commutateur pleine hauteur.                                          │
+   * │                                                                      │
+   * │ La classe suit la propriété qui existe déjà plutôt que d'en ajouter   │
+   * │ une seconde : deux drapeaux pour un seul état finissent toujours par  │
+   * │ se contredire.                                                       │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
   return (
-    <div className={styles.langues} role="group" aria-label={traduire(langue, 'langue.selecteur')}>
+    <div
+      className={styles.langues}
+      /*
+       * Un ATTRIBUT, et pas une seconde classe.
+       *
+       * Une classe qui ne serait déclarée que sous `:global(:root[data-design=
+       * 'v3'])` n'est pas exportée par le module CSS : `styles.x` vaudrait
+       * `undefined` et le `class` rendu serait la chaîne « undefined ». Rien
+       * ne le signale — ni le build, ni `tsc`, ni l'exécution.
+       * `tests/unit/classes-css.test.ts` existe pour ce piège précis.
+       *
+       * L'attribut n'a pas ce défaut : il se pose sur une classe déjà locale.
+       */
+      data-abrege={abrege ? '' : undefined}
+      role="group"
+      aria-label={traduire(langue, 'langue.selecteur')}
+    >
       {LANGUES_INTERFACE.map((code) => {
         const courante = code === langue;
         const libelle = traduire(langue, abrege ? `langue.${code}Court` : `langue.${code}`);
@@ -96,10 +132,12 @@ interface EntreeNav {
  * ║ l'un se lit le soir, l'autre s'imprime pour une classe. Ils ont donc     ║
  * ║ chacun leur écran, et cette liste est la porte des deux.                 ║
  * ║                                                                          ║
- * ║ « Tout le catalogue » reste en troisième position, et ce n'est pas une   ║
- * ║ politesse : c'est l'adresse que portent le plan de site, la loupe, le    ║
- * ║ pied de page et tous les liens déjà partagés. La séparation ajoute deux  ║
- * ║ portes devant le fonds ; elle n'en ferme aucune.                         ║
+ * ║ « Tout le catalogue » N'Y FIGURE PLUS, et l'adresse n'est pas fermée     ║
+ * ║ pour autant : le plan de site, la loupe, le pied de page et tous les     ║
+ * ║ liens déjà partagés continuent d'y mener. Ce qui est retiré, c'est une   ║
+ * ║ TROISIÈME porte, ouverte à côté de deux qui mènent au même fonds — elle  ║
+ * ║ demandait de choisir entre « les contes », « les livrets » et « les      ║
+ * ║ deux », alors que la question posée en arrivant est la première.         ║
  * ╚═══════════════════════════════════════════════════════════════════════╝
  *
  * Les libellés des deux rayons sont ceux de `documents.*`, déjà employés par
@@ -110,7 +148,6 @@ interface EntreeNav {
 const RAYONS: EntreeNav[] = [
   { cle: 'documents.contes', chemin: 'contes' },
   { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
-  { cle: 'navigation.toutLeCatalogue', chemin: 'catalogue' },
 ];
 
 const NAVIGATION: EntreeNav[] = [
@@ -165,7 +202,14 @@ export function EnteteV2({
       </a>
 
       <div className={styles.enteteInterieur}>
-        <Marque langue={langue} />
+        {/*
+         * La signature « Contes d'Afrique » n'existe QUE dans l'en-tête.
+         *
+         * Le pied porte déjà la baseline complète juste sous la marque ; les
+         * deux l'une sur l'autre diraient la même chose deux fois. Sous la
+         * V2, elle n'a jamais été dessinée — d'où la condition.
+         */}
+        <Marque langue={langue} signature={estV3()} />
 
         <nav className={styles.navigation} aria-label={traduire(langue, 'navigation.principal')}>
           {/*
@@ -252,7 +296,22 @@ export function EnteteV2({
             </a>
           ) : null}
 
-          <SelecteurLangueV2 langue={langue} chemin={chemin} requete={requete} abrege />
+          {/*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ SOUS LA V3, LA LANGUE A DÉMÉNAGÉ DANS LA BARRE UTILITAIRE.  │
+           * │                                                              │
+           * │ La laisser AUSSI ici la donnerait deux fois sur le même       │
+           * │ écran — et deux groupes `role="group"` de même libellé, que   │
+           * │ le lecteur d'écran annonce l'un après l'autre sans pouvoir    │
+           * │ dire lequel fait quoi.                                        │
+           * │                                                              │
+           * │ Elle reste dans le menu plein écran, comme sous la V2 : le    │
+           * │ menu est le seul endroit atteignable quand la barre a défilé. │
+           * └──────────────────────────────────────────────────────────────┘
+           */}
+          {estV3() ? null : (
+            <SelecteurLangueV2 langue={langue} chemin={chemin} requete={requete} abrege />
+          )}
 
           {/*
            * La loupe, le sélecteur de langue et le compte portent une classe
@@ -260,13 +319,39 @@ export function EnteteV2({
            * de l'en-tête étroit sans emporter le panier avec eux. Tous trois
            * sont repris dans le menu plein écran, où ils restent atteignables.
            */}
-          <a
-            className={`${styles.carreAction} ${styles.actionSecondaire}`}
-            href={`/${langue}/catalogue`}
-            aria-label={traduire(langue, 'navigation.recherche')}
-          >
-            <IconeLoupe taille={19} />
-          </a>
+          {/*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ SOUS ORGANIC, LA LOUPE OUVRE ; AILLEURS, ELLE MÈNE.          │
+           * │                                                              │
+           * │ `RechercheGlobale` rend la MÊME ancre vers `/catalogue` et   │
+           * │ n'en intercepte le clic que si le script s'exécute : sans    │
+           * │ JavaScript, la loupe continue de mener à l'écran de          │
+           * │ recherche, qui porte un vrai formulaire `GET`. Les classes   │
+           * │ lui sont passées pour qu'elle reste à sa place dans la barre │
+           * │ d'actions, et l'icône lui est passée en enfant — ce          │
+           * │ composant-là ne connaît pas le dessin de l'en-tête.          │
+           * │                                                              │
+           * │ La V1 et la V2 gardent l'ancre nue : elles n'ont pas de      │
+           * │ superposition, et leur en donner une serait refondre deux    │
+           * │ directions qu'on ne touche pas.                              │
+           * └──────────────────────────────────────────────────────────────┘
+           */}
+          {estV3() ? (
+            <RechercheGlobale
+              langue={langue}
+              className={`${styles.carreAction} ${styles.actionSecondaire}`}
+            >
+              <IconeLoupe taille={19} />
+            </RechercheGlobale>
+          ) : (
+            <a
+              className={`${styles.carreAction} ${styles.actionSecondaire}`}
+              href={`/${langue}/catalogue`}
+              aria-label={traduire(langue, 'navigation.recherche')}
+            >
+              <IconeLoupe taille={19} />
+            </a>
+          )}
 
           {/*
            * Le montant ne paraît QUE s'il y a quelque chose à payer.
@@ -315,15 +400,36 @@ export function EnteteV2({
             administrateur={utilisateur?.role === 'admin'}
           />
 
-          {utilisateur ? (
+          {/*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ LE ROND DE COMPTE EXISTE DANS LES DEUX ÉTATS DE SESSION.     │
+           * │                                                              │
+           * │ Le prototype pose trois ronds — loupe, panier, compte — puis  │
+           * │ la pilule « Se connecter ». Il n'a pas de session : les deux  │
+           * │ paraissent ensemble. Ici, le rond mène au compte quand on est │
+           * │ connecté, et à la connexion sinon ; la pilule, elle, ne sert  │
+           * │ plus à rien une fois la session ouverte et disparaît.         │
+           * │                                                              │
+           * │ Le retirer pour un visiteur aurait décalé toute la barre      │
+           * │ d'actions de cinquante pixels entre deux écrans du même site  │
+           * │ — l'écart mesuré à la passe au pixel, et la raison pour       │
+           * │ laquelle il est ici.                                          │
+           * └──────────────────────────────────────────────────────────────┘
+           */}
+          {utilisateur || estV3() ? (
             <a
               className={`${styles.carreAction} ${styles.actionSecondaire}`}
-              href={`/${langue}/compte`}
-              aria-label={traduire(langue, 'navigation.compte')}
+              href={`/${langue}/${utilisateur ? 'compte' : 'connexion'}`}
+              aria-label={traduire(
+                langue,
+                utilisateur ? 'navigation.compte' : 'navigation.connexion',
+              )}
             >
               <IconeCompte taille={20} />
             </a>
-          ) : (
+          ) : null}
+
+          {utilisateur ? null : (
             <a
               className={`${styles.lienTexte} ${styles.actionSecondaire}`}
               href={`/${langue}/connexion`}
@@ -383,8 +489,67 @@ export function PiedDePageV2({
     <footer className={styles.pied}>
       <div className={styles.piedHaut}>
         <div className={styles.piedIdentite}>
-          <Marque langue={langue} ton="sombre" />
+          {/*
+           * La classe est PASSÉE, et non ciblée depuis cette feuille.
+           *
+           * `<Marque>` porte ses propres classes, hachées par
+           * `marque.module.css`. Une règle `.piedIdentite .marque` écrite ici
+           * viserait le `.marque` LOCAL de cette feuille — un vestige — et ne
+           * toucherait jamais le composant. Elle ne lèverait rien : elle
+           * s'appliquerait à un élément qui n'existe plus.
+           */}
+          <Marque langue={langue} ton="sombre" className={styles.marquePied} />
           <p className={styles.piedBaseline}>{traduire(langue, 'marque.baseline')}</p>
+
+          {/*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ LA LETTRE DES NOUVEAUTÉS OUVRE LE COURRIEL, ELLE N'INSCRIT   │
+           * │ PERSONNE.                                                     │
+           * │                                                              │
+           * │ Le dossier l'écrit en tête : « the newsletter [is] stubbed   │
+           * │ with toasts ». Il n'y a ici ni table d'abonnés, ni route qui  │
+           * │ en reçoive un, et `FileMailer` écrit dans `.mails/` — ce      │
+           * │ n'est pas un canal vers l'éditeur.                            │
+           * │                                                              │
+           * │ Un « merci, vous êtes inscrit » que personne n'enregistre    │
+           * │ est pire qu'un bloc absent : il fait attendre une lettre qui  │
+           * │ ne partira jamais, et il collecte une adresse dans le vide.   │
+           * │ Le formulaire remet donc la demande dans le logiciel de       │
+           * │ courrier du visiteur — le même choix que l'écran de contact,  │
+           * │ et pour la même raison.                                       │
+           * │                                                              │
+           * │ Le sujet voyage dans l'adresse, la saisie dans le corps du    │
+           * │ message : `enctype="text/plain"` compose des lignes           │
+           * │ `nom=valeur` lisibles, sans encodage de formulaire à          │
+           * │ déchiffrer. Le jour où une route existera, seule l'`action`   │
+           * │ changera.                                                     │
+           * └──────────────────────────────────────────────────────────────┘
+           */}
+          <form
+            className={styles.lettre}
+            action={`mailto:${IDENTITE_EDITEUR.emailContact}?subject=${encodeURIComponent(
+              traduire(langue, 'pied.lettreSujet'),
+            )}`}
+            method="post"
+            encType="text/plain"
+          >
+            <p className={styles.lettreTitre} id="pied-lettre">
+              {traduire(langue, 'pied.lettreTitre')}
+            </p>
+            <div className={styles.lettreRangee}>
+              <input
+                className={styles.lettreChamp}
+                type="email"
+                name="email"
+                autoComplete="email"
+                placeholder={traduire(langue, 'pied.lettreChamp')}
+                aria-labelledby="pied-lettre"
+              />
+              <button className={styles.lettreAction} type="submit">
+                {traduire(langue, 'pied.lettreAction')}
+              </button>
+            </div>
+          </form>
         </div>
 
         <ColonnePied titre={traduire(langue, 'pied.colonneCatalogue')}>
@@ -394,11 +559,6 @@ export function PiedDePageV2({
           <li>
             <a href={`/${langue}/catalogue?tri=nouveautes`}>{traduire(langue, 'pied.nouveautes')}</a>
           </li>
-          <li>
-            <a href={`/${langue}/catalogue?acces=gratuit`}>
-              {traduire(langue, 'catalogue.accesGratuit')}
-            </a>
-          </li>
           {/*
             Le rayon des livrets est atteignable d'ICI et par la pastille de
             filtre du catalogue — laquelle n'apparaît que si un livret est
@@ -407,6 +567,11 @@ export function PiedDePageV2({
           */}
           <li>
             <a href={`/${langue}/livrets`}>{traduire(langue, 'livrets.lien')}</a>
+          </li>
+          <li>
+            <a href={`/${langue}/catalogue?acces=gratuit`}>
+              {traduire(langue, 'catalogue.accesGratuit')}
+            </a>
           </li>
         </ColonnePied>
 
@@ -452,7 +617,28 @@ export function PiedDePageV2({
             </span>
           </nav>
 
-          <SelecteurLangueV2 langue={langue} chemin={chemin} requete={requete} />
+          {/*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ SOUS ORGANIC, LA BARRE DU BAS PORTE LE LIEU, PAS LA LANGUE. │
+           * │                                                              │
+           * │ La bascule FR/EN vit déjà dans la barre utilitaire, en haut  │
+           * │ de chaque écran de la V3 — la maquette ne la met qu'à cet    │
+           * │ endroit-là. La laisser aussi dans le pied en ferait deux, et │
+           * │ deux commandes pour le même réglage se contredisent tôt ou   │
+           * │ tard : celle du pied ne connaît pas l'état de celle du haut. │
+           * │                                                              │
+           * │ Le dossier met l'adresse à sa place. Elle n'est pas inventée │
+           * │ pour l'occasion : c'est `IDENTITE_EDITEUR.adresse`, celle    │
+           * │ qu'affiche déjà l'écran de contact.                          │
+           * │                                                              │
+           * │ La V2, qui n'a pas de barre utilitaire, garde son sélecteur. │
+           * └──────────────────────────────────────────────────────────────┘
+           */}
+          {estV3() ? (
+            <p className={styles.piedLieu}>{IDENTITE_EDITEUR.adresse}</p>
+          ) : (
+            <SelecteurLangueV2 langue={langue} chemin={chemin} requete={requete} />
+          )}
         </div>
       </div>
     </footer>

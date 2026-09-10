@@ -4,7 +4,7 @@ import { headers } from 'next/headers';
 import { langueValide, traduire } from '@/i18n';
 import { catalogQuerySchema, trancheAgeCoherente } from '@/domain/catalog/schemas';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Pagination } from '@/components/base';
 import { Erreur } from '@/components/etats';
 import {
@@ -19,8 +19,8 @@ import {
   type FiltresCatalogue,
 } from '@/components/catalogue';
 import { teinteDuTheme } from '@/components/motif';
-import { BoutiqueV2 } from '@/components/v2/boutique';
-import { versionDesign } from '@/design/version';
+import { BoutiqueV2, vueDepuisRequete } from '@/components/v2/boutique';
+import { estV3, structureRefondue } from '@/design/version';
 import { ajouterAuPanier } from '../panier/actions';
 import styles from '@/components/catalogue/catalogue.module.css';
 
@@ -87,7 +87,7 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
     ? query
     : { ...query, age_min: undefined, age_max: undefined };
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 
@@ -223,7 +223,7 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
       .replace('{total}', String(facettes.total));
   })();
 
-  if (versionDesign() === 'v2') {
+  if (structureRefondue()) {
     return (
       <BoutiqueV2
         langue={langue}
@@ -234,6 +234,7 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
         lien={lien}
         base={base}
         compte={compte}
+        {...(estV3() ? { vue: vueDepuisRequete(brut) } : {})}
         actionAjout={(livreId) => ajouterAuPanier.bind(null, langue, livreId, langue)}
       />
     );

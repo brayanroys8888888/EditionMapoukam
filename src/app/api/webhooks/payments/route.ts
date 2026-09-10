@@ -1,7 +1,6 @@
 import { getPaymentProvider } from '@/adapters/registry';
 import { getClock } from '@/lib/clock';
 import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clients';
-import { SIGNATURE_HEADER } from '@/lib/crypto/webhook-signature';
 import { echouerCommande, honorerCommande, rembourserCommande } from '@/lib/orders/fulfillment';
 import { appliquerEvenement } from '@/lib/subscriptions/handlers';
 import { viderFileEnArrierePlan } from '@/lib/emails/file';
@@ -49,10 +48,19 @@ export async function POST(request: Request): Promise<Response> {
   // 1. Le corps BRUT. Re-sérialiser un JSON change les octets et invalide la
   //    signature — c'est l'erreur classique de ce type de montage.
   const corpsBrut = await request.text();
-  const entete = request.headers.get(SIGNATURE_HEADER);
 
   const provider = getPaymentProvider();
   const maintenant = getClock().now();
+
+  /*
+   * L'EN-TÊTE EST DEMANDÉ AU PRESTATAIRE, ET NON À UNE CONSTANTE.
+   *
+   * Chacun a le sien — `x-webhook-signature` pour le faux, `x-notch-signature`
+   * chez Notch Pay. Lu depuis une constante, le jour du branchement la route
+   * interrogeait un en-tête absent et rejetait TOUT, avec pour seul symptôme
+   * « signature invalide » : le pire des diagnostics, puisqu'il désigne la clé.
+   */
+  const entete = request.headers.get(provider.enteteSignature);
 
   // 2. La signature, avant tout parsing.
   const signature = provider.verifierSignatureWebhook(corpsBrut, entete, maintenant);

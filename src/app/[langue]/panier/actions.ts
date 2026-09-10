@@ -7,6 +7,7 @@ import { langueValide } from '@/i18n';
 import { getServerEnv } from '@/lib/config/env';
 import { estMoyenPaiement } from '@/domain/payments/moyens';
 import { verifierCoordonnees } from '@/lib/tunnel/coordonnees';
+import { getPaymentProvider } from '@/adapters/registry';
 
 /**
  * ACTIONS DU TUNNEL D'ACHAT.
@@ -33,7 +34,19 @@ async function appeler(
     .map((c) => `${c.name}=${encodeURIComponent(c.value)}`)
     .join('; ');
 
-  const reponse = await fetch(`${getServerEnv().NEXT_PUBLIC_APP_URL}${chemin}`, {
+  let baseUrl = getServerEnv().NEXT_PUBLIC_APP_URL;
+  try {
+    const enTetes = await headers();
+    const host = enTetes.get('host');
+    if (host) {
+      const proto = enTetes.get('x-forwarded-proto') || (host.includes('localhost') || host.includes('127.0.0.1') ? 'http' : 'https');
+      baseUrl = `${proto}://${host}`;
+    }
+  } catch {
+    // repli
+  }
+
+  const reponse = await fetch(`${baseUrl}${chemin}`, {
     method: methode,
     headers: {
       'content-type': 'application/json',
@@ -99,15 +112,27 @@ export async function ajouterAuPanier(
     redirect(`${destination}?erreur=${codeErreur(reponse.corps)}`);
   }
 
-  // Ne redirige pas vers la page panier, reste sur la page courante et incrémente le compteur
-  redirect(`${destination}?ajoute=1`);
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ON RESTE SUR PLACE, ET C'EST LE TOAST QUI DIT QUE ÇA A MARCHÉ.        │
+   * │                                                                        │
+   * │ Emmener au panier à chaque ajout coupe la visite : un parent qui       │
+   * │ garnit son panier depuis le catalogue devrait revenir en arrière       │
+   * │ après chaque titre. Mais sans retour visible, le clic n'a l'air        │
+   * │ d'avoir rien fait — et l'on ajoute deux fois.                          │
+   * │                                                                        │
+   * │ Le code passe par l'adresse, pas le texte : `Toaster` le valide        │
+   * │ contre une liste fermée et le retire aussitôt de l'URL.                │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  redirect(`${destination}?toast=panierAjout`);
 }
 
 export async function retirerDuPanier(langueBrute: string, livreId: string): Promise<void> {
   const langue = langueValide(langueBrute);
 
   await appeler(`/api/cart/items/${livreId}`, 'DELETE');
-  redirect(`/${langue}/panier`);
+  redirect(`/${langue}/panier?toast=panierRetrait`);
 }
 
 /**
@@ -209,6 +234,37 @@ export async function reglerCommande(
       if (moyen) parametres.set('moyen', moyen);
       redirect(`/${langue}/paiement/${commandeId}?${parametres.toString()}`);
     }
+  }
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ DEUX CHEMINS, ET L'ADAPTATEUR BRANCHÉ DÉCIDE LEQUEL.                │
+   * │                                                                      │
+   * │ Face au faux prestataire, l'issue est choisie sur place : c'est tout │
+   * │ l'objet de la console de simulation, et les trois boutons de l'écran │
+   * │ éprouvent les trois issues.                                          │
+   * │                                                                      │
+   * │ Face à un prestataire RÉEL — Notch Pay depuis le 8 septembre 2026 —  │
+   * │ personne ne choisit rien ici : on ouvre le tunnel hébergé et on y     │
+   * │ envoie le client. L'issue arrive plus tard, par webhook signé, et    │
+   * │ elle seule octroie quoi que ce soit (CLAUDE.md règle 5).             │
+   * │                                                                      │
+   * │ La condition porte sur `simule`, une propriété du CONTRAT, et non    │
+   * │ sur le nom du prestataire : un second adaptateur réel n'aura pas à   │
+   * │ être ajouté à une liste écrite ici.                                  │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (!getPaymentProvider().simule) {
+    const ouverture = await appeler('/api/checkout', 'POST', { commande_id: commandeId });
+    const url = ouverture.corps?.['url'];
+
+    if (ouverture.statut === 200 && typeof url === 'string') redirect(url);
+
+    // L'ouverture a échoué : on revient sur l'écran de règlement, qui relit la
+    // commande et affiche qu'elle est toujours en attente. Le code d'erreur
+    // suit dans l'adresse plutôt que dans le texte — c'est ce que les autres
+    // écrans du tunnel font déjà.
+    redirect(`/${langue}/paiement/${commandeId}?erreur=${codeErreur(ouverture.corps)}`);
   }
 
   await appeler('/api/paiement-simule', 'POST', { commande_id: commandeId, issue });

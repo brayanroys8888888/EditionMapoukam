@@ -6,11 +6,12 @@ import { LANGUES_INTERFACE, langueValide, traduire } from '@/i18n';
 import { ficheQuerySchema } from '@/domain/catalog/schemas';
 import { lireFiche } from '@/lib/catalog/repository';
 import { lireAvis } from '@/lib/catalog/avis';
-import { identifierAppelant } from '@/lib/auth/session';
+import { lirePlanches } from '@/lib/content/planches';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { getServerEnv } from '@/lib/config/env';
 import { PageFicheLivre } from '@/components/fiche';
 import { FicheV2 } from '@/components/v2/fiche';
-import { versionDesign } from '@/design/version';
+import { structureRefondue } from '@/design/version';
 import { ajouterAuPanier } from '../../panier/actions';
 import { deposerAvis, retirerAvis } from './actions';
 
@@ -34,7 +35,7 @@ async function charger(langueBrute: string, slug: string) {
   if (!SLUG_VALIDE.test(slug)) return null;
 
   const query = ficheQuerySchema.parse({ langue });
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 
@@ -109,6 +110,25 @@ export default async function PageFiche({ params }: Parametres) {
    * avis par titre, et lui demander de savoir dans quel état il se trouve
    * serait lui faire porter une règle qui n'est pas la sienne.
    */
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LES PLANCHES NE SONT CHARGÉES QUE POUR UN LIVRET.                    │
+   * │                                                                      │
+   * │ Elles coûtent un aller-retour par page, plus une signature. Sur un    │
+   * │ conte, la fiche montre sa couverture et n'en a aucun usage : les      │
+   * │ demander quand même ferait payer huit requêtes à chaque affichage de  │
+   * │ chaque titre du catalogue, pour un résultat jeté.                     │
+   * │                                                                      │
+   * │ Le contrôle des droits reste entier : `lirePlanches` passe par        │
+   * │ `servirPage`, qui consulte `getAccess` avant de lire quoi que ce      │
+   * │ soit. Un visiteur sans droit reçoit son extrait, et rien de plus.     │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const planches =
+    fiche.type_document === 'livret_pedagogique'
+      ? await lirePlanches(appelant?.id ?? null, fiche.id, langue)
+      : undefined;
+
   const actionAvis = deposerAvis.bind(null, langue, fiche.id, fiche.slug, avis.mien !== null);
   const actionRetraitAvis = retirerAvis.bind(null, langue, fiche.id, fiche.slug);
 
@@ -145,7 +165,7 @@ export default async function PageFiche({ params }: Parametres) {
     />
   );
 
-  if (versionDesign() === 'v2') {
+  if (structureRefondue()) {
     return (
       <>
         {structurees}
@@ -153,6 +173,7 @@ export default async function PageFiche({ params }: Parametres) {
           langue={langue}
           fiche={fiche}
           avis={avis}
+          {...(planches ? { planches } : {})}
           connecte={appelant !== null}
           actionAjout={ajouterAuPanier.bind(null, langue, fiche.id, langue)}
           actionAvis={actionAvis}

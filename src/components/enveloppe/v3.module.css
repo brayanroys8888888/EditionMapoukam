@@ -1,0 +1,322 @@
+/*
+ * CHROME DE LA V3 — les pièces qui n'existaient pas.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE FICHIER NE PORTE QUE DU NEUF.                                         │
+ * │                                                                          │
+ * │ Ce qui existait déjà — en-tête, navigation, pied — est REDÉFINI dans     │
+ * │ `v2.module.css`, sous des sélecteurs `:global(:root[data-design='v3'])`.  │
+ * │ Il le faut : les modules CSS hachent leurs noms de classe, et une        │
+ * │ feuille séparée ne peut pas viser `.entete` d'une autre.                  │
+ * │                                                                          │
+ * │ Ici vivent donc seulement la barre utilitaire, le commutateur de thème   │
+ * │ et la barre d'onglets — trois pièces que la V2 n'a jamais eues.          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Aucune couleur littérale : tout vient des jetons, qui se retournent avec le
+ * thème. `tests/unit/design-tokens.test.ts` échoue sur toute valeur écrite ici.
+ */
+
+/* ══ La barre utilitaire — 38 px d'olive, au-dessus de tout ═══════════════ */
+
+.barreUtilitaire {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-size: 12.5px;
+  /* `letter-spacing: .03em` au prototype — il aère une ligne très basse. */
+  letter-spacing: 0.03em;
+  /*
+   * L'INTERLIGNE EST CELUI DU CORPS, ET IL EST HÉRITÉ — 1,6, pas 1,2.
+   *
+   * Le prototype ne déclare rien ici : la barre hérite du `line-height: 1.6`
+   * de sa racine, et ses 12,5 px donnent donc une ligne de 20 px. Un 1,2
+   * écrit à la main la ramenait à 15, et la barre entière remontait de deux
+   * pixels et demi — avec, en dessous, tout le reste de la page. C'est le
+   * même défaut que les 42 px de `.langue` relevés à la passe au pixel : une
+   * valeur plausible, posée là où le prototype n'en pose aucune.
+   */
+  line-height: var(--interligne-corps);
+}
+
+.barreUtilitaireInterieur {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 0 28px;
+  /*
+   * `height`, et non `min-height` : `02-layout-responsive.md` fixe la barre à
+   * 38 px et le prototype l'écrit en clair (`height:38px`, ligne 71). Une
+   * hauteur MINIMALE se laisse pousser par le premier enfant plus grand, et
+   * c'est exactement ce qui s'était produit — voir l'encadré de
+   * `.languesCompact` dans `v2.module.css`.
+   */
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+/*
+ * La promesse de livraison disparaît sous 560 px, et le reste demeure.
+ *
+ * C'est un ordre de priorité, pas un repli : à cette largeur, la barre ne
+ * peut plus tenir les deux, et ce qu'on garde est ce sur quoi on peut AGIR —
+ * le thème et la langue. Une phrase qu'on ne peut pas lire en entier ne
+ * rassure personne.
+ */
+.promesse {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--chrome-encre);
+  opacity: 0.88;
+}
+
+/*
+ * La pastille terre cuite : six pixels, et le seul point de couleur de la
+ * barre. C'est ce qui empêche la ligne de se lire comme une mention légale.
+ */
+.point {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--action);
+}
+
+@media (max-width: 560px) {
+  .promesse {
+    display: none;
+  }
+}
+
+.barreUtilitaireActions {
+  display: flex;
+  align-items: center;
+  /* 8 px au prototype, entre la pastille de thème et celle de langue. */
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* ══ Le commutateur de thème ══════════════════════════════════════════════ */
+
+.commutateurTheme {
+  /*
+   * 32 px de boîte visible, mais une cible tactile pleine.
+   *
+   * La barre ne fait que 38 px : un bouton de 44 px la ferait grandir. Le
+   * `::after` étend donc la zone cliquable au-delà du dessin, sans toucher à
+   * la mise en page — la cible reste conforme, la barre reste fine.
+   */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /*
+   * Une PASTILLE ÉTIQUETÉE, comme au prototype : `gap: 7px`, `padding: 5px
+   * 12px`, `font-size: 12px`, sur un aplat de l'encre du chrome à 10 %.
+   *
+   * L'icône seule était une devinette : rien ne dit si une lune signifie
+   * « vous êtes en clair » ou « passez en sombre ». Le mot tranche.
+   */
+  gap: 7px;
+  min-height: 0;
+  padding: 5px 12px;
+  /*
+   * La largeur est FIXÉE, et c'est le prix du rendu serveur.
+   *
+   * Le thème n'est connu qu'après hydratation quand aucun cookie n'existe :
+   * le libellé bascule alors de « Nuit » à « Jour », et la barre entière se
+   * réorganiserait sous l'œil. Le plancher tient la place du plus long des
+   * deux mots dans les deux langues.
+   */
+  min-width: 68px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--chrome-encre);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.commutateurLibelle {
+  line-height: 1.6;
+}
+
+/*
+ * La cible tactile déborde le dessin, sans toucher à la mise en page.
+ *
+ * La barre ne fait que 38 px : un bouton de 44 px la ferait grandir. Le
+ * `::after` s'étend donc au-delà de la pastille — la cible reste conforme,
+ * la barre reste fine. La largeur suit celle du bouton, la hauteur seule est
+ * forcée.
+ */
+.commutateurTheme::after {
+  content: '';
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 100%;
+  height: var(--cible-min);
+  transform: translate(-50%, -50%);
+}
+
+.commutateurTheme:hover {
+  background: var(--chrome-clair);
+}
+
+.commutateurIcone {
+  display: inline-flex;
+  /*
+   * 14 px, la cote du prototype dans la barre utilitaire. La boîte est fixée
+   * pour que le dessin ne décale rien quand la lune devient soleil.
+   */
+  width: 14px;
+  height: 14px;
+}
+
+/* ══ La barre d'onglets — cinq entrées, en bas, sur écran étroit ══════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN SEUL ARBRE, DEUX CHROMES — ET C'EST UN DÉSACCORD ASSUMÉ AVEC `02`.   │
+ * │                                                                          │
+ * │ Le dossier demande deux applications séparées, routées par largeur.      │
+ * │ `09` donne lui-même l'issue qu'on retient : « CSS-first, both shells     │
+ * │ rendered ». Les deux chromes sont rendus par le serveur et départagés    │
+ * │ ici, à 860 px — pas de reniflage d'agent, pas de saut de mise en page,   │
+ * │ et le redimensionnement d'une fenêtre marche.                            │
+ * │                                                                          │
+ * │ Ce qu'on reprend intégralement, c'est le MODÈLE DE NAVIGATION mobile :   │
+ * │ la barre d'onglets, la feuille montante, la barre d'achat. C'est lui     │
+ * │ qui fait l'expérience — pas la duplication de l'arbre.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.barreOnglets {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 55;
+  background: color-mix(in srgb, var(--fond) 88%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-top: 1px solid var(--bordure);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/*
+ * Un fond OPAQUE là où le flou n'existe pas.
+ *
+ * Sans cette reprise, la barre est translucide sans être floutée : le contenu
+ * qui défile dessous reste lisible à travers elle, et les libellés deviennent
+ * illisibles au passage de chaque image.
+ */
+@supports not (backdrop-filter: blur(1px)) {
+  .barreOnglets {
+    background: var(--fond);
+  }
+}
+
+.barreOngletsInterieur {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Au-delà de 700 px, la rangée se resserre en pilule centrée. */
+@media (min-width: 700px) {
+  .barreOngletsInterieur {
+    max-width: 520px;
+    margin: 8px auto;
+    border: 1px solid var(--bordure);
+    border-radius: var(--rayon-pastille);
+    background: var(--surface);
+    box-shadow: var(--ombre-carte);
+  }
+}
+
+.onglet {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: var(--cible-min);
+  padding: 8px 4px;
+  color: var(--encre-douce);
+  font-size: 10.5px;
+  font-weight: var(--graisse-demi);
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  transition: color var(--transition-couleur), transform var(--transition-forme);
+}
+
+.ongletIcone {
+  display: inline-flex;
+  width: 21px;
+  height: 21px;
+}
+
+.onglet[aria-current='page'] {
+  color: var(--accent-encre);
+}
+
+/*
+ * Le retour tactile du dossier : `scale(.96)`, et surtout pas une ondulation.
+ * Il tombe sous `prefers-reduced-motion`, comme tout le reste — la règle
+ * globale des jetons ramène les durées à 0,01 ms.
+ */
+.onglet:active {
+  transform: scale(0.96);
+}
+
+/* La pastille du panier, sur l'icône et non à côté d'elle. */
+.ongletPastille {
+  position: relative;
+}
+
+.ongletNombre {
+  position: absolute;
+  inset: -6px -10px auto auto;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-encre);
+  font-size: 10px;
+  font-weight: var(--graisse-forte);
+  line-height: 17px;
+  text-align: center;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BARRE FLOTTE AU-DESSUS DU CONTENU : IL FAUT LUI RENDRE SA PLACE.     │
+ * │                                                                          │
+ * │ Sans cette réserve, le dernier élément de CHAQUE page passe sous la      │
+ * │ barre — le bouton de pied de formulaire, la dernière ligne du panier.    │
+ * │ Le défaut ne se voit pas en haut de page ; il se voit à l'endroit exact  │
+ * │ où le visiteur allait cliquer.                                           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.reserveOnglets {
+  height: 96px;
+}
+
+@media (min-width: 860px) {
+  .barreOnglets,
+  .reserveOnglets {
+    display: none;
+  }
+}

@@ -1,5 +1,6 @@
 import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clients';
 import { rendre } from '@/domain/emails/templates';
+import { rendreHtml } from './html';
 import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
 import { FileMailer } from '@/adapters/mail/file-mailer';
@@ -76,18 +77,40 @@ export async function viderFile(options: OptionsVidage = {}): Promise<RapportVid
 
   for (const ligne of lignes) {
     try {
-      const rendu = rendre(
-        ligne.modele,
-        ligne.langue,
-        ligne.variables ?? {},
-        getServerEnv().NEXT_PUBLIC_APP_URL,
-      );
+      const base = getServerEnv().NEXT_PUBLIC_APP_URL;
+      const rendu = rendre(ligne.modele, ligne.langue, ligne.variables ?? {}, base);
+      const langue = ligne.langue === 'en' ? 'en' : 'fr';
+
+      /*
+       * ┌────────────────────────────────────────────────────────────────┐
+       * │ LE HTML EST UN BONUS, LE TEXTE EST LE MESSAGE.                 │
+       * │                                                                │
+       * │ Si la mise en forme échoue — un composant qui lève, une        │
+       * │ dépendance absente — l'email part quand même, en texte seul.   │
+       * │ Le contraire ferait dépendre une confirmation de commande de   │
+       * │ la bonne santé d'un moteur de rendu, pour un gain qui n'est    │
+       * │ que d'apparence.                                               │
+       * │                                                                │
+       * │ C'est aussi pourquoi `texte` reste obligatoire dans            │
+       * │ `MessageMail` : tous les clients ne rendent pas le HTML.       │
+       * └────────────────────────────────────────────────────────────────┘
+       */
+      let html: string | undefined;
+      try {
+        html = await rendreHtml(rendu, `${base}${rendu.lien}`, langue);
+      } catch (erreur) {
+        logger.warn('Mise en forme HTML impossible, envoi en texte seul', {
+          modele: ligne.modele,
+          detail: erreur instanceof Error ? erreur.message : String(erreur),
+        });
+      }
 
       await mailer.envoyer({
         destinataire: ligne.destinataire,
         sujet: rendu.sujet,
         texte: rendu.texte,
-        langue: ligne.langue === 'en' ? 'en' : 'fr',
+        html,
+        langue,
         modele: ligne.modele,
       });
 

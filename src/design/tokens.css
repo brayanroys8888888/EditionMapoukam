@@ -55,6 +55,30 @@
   --creme: #fdf4e1;
   --creme-bordure: #f3e4c4;
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LE DOUZIÈME RÔLE — L'APLAT SECOND, ET SON ENCRE.                        │
+   * │                                                                          │
+   * │ Organic pose des pastilles SAUGE là où la terre cuite serait un appel à  │
+   * │ l'action : le sceau du hero, la vignette d'un témoignage. Ce n'est pas   │
+   * │ l'accent, c'est le second — une couleur qui range, pas une qui appelle.  │
+   * │                                                                          │
+   * │ `--second-encre` existait déjà, mais il désigne l'ENCRE sauge posée sur  │
+   * │ un fond clair. Il ne pouvait pas servir d'aplat : l'employer comme fond  │
+   * │ aurait donné un vert sombre là où la maquette met un vert tendre.        │
+   * │                                                                          │
+   * │ ⚠ `--second-contre` n'est PAS blanc, alors que la maquette écrit         │
+   * │ `color:#fff` sur la sauge. Mesuré : blanc sur `--v3-sauge` vaut 3,73:1.  │
+   * │ Cela passe pour un tracé — seuil 3:1 — et échoue pour du TEXTE, dont le  │
+   * │ seuil est 4,5:1. L'olive profond y vaut 3,77:1, donc pas davantage : la  │
+   * │ règle est que cet aplat ne porte JAMAIS de texte, seulement un dessin.   │
+   * │ Un test l'exige, pour que la prochaine pastille ne devienne pas un       │
+   * │ libellé illisible sans que personne ne s'en aperçoive.                   │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  --second: var(--marque);
+  --second-contre: var(--fond);
+
   /**
    * ASSOMBRI par rapport aux maquettes, qui portaient `#b08a2e`.
    *
@@ -248,6 +272,25 @@
   --interligne-corps: 1.5;
   --interligne-lecture: 1.75;
 
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA TRAQUE DES TITRES — UN JETON, PARCE QU'ELLE CHANGE AVEC LA POLICE.  │
+   * │                                                                        │
+   * │ Fraunces est dessinée pour être posée telle quelle : elle n'a besoin   │
+   * │ d'aucun resserrement, et lui en imposer un collerait ses empattements. │
+   * │ Caprasimo, elle, est une grasse d'affiche, et le système de design     │
+   * │ d'Organic la resserre de 1,5 % sur `h1..h6` — c'est ce qui l'empêche   │
+   * │ de paraître espacée aux grandes tailles.                                │
+   * │                                                                        │
+   * │ La valeur est donc une propriété de la DIRECTION, pas du composant.    │
+   * │ Écrite au cas par cas, elle aurait manqué partout où personne n'a      │
+   * │ pensé à la reporter — et un titre non resserré au milieu de titres     │
+   * │ resserrés ne se voit pas isolément : il se voit comme un défaut        │
+   * │ d'alignement du bloc entier.                                            │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --traque-titre: normal;
+
   /* ── Formes ──────────────────────────────────────────────────────────── */
   --rayon-controle: 8px;
   --rayon-bouton: 10px;
@@ -286,6 +329,27 @@
   --largeur-page: 1200px;
   --largeur-texte: 62ch;
 
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA COLONNE ÉDITORIALE SE MESURE EN `rem`, ET JAMAIS EN `ch`.          │
+   * │                                                                        │
+   * │ `ch` est la largeur du « 0 » de la police de L'ÉLÉMENT. Une colonne    │
+   * │ partagée par un titre et son paragraphe est donc mesurée deux fois,    │
+   * │ avec deux règles différentes : sur `/expertise`, le titre en Fraunces  │
+   * │ obtenait 1405 px et son paragraphe en Nunito 691 — deux cents pixels   │
+   * │ de décalage entre une phrase et le titre qu'elle explique.             │
+   * │                                                                        │
+   * │ Le défaut existait sous la V2 et il n'y avait pas été vu. Caprasimo    │
+   * │ l'a rendu criant : c'est une grasse d'affiche, son « 0 » fait 16,8 px  │
+   * │ contre 10,2 pour Figtree.                                              │
+   * │                                                                        │
+   * │ La valeur reprend EXACTEMENT la largeur d'aujourd'hui — 72ch de la     │
+   * │ police d'interface — pour que le corps de texte ne bouge pas d'un      │
+   * │ pixel. Seuls les titres viennent s'aligner dessus.                     │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --largeur-editorial: 43.2rem;
+
   /* ── Espacement ──────────────────────────────────────────────────────── */
   --espace-1: 4px;
   --espace-2: 8px;
@@ -312,6 +376,79 @@
   /* ── Cible tactile ───────────────────────────────────────────────────── */
   /* WCAG 2.1 AA, et le lecteur doit s'utiliser à une main sur mobile. */
   --cible-min: 44px;
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ LA CIBLE TACTILE SUIT L'APPAREIL, PAS LA DIRECTION ARTISTIQUE.           ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 44 PX PARTOUT ÉTAIT LA CAUSE COMMUNE DE « LES BOUTONS SONT ÉNORMES ».   │
+ * │                                                                          │
+ * │ Ce jeton est lu QUATRE-VINGT-DIX FOIS dans vingt-six feuilles : chaque   │
+ * │ pastille de filtre, chaque lien de pied, chaque bouton d'écran s'y       │
+ * │ adosse. Posé à 44 px sans condition, il impose la hauteur du POUCE à un  │
+ * │ écran conduit à la souris — d'où des contrôles qui paraissent gonflés    │
+ * │ sur tout le site, et pas seulement dans la barre de filtres.             │
+ * │                                                                          │
+ * │ La maquette d'Organic mesure ses pastilles à `9px 16px` sur 13 px de     │
+ * │ texte, soit environ 36 px de haut, et ses bascules à 36 × 36.            │
+ * │                                                                          │
+ * │ Le seuil de 44 px n'est pas abandonné : il est RENDU À SON DOMAINE. La   │
+ * │ liste d'acceptation dit « no hit target under 44×44px ON MOBILE », et    │
+ * │ `pointer: coarse` est exactement cette condition — la capacité de        │
+ * │ l'appareil, jamais une largeur d'écran. Un portable étroit a une souris, │
+ * │ une tablette large n'en a pas.                                           │
+ * │                                                                          │
+ * │ 36 px reste très au-dessus du minimum de WCAG 2.2 (24 × 24, critère      │
+ * │ 2.5.8 niveau AA). Ce qui tombe ici, c'est le 44 px de la 2.5.5, qui est  │
+ * │ de niveau AAA et écrit pour le tactile.                                  │
+ * │                                                                          │
+ * │ Le contrôle Playwright continue de mesurer 44 px : son projet            │
+ * │ `telephone` émule un Pixel 7, donc `hasTouch`, donc `pointer: coarse`.   │
+ * │ La règle ci-dessous ne s'y applique pas.                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (pointer: fine) {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ CE N'EST PAS UNE REGLE D'ACCESSIBILITE QU'ON RELACHE — ET VOICI LE       │
+   * │ TEXTE.                                                                   │
+   * │                                                                          │
+   * │ La justification du 44 px, quelques lignes plus haut, parle d'un enfant  │
+   * │ de six ans sur une tablette. Elle est juste, et elle decrit le TACTILE.  │
+   * │ Elle n'a jamais rien dit de la souris.                                   │
+   * │                                                                          │
+   * │ Les deux sources qui engagent le produit disent la meme chose :          │
+   * │                                                                          │
+   * │   * `02-layout-responsive.md` : « Mobile hit targets never below         │
+   * │     44x44px » — le seuil y est explicitement MOBILE ;                    │
+   * │   * le cahier des charges §5.3 vise WCAG 2.1 **AA**. Or la taille de     │
+   * │     cible de 44 px est le critere 2.5.5, qui est de niveau **AAA**. Le   │
+   * │     minimum AA est celui de WCAG 2.2, critere 2.5.8 : 24 x 24. Trente-   │
+   * │     six le depasse de moitie.                                            │
+   * │                                                                          │
+   * │ Ce qui tombe ici est donc un objectif AAA, hors du perimetre engage, et  │
+   * │ seulement la ou le pointeur est fin. `pointer: coarse` — le doigt —      │
+   * │ garde les 44 px, et le controle Playwright continue de les mesurer : son │
+   * │ projet `telephone` emule un Pixel 7, donc `hasTouch`.                    │
+   * │                                                                          │
+   * │ ⚠ LE STYLET SE DECLARE `fine`, ET C'EST ASSUME. Une tablette tactile     │
+   * │ rend `coarse` — c'est le cas courant, et il est couvert. Un appareil     │
+   * │ pilote AU STYLET rend `fine` et recevra donc 36 px : c'est le bon        │
+   * │ compromis, un stylet visant plus juste qu'un doigt. Le cas vraiment      │
+   * │ genant serait `any-pointer: coarse` avec un stylet actif ; il demande de │
+   * │ connaitre l'appareil reellement en main, ce qu'aucune requete media ne   │
+   * │ dit.                                                                     │
+   * │                                                                          │
+   * │ Enfin, ceci abaisse un PLANCHER, il n'impose aucune taille : une regle   │
+   * │ qui pose explicitement 42 ou 44 px sur un bouton continue de gagner.     │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  :root[data-design='v3'] {
+    --cible-min: 36px;
+  }
 }
 
 /**
@@ -492,6 +629,733 @@
   --ombre-carte: 0 2px 6px rgb(36 32 27 / 6%), 0 12px 28px rgb(36 32 27 / 8%);
   --ombre-carte-survol: 0 4px 10px rgb(36 32 27 / 8%), 0 22px 44px rgb(31 77 46 / 16%);
   --ombre-flottante: 0 8px 30px rgb(36 32 27 / 14%);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ LES RÔLES QUE LA V2 N'AVAIT PAS NOMMÉS.                                  ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CES SIX JETONS EXISTENT PARCE QUE QUINZE MODULES CSS LISAIENT LA        │
+ * │ PALETTE BRUTE.                                                           │
+ * │                                                                          │
+ * │ `CLAUDE.md` pose la règle : « Aucun composant ne connaît le thème. Ils   │
+ * │ lisent des jetons qui changent de valeur sous eux. » La couche V2 ne la  │
+ * │ respectait pas : 224 lectures directes de `--v2-*`, dont 107 du seul     │
+ * │ `--v2-vert`. Ces jetons-là ne bougent sous AUCUNE autre direction — par  │
+ * │ construction, ce sont des valeurs, pas des rôles.                        │
+ * │                                                                          │
+ * │ Le vert de la V2 ne portait pas UN rôle mais QUATRE, que seul le         │
+ * │ contexte distinguait : le fond du chrome sombre, l'encre posée dessus,   │
+ * │ l'accent employé en texte sur fond clair, et la bordure. Un              │
+ * │ remplacement automatique les aurait confondus — et le résultat aurait    │
+ * │ eu l'air voulu.                                                          │
+ * │                                                                          │
+ * │ Ici, ils pointent sur les valeurs EXACTES d'aujourd'hui : les V1 et V2   │
+ * │ ne bougent pas d'un pixel. Seule la V3 les réaffecte.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:root {
+  /* Le fond du chrome sombre : barre haute, pied de page, cartes sombres. */
+  --chrome: var(--v2-vert);
+
+  /* Son second niveau — le pied, plus profond que l'en-tête. */
+  --chrome-2: var(--v2-vert-nuit);
+
+  /* Sa variante claire : survols et états actifs SUR le chrome. */
+  --chrome-clair: var(--v2-vert-clair);
+
+  /* L'encre posée SUR le chrome. Jamais `--encre`, qui est faite pour le fond. */
+  --chrome-encre: var(--v2-fond);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA MARQUE EN APLAT — ET POURQUOI CE N'EST PAS `--action`.             │
+   * │                                                                        │
+   * │ Sous la V2, `--action` vaut l'OCRE. Router les boutons verts vers      │
+   * │ `--action` les rendrait ocres du jour au lendemain : une régression    │
+   * │ d'une direction livrée, au nom d'une refonte qui n'est pas encore      │
+   * │ servie. La V2 emploie DEUX aplats — le vert de marque et l'ocre        │
+   * │ d'action — et elle les emploie pour des choses différentes.            │
+   * │                                                                        │
+   * │ Sous Organic les deux se rejoignent sur la terre cuite, parce que      │
+   * │ cette palette n'a qu'un accent chaud. C'est une propriété de la        │
+   * │ palette, pas une règle : les deux jetons restent distincts.            │
+   * │                                                                        │
+   * │ À ne pas confondre non plus avec `--chrome`, qui est le même vert      │
+   * │ sous la V2 mais devient l'olive profond sous la V3 : un onglet ACTIF   │
+   * │ est du chrome, un bouton d'appel est de la marque. Sous la V2 rien ne  │
+   * │ les distingue à l'œil — c'est précisément pour ça que la distinction   │
+   * │ devait être écrite avant que la V3 la rende visible.                   │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --marque: var(--v2-vert);
+  --marque-survol: var(--v2-vert-clair);
+  --marque-encre: var(--v2-fond);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ UNE SEULE COURBE, POUR TOUT LE SITE.                                  │
+   * │                                                                        │
+   * │ `10-animation-spec.md` l'ouvre là-dessus et l'exige comme jeton :      │
+   * │ « One easing curve everywhere […] Export it as --ease ».               │
+   * │                                                                        │
+   * │ Ce n'est pas une coquetterie. Des courbes différentes d'un composant à │
+   * │ l'autre donnent l'impression que les éléments obéissent à des lois     │
+   * │ physiques différentes — c'est exactement ce qui fait qu'une interface  │
+   * │ « ne semble pas finie » sans qu'on sache dire pourquoi.                │
+   * │                                                                        │
+   * │ Elle est neutre vis-à-vis de la direction : les V1 et V2 ne s'en       │
+   * │ servent pas encore, et la poser ici ne change rien chez elles.         │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  /*
+   * L'accent EN TEXTE, sur fond clair — distinct de `--action`, qui est un
+   * APLAT. C'est la même distinction que `--v2-ocre` / `--v2-ocre-encre`, et
+   * elle existe parce qu'une couleur assez saturée pour porter un bouton est
+   * presque toujours trop claire pour porter une phrase.
+   */
+  --accent-encre: var(--v2-vert);
+
+  /*
+   * L'ACTION employée en texte — prix, liens d'action, mentions chiffrées.
+   *
+   * Distinct de `--accent-encre` : sous la V2 ce sont deux couleurs
+   * différentes, l'ocre et le vert. Sous la V3 elles se rejoignent sur la
+   * terre cuite assombrie. Les fusionner maintenant, sous prétexte qu'elles
+   * coïncideront, ferait perdre à la V2 une distinction qu'elle emploie
+   * réellement — dix fois.
+   */
+  --action-texte: var(--v2-ocre-encre);
+
+  /* Le second accent en texte — le vert clair de la V2, la sauge de la V3. */
+  --second-encre: var(--v2-vert-clair);
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'ACCENT POSÉ SUR LE CHROME — UN ONZIÈME RÔLE, ET IL EST NÉCESSAIRE.  │
+   * │                                                                        │
+   * │ `--action-texte` est l'accent EN TEXTE sur un fond clair : il est      │
+   * │ assombri pour y tenir. Posé sur l'olive du chrome, il devient du       │
+   * │ sombre sur du sombre. `--action`, lui, est un APLAT : la terre cuite   │
+   * │ du jour sur l'olive du jour ne vaut que 3,34:1, sous le seuil d'un     │
+   * │ texte de 11,5 px.                                                      │
+   * │                                                                        │
+   * │ Le héros de la page « Expertise » est le premier écran à poser un      │
+   * │ sur-titre d'accent SUR l'olive, et il n'existait aucun jeton pour ça.  │
+   * │ Celui-ci vaut la terre cuite de NUIT — plus claire, faite pour être    │
+   * │ lue sur du sombre : 5,85:1 sur l'olive du jour, 7,81:1 sur celui de    │
+   * │ la nuit. Une seule valeur pour les deux thèmes, parce que le fond ne   │
+   * │ fait que s'assombrir.                                                  │
+   * │                                                                        │
+   * │ Hors V3 il vaut `--action` : ni la V1 ni la V2 ne posent d'accent sur  │
+   * │ leur chrome, et leur en inventer un serait décider à leur place.       │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --accent-sur-chrome: var(--action);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA SURFACE DE LECTURE A SON ENCRE — ET C'EST TOUT LE LOT 6.           │
+   * │                                                                        │
+   * │ `--fond-lecture` existait seul depuis la V1, et c'est ce qui rendait   │
+   * │ l'olive du dossier impossible à poser : sur un fond sombre, `--encre`  │
+   * │ devient illisible, et un lecteur illisible n'est pas un lecteur.       │
+   * │                                                                        │
+   * │ Le lot 1 avait donc reporté la bascule, en l'écrivant : « les deux     │
+   * │ ensemble, ou aucun des deux ». Les voici tous les deux — plus le filet,│
+   * │ qui doit lui aussi se voir sur la scène.                               │
+   * │                                                                        │
+   * │ Sous la V1 et la V2, les trois valent exactement ce qu'ils valaient :  │
+   * │ le lecteur ne bouge pas d'un pixel.                                    │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --encre-lecture: var(--encre);
+  --encre-lecture-douce: var(--encre-douce);
+  --bordure-lecture: var(--bordure);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA SURFACE POSÉE SUR LE FOND — LE ONZIÈME RÔLE.                       │
+   * │                                                                        │
+   * │ Organic travaille sur TROIS plans : `--ground` (la page), `--ground-2` │
+   * │ (les bandes) et `--card` (ce qui se pose dessus — menu déroulant,      │
+   * │ feuille, panneau de paiement). La V2 n'en a que deux : ses cartes sont │
+   * │ du même crème que la page, et seule la bordure les détache.            │
+   * │                                                                        │
+   * │ D'où ce jeton, et non un `var(--carte, var(--fond))` écrit dans chaque │
+   * │ feuille : un repli de variable est INVISIBLE quand il se déclenche.    │
+   * │ `--v3-carte` et `--v3-nuit-carte` étaient déjà déclarés depuis le lot  │
+   * │ 1 et n'étaient lus par personne — c'est ce jeton-ci qui manquait.      │
+   * │                                                                        │
+   * │ Sous la V1 et la V2 il vaut `--fond` : rien ne bouge.                  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --surface: var(--fond);
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — « ORGANIC ». LA PALETTE BRUTE, CLAIRE ET SOMBRE.                    ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Reprise de `01-design-tokens.md` du dossier de passation Claude Design
+ * (voir `docs/REFONTE-V3.md`). Les valeurs sont celles du dossier, à trois
+ * exceptions près — toutes forcées par le §5.3, toutes mesurées, toutes
+ * documentées à leur ligne.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES DEUX THÈMES SONT ÉCRITS ICI, EN CLAIR, ET NON DANS UNE REQUÊTE      │
+ * │ MÉDIA.                                                                   │
+ * │                                                                          │
+ * │ `tests/unit/design-tokens.test.ts` lit les hexadécimaux du FICHIER, par  │
+ * │ leur nom. Une palette sombre qui n'existerait qu'à l'intérieur d'un      │
+ * │ `@media (prefers-color-scheme: dark)` serait invisible au test : la      │
+ * │ moitié de la direction passerait sous le seuil sans qu'une seule         │
+ * │ assertion rougisse. Les deux jeux portent donc des NOMS distincts,       │
+ * │ et le commutateur ne fait que choisir lequel alimente les sémantiques.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:root {
+  /* ── V3 clair — les neutres chauds ───────────────────────────────────── */
+  --v3-fond: #f5ead8;
+  --v3-fond-2: #efe3cd;
+  --v3-carte: #f9f4ed;
+  --v3-encre: #201e1d;
+  --v3-encre-douce: #645c50;
+  --v3-ligne: rgb(32 30 29 / 14%);
+
+  /* L'olive profond : barre utilitaire, pied de page, lecteur, cartes sombres. */
+  --v3-profond: #272e1b;
+  --v3-profond-2: #3d472b;
+  --v3-sur-profond: #f2ead9;
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ÉCART N° 1 — LE BLANC SUR LA TERRE CUITE EST REFUSÉ.                  │
+   * │                                                                        │
+   * │ Le dossier écrit « Primary: --terra fill, #fff text ». Mesuré, le      │
+   * │ blanc sur `#c67139` vaut 3,61:1 en clair et 2,40:1 en sombre. Le seuil │
+   * │ du texte courant est 4,5:1, et un libellé de bouton en Caprasimo 16,5px│
+   * │ n'est pas du « grand texte » au sens de WCAG (il faudrait 24px, ou     │
+   * │ 18,66px en gras). Le blanc échoue donc, deux fois.                     │
+   * │                                                                        │
+   * │ L'encre dessus vaut 4,60:1 en clair et 7,59:1 en sombre. C'est la      │
+   * │ MÊME règle que la V1 sur son jaune et la V2 sur son ocre — le dépôt    │
+   * │ l'a déjà tranchée deux fois, et un contre-test la garde.               │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --v3-terre: #c67139;
+
+  /**
+   * ÉCART N° 2 — LE SURVOL ÉCLAIRCIT AU LIEU D'ASSOMBRIR.
+   *
+   * `Organic/readme.md` prescrit « one step past the base — accent-600 on a
+   * light ground », donc plus sombre. Mais l'encre sur `#c67139` n'a que
+   * 0,10 de marge au-dessus du seuil : tout assombrissement la fait passer
+   * dessous, et le survol deviendrait le seul état illisible du bouton.
+   * Éclairci à `#cd7c45`, l'encre remonte à 5,19:1. Le geste reste lisible —
+   * il accompagne le `.lift` de 4 px, qui est ce que l'œil voit d'abord.
+   */
+  --v3-terre-survol: #cd7c45;
+
+  /* La terre cuite EN TEXTE : prix, liens, accents. 5,72:1 sur la crème. */
+  --v3-terre-encre: #8c491a;
+
+  /* La sauge en APLAT : pastilles, cartes, chrome. 3,14:1 — jamais du texte. */
+  --v3-sauge: #7a8a5e;
+
+  /**
+   * ÉCART N° 3 — UNE SAUGE ASSOMBRIE POUR LE TEXTE.
+   *
+   * Le dossier emploie la sauge pour les « kickers », qui font 10,5 à 12,5px.
+   * À 3,14:1 elle ne peut pas les porter. `#56633f` vaut 5,43:1 sur la crème
+   * et 5,09:1 sur le fond doux — et c'est une couleur que le dossier nomme
+   * déjà lui-même, la teinte du thème « courage ».
+   */
+  --v3-sauge-encre: #56633f;
+
+  /*
+   * L'encre POSÉE SUR l'action. En clair c'est l'encre du texte ; en sombre
+   * ce sera le FOND de nuit, et non l'encre — voir le bloc sombre plus bas,
+   * qui explique pourquoi ce détour existe.
+   */
+  --v3-action-encre: var(--v3-encre);
+
+  /* ── V3 sombre — le même dessin, retourné ────────────────────────────── */
+  --v3-nuit-fond: #17150f;
+  --v3-nuit-fond-2: #1e1b14;
+  --v3-nuit-carte: #231f18;
+  --v3-nuit-encre: #f4ece0;
+  --v3-nuit-encre-douce: #b3a894;
+  --v3-nuit-ligne: rgb(244 236 224 / 16%);
+
+  --v3-nuit-profond: #11130d;
+  --v3-nuit-profond-2: #1c2015;
+
+  /* L'encre du thème sombre monte sur la terre cuite : 7,59:1. */
+  --v3-nuit-terre: #e39560;
+  --v3-nuit-terre-survol: #e9a172;
+  --v3-nuit-terre-encre: #f0b689;
+  --v3-nuit-sauge: #a5b487;
+
+  /*
+   * L'encre SOURDE sur l'olive profond — le compteur de pages du lecteur, la
+   * note d'aide, tout ce qui accompagne sans réclamer.
+   *
+   * Une seule valeur pour les deux thèmes : l'olive s'assombrit la nuit, donc
+   * le contraste ne fait que MONTER. 5,99:1 sur l'olive du jour, 7,97:1 sur
+   * celui de la nuit — mesurés tous les deux par le test.
+   */
+  --v3-sur-profond-doux: #b3a894;
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE THÈME CLAIR : LES SÉMANTIQUES POINTENT SUR LA PALETTE BRUTE.     ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Comme la V2 : ce bloc ne fabrique aucune couleur, il RÉAFFECTE. Aucun
+ * composant ne le lit — ils lisent `--fond`, `--encre`, `--action`, qui
+ * changent de valeur sous eux.
+ */
+:root[data-design='v3'] {
+  --fond: var(--v3-fond);
+  --fond-doux: var(--v3-fond-2);
+  --encre: var(--v3-encre);
+  --encre-douce: var(--v3-encre-douce);
+  --bordure: var(--v3-ligne);
+  --bordure-forte: var(--v3-ligne);
+  --separateur: var(--v3-ligne);
+  --souligne: var(--v3-terre);
+
+  /* Le troisième plan d'Organic : ce qui se POSE sur la page. */
+  --surface: var(--v3-carte);
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'ANNEAU DE FOCUS PREND LA TERRE CUITE — MAIS PAS CELLE DES BOUTONS.  │
+   * │                                                                        │
+   * │ `10-animation-spec.md` demande `outline: 2px solid var(--terra)`.      │
+   * │ Mesuré, `--v3-terre` sur le fond de bande ne vaut que 2,84:1 — sous    │
+   * │ les 3:1 qu'exige la norme pour un indicateur non textuel (WCAG 2.1     │
+   * │ 1.4.11). Un anneau de focus qu'on ne distingue pas de son fond n'est   │
+   * │ pas un anneau de focus.                                                │
+   * │                                                                        │
+   * │ La terre cuite ASSOMBRIE, celle qui porte déjà les prix et les liens   │
+   * │ d'action, passe largement. C'est la même distinction aplat/encre que   │
+   * │ la V2 fait entre `--v2-ocre` et `--v2-ocre-encre`.                     │
+   * │                                                                        │
+   * │ L'épaisseur reste à 3 px, contre 2 au dossier : c'est un minimum, et   │
+   * │ un pixel de plus ne coûte rien à personne.                             │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --focus-couleur: var(--accent-encre);
+
+  /*
+   * Figtree est plus large que Nunito : 10,26 px le « 0 » contre 9,60. La
+   * colonne éditoriale garde donc les mêmes 72 caractères, ce qui fait
+   * 46,15 rem au lieu de 43,2. Voir l'encadré du jeton, plus haut.
+   */
+  --largeur-editorial: 46.15rem;
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LE CONTENEUR VAUT 1240, ET NON 1200 — C'EST LE DOSSIER QUI LE DIT.    │
+   * │                                                                        │
+   * │ `02-layout-responsive.md` ouvre sa description du gabarit desktop par   │
+   * │ « Container: max-width: 1240px; margin: 0 auto; padding: 0 28px », et   │
+   * │ le prototype le confirme section par section : à 1440 px de fenêtre,    │
+   * │ le contenu commence à 128 px du bord — (1440 − 1240) / 2 + 28.          │
+   * │                                                                        │
+   * │ La V1 et la V2 tiennent leur page à 1200. Le lot 3 avait posé la        │
+   * │ marge de 28 px sur l'en-tête mais laissé le jeton à 1200 : le chrome    │
+   * │ commençait donc 17 px trop à droite, et les sections avec lui. C'est    │
+   * │ un décalage qu'on ne voit pas sur une capture isolée et qui saute aux   │
+   * │ yeux dès qu'on superpose les deux.                                      │
+   * │                                                                        │
+   * │ Le lecteur garde ses 1120 px : il les écrit lui-même dans              │
+   * │ `lecteur.module.css`, et le dossier lui donne raison — « The reader     │
+   * │ page uses 1120px ».                                                     │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --largeur-page: 1240px;
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LA SCÈNE DE LECTURE PREND SON OLIVE — LOT 6, ET PAS AVANT.            │
+   * │                                                                        │
+   * │ Le lot 1 avait laissé ce jeton sur le crème de carte en écrivant       │
+   * │ pourquoi : `--fond-lecture` porte de l'encre, et le basculer SEUL      │
+   * │ aurait posé du texte sombre sur l'olive profond. « Les deux ensemble,  │
+   * │ ou aucun des deux. »                                                   │
+   * │                                                                        │
+   * │ Les voici tous les deux. La scène devient l'olive, l'encre devient la  │
+   * │ crème qui y tient (11,75:1), et la page du conte reste, elle, sur le   │
+   * │ crème clair — c'est ce contraste-là qui la fait avancer, exactement    │
+   * │ comme dans une salle obscure.                                          │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --fond-lecture: var(--v3-profond);
+  --encre-lecture: var(--v3-sur-profond);
+  --encre-lecture-douce: var(--v3-sur-profond-doux);
+
+  /*
+   * Le filet de la scène ne peut pas être `--v3-ligne` : cette ligne-là est
+   * de l'encre SOMBRE diluée, faite pour se voir sur le crème. Sur l'olive,
+   * elle disparaît. C'est la crème qui se dilue ici.
+   */
+  --bordure-lecture: rgb(242 234 217 / 20%);
+
+  --action: var(--v3-terre);
+  --action-survol: var(--v3-terre-survol);
+  --action-encre: var(--v3-action-encre);
+
+  /* ── Le chrome sombre — c'est la pièce que la V2 n'avait pas nommée ───── */
+  --chrome: var(--v3-profond);
+  --chrome-2: var(--v3-profond-2);
+  --chrome-clair: var(--v3-profond-2);
+  --chrome-encre: var(--v3-sur-profond);
+
+  /*
+   * La marque en aplat rejoint l'action : Organic n'a qu'un accent chaud.
+   * L'encre dessus passe par l'indirection, pour la même raison que
+   * `--action-encre` — en sombre, ce n'est pas l'encre mais le fond de nuit.
+   */
+  --marque: var(--v3-terre);
+  --marque-survol: var(--v3-terre-survol);
+  --marque-encre: var(--v3-action-encre);
+
+  /*
+   * Sous Organic, l'accent de marque et l'action se rejoignent sur la terre
+   * cuite assombrie. C'est une propriété de CETTE palette, pas une règle
+   * générale : la V2 les distingue, et les deux jetons restent séparés pour
+   * qu'une quatrième direction puisse les redistinguer.
+   */
+  --accent-encre: var(--v3-terre-encre);
+  --action-texte: var(--v3-terre-encre);
+
+  /*
+   * La terre cuite de NUIT, dans les DEUX thèmes — voir l'encadré du rôle.
+   * Elle est nommée en clair plutôt que dérivée de `--v3-terre` : ce dernier
+   * bascule avec le thème, et le jour il est trop sombre pour l'olive.
+   */
+  --accent-sur-chrome: var(--v3-nuit-terre);
+  --second-encre: var(--v3-sauge-encre);
+
+  /* L'aplat sauge de la maquette, et l'olive qui s'y dessine. Voir l'encadré
+     du douzième rôle, dans la base : il ne porte jamais de texte. */
+  --second: var(--v3-sauge);
+  --second-contre: var(--v3-profond);
+
+  --creme: var(--v3-fond-2);
+  --creme-bordure: var(--v3-ligne);
+  --creme-accent: var(--v3-terre-encre);
+
+  --lien-survol: var(--v3-terre-encre);
+
+  /* Les cinq régions restent dites, et restent neutres — décision de la V2. */
+  --region-afrique_ouest-accent: var(--v3-sauge-encre);
+  --region-afrique_ouest-encre: var(--v3-sauge-encre);
+  --region-afrique_ouest-fond: var(--v3-fond);
+  --region-afrique_ouest-bordure: var(--v3-ligne);
+  --region-afrique_ouest-motif: var(--v3-fond-2);
+
+  --region-sahel-accent: var(--v3-sauge-encre);
+  --region-sahel-encre: var(--v3-sauge-encre);
+  --region-sahel-fond: var(--v3-fond);
+  --region-sahel-bordure: var(--v3-ligne);
+  --region-sahel-motif: var(--v3-fond-2);
+
+  --region-afrique_centrale-accent: var(--v3-sauge-encre);
+  --region-afrique_centrale-encre: var(--v3-sauge-encre);
+  --region-afrique_centrale-fond: var(--v3-fond);
+  --region-afrique_centrale-bordure: var(--v3-ligne);
+  --region-afrique_centrale-motif: var(--v3-fond-2);
+
+  --region-afrique_australe-accent: var(--v3-sauge-encre);
+  --region-afrique_australe-encre: var(--v3-sauge-encre);
+  --region-afrique_australe-fond: var(--v3-fond);
+  --region-afrique_australe-bordure: var(--v3-ligne);
+  --region-afrique_australe-motif: var(--v3-fond-2);
+
+  --region-afrique_est-accent: var(--v3-sauge-encre);
+  --region-afrique_est-encre: var(--v3-sauge-encre);
+  --region-afrique_est-fond: var(--v3-fond);
+  --region-afrique_est-bordure: var(--v3-ligne);
+  --region-afrique_est-motif: var(--v3-fond-2);
+
+  --region-inconnue-accent: var(--v3-sauge-encre);
+  --region-inconnue-encre: var(--v3-sauge-encre);
+  --region-inconnue-fond: var(--v3-fond);
+  --region-inconnue-bordure: var(--v3-ligne);
+  --region-inconnue-motif: var(--v3-fond-2);
+
+  /* ── Typographie : Caprasimo sur Figtree ───────────────────────────────── */
+  --police-titre: 'Caprasimo', Georgia, serif;
+  --police-interface: 'Figtree', system-ui, sans-serif;
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'INTERLIGNE DU CORPS PASSE DE 1,5 À 1,6 — MESURÉ SUR LE PROTOTYPE.    │
+   * │                                                                        │
+   * │ La racine du prototype desktop porte, en clair, `font-size:16px;       │
+   * │ line-height:1.6` (ligne 68 du `.dc.html`). Le système « Organic » écrit │
+   * │ 15 px / 1,55 dans sa feuille, et c'est cette valeur-là que reprennent   │
+   * │ ses documents — mais le README du dossier tranche : « when a doc here   │
+   * │ and the prototype disagree, the prototype wins ».                       │
+   * │                                                                        │
+   * │ Ce n'est pas un détail de confort. L'interligne du corps est HÉRITÉ     │
+   * │ par tout ce qui ne se déclare pas : étiquettes de champ, sur-titres,    │
+   * │ intitulés de pastilles, et surtout la hauteur des champs de saisie et   │
+   * │ des zones de texte — un `textarea` de cinq lignes mesure 156 px à 1,6   │
+   * │ et 148 à 1,5. À 1,5, chaque écran accumulait un ou deux pixels par      │
+   * │ ligne et finissait décalé d'une vingtaine en bas de page, sans qu'un    │
+   * │ seul élément ait l'air faux.                                            │
+   * │                                                                        │
+   * │ La taille, elle, ne bouge pas : `--taille-l` vaut déjà 16 px, et le     │
+   * │ corps la lit. Seule la V3 est concernée.                                │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  --interligne-corps: 1.6;
+
+  /*
+   * Caprasimo n'a AUCUN axe variable — c'est un dessin fixe au poids 400.
+   * `--titre-variations` doit donc être vidé : `font-variation-settings`
+   * pointant sur les axes de Fraunces n'aurait ici aucun effet, mais laisser
+   * la variable renseignée ferait croire le contraire à la prochaine lecture.
+   */
+  --titre-variations: normal;
+
+  /* `_ds/…/styles.css` : `h1..h6 { letter-spacing: -0.015em }`. Voir le jeton
+     dans la base — la traque appartient à la police, donc à la direction. */
+  --traque-titre: -0.015em;
+
+  /**
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LE GRAS SYNTHÉTIQUE — LE DÉFAUT LE PLUS RÉPANDU DE CETTE DIRECTION.    │
+   * │                                                                        │
+   * │ Caprasimo n'existe qu'au poids 400 : `01-design-tokens.md` l'écrit —   │
+   * │ « weight 400 only, the single display voice ». Or 209 déclarations du   │
+   * │ dépôt demandent `font-weight: var(--graisse-forte)`, héritées des       │
+   * │ directions précédentes où la police de titre était variable. Le         │
+   * │ navigateur ne refuse pas : il FABRIQUE le gras, en épaississant les     │
+   * │ contours du 400. Le résultat est un dessin plus lourd et plus large     │
+   * │ que celui du prototype — sur chaque titre du site, y compris le         │
+   * │ mot-symbole.                                                            │
+   * │                                                                        │
+   * │ Le défaut ne se signale nulle part : la police est bien celle qu'on     │
+   * │ voulait, la mise en page tient, et la mesure de `font-weight` répond    │
+   * │ 700 des deux côtés d'une comparaison faite au mauvais endroit. Seule    │
+   * │ la superposition des captures le montre.                                │
+   * │                                                                        │
+   * │ On coupe donc la synthèse, en un seul point. Figtree n'en pâtit pas :   │
+   * │ elle est variable de 300 à 900, ses graisses existent réellement, et    │
+   * │ la synthèse ne servait qu'à combler ce qui manque. Corriger les 209     │
+   * │ déclarations une à une n'aurait pas la même valeur — il en resterait    │
+   * │ toujours une, et la suivante reviendrait sans que rien ne proteste.     │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  font-synthesis-weight: none;
+
+  /* ── Le sur-arrondi, qui est la signature de cette direction ──────────── */
+  --rayon-controle: 999px;
+  --rayon-bouton: 999px;
+  --rayon-image: 14px;
+  --rayon-encart: 18px;
+  --rayon-bloc: 22px;
+  --rayon-carte: 26px;
+  --rayon-panneau: 30px;
+  --rayon-hero: 34px;
+
+  /* ── Les ombres, réglées sur le fond crème ─────────────────────────────── */
+  --ombre-couverture: 0 22px 44px rgb(30 25 15 / 30%);
+  --ombre-carte: 0 1px 2px rgb(46 43 37 / 14%), 0 3px 10px rgb(46 43 37 / 16%);
+  --ombre-carte-survol: 0 12px 32px rgb(46 43 37 / 22%);
+  --ombre-flottante: 0 12px 30px rgb(20 16 8 / 28%);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LES TROIS ÉCHELONS DU SYSTÈME DE DESIGN, SÉPARÉMENT.                    │
+   * │                                                                          │
+   * │ `_ds/organic/styles.css` définit trois ombres et la maquette les nomme   │
+   * │ une par une : `--shadow-sm` sur une pastille, `--shadow-md` sur une      │
+   * │ couverture, `--shadow-lg` sur un panneau flottant.                       │
+   * │                                                                          │
+   * │ `--ombre-carte` ci-dessus est la SOMME des deux premières — un choix de  │
+   * │ la V2, hérité tel quel. Elle reste, parce que des dizaines de règles la  │
+   * │ lisent ; mais elle ne permet pas de reproduire un `--shadow-sm` seul, et │
+   * │ une pastille de 8 px y gagnait l'ombre portée d'une carte.               │
+   * │                                                                          │
+   * │ Ces trois-ci sont les valeurs du dossier, à l'octet près. Elles          │
+   * │ n'existent que sous Organic : les autres directions n'ont pas d'échelle  │
+   * │ d'ombres à trois niveaux, et leur en inventer une serait décider à leur  │
+   * │ place.                                                                   │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  --ombre-s: 0 1px 2px rgb(46 43 37 / 14%);
+  --ombre-m: 0 3px 10px rgb(46 43 37 / 16%);
+  --ombre-l: 0 12px 32px rgb(46 43 37 / 22%);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ UNE QUATRIÈME OMBRE, ET POURQUOI ELLE N'EST PAS UNE DE TROP.            │
+   * │                                                                          │
+   * │ L'encadré ci-dessus interdit d'INVENTER une ombre que le système ne      │
+   * │ nomme pas. Celle-ci n'est pas inventée : le prototype l'écrit à la main  │
+   * │ sur la couverture de la fiche — soixante pixels de flou à 32 % de       │
+   * │ qu'aucun des trois niveaux ne convenait là non plus.                     │
+   * │                                                                          │
+   * │ Elle ne sert QU'À CET ENDROIT : une couverture unique, posée de travers  │
+   * │ sur un halo, à 478 px de large. `--ombre-couverture` — `0 22px 44px` —   │
+   * │ est celle d'une vignette de grille, où vingt couvertures partagent       │
+   * │ l'écran et où une ombre longue ferait une page sale.                     │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  --ombre-couverture-fiche: 0 30px 60px rgb(30 25 15 / 32%);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LES CINQ APLATS DES TUILES DE THÈME — ASSOMBRIS, ET VOICI DE COMBIEN.   │
+   * │                                                                          │
+   * │ La maquette peint chaque tuile d'un aplat plein et y écrit le nom du     │
+   * │ thème en blanc, à 23 px. Sept teintes y sont écrites en clair ; CINQ     │
+   * │ échouent au seuil AA de 4,5:1 sous ce texte :                            │
+   * │                                                                          │
+   * │   animaux 3,73 · nature 2,82 · ruse 3,61 · musique 4,49 · amitié 4,21    │
+   * │                                                                          │
+   * │ « nature » à 2,82 n'est pas une marge d'appréciation : c'est du texte    │
+   * │ blanc à peine détachable de son fond, et le §5.3 du cahier des charges   │
+   * │ fixe WCAG 2.1 AA.                                                        │
+   * │                                                                          │
+   * │ On garde donc la TEINTE et on baisse la clarté, jusqu'au premier point   │
+   * │ qui passe — la couleur reste reconnaissable, elle est simplement plus    │
+   * │ dense. Mesuré contre la crème `--v3-sur-profond` :                       │
+   * │                                                                          │
+   * │   1 → 4,56:1   2 → 4,52:1   3 → 5,69:1   4 → 4,56:1   5 → 5,40:1         │
+   * │                                                                          │
+   * │ Les cinq sont distinctes à l'œil, ce qui est tout ce qu'on leur demande  │
+   * │ : la tuile RANGE, elle ne dit rien qu'un mot ne dise déjà.               │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  --v3-tuile-1: #626e4b;
+  --v3-tuile-2: #9c592d;
+  --v3-tuile-3: #8c491a;
+  --v3-tuile-4: #9e5728;
+  --v3-tuile-5: #56633f;
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LE THÈME SOMBRE : LA PALETTE BRUTE SE RETOURNE SOUS LA CARTE.       ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CARTE SÉMANTIQUE CI-DESSUS N’EST ÉCRITE QU’UNE FOIS.                 │
+ * │                                                                          │
+ * │ Le thème sombre ne réaffecte AUCUN jeton sémantique : il redéfinit les   │
+ * │ jetons `--v3-*` que cette carte lit déjà. Une propriété personnalisée se │
+ * │ résout À L’EMPLOI, pas à la déclaration — `--fond: var(--v3-fond)`,      │
+ * │ écrit une seule fois, rend donc la valeur claire ou la sombre selon ce   │
+ * │ que `--v3-fond` vaut sur l’élément.                                      │
+ * │                                                                          │
+ * │ Écrite trois fois — clair, sombre explicite, sombre par préférence — la  │
+ * │ carte finirait par diverger, au premier rôle ajouté. Et la copie         │
+ * │ oubliée serait celle du thème que personne ne regarde en développement.  │
+ * │                                                                          │
+ * │ Les hexadécimaux, eux, restent dans le bloc `:root` du haut, sous des    │
+ * │ noms distincts : c’est ce qui permet au test de mesurer les DEUX         │
+ * │ palettes.                                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Deux sélecteurs, une seule liste :
+ *
+ *   * `[data-theme='dark']` — le CHOIX explicite, venu du cookie `em_theme`
+ *     et posé par le serveur au premier rendu. Il gagne toujours.
+ *   * `:not([data-theme])` sous `prefers-color-scheme: dark` — le repli du
+ *     PREMIER passage, quand aucun choix n’a encore été fait.
+ *
+ * Le dossier (`09`) l’exige dans cet ordre et interdit le script bloquant :
+ * « never with a blocking inline script ». Un attribut posé par le serveur ne
+ * clignote pas ; un script qui corrige après coup, si.
+ */
+:root[data-design='v3'][data-theme='dark'] {
+  --v3-fond: var(--v3-nuit-fond);
+  --v3-fond-2: var(--v3-nuit-fond-2);
+  --v3-carte: var(--v3-nuit-carte);
+  --v3-encre: var(--v3-nuit-encre);
+  --v3-encre-douce: var(--v3-nuit-encre-douce);
+  --v3-ligne: var(--v3-nuit-ligne);
+  --v3-profond: var(--v3-nuit-profond);
+  --v3-profond-2: var(--v3-nuit-profond-2);
+  --v3-terre: var(--v3-nuit-terre);
+  --v3-terre-survol: var(--v3-nuit-terre-survol);
+  --v3-terre-encre: var(--v3-nuit-terre-encre);
+  --v3-sauge: var(--v3-nuit-sauge);
+
+  /* La sauge de nuit est DÉJÀ lisible en texte : 8,24:1. Pas de variante. */
+  --v3-sauge-encre: var(--v3-nuit-sauge);
+
+  /*
+   * L’ENCRE POSÉE SUR L’ACTION NE SUIT PAS `--v3-encre`, ET C’EST LE PIÈGE.
+   *
+   * En clair, le texte du bouton est l’encre sombre sur la terre cuite. En
+   * sombre, `--v3-encre` devient la crème — et une crème sur la terre cuite de
+   * nuit vaut 2,40:1. Il faut le fond de nuit, qui vaut 7,59:1.
+   *
+   * D’où cette indirection : sans elle, le retournement de palette
+   * fabriquerait tout seul le blanc-sur-accent que ce dépôt a refusé trois
+   * fois.
+   */
+  --v3-action-encre: var(--v3-nuit-fond);
+
+  /* Une ombre sur fond sombre se voit par la lumière qu’elle retire. */
+  --ombre-couverture: 0 22px 44px rgb(0 0 0 / 55%);
+  --ombre-carte: 0 1px 2px rgb(0 0 0 / 40%), 0 3px 10px rgb(0 0 0 / 45%);
+  --ombre-carte-survol: 0 12px 32px rgb(0 0 0 / 55%);
+  --ombre-flottante: 0 12px 30px rgb(0 0 0 / 60%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-design='v3']:not([data-theme]) {
+    --v3-fond: var(--v3-nuit-fond);
+    --v3-fond-2: var(--v3-nuit-fond-2);
+    --v3-carte: var(--v3-nuit-carte);
+    --v3-encre: var(--v3-nuit-encre);
+    --v3-encre-douce: var(--v3-nuit-encre-douce);
+    --v3-ligne: var(--v3-nuit-ligne);
+    --v3-profond: var(--v3-nuit-profond);
+    --v3-profond-2: var(--v3-nuit-profond-2);
+    --v3-terre: var(--v3-nuit-terre);
+    --v3-terre-survol: var(--v3-nuit-terre-survol);
+    --v3-terre-encre: var(--v3-nuit-terre-encre);
+    --v3-sauge: var(--v3-nuit-sauge);
+
+    /* La sauge de nuit est DÉJÀ lisible en texte : 8,24:1. Pas de variante. */
+    --v3-sauge-encre: var(--v3-nuit-sauge);
+
+    /*
+     * L’ENCRE POSÉE SUR L’ACTION NE SUIT PAS `--v3-encre`, ET C’EST LE PIÈGE.
+     *
+     * En clair, le texte du bouton est l’encre sombre sur la terre cuite. En
+     * sombre, `--v3-encre` devient la crème — et une crème sur la terre cuite de
+     * nuit vaut 2,40:1. Il faut le fond de nuit, qui vaut 7,59:1.
+     *
+     * D’où cette indirection : sans elle, le retournement de palette
+     * fabriquerait tout seul le blanc-sur-accent que ce dépôt a refusé trois
+     * fois.
+     */
+    --v3-action-encre: var(--v3-nuit-fond);
+
+    /* Une ombre sur fond sombre se voit par la lumière qu’elle retire. */
+    --ombre-couverture: 0 22px 44px rgb(0 0 0 / 55%);
+    --ombre-carte: 0 1px 2px rgb(0 0 0 / 40%), 0 3px 10px rgb(0 0 0 / 45%);
+    --ombre-carte-survol: 0 12px 32px rgb(0 0 0 / 55%);
+    --ombre-flottante: 0 12px 30px rgb(0 0 0 / 60%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

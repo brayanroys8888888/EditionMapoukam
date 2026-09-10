@@ -14,10 +14,17 @@
  */
 
 .cadre {
+  /*
+   * La scène de lecture prend l'olive sous la V3 : l'anneau de focus suit
+   * son encre, sinon il disparaît sur les flèches et les miniatures — les
+   * seules commandes de l'écran.
+   */
+  --focus-couleur: var(--encre-lecture);
   padding: 18px 18px 26px;
   display: flex;
   justify-content: center;
   background: var(--fond-lecture);
+  color: var(--encre-lecture);
 }
 
 /*
@@ -34,7 +41,8 @@
   height: min(82vh, 780px);
   min-height: 560px;
   background: var(--fond-lecture);
-  border: 1.5px solid var(--bordure);
+  color: var(--encre-lecture);
+  border: 1.5px solid var(--bordure-lecture);
   border-radius: 22px;
   overflow: hidden;
   touch-action: pan-y;
@@ -60,7 +68,7 @@
   /* Translucide : la page du conte se devine derrière, ce qui rappelle que la
      barre flotte au-dessus d'elle et va s'effacer. */
   background: color-mix(in srgb, var(--fond-lecture) 94%, transparent);
-  border-bottom: 1px solid var(--bordure);
+  border-bottom: 1px solid var(--bordure-lecture);
   transition: opacity 0.3s, transform 0.3s;
 }
 
@@ -72,7 +80,7 @@
   z-index: 30;
   padding: 12px 16px 14px;
   background: color-mix(in srgb, var(--fond-lecture) 94%, transparent);
-  border-top: 1px solid var(--bordure);
+  border-top: 1px solid var(--bordure-lecture);
   transition: opacity 0.3s, transform 0.3s;
 }
 
@@ -113,6 +121,14 @@
   border: 1.5px solid var(--bordure-forte);
   border-radius: var(--rayon-bouton);
   background: var(--fond);
+  /*
+   * L'encre de la PAGE, pas celle de la scène : ce bouton porte un aplat
+   * clair. Sans cette ligne, il hérite de la crème du cadre — crème sur
+   * crème, c'est-à-dire un bouton vide. Le défaut n'existe que sous la V3,
+   * où la scène est sombre et la pastille claire.
+   */
+  color: var(--encre);
+  border-color: var(--bordure);
   font-size: var(--taille-base);
   font-weight: var(--graisse-forte);
   white-space: nowrap;
@@ -148,7 +164,7 @@
   flex: 0 0 auto;
   font-size: var(--taille-base);
   font-weight: var(--graisse-forte);
-  color: var(--encre-douce);
+  color: var(--encre-lecture-douce);
 }
 
 /* ── La page du conte ───────────────────────────────────────────────────── */
@@ -223,9 +239,11 @@
   height: 54px;
   display: grid;
   place-items: center;
-  border: 1.5px solid var(--bordure-forte);
+  border: 1.5px solid var(--bordure);
   border-radius: 50%;
   background: color-mix(in srgb, var(--fond) 94%, transparent);
+  /* Même raison que le bouton de retour : le disque est clair. */
+  color: var(--encre);
   font-size: var(--taille-3xl);
   font-weight: var(--graisse-forte);
   transition: opacity 0.3s, border-color var(--transition-couleur),
@@ -233,8 +251,8 @@
 }
 
 .fleche:hover:not(:disabled) {
-  border-color: var(--region-afrique_ouest-accent);
-  color: var(--region-afrique_ouest-encre);
+  border-color: var(--marque);
+  color: var(--accent-encre);
 }
 
 /*
@@ -261,7 +279,7 @@
 .progression {
   height: 6px;
   border-radius: var(--rayon-pastille);
-  background: var(--bordure);
+  background: var(--bordure-lecture);
   overflow: hidden;
   margin-bottom: 11px;
 }
@@ -270,7 +288,7 @@
 .progressionRemplie {
   height: 100%;
   width: calc(var(--part, 0) * 100%);
-  background: var(--region-afrique_ouest-accent);
+  background: var(--marque);
   transition: width 0.25s;
 }
 
@@ -286,21 +304,39 @@
   flex: 0 0 auto;
   width: 44px;
   height: 34px;
-  border: 2px solid var(--bordure-forte);
+  border: 2px solid var(--bordure-lecture);
   border-radius: 7px;
-  background: var(--region-afrique_ouest-fond);
-  background-image: var(--motif-afrique_ouest);
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ PAS DE MOTIF RÉGIONAL ICI — ET SURTOUT PAS LE MÊME POUR TOUS.         │
+   * │                                                                        │
+   * │ Cette vignette portait le kenté de l'Afrique de l'Ouest, écrit en dur  │
+   * │ (le test de jetons interdit d'en recopier le nom ici, comme il         │
+   * │ interdit d'écrire un hexadécimal dans un commentaire) : chaque page de │
+   * │ chaque titre le portait, quelle que soit son origine, et les livrets   │
+   * │ pédagogiques n'en ont aucune. Le catalogue a                           │
+   * │ quitté la région pour le THÈME (migrations 0066 et 0071) ; un motif    │
+   * │ d'Afrique de l'Ouest posé sur un titre d'Afrique australe n'est pas    │
+   * │ une décoration neutre, c'est une affirmation fausse.                   │
+   * │                                                                        │
+   * │ Une vignette de page n'a d'ailleurs rien à illustrer : elle désigne un │
+   * │ RANG dans un livre, et son numéro le dit déjà. Le fond de lecture      │
+   * │ suffit.                                                                │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  background: var(--fond);
   transition: transform var(--transition-forme), border-color var(--transition-couleur);
 }
 
 .miniatureActive {
-  border-color: var(--region-afrique_ouest-accent);
+  border-color: var(--marque);
   transform: translateY(-2px);
 }
 
 /*
- * Le numéro sur une pastille opaque — pour rester lisible PAR-DESSUS le motif.
- * Sans elle, un chiffre sombre sur une bande verte disparaît une fois sur deux.
+ * Le numéro sur une pastille opaque, posée sur le fond clair de la vignette.
+ * La vignette vit dans une barre sombre : sans ce fond à elle, le chiffre
+ * prendrait l'encre de la barre et disparaîtrait dans sa propre vignette.
  */
 .miniatureNumero {
   position: absolute;
@@ -309,6 +345,7 @@
   padding: 0 4px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--fond) 88%, transparent);
+  color: var(--encre);
   font-size: var(--taille-xs);
   font-weight: var(--graisse-forte);
 }
@@ -362,7 +399,7 @@
   transform: translateX(-50%);
   z-index: 35;
   padding: 9px 16px;
-  border: 1.5px solid var(--bordure-forte);
+  border: 1.5px solid var(--bordure);
   border-radius: var(--rayon-pastille);
   background: var(--fond);
   font-size: var(--taille-m);
@@ -407,5 +444,52 @@
 
   .titreLecteur {
     font-size: var(--taille-l);
+  }
+}
+
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LA PAGE DU CONTE SE DÉTACHE DE LA SCÈNE, AU LIEU D'Y ÊTRE ENCADRÉE. ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Sur une scène claire, un filet suffisait à dire où finissait la page. Sur
+ * l'olive profond, ce filet devient la chose la plus visible de l'écran — un
+ * rectangle dessiné autour de l'illustration. L'ombre le remplace : elle dit
+ * la même chose, en laissant l'image être la seule ligne.
+ */
+:global(:root[data-design='v3']) .feuille {
+  border-color: transparent;
+  box-shadow: var(--ombre-couverture);
+}
+
+/*
+ * ── Le fondu d'une page à l'autre ───────────────────────────────────────
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN FONDU, ET JAMAIS UN GLISSEMENT.                                      │
+ * │                                                                          │
+ * │ `10-animation-spec.md` le précise : « crossfade 220ms (opacity), no      │
+ * │ slide ». Le glissement imite le papier, et c'est justement le piège :    │
+ * │ une page qui glisse suggère qu'on peut la retenir, la reculer, la        │
+ * │ manipuler. Ici elle ne fait que se remplacer.                            │
+ * │                                                                          │
+ * │ Et un glissement sur une image de plusieurs centaines de kilo-octets     │
+ * │ coûte un rendu par image sur les appareils modestes du §5.1 ; un fondu   │
+ * │ d'opacité reste sur le compositeur.                                      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.image {
+  animation: fonduPage 0.22s ease;
+}
+
+@keyframes fonduPage {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    animation: none;
   }
 }

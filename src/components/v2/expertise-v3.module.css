@@ -1,0 +1,724 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * EXPERTISE & CONSEIL — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `Site EditionMapoukam.dc.html`, lignes 838 à 922.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ C'EST LA SEULE PAGE DU SITE QUI OUVRE SUR L'OLIVE.                      │
+ * │                                                                          │
+ * │ Partout ailleurs, Organic ouvre sur une bande de crème. Ici le héros est │
+ * │ sombre, et ce n'est pas une variation : c'est une page qui s'adresse à   │
+ * │ des directions d'école, pas à des parents. Le contraste de traitement    │
+ * │ dit, avant la première ligne, qu'on a changé d'interlocuteur.            │
+ * │                                                                          │
+ * │ Conséquence technique : tout ce qui vit dans cette bande lit les jetons  │
+ * │ du CHROME, jamais ceux de la page. L'anneau de focus y compris — il      │
+ * │ hérite de `--encre` et deviendrait invisible.                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ══ Le héros — l'argument à gauche, la preuve à droite ═══════════════════ */
+
+.hero {
+  --focus-couleur: var(--chrome-encre);
+  position: relative;
+  overflow: hidden;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+/*
+ * Le disque terre cuite déborde du coin BAS-DROIT — l'inverse de celui de la
+ * page « à propos ». Il équilibre le panneau de preuve, qui pèse à droite.
+ */
+.heroCercle {
+  position: absolute;
+  bottom: -160px;
+  right: -60px;
+  width: 420px;
+  height: 420px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--action) 18%, transparent);
+  pointer-events: none;
+}
+
+.heroInterieur {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 56px;
+  align-items: center;
+  padding: 70px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 76px;
+}
+
+/*
+ * Le sur-titre prend `--accent-sur-chrome`, et non `--action`.
+ *
+ * La terre cuite du jour sur l'olive du jour ne vaut que 3,34:1 — sous le
+ * seuil, pour un texte de 11,5 px. Le jeton porte la terre cuite de nuit,
+ * plus claire, qui tient les deux thèmes. Voir son encadré dans `tokens.css`.
+ */
+.oeil {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-sur-chrome);
+}
+
+.titre {
+  font-size: clamp(38px, 4.6vw, 64px);
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+  margin: 16px 0 18px;
+}
+
+/* La promesse : le plus gros texte de la page après le titre. */
+.accroche {
+  font-size: 20px;
+  line-height: 1.55;
+  opacity: 0.86;
+  margin: 0 0 14px;
+  max-width: 560px;
+}
+
+/* Ce qui la justifie — plus petit, et plus sourd. */
+.argument {
+  font-size: 17px;
+  line-height: 1.7;
+  opacity: 0.74;
+  margin: 0 0 32px;
+  max-width: 560px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.boutonPrincipal,
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 17px 28px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16px;
+  /* `normal` : le prototype ne pose pas d'interligne sur ces boutons. */
+  line-height: normal;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.boutonPrincipal {
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  box-shadow: var(--ombre-m);
+}
+
+.boutonPrincipal:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+/*
+ * Le second bouton est un CONTOUR sur l'olive : la maquette y pose l'encre du
+ * chrome à 40 % d'opacité — d'où le `color-mix` plutôt qu'une teinte figée.
+ *
+ * (La valeur littérale du prototype n'est pas recopiée ici : le test
+ * `design-tokens` lit AUSSI les commentaires, et une couleur écrite en toutes
+ * lettres — même à titre d'explication — le fait échouer. C'est voulu : une
+ * valeur citée dans un commentaire est une valeur que quelqu'un finira par
+ * coller dans une déclaration.)
+ */
+.boutonSecondaire {
+  background: transparent;
+  color: var(--chrome-encre);
+  border: 1.5px solid color-mix(in srgb, var(--chrome-encre) 40%, transparent);
+}
+
+.boutonSecondaire:hover {
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/* ── Le panneau de preuve ────────────────────────────────────────────────
+ *
+ * Une surface à peine détachée de l'olive — 7 % d'encre au fond, 16 % au
+ * filet. C'est ce qui la fait lire comme un aparté et non comme une carte.
+ */
+.preuve {
+  background: color-mix(in srgb, var(--chrome-encre) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 16%, transparent);
+  border-radius: 32px;
+  padding: 32px;
+}
+
+.preuveTexte {
+  font-size: 16.5px;
+  line-height: 1.7;
+  opacity: 0.86;
+  margin: 0 0 18px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES TROIS ENGAGEMENTS N'EXISTENT PAS DANS LE PROTOTYPE — ILS EXISTENT   │
+ * │ DANS LE PRODUIT.                                                         │
+ * │                                                                          │
+ * │ `src/content/consulting.ts` les porte depuis l'étape « expertise » : sur │
+ * │ mesure, tarifs annoncés d'avance, méthodes validées à l'international.   │
+ * │ Ce sont exactement les trois objections qu'un directeur d'école oppose à │
+ * │ un cabinet, et les retirer pour tenir la maquette reviendrait à laisser  │
+ * │ une intention visuelle décider d'un argument de vente.                   │
+ * │                                                                          │
+ * │ Ils prennent la coche du dossier — celle des cartes de prestation — et   │
+ * │ tiennent dans le panneau, qui n'a pas de hauteur imposée.                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.engagements {
+  list-style: none;
+  margin: 22px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.engagement {
+  display: flex;
+  gap: 11px;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.86;
+}
+
+/*
+ * La coche est posée sur la ligne de base du texte, pas centrée : à
+ * `margin-top: 5px` elle s'aligne sur la première ligne, quel que soit le
+ * nombre de lignes qui suivent.
+ */
+.coche {
+  flex: none;
+  margin-top: 5px;
+  color: var(--second);
+}
+
+/*
+ * La sauge de l'écran clair est trop sombre sur l'olive. Sur le chrome, la
+ * coche prend l'accent, qui y est lisible par construction.
+ */
+.hero .coche {
+  color: var(--accent-sur-chrome);
+}
+
+/* ══ Les trois prestations ════════════════════════════════════════════════ */
+
+.sectionPrestations {
+  padding: 80px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 30px;
+}
+
+.enTete {
+  max-width: 640px;
+  margin-bottom: 38px;
+}
+
+.oeilClair {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+.titreSection {
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  margin: 10px 0 8px;
+}
+
+.enTeteTexte {
+  color: var(--encre-douce);
+  font-size: 16.5px;
+  margin: 0;
+}
+
+.prestations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 22px;
+}
+
+/*
+ * `display: flex` en colonne, et non un simple bloc : c'est ce qui permet au
+ * bouton de coller au bas de la carte (`margin-top: auto`) quel que soit le
+ * nombre de bénéfices. Sans lui, trois cartes de hauteurs égales portaient
+ * trois boutons à trois hauteurs différentes.
+ */
+.prestation {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  padding: 32px;
+  box-shadow: var(--ombre-s);
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.prestation:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-m);
+}
+
+/*
+ * La carte mise en avant change de FOND et de FILET, pas de taille.
+ *
+ * Le prototype lui donne le crème de bande et le filet terre cuite. Une carte
+ * agrandie aurait cassé l'alignement des trois, et c'est l'alignement qui
+ * rend les tarifs comparables — ce qui est tout l'objet de la section.
+ */
+.vedette {
+  background: var(--fond-doux);
+  border-color: var(--action);
+  box-shadow: var(--ombre-m);
+}
+
+.prestationHaut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+/*
+ * Le numéro est un ORNEMENT : la liste est déjà ordonnée, et un lecteur
+ * d'écran annonce « élément 2 sur 3 ». L'énoncer une seconde fois ferait
+ * entendre « deux, deux, la formation des équipes ».
+ */
+.rang {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  display: grid;
+  place-items: center;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 17px;
+}
+
+/*
+ * La pastille « Le plus demandé », elle, N'EST PAS décorative : elle porte une
+ * recommandation qu'aucun autre élément de la carte ne donne.
+ */
+.pastilleVedette {
+  background: var(--second);
+  color: var(--second-contre);
+  border-radius: 999px;
+  padding: 6px 13px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.prestationTitre {
+  font-size: 23px;
+  line-height: 1.18;
+  letter-spacing: -0.015em;
+  margin: 22px 0 14px;
+}
+
+.tarif {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 26px;
+  /*
+   * Pas d'interligne propre : le prototype laisse cette ligne prendre celui
+   * du corps, soit 1,6. Un tarif serré à 1,15 gagnait onze pixels sur la
+   * carte, et les trois cartes avec lui.
+   */
+  color: var(--action-texte);
+  margin: 0 0 4px;
+}
+
+.tarifPrecision {
+  font-size: 13px;
+  color: var(--encre-douce);
+  margin: 0 0 22px;
+}
+
+.gainsTitre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin: 0 0 12px;
+}
+
+.gains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.gain {
+  display: flex;
+  gap: 11px;
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0 0 12px;
+}
+
+/*
+ * L'italique n'est pas un ornement : cette ligne ne décrit pas la prestation,
+ * elle justifie son PRIX. Le filet au-dessus l'en sépare, et le décalage de
+ * style dit qu'on change de registre.
+ */
+.pourquoi {
+  font-size: 14.5px;
+  font-style: italic;
+  color: var(--encre-douce);
+  margin: 20px 0 24px;
+  padding-top: 18px;
+  border-top: 1px solid var(--bordure);
+}
+
+.boutonDevis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  /* Il colle au bas de la carte, quelle que soit la longueur du texte. */
+  margin-top: auto;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-radius: 999px;
+  padding: 15px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15px;
+  line-height: normal;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.boutonDevis:hover {
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/* ══ Les réalisations ═════════════════════════════════════════════════════ */
+
+.sectionRealisations {
+  padding: 70px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 40px;
+}
+
+.enTeteRealisations {
+  max-width: 560px;
+  margin-bottom: 30px;
+}
+
+.titreRealisations {
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 10px 0 8px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE MOSAÏQUE EN COLONNES, ET NON UNE GRILLE.                            │
+ * │                                                                          │
+ * │ Les onze visuels n'ont pas le même format : des cahiers en portrait, des │
+ * │ jeux de cartes en paysage, une photographie. Une grille les recadrerait  │
+ * │ tous au même rapport — c'est-à-dire couperait les couvertures qu'elle    │
+ * │ est censée montrer.                                                      │
+ * │                                                                          │
+ * │ `columns` laisse chaque image à sa hauteur et remplit les colonnes au    │
+ * │ fil du texte. `break-inside: avoid` empêche une figure d'être coupée en  │
+ * │ deux entre deux colonnes — sans lui, une légende se retrouve seule en    │
+ * │ haut de la colonne suivante, sous une image qui n'est pas la sienne.     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.mosaique {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  columns: 4;
+  column-gap: 18px;
+}
+
+.realisation {
+  break-inside: avoid;
+  margin: 0 0 18px;
+}
+
+.figure {
+  margin: 0;
+  border-radius: 22px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+  transition:
+    transform 0.35s var(--ease),
+    box-shadow 0.35s var(--ease);
+}
+
+.figure:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--ombre-l);
+}
+
+/*
+ * `height: auto` casse l'effet des attributs `width`/`height` de la balise,
+ * qui valent une hauteur EMPLOYÉE : sans lui, chaque visuel s'affiche à sa
+ * taille de fichier et la mosaïque se déchire. Les attributs restent — ils
+ * réservent la place avant que l'image n'arrive, sur onze images.
+ */
+.visuel {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.legende {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--encre-douce);
+}
+
+/* ══ La vidéo ═════════════════════════════════════════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PROTOTYPE N'A PAS DE VIDÉO. LE PRODUIT EN A UNE, ET ELLE EST VRAIE.  │
+ * │                                                                          │
+ * │ La fondatrice s'y présente, les cahiers déjà parus devant elle. Sur une  │
+ * │ page qui vend un accompagnement, un visage vaut trois paragraphes.       │
+ * │                                                                          │
+ * │ Elle est plafonnée à 640 px, sa définition réelle : l'étirer au-delà ne  │
+ * │ montrerait qu'un flou. Et `preload="none"` — §5.1, une part importante   │
+ * │ du public est sur réseau mobile, et une vidéo qui se télécharge d'elle-  │
+ * │ même dépense un forfait que personne n'a engagé.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.video {
+  margin: 40px auto 0;
+  max-width: 640px;
+}
+
+.lecteur {
+  display: block;
+  width: 100%;
+  border-radius: 22px;
+  box-shadow: var(--ombre-s);
+}
+
+.videoLegende {
+  margin-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--encre-douce);
+  text-align: center;
+}
+
+/* ══ L'appel au contact ═══════════════════════════════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE PANNEAU-LÀ EST PLUS LARGE QUE LE RESTE DE LA PAGE, ET C'EST VOULU.   │
+ * │                                                                          │
+ * │ Toutes les sections de cette page tiennent leur contenu à 1184 px — les  │
+ * │ 1240 du conteneur moins ses 28 px de marge. Celle-ci ne le fait pas : le │
+ * │ prototype pose le panneau LUI-MÊME à 1240 et ne lui donne pas de marge   │
+ * │ intérieure. Il déborde donc de 28 px de chaque côté sur ses voisines.    │
+ * │                                                                          │
+ * │ Ce n'est pas une inattention du dossier : le panneau est ce qui ferme la │
+ * │ page, et ces 56 px de plus le font lire comme une bande et non comme une │
+ * │ carte de plus. D'où l'absence des « + 28px » qu'on trouve partout        │
+ * │ ailleurs dans cette feuille.                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.sectionAppel {
+  padding: 40px max(28px, (100% - var(--largeur-page)) / 2) 96px;
+}
+
+.appel {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 36px;
+  padding: 52px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 44px;
+  align-items: center;
+  box-shadow: var(--ombre-s);
+}
+
+.appelTitre {
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.06;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+
+.appelTexte {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+.appelActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.appelAction,
+.appelAppel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 18px 28px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16.5px;
+  text-align: center;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease),
+    color 0.35s var(--ease);
+}
+
+/*
+ * Les deux n'ont pas le même interligne, et le prototype non plus.
+ *
+ * Chez lui le premier est un `<button>` — qui n'hérite pas de l'interligne du
+ * corps et reste à `normal` — et le second un `<a>`, qui en hérite. Ici les
+ * deux sont des liens ; la différence est donc écrite, sans quoi le bouton
+ * d'appel gagnait sept pixels sur son voisin.
+ */
+.appelAction {
+  background: var(--action);
+  color: var(--action-encre);
+  line-height: normal;
+  box-shadow: var(--ombre-m);
+}
+
+.appelAction:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+/*
+ * Le second est un contour d'ENCRE qui s'inverse au survol — le seul de la
+ * page. C'est le geste réel du public visé : sur téléphone, une direction
+ * d'école appelle plutôt qu'elle n'écrit.
+ */
+.appelAppel {
+  background: transparent;
+  color: var(--encre);
+  border: 1.5px solid var(--encre);
+}
+
+.appelAppel:hover {
+  background: var(--encre);
+  color: var(--fond);
+  transform: translateY(-4px);
+}
+
+/* ══ Les deux points de rupture de `02-layout-responsive.md` ══════════════ */
+
+/* ≤ 1120 px — « every 2-column content grid collapses to 1 column ». */
+@media (max-width: 1120px) {
+  .heroInterieur,
+  .appel {
+    grid-template-columns: 1fr;
+    gap: 36px;
+  }
+
+  /* « masonry drops from 3 to 2 columns » — de quatre à deux, ici. */
+  .mosaique {
+    columns: 2;
+  }
+}
+
+/* ≤ 760 px — « masonry to 1 column », et les têtes de page se resserrent. */
+@media (max-width: 760px) {
+  .heroInterieur {
+    padding: 48px 20px 56px;
+  }
+
+  .preuve {
+    padding: 24px;
+  }
+
+  .sectionPrestations {
+    padding: 48px 20px 24px;
+  }
+
+  .prestation {
+    padding: 26px;
+  }
+
+  .sectionRealisations {
+    padding: 48px 20px 24px;
+  }
+
+  .mosaique {
+    columns: 1;
+  }
+
+  .sectionAppel {
+    padding: 24px 20px 72px;
+  }
+
+  .appel {
+    padding: 32px 24px;
+  }
+}
+
+/*
+ * Le mouvement se coupe. Le filet général de `tokens.css` ramène toute
+ * transition à 0,01 ms, ce qui suffit pour une couleur mais pas pour un
+ * déplacement : les cartes sauteraient de quatre pixels au lieu d'y glisser.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .boutonPrincipal:hover,
+  .boutonSecondaire:hover,
+  .prestation:hover,
+  .boutonDevis:hover,
+  .figure:hover,
+  .appelAction:hover,
+  .appelAppel:hover {
+    transform: none;
+  }
+}

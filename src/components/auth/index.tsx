@@ -3,9 +3,14 @@ import type { ReactNode } from 'react';
 import { messageErreur, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
 import { Marque } from '@/components/v2/marque';
+import { estV3 } from '@/design/version';
+import { BasculeAuth, PanneauPromesse } from './panneau';
+import { ChampMotDePasse } from './mot-de-passe';
 import styles from './auth.module.css';
 
 export { FormulaireInscription, ForceMotDePasse } from './inscription';
+export { BasculeAuth, PanneauPromesse } from './panneau';
+export { ChampMotDePasse } from './mot-de-passe';
 
 /**
  * FORMULAIRES D'AUTHENTIFICATION — §4.2 F5.
@@ -162,15 +167,29 @@ export function FormulaireConnexion({
 
   return (
     <div className={styles.cadreAuth}>
-      <aside className={styles.illustration} aria-hidden="true">
-        <Marque langue={langue} petite className={styles.marqueAuth} />
-        <p className={styles.illustrationTexte}>
-          {traduire(langue, 'auth.illustrationConnexion')}
-        </p>
-      </aside>
+      {/*
+       * Sous Organic, le panneau de gauche PORTE quelque chose : une promesse
+       * et trois engagements. Sous la V1 et la V2 il reste une phrase
+       * d'ambiance, purement décorative — d'où les deux rendus.
+       */}
+      {estV3() ? (
+        <PanneauPromesse langue={langue} />
+      ) : (
+        <aside className={styles.illustration} aria-hidden="true">
+          <Marque langue={langue} petite className={styles.marqueAuth} />
+          <p className={styles.illustrationTexte}>
+            {traduire(langue, 'auth.illustrationConnexion')}
+          </p>
+        </aside>
+      )}
 
       <div className={styles.contenu}>
+        <BasculeAuth langue={langue} mode="connexion" />
+
         <h1 className={styles.titre}>{traduire(langue, 'auth.connexionTitre')}</h1>
+        {estV3() ? (
+          <p className={styles.intro}>{traduire(langue, 'auth.connexionIntro')}</p>
+        ) : null}
 
         {/* Compte tout juste créé, et immédiatement utilisable. */}
         {inscrit ? (
@@ -197,19 +216,49 @@ export function FormulaireConnexion({
             libelle={traduire(langue, 'auth.email')}
             autoComplete="email"
             required
+            {...(estV3() ? { placeholder: traduire(langue, 'auth.emailExemple') } : {})}
           />
-          <Champ
+
+          <ChampMotDePasse
+            langue={langue}
             id="connexion-motdepasse"
-            name="password"
-            type="password"
             libelle={traduire(langue, 'auth.motDePasse')}
             autoComplete="current-password"
             required
           />
 
+          {/*
+           * ┌────────────────────────────────────────────────────────────────┐
+           * │ « RESTER CONNECTÉ » N'EST PAS REPRIS, ET C'EST UN REFUS        │
+           * │ RAISONNÉ.                                                       │
+           * │                                                                │
+           * │ Le prototype pose une case à cocher à gauche du lien d'oubli.  │
+           * │ Rien ne la reçoit : le schéma de connexion n'a que l'adresse   │
+           * │ et le mot de passe, et la durée de session est celle du        │
+           * │ fournisseur — elle ne se règle pas depuis un écran.            │
+           * │                                                                │
+           * │ Une case qui ne change rien est pire qu'une case absente : on  │
+           * │ la coche, on referme son ordinateur, et l'on se croit connecté │
+           * │ pour la semaine. Le jour où la durée sera réglable, la case    │
+           * │ reviendra avec ce qui la lit.                                  │
+           * │                                                                │
+           * │ La rangée, elle, reste : c'est elle qui porte le lien d'oubli  │
+           * │ à sa place, à droite du formulaire.                             │
+           * └────────────────────────────────────────────────────────────────┘
+           */}
+          {estV3() ? (
+            <div className={styles.rangeeOptions}>
+              <a className={styles.lienOubli} href={`/${langue}/mot-de-passe-oublie`}>
+                {traduire(langue, 'auth.motDePasseOublie')}
+              </a>
+            </div>
+          ) : null}
+
           <Bouton type="submit" disabled={bloque}>
             {traduire(langue, 'auth.connexionSoumettre')}
           </Bouton>
+
+          {estV3() ? <p className={styles.note}>{traduire(langue, 'auth.note')}</p> : null}
         </form>
 
         {/* Proposé UNIQUEMENT sur `email_non_verifie` : ailleurs, ce bouton
@@ -222,13 +271,31 @@ export function FormulaireConnexion({
           </form>
         ) : null}
 
-        <nav className={styles.liens} aria-label={traduire(langue, 'auth.connexionTitre')}>
-          <a href={`/${langue}/mot-de-passe-oublie`}>{traduire(langue, 'auth.motDePasseOublie')}</a>
-          <span className={styles.lienSecondaire}>
-            {traduire(langue, 'auth.pasDeCompte')}{' '}
-            <a href={`/${langue}/inscription`}>{traduire(langue, 'auth.creerUnCompte')}</a>
-          </span>
-        </nav>
+        {/*
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ SOUS ORGANIC, CES DEUX LIENS SONT DÉJÀ AILLEURS.                │
+         * │                                                                  │
+         * │ « Mot de passe oublié ? » est remonté dans la rangée sous les    │
+         * │ champs, et « Créer un compte » est devenu la seconde pastille de │
+         * │ la bascule. Les garder ici les donnerait deux fois sur le même   │
+         * │ écran, à deux endroits qui ne se ressemblent pas — et un lecteur │
+         * │ d'écran annoncerait deux fois la même destination sans pouvoir   │
+         * │ dire laquelle est laquelle.                                       │
+         * │                                                                  │
+         * │ La V1 et la V2 n'ont ni bascule ni rangée : elles les gardent.   │
+         * └──────────────────────────────────────────────────────────────────┘
+         */}
+        {estV3() ? null : (
+          <nav className={styles.liens} aria-label={traduire(langue, 'auth.connexionTitre')}>
+            <a href={`/${langue}/mot-de-passe-oublie`}>
+              {traduire(langue, 'auth.motDePasseOublie')}
+            </a>
+            <span className={styles.lienSecondaire}>
+              {traduire(langue, 'auth.pasDeCompte')}{' '}
+              <a href={`/${langue}/inscription`}>{traduire(langue, 'auth.creerUnCompte')}</a>
+            </span>
+          </nav>
+        )}
       </div>
     </div>
   );
@@ -250,13 +317,31 @@ export function FormulaireOubli({ langue, action, erreur, attente }: EtatFormula
 
   return (
     <div className={styles.cadreAuth}>
-      <aside className={styles.illustration} aria-hidden="true">
-        <Marque langue={langue} petite className={styles.marqueAuth} />
-        <p className={styles.illustrationTexte}>
-          Ça arrive, deux minutes et vous<br />
-          retrouvez vos contes.
-        </p>
-      </aside>
+      {/*
+       * Le panneau de promesse vaut pour les CINQ écrans, pas pour les deux
+       * premiers.
+       *
+       * Le lot precedent l'avait branche sur la connexion et l'inscription,
+       * et laisse ici l'aside decoratif de la V1. Sous Organic, trois ecrans
+       * sur cinq montraient donc encore l'ancien panneau — et c'etaient les
+       * trois qu'on n'ouvre qu'en panne, ceux que personne ne regarde tant
+       * que rien ne va mal. Le releve les a nommes : `auth-oubli`,
+       * `auth-nouveau-mdp`, `auth-confirmation`.
+       *
+       * Rien ne justifiait la difference : la promesse ne parle pas de
+       * connexion, elle parle du compte.
+       */}
+      {estV3() ? (
+        <PanneauPromesse langue={langue} />
+      ) : (
+        <aside className={styles.illustration} aria-hidden="true">
+          <Marque langue={langue} petite className={styles.marqueAuth} />
+          <p className={styles.illustrationTexte}>
+            Ça arrive, deux minutes et vous<br />
+            retrouvez vos contes.
+          </p>
+        </aside>
+      )}
 
       <div className={styles.contenu}>
         <h1 className={styles.titre}>{traduire(langue, 'auth.oubliTitre')}</h1>
@@ -326,13 +411,17 @@ export function FormulaireCode({
 
   return (
     <div className={styles.cadreAuth}>
-      <aside className={styles.illustration} aria-hidden="true">
-        <Marque langue={langue} petite className={styles.marqueAuth} />
-        <p className={styles.illustrationTexte}>
-          Un clic dans votre boîte mail,<br />
-          et la lecture est ouverte.
-        </p>
-      </aside>
+      {estV3() ? (
+        <PanneauPromesse langue={langue} />
+      ) : (
+        <aside className={styles.illustration} aria-hidden="true">
+          <Marque langue={langue} petite className={styles.marqueAuth} />
+          <p className={styles.illustrationTexte}>
+            Un clic dans votre boîte mail,<br />
+            et la lecture est ouverte.
+          </p>
+        </aside>
+      )}
 
       <div className={styles.contenu}>
         <h1 className={styles.titre}>{traduire(langue, titre)}</h1>

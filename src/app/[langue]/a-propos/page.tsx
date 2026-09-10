@@ -5,7 +5,8 @@ import { catalogQuerySchema } from '@/domain/catalog/schemas';
 import { listerCatalogue } from '@/lib/catalog/repository';
 import { CorpsEditorial } from '@/components/editorial';
 import { AproposV2 } from '@/components/v2/apropos';
-import { versionDesign } from '@/design/version';
+import { AproposV3 } from '@/components/v2/apropos-v3';
+import { estV3, structureRefondue } from '@/design/version';
 
 /**
  * À PROPOS.
@@ -23,8 +24,15 @@ interface Parametres {
   params: Promise<{ langue: string }>;
 }
 
-/** Titres montrés en preuve, en bas de page. */
-const NOMBRE_COUVERTURES = 8;
+/**
+ * Titres montrés en preuve, en bas de page.
+ *
+ * Dix, et non huit : sous Organic la preuve est une rangée qui GLISSE, et non
+ * une grille qui se replie. Une rangée n'a pas de dernière ligne bancale à
+ * éviter — elle montre ce que le catalogue porte, et le prototype la remplit
+ * de la même façon.
+ */
+const NOMBRE_COUVERTURES = 10;
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
@@ -37,7 +45,7 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 export default async function PageApropos({ params }: Parametres) {
   const langue = langueValide((await params).langue);
 
-  if (versionDesign() !== 'v2') {
+  if (!structureRefondue()) {
     return <CorpsEditorial langue={langue} slug="a-propos" />;
   }
 
@@ -55,5 +63,24 @@ export default async function PageApropos({ params }: Parametres) {
     catalogQuerySchema.parse({ langue, tri: 'nouveautes', taille: NOMBRE_COUVERTURES }),
   ).catch(() => null);
 
-  return <AproposV2 langue={langue} couvertures={catalogue?.entrees ?? []} />;
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ÉCRAN EST REDESSINÉ — PAS SEULEMENT REPEINT.         │
+   * │                                                                      │
+   * │ Le prototype ne montre pas la même page : le récit devient le héros  │
+   * │ sur deux colonnes, la citation prend un panneau olive, et le         │
+   * │ catalogue une rangée qui glisse au lieu d'une grille qui se replie.  │
+   * │ Aucune règle de couleur ne fabrique une rangée horizontale.          │
+   * │                                                                      │
+   * │ La V2 reste donc en place, intacte, sous cette condition — le même   │
+   * │ partage que sur `/contact`.                                          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const entrees = catalogue?.entrees ?? [];
+
+  return estV3() ? (
+    <AproposV3 langue={langue} couvertures={entrees} />
+  ) : (
+    <AproposV2 langue={langue} couvertures={entrees} />
+  );
 }

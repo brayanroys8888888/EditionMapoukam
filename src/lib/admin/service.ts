@@ -310,6 +310,25 @@ export async function modifierLivre(
     ageMin?: number;
     ageMax?: number;
     nbPagesExtrait?: number;
+    /**
+     * Le NIVEAU scolaire visé — « PS · MS · GS ». Migration 0079, écrivable
+     * depuis la 0081.
+     *
+     * Trois valeurs, trois sens, et le troisième est ce qui distingue ce champ
+     * des autres : `undefined` laisse intact, une chaîne remplace, et la
+     * CHAÎNE VIDE efface. La colonne est nullable, et la convention « `null`
+     * veut dire ne touche pas » qui gouverne toute la fonction rendrait sinon
+     * l'effacement impossible.
+     */
+    niveau?: string;
+    /**
+     * Les OBJECTIFS pédagogiques, un par entrée, DANS L'ORDRE DE SAISIE.
+     *
+     * Ce sont les étapes d'un livret : les trier alphabétiquement, comme le
+     * fait `themes`, les mélangerait. `undefined` laisse intact ; un tableau
+     * vide les efface.
+     */
+    objectifs?: string[];
   },
   options: { client?: AppSupabaseClient } = {},
 ) {
@@ -342,6 +361,11 @@ export async function modifierLivre(
     // pas nulles et ne retiennent donc pas la publication.
     p_type_document: champs.typeDocument ?? null,
     p_orientation: champs.orientation ?? null,
+    // Migration 0081. `?? null` garde la convention : un champ que l'écran
+    // n'envoie pas n'est pas touché. L'effacement est une chaîne vide pour le
+    // niveau, un tableau vide pour les objectifs — jamais `null`.
+    p_niveau: champs.niveau ?? null,
+    p_objectifs: champs.objectifs ?? null,
   });
 }
 

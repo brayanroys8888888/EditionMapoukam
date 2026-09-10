@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { langueValide, traduire, type CleTraduction } from '@/i18n';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { lireCommandeDe } from '@/lib/orders/lecture';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { estMoyenPaiement, type MoyenPaiement } from '@/domain/payments/moyens';
@@ -13,8 +13,12 @@ import {
   ChampsCoordonnees,
   ChoixMoyens,
   FilEtapes,
+  SceauIssue,
   stylesTunnel as tunnel,
 } from '@/components/tunnel';
+import { IssuePaiementV3, PaiementV3, type CommandeAffichee } from '@/components/v2/paiement-v3';
+import { estV3 } from '@/design/version';
+import { getPaymentProvider } from '@/adapters/registry';
 import ecran from '@/components/ecran/ecran.module.css';
 import { reglerCommande } from '../../panier/actions';
 
@@ -85,7 +89,7 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
 
   if (!UUID.test(identifiant)) notFound();
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
   if (!appelant) redirect(`/${langue}/connexion`);
@@ -98,17 +102,59 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
 
   const afficher = formateur(await lireDevise(commande.devise));
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LES MONTANTS SONT MIS EN FORME ICI, ET NULLE PART EN AVAL.          │
+   * │                                                                      │
+   * │ `formateur` connaît la devise de la commande, et il est un module    │
+   * │ SERVEUR. Les composants reçoivent donc des chaînes finies : le franc │
+   * │ CFA n'a pas de sous-unité, et une division par cent faite dans un    │
+   * │ écran multiplierait l'erreur par cent sur une zone entière.          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const commandeAffichee: CommandeAffichee = {
+    id: commande.id,
+    montantAffiche: afficher(commande.montant_total),
+    remiseAffichee: commande.remise > 0 ? afficher(commande.remise) : null,
+    lignes: commande.lignes,
+    prixAffiches: commande.lignes.map((ligne) => afficher(ligne.prix_unitaire)),
+  };
+
   // ── L'issue, quand la commande n'est plus payable ───────────────────────
   if (commande.statut !== 'en_attente') {
     const payee = commande.statut === 'paye';
 
+    if (estV3()) {
+      return (
+        <IssuePaiementV3
+          langue={langue}
+          commande={commandeAffichee}
+          /*
+           * `order_status` en porte quatre ; `en_attente` est traité au-dessus.
+           * Un statut inconnu — une valeur ajoutée en base sans passer par ici
+           * — se lit comme un échec plutôt que comme une réussite : c'est le
+           * sens dans lequel se tromper coûte le moins.
+           */
+          statut={payee ? 'paye' : commande.statut === 'rembourse' ? 'rembourse' : 'echoue'}
+        />
+      );
+    }
+
     return (
       <div className={ecran.pageEtroite}>
-        <FilEtapes langue={langue} parcours="achat" etape={4} />
+        <FilEtapes langue={langue} parcours="achat" etape={3} />
 
         <h1 className={ecran.titre}>{traduire(langue, 'paiement.titre')}</h1>
 
         <section className={ecran.panneau}>
+          {/*
+            Le sceau dit l'issue AVANT la phrase — voir l'encadré de
+            `SceauIssue`. Un remboursement n'est pas un échec, mais ce n'est
+            pas non plus une réussite : il prend le second dessin, faute d'un
+            troisième qui voudrait dire quelque chose de plus.
+          */}
+          <SceauIssue issue={payee ? 'reussie' : 'echouee'} />
+
           {/*
             Les quatre statuts de `order_status`, et rien d'inventé :
             `en_attente` est traité plus haut, restent `paye`, `echoue` et
@@ -156,6 +202,33 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
   const moyen: MoyenPaiement | null = estMoyenPaiement(moyenDemande) ? moyenDemande : null;
   const enDefaut = champsEnDefaut(premier(requete['champs']));
   const base = `/${langue}/paiement/${commande.id}`;
+
+  if (estV3()) {
+    return (
+      <PaiementV3
+        langue={langue}
+        commande={commandeAffichee}
+        moyen={moyen}
+        base={base}
+        emailDefaut={appelant.email}
+        enDefaut={enDefaut}
+        /*
+         * Lu du CONTRAT, jamais d'une variable d'environnement relue dans un
+         * composant : le jour où un second prestataire réel se branche, cet
+         * écran n'a pas une liste de noms à tenir à jour.
+         */
+        simule={getPaymentProvider().simule}
+        /*
+         * Les trois actions sont liées ICI, où l'identifiant de la commande est
+         * connu et vérifié. Le composant les reçoit déjà closes : il ne peut
+         * pas régler une autre commande que celle qu'il affiche.
+         */
+        reglerReussi={reglerCommande.bind(null, langue, commande.id, 'reussi')}
+        reglerEchoue={reglerCommande.bind(null, langue, commande.id, 'echoue')}
+        reglerAbandonne={reglerCommande.bind(null, langue, commande.id, 'abandonne')}
+      />
+    );
+  }
 
   return (
     <div className={ecran.pageEtroite}>

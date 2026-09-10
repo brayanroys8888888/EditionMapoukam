@@ -72,6 +72,86 @@ export function RechercheInstantanee({
    */
   const premiereFois = useRef(true);
 
+  /** Le champ, pour que le raccourci clavier puisse l'atteindre. */
+  const champ = useRef<HTMLInputElement | null>(null);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ ⌘K / Ctrl+K AMÈNE AU CHAMP — IL N'OUVRE PAS UNE SECONDE RECHERCHE.  │
+   * │                                                                      │
+   * │ `10-animation-spec.md` demande le raccourci pour une surcouche de    │
+   * │ recherche qui n'existe pas ici : la recherche de ce produit est un   │
+   * │ vrai formulaire, dans la page, et elle marche sans JavaScript. Une   │
+   * │ surcouche en serait une seconde — deux champs, deux états, et le     │
+   * │ risque qu'ils ne disent pas la même chose.                           │
+   * │                                                                      │
+   * │ Le raccourci fait donc ce qu'il promet : il donne le focus, il       │
+   * │ sélectionne ce qui s'y trouve déjà, et il amène le champ à l'écran.  │
+   * │ `preventDefault` retient le raccourci du navigateur, comme le        │
+   * │ dossier l'exige.                                                     │
+   * │                                                                      │
+   * │ Il n'est actif QUE là où le champ existe. Un raccourci global qui    │
+   * │ ne fait rien sur les trois quarts du site est pire qu'aucun.         │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  useEffect(() => {
+    function surTouche(evenement: KeyboardEvent): void {
+      if (evenement.key !== 'k' && evenement.key !== 'K') return;
+      if (!evenement.metaKey && !evenement.ctrlKey) return;
+
+      const cible = champ.current;
+      if (!cible) return;
+
+      evenement.preventDefault();
+      cible.focus();
+      cible.select();
+      cible.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+
+    window.addEventListener('keydown', surTouche);
+    return () => {
+      window.removeEventListener('keydown', surTouche);
+    };
+  }, []);
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LA SOUMISSION CESSE DE RECHARGER LA PAGE — SANS CESSER D'EXISTER.   │
+   * │                                                                      │
+   * │ Le formulaire est un vrai `<form method="get">`, et c'est ce qui le  │
+   * │ rend utilisable sans JavaScript. Mais AVEC JavaScript, la frappe a   │
+   * │ déjà mis les résultats à jour : cliquer « Rechercher » ou presser    │
+   * │ Entrée refaisait alors une navigation COMPLÈTE vers l'adresse où     │
+   * │ l'on se trouve déjà — écran blanc, polices réévaluées, défilement    │
+   * │ remis à zéro, pour aucun résultat nouveau.                           │
+   * │                                                                      │
+   * │ On intercepte donc la soumission et on rejoue le même chemin que la  │
+   * │ frappe. Le formulaire n'est pas modifié : sans JavaScript, cet effet │
+   * │ ne s'exécute jamais et la soumission native reprend son rôle.        │
+   * │                                                                      │
+   * │ L'écouteur est posé sur `champ.current.form` plutôt que par une      │
+   * │ prop `onSubmit` : le `<form>` est rendu par un composant SERVEUR,    │
+   * │ partagé par les trois directions, et lui passer un gestionnaire      │
+   * │ obligerait à le faire basculer côté client tout entier.              │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  useEffect(() => {
+    const formulaire = champ.current?.form;
+    if (!formulaire) return;
+
+    function surSoumission(evenement: SubmitEvent): void {
+      evenement.preventDefault();
+      const cible = champ.current;
+      if (cible) cible.blur();
+      naviguer();
+    }
+
+    formulaire.addEventListener('submit', surSoumission);
+    return () => {
+      formulaire.removeEventListener('submit', surSoumission);
+    };
+  });
+
   /*
    * ┌──────────────────────────────────────────────────────────────────────┐
    * │ LES FILTRES ENTRENT DANS L'EFFET COMME UNE CHAÎNE, JAMAIS COMME UN   │
@@ -88,6 +168,27 @@ export function RechercheInstantanee({
    */
   const filtresSerialises = caches.map(([nom, valeur]) => `${nom}=${valeur}`).join('&');
 
+  /**
+   * Le chemin unique vers les résultats — frappe ET soumission l'empruntent.
+   *
+   * Écrit une fois : deux façons d'atteindre la même liste finiraient par
+   * diverger sur un détail — un filtre reporté ici et pas là, un `scroll`
+   * différent — et la seconde est celle qu'on essaie le moins souvent.
+   */
+  const naviguer = (): void => {
+    const parametres = new URLSearchParams(filtresSerialises);
+
+    const nettoyee = saisie.trim();
+    if (nettoyee) parametres.set('q', nettoyee);
+
+    const requete = parametres.toString();
+    demarrerTransition(() => {
+      // `scroll: false` : on cherche en regardant la grille, et remonter en
+      // haut de page à chaque lettre la ferait disparaître sous les yeux.
+      router.replace(requete ? `${action}?${requete}` : action, { scroll: false });
+    });
+  };
+
   useEffect(() => {
     if (premiereFois.current) {
       premiereFois.current = false;
@@ -95,17 +196,7 @@ export function RechercheInstantanee({
     }
 
     const minuterie = window.setTimeout(() => {
-      const parametres = new URLSearchParams(filtresSerialises);
-
-      const nettoyee = saisie.trim();
-      if (nettoyee) parametres.set('q', nettoyee);
-
-      const requete = parametres.toString();
-      demarrerTransition(() => {
-        // `scroll: false` : on cherche en regardant la grille, et remonter en
-        // haut de page à chaque lettre la ferait disparaître sous les yeux.
-        router.replace(requete ? `${action}?${requete}` : action, { scroll: false });
-      });
+      naviguer();
     }, ATTENTE_MS);
 
     return () => {
@@ -119,6 +210,7 @@ export function RechercheInstantanee({
         {libelle}
       </label>
       <input
+        ref={champ}
         id="catalogue-q"
         name="q"
         type="search"

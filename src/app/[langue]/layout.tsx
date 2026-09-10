@@ -6,13 +6,16 @@ import type { Metadata } from 'next';
 import { LANGUES_INTERFACE, traduire, type LangueInterface } from '@/i18n';
 import { Entete, PiedDePage } from '@/components/enveloppe';
 import { EnteteV2, PiedDePageV2 } from '@/components/enveloppe/v2';
-import { versionDesign } from '@/design/version';
+import { BarreOngletsV3, BarreUtilitaireV3, ReserveOngletsV3 } from '@/components/enveloppe/v3';
+import { estV3, structureRefondue } from '@/design/version';
 import { sorteEnveloppe } from '@/design/enveloppe';
 import { Bulles } from '@/components/v2/bulles';
+import { Toaster } from '@/components/toast';
+import { SynchronisationPanier } from '@/components/panier/synchronisation';
 import { DefilementSousHero } from '@/components/v2/defilement-sous-hero';
 import { apercu } from '@/lib/orders/orders';
 import { formateur, lireDevise } from '@/lib/money/affichage';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import type { Utilisateur } from '@/domain/api/contract';
 import { getServerEnv } from '@/lib/config/env';
 import { getClock } from '@/lib/clock';
@@ -95,7 +98,7 @@ export default async function EnveloppeLangue({
   const chemin = entetes.get('x-chemin') ?? `/${courante}`;
   const requete = entetes.get('x-requete') ?? '';
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: entetes }),
   );
 
@@ -120,7 +123,7 @@ export default async function EnveloppeLangue({
   // │ emporterait toutes les pages du site avec lui.                         │
   // └────────────────────────────────────────────────────────────────────────┘
   const panier = await (async () => {
-    if (!appelant || versionDesign() !== 'v2') return { nombre: 0, affichage: null };
+    if (!appelant || !structureRefondue()) return { nombre: 0, affichage: null };
 
     const vue = await apercu(appelant, { zoneAffichee: 'international' }).catch(() => null);
     if (!vue || vue.total.lignes.length === 0) return { nombre: 0, affichage: null };
@@ -129,7 +132,7 @@ export default async function EnveloppeLangue({
     return { nombre: vue.total.lignes.length, affichage: formater(vue.total.total) };
   })().catch(() => ({ nombre: 0, affichage: null }));
 
-  if (versionDesign() === 'v2') {
+  if (structureRefondue()) {
     const sorte = sorteEnveloppe(chemin);
 
     /*
@@ -162,20 +165,63 @@ export default async function EnveloppeLangue({
       <>
         <Bulles />
 
+        {/*
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ LA BARRE UTILITAIRE N'EXISTE QUE SOUS LA V3.                    │
+         * │                                                                  │
+         * │ Elle porte le commutateur de thème, et la V2 n'a pas de thème    │
+         * │ sombre : lui poser la barre donnerait un bouton qui ne fait      │
+         * │ rien. `themeValide` rend d'ailleurs `null` hors V3 — les deux    │
+         * │ conditions disent la même chose, à deux étages.                  │
+         * └──────────────────────────────────────────────────────────────────┘
+         */}
+        {estV3() ? <BarreUtilitaireV3 langue={courante} chemin={chemin} requete={requete} /> : null}
+
         <EnteteV2
           langue={courante}
           utilisateur={utilisateur}
           chemin={chemin}
           requete={requete}
           panier={panier}
-          pose={sorte === 'transparente'}
+          /*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ SOUS LA V3, L'EN-TÊTE N'EST JAMAIS SUPERPOSÉ.               │
+           * │                                                              │
+           * │ La V2 le pose en `position: fixed` par-dessus le hero. Avec  │
+           * │ une barre utilitaire au-dessus, il la RECOUVRE — le thème et │
+           * │ la langue deviennent invisibles sur l'accueil, c'est-à-dire  │
+           * │ sur l'écran d'arrivée.                                       │
+           * │                                                              │
+           * │ Organic ne superpose pas : `02-layout-responsive.md` décrit   │
+           * │ un en-tête COLLANT et translucide, sous une barre utilitaire  │
+           * │ qui défile. Le hero y est un bandeau de fond doux, pas une    │
+           * │ image pleine que l'en-tête viendrait habiter.                 │
+           * └──────────────────────────────────────────────────────────────┘
+           */
+          pose={!estV3() && sorte === 'transparente'}
         />
 
         {/*
-         * Sur les pages INTÉRIEURES, la vue se place sous le bandeau de tête.
-         * Jamais sur l'accueil : son hero est ce qu'on vient voir.
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ SOUS ORGANIC, LA PAGE NE SAUTE PLUS SOUS SA PROPRE BANNIÈRE.    │
+         * │                                                                  │
+         * │ Sur les pages intérieures de la V2, la vue se plaçait sous le    │
+         * │ bandeau de tête : celui-ci était un aplat vert décoratif portant │
+         * │ un titre redondant, et le passer faisait gagner un écran.        │
+         * │                                                                  │
+         * │ La bannière d'Organic n'est pas ce bandeau-là. Elle porte le fil │
+         * │ d'Ariane, le titre de l'écran, sa description et les deux        │
+         * │ comptes du catalogue — tout ce qui dit OÙ L'ON EST. La sauter    │
+         * │ revient à ouvrir une page déjà défilée de 365 px, mesurés, sans  │
+         * │ que rien n'explique pourquoi le haut manque.                     │
+         * │                                                                  │
+         * │ Le composant reste monté pour la V2, dont la bannière n'a pas    │
+         * │ changé de rôle.                                                  │
+         * └──────────────────────────────────────────────────────────────────┘
          */}
-        {sorte === 'complete' ? <DefilementSousHero cible="[data-banniere]" /> : null}
+        {sorte === 'complete' && !estV3() ? (
+          <DefilementSousHero cible="[data-banniere]" />
+        ) : null}
 
         <main id="contenu">{children}</main>
 
@@ -185,6 +231,33 @@ export default async function EnveloppeLangue({
           requete={requete}
           annee={getClock().now().getFullYear()}
         />
+
+        {/*
+         * La réserve vient APRÈS le pied, et la barre après elle : sur écran
+         * étroit, le dernier élément atteignable doit être le pied de page,
+         * pas la première ligne qu'une barre flottante recouvre.
+         */}
+        {estV3() ? (
+          <>
+            <ReserveOngletsV3 />
+            <BarreOngletsV3 langue={courante} chemin={chemin} panier={panier} />
+          </>
+        ) : null}
+
+        {/*
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ LE TOAST EST MONTÉ UNE FOIS, ET IL VIT DANS L'ENVELOPPE.        │
+         * │                                                                  │
+         * │ Sa région `aria-live` doit exister AVANT le message : un lecteur │
+         * │ d'écran surveille des régions déjà présentes, et n'annonce pas   │
+         * │ une région qui apparaît avec son texte. Le poser dans l'écran    │
+         * │ qui déclenche le message serait donc l'annoncer à personne.      │
+         * └──────────────────────────────────────────────────────────────────┘
+         */}
+        <Toaster langue={courante} />
+
+        {/* Deux onglets ouverts, un seul panier — voir l'encadré du module. */}
+        <SynchronisationPanier />
       </>
     );
   }

@@ -3,7 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { preparerSouscription } from '@/lib/subscriptions/souscription';
 import { lireOffres } from '@/lib/offers/service';
@@ -16,8 +16,16 @@ import {
   ChampsCoordonnees,
   ChoixMoyens,
   FilEtapes,
+  monogramme,
   stylesTunnel as tunnel,
 } from '@/components/tunnel';
+import {
+  CarteTunnelV3,
+  CoquilleTunnelV3,
+  stylesTunnelV3 as t3,
+} from '@/components/v2/tunnel-v3';
+import { MOYENS_PAIEMENT } from '@/domain/payments/moyens';
+import { estV3 } from '@/design/version';
 import ecran from '@/components/ecran/ecran.module.css';
 import { souscrire } from '../actions';
 
@@ -101,7 +109,7 @@ export default async function PageSouscrire({ params, searchParams }: Parametres
     domaineBrut && estDomaineAbonnement(domaineBrut) ? domaineBrut : 'lecture';
   const association = domaine === 'association';
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
   if (!appelant) redirect(`/${langue}/connexion`);
@@ -230,6 +238,107 @@ export default async function PageSouscrire({ params, searchParams }: Parametres
 
   // ── Étape 1 : la formule ────────────────────────────────────────────────
   if (formule === null) {
+    /*
+     * Sous Organic, la souscription prend la coquille du règlement. C'est le
+     * MÊME tunnel : on n'y change pas d'apparence entre le choix d'une formule
+     * et le paiement, sous peine de donner l'impression d'un autre site au
+     * moment précis où l'on s'apprête à payer.
+     */
+    if (estV3()) {
+      return (
+        <CoquilleTunnelV3
+          langue={langue}
+          parcours="abonnement"
+          etape={1}
+          titre={titre}
+          alerte={erreur ? messageErreur(langue, erreur) : null}
+          enfants={
+            <>
+              <p className={t3.recapMention}>
+                {traduire(
+                  langue,
+                  association ? 'souscription.introAssociation' : 'souscription.intro',
+                )}
+              </p>
+
+              {/*
+                AUCUNE FORMULE N'EST INVENTÉE QUAND LA BASE N'EN PORTE PAS.
+
+                L'association naît sans tarif : c'est l'éditeur qui crée ses
+                formules dans `/admin/offres`, et tant qu'il ne l'a pas fait,
+                cet écran le dit au lieu d'afficher une liste vide sous un
+                titre qui promet un choix.
+              */}
+              <CarteTunnelV3
+                titre={traduire(langue, 'souscription.formuleTitre')}
+                enfants={
+                  formules.length === 0 ? (
+                    <p className={t3.recapAttente}>
+                      {traduire(langue, 'souscription.aucuneFormule')}
+                    </p>
+                  ) : (
+                    <ul className={t3.moyens}>
+                      {formules.map((valeur) => (
+                        <li key={valeur.code}>
+                          <a className={t3.moyen} href={avecDomaine({ offre: valeur.code })}>
+                            <span className={t3.moyenSigle} aria-hidden="true">
+                              {monogramme(valeur.libelle)}
+                            </span>
+
+                            <span className={t3.moyenTexte}>
+                              <span className={t3.moyenNom}>{valeur.libelle}</span>
+                              <span className={t3.moyenNote}>
+                                {/*
+                                  Le montant est celui que le SERVEUR a mis en
+                                  forme. Le franc CFA n'a pas de sous-unité :
+                                  recomposer ce nombre ici multiplierait
+                                  l'erreur par cent sur une zone entière.
+                                */}
+                                {valeur.affichage}{' '}
+                                {traduire(langue, 'souscription.parPeriode').replace(
+                                  '{periode}',
+                                  valeur.periode,
+                                )}
+                              </span>
+                            </span>
+
+                            <span className={t3.pastille} aria-hidden="true" />
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  )
+                }
+              />
+
+              {preparation.joursEssai > 0 ? (
+                <p className={t3.recapMention}>
+                  {traduire(langue, 'souscription.essaiNote').replace(
+                    '{jours}',
+                    String(preparation.joursEssai),
+                  )}
+                </p>
+              ) : null}
+
+              <p className={t3.recapMention}>
+                {traduire(langue, 'souscription.sansEngagement')}
+              </p>
+
+              {/*
+                CE QUE L'ABONNEMENT NE DONNE PAS, ÉNONCÉ AVANT DE PAYER.
+
+                L'abonnement de lecture ouvre la LECTURE EN LIGNE, jamais le
+                téléchargement ; l'adhésion, elle, n'ouvre ni l'un ni l'autre.
+                C'est la confusion la plus coûteuse du domaine, et le seul
+                moment où la lire évite une réclamation est celui-ci.
+              */}
+              <p className={t3.recapAttente}>{traduire(langue, rappel)}</p>
+            </>
+          }
+        />
+      );
+    }
+
     return (
       <div className={ecran.pageEtroite}>
         <FilEtapes langue={langue} parcours="abonnement" etape={1} />
@@ -320,6 +429,172 @@ export default async function PageSouscrire({ params, searchParams }: Parametres
   const moyenDemande = premier(requete['moyen']);
   const moyen: MoyenPaiement | null = estMoyenPaiement(moyenDemande) ? moyenDemande : null;
   const enDefaut = champsEnDefaut(premier(requete['champs']));
+
+  /*
+   * ── ÉTAPE 2 SOUS ORGANIC ──────────────────────────────────────────────
+   *
+   * La formule retenue passe dans la colonne de droite, comme le
+   * récapitulatif d'une commande : on doit pouvoir relire ce qu'on souscrit
+   * pendant qu'on saisit ses coordonnées, sans remonter la page.
+   */
+  if (estV3()) {
+    const recapitulatif = (
+      <aside className={t3.recap}>
+        <h2 className={t3.recapTitre}>{traduire(langue, 'souscription.formuleTitre')}</h2>
+
+        <dl className={t3.totaux}>
+          <div className={t3.totalFinal}>
+            <dt>{formule.libelle}</dt>
+            <dd className={t3.totalMontant}>{formule.affichage}</dd>
+          </div>
+        </dl>
+
+        {preparation.joursEssai > 0 ? (
+          <p className={t3.recapMention}>
+            {traduire(langue, 'souscription.essaiNote').replace(
+              '{jours}',
+              String(preparation.joursEssai),
+            )}
+          </p>
+        ) : null}
+
+        {/*
+          Ce que l'abonnement NE donne PAS, relu à l'instant de payer. Voir
+          l'encadré de l'étape 1 : c'est la confusion la plus coûteuse du
+          domaine.
+        */}
+        <p className={t3.recapAttente}>{traduire(langue, rappel)}</p>
+
+        <a className={t3.boutonDiscret} href={avecDomaine()}>
+          {traduire(langue, 'souscription.formuleTitre')}
+        </a>
+      </aside>
+    );
+
+    return (
+      <CoquilleTunnelV3
+        langue={langue}
+        parcours="abonnement"
+        etape={2}
+        titre={titre}
+        alerte={erreur ? messageErreur(langue, erreur) : null}
+        colonne={recapitulatif}
+        enfants={
+          <>
+            <BandeauSimulation langue={langue} />
+
+            {/* ── Le moyen de paiement ──────────────────────────────── */}
+            <CarteTunnelV3
+              titre={traduire(langue, 'moyens.titre')}
+              enfants={
+                <ul className={t3.moyens}>
+                  {MOYENS_PAIEMENT.map((valeur) => {
+                    const nom = traduire(langue, `moyens.${valeur}` as CleTraduction);
+                    const retenu = valeur === moyen;
+
+                    return (
+                      <li key={valeur}>
+                        {/*
+                          DES LIENS, ET NON DES BOUTONS RADIO RÉVÉLANT DES
+                          CHAMPS. Les champs à remplir diffèrent d'un moyen à
+                          l'autre ; les révéler en CSS obligerait à poser les
+                          trois groupes dans le document, donc à envoyer au
+                          serveur les champs des moyens NON choisis. Un lien
+                          qui recharge avec `?moyen=` ne rend que les champs
+                          concernés, et marche sans JavaScript.
+                        */}
+                        <a
+                          className={retenu ? `${t3.moyen} ${t3.moyenRetenu}` : t3.moyen}
+                          href={avecDomaine({ offre: formule.code, moyen: valeur })}
+                          aria-current={retenu ? 'true' : undefined}
+                        >
+                          {/*
+                            Le monogramme est tiré du LIBELLÉ, jamais d'une
+                            table : « Orange Money » donne OM. Une table écrite
+                            à la main afficherait « CB » sur le site anglais, où
+                            ces deux lettres ne veulent rien dire.
+                          */}
+                          <span className={t3.moyenSigle} aria-hidden="true">
+                            {monogramme(nom)}
+                          </span>
+
+                          <span className={t3.moyenTexte}>
+                            <span className={t3.moyenNom}>{nom}</span>
+                            <span className={t3.moyenNote}>
+                              {traduire(langue, `moyens.${valeur}Note` as CleTraduction)}
+                            </span>
+                          </span>
+
+                          <span
+                            className={
+                              retenu ? `${t3.pastille} ${t3.pastillePleine}` : t3.pastille
+                            }
+                            aria-hidden="true"
+                          />
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              }
+            />
+
+            {/* ── Les coordonnées ───────────────────────────────────── */}
+            {moyen === null ? null : (
+              <CarteTunnelV3
+                enfants={
+                  <form action={souscrire.bind(null, langue, 'reussi')}>
+                    <input type="hidden" name="offre" value={formule.code} />
+                    <input type="hidden" name="domaine" value={domaine} />
+                    <input type="hidden" name="moyen" value={moyen} />
+
+                    <ChampsCoordonnees
+                      langue={langue}
+                      moyen={moyen}
+                      emailDefaut={appelant.email}
+                      enDefaut={enDefaut}
+                    />
+
+                    <button type="submit" className={t3.payer}>
+                      {traduire(
+                        langue,
+                        association ? 'souscription.adherer' : 'souscription.souscrire',
+                      )}
+                    </button>
+                  </form>
+                }
+              />
+            )}
+
+            {/* ── La console de simulation ──────────────────────────── */}
+            {moyen === null ? null : (
+              <section className={t3.simulation}>
+                <p className={t3.simulationCorps}>{traduire(langue, 'simulation.corps')}</p>
+
+                <div className={t3.simulationBoutons}>
+                  {/*
+                    Un seul bouton d'échec, et pas d'abandon : un prestataire
+                    dont le PREMIER prélèvement échoue n'envoie rien du tout —
+                    aucun abonnement n'a été créé chez lui. L'abandon d'une
+                    souscription est donc indiscernable de son échec, et lui
+                    donner un second bouton laisserait croire à deux issues
+                    distinctes.
+                  */}
+                  <form action={souscrire.bind(null, langue, 'echoue')}>
+                    <input type="hidden" name="offre" value={formule.code} />
+                    <input type="hidden" name="domaine" value={domaine} />
+                    <button type="submit" className={t3.boutonSecondaire}>
+                      {traduire(langue, 'simulation.echouer')}
+                    </button>
+                  </form>
+                </div>
+              </section>
+            )}
+          </>
+        }
+      />
+    );
+  }
 
   return (
     <div className={ecran.pageEtroite}>

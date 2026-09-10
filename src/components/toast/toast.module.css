@@ -1,0 +1,77 @@
+/*
+ * LE TOAST — bas de l'écran, centré.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ IL SE POSE AU-DESSUS DE LA BARRE D'ONGLETS, PAS DESSUS.                 │
+ * │                                                                          │
+ * │ Sur téléphone, la barre d'onglets occupe les 96 derniers pixels et la    │
+ * │ barre d'achat les 80 d'avant. Un bandeau centré à `bottom: 24px` s'y     │
+ * │ poserait exactement — et masquerait la navigation au moment précis où    │
+ * │ l'on vient d'agir, donc où l'on veut continuer.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.zone {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  /* La zone ne capte rien : seul le bandeau qu'elle porte est cliquable. */
+  pointer-events: none;
+  padding: 0 16px 24px;
+}
+
+@media (max-width: 860px) {
+  .zone {
+    padding-bottom: 118px;
+  }
+}
+
+.toast {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  pointer-events: auto;
+  max-width: min(88vw, 460px);
+  min-height: var(--cible-min);
+  padding: 12px 22px;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: inherit;
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-demi);
+  line-height: 1.35;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: var(--ombre-flottante);
+  animation: monteeToast 0.28s var(--ease, ease);
+}
+
+@keyframes monteeToast {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+/*
+ * Sous `prefers-reduced-motion`, la règle globale des jetons ramène déjà la
+ * durée à 0,01 ms. Elle est répétée ici parce qu'une animation d'ENTRÉE ne
+ * doit pas seulement être raccourcie : elle doit ne pas exister, faute de
+ * quoi le bandeau apparaît décalé d'un seizième de seconde et saute.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

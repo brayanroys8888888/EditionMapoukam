@@ -89,7 +89,7 @@
   font-size: clamp(1.1rem, 1.8vw, 1.7rem);
   font-weight: var(--graisse-forte);
   line-height: 1.1;
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .marqueAuth .sceau {
@@ -342,7 +342,7 @@
 }
 
 :global(:root[data-design='v2']) .marque {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-family: var(--police-titre);
   font-size: clamp(1.05rem, 1.6vw, 1.7rem);
   letter-spacing: -0.03em;
@@ -351,12 +351,12 @@
 :global(:root[data-design='v2']) .logoPetit {
   width: 18px;
   height: 18px;
-  background: var(--v2-ocre);
+  background: var(--action);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
 }
 
 :global(:root[data-design='v2']) .illustrationTexte {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   max-width: 11ch;
 }
 
@@ -391,7 +391,7 @@
   inset: 0 auto auto 0;
   width: 100%;
   height: 5px;
-  background: linear-gradient(90deg, var(--v2-vert) 0%, var(--v2-vert-clair) 35%, var(--v2-ocre) 100%);
+  background: linear-gradient(90deg, var(--chrome) 0%, var(--chrome-clair) 35%, var(--action) 100%);
 }
 
 :global(:root[data-design='v2']) .panneau::after {
@@ -412,7 +412,7 @@
   font-size: clamp(28px, 3.2vw, 36px);
   letter-spacing: -0.025em;
   margin-bottom: var(--espace-3);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 :global(:root[data-design='v2']) .intro {
@@ -420,7 +420,7 @@
   z-index: 1;
   font-size: var(--taille-l);
   line-height: 1.6;
-  color: var(--v2-encre-douce);
+  color: var(--encre-douce);
 }
 
 :global(:root[data-design='v2']) .formulaire {
@@ -444,13 +444,13 @@
 }
 
 :global(:root[data-design='v2']) .liens a {
-  color: var(--v2-vert);
+  color: var(--accent-encre);
   font-weight: var(--graisse-demi);
   text-decoration: none;
 }
 
 :global(:root[data-design='v2']) .liens a:hover {
-  color: var(--v2-vert-clair);
+  color: var(--second-encre);
   text-decoration: underline;
 }
 
@@ -473,7 +473,7 @@
 
 :global(:root[data-design='v2']) .message {
   border-radius: var(--rayon-encart);
-  border-left: 4px solid var(--v2-vert);
+  border-left: 4px solid var(--accent-encre);
 }
 
 :global(:root[data-design='v2']) .messageTexte {
@@ -488,6 +488,117 @@
 }
 
 /*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ V3 — LES DEUX MOITIÉS SE REJOIGNENT EN UN SEUL PANNEAU.                  ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE BLOC CORRIGE UN DÉFAUT QU'AUCUN TEST NE VOYAIT.                      │
+ * │                                                                          │
+ * │ `.illustration` peint son fond avec des `rgba()` écrites en dur — un     │
+ * │ dégradé turquoise, une bordure verte, un motif vert. Le test des jetons  │
+ * │ interdit les hexadécimaux, pas les `rgba()` : ces couleurs-là passaient  │
+ * │ au travers, et elles ne bougent sous AUCUNE direction.                   │
+ * │                                                                          │
+ * │ Résultat sous Organic : un panneau turquoise sur une page crème et       │
+ * │ terre cuite, sur l'écran de CONNEXION — le premier qu'un client voit     │
+ * │ après avoir décidé d'acheter.                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * `03-screens-desktop.md` : « Single panel, grid .95fr 1.05fr, radius 38px,
+ * --shadow-lg, 1px border, overflow: hidden. »
+ */
+
+:global(:root[data-design='v3']) .cadreAuth {
+  /*
+   * L'écart tombe à zéro : les deux moitiés cessent d'être deux cartes
+   * posées côte à côte pour devenir un seul objet coupé en deux. C'est ce
+   * qui fait la promesse de l'écran — le panneau sombre n'est pas une
+   * illustration à côté du formulaire, c'est le même bloc.
+   */
+  gap: 0;
+  align-items: stretch;
+  grid-template-columns: 0.95fr 1.05fr;
+  max-width: 1100px;
+  margin: clamp(24px, 5vw, 64px) auto;
+  /*
+   * Le rembourrage du cadre tombe : il servait à écarter deux cartes l'une
+   * de l'autre. Ici il n'y a plus qu'une carte, et il ne faisait que laisser
+   * voir une bande de crème entre son bord arrondi et le panneau sombre.
+   */
+  padding: 0;
+  min-height: 0;
+  border: 1px solid var(--bordure);
+  border-radius: 38px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--ombre-flottante);
+}
+
+:global(:root[data-design='v3']) .illustration {
+  /*
+   * L'ANNEAU DE FOCUS SUIT L'ENCRE DE CETTE SURFACE.
+   *
+   * `--focus-couleur` vaut l'encre de PAGE, faite pour la crème. Sur un aplat
+   * sombre, elle disparaît : le focus clavier existe, il est simplement
+   * invisible — le pire des deux mondes, puisque rien ne signale la panne.
+   * La variable est héritée, donc la poser sur le conteneur suffit à corriger
+   * tout ce qu'il contient.
+   */
+  --focus-couleur: var(--chrome-encre);
+  height: auto;
+  padding: clamp(28px, 3vw, 44px);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+/*
+ * Le motif rayé cède la place au disque de terre cuite qui déborde du coin.
+ *
+ * C'est le seul ornement d'Organic, et il vaut mieux qu'une trame : une trame
+ * régulière DIT « fond décoratif », un disque qui sort du cadre dit que
+ * quelque chose continue au-delà de l'écran. Sur une page de connexion, c'est
+ * exactement ce qu'on veut promettre.
+ */
+:global(:root[data-design='v3']) .illustration::before {
+  inset: auto -90px -110px auto;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background-image: none;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--action) 42%, transparent),
+    transparent 70%
+  );
+  opacity: 1;
+}
+
+:global(:root[data-design='v3']) .illustrationTexte {
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .contenu {
+  width: 100%;
+  margin-left: 0;
+  padding: clamp(32px, 4vw, 48px) clamp(26px, 3.5vw, 44px);
+  background: var(--surface);
+}
+
+/*
+ * Le panneau étroit — les écrans sans illustration, comme la confirmation
+ * d'inscription — prend la même carte, en plus petit.
+ */
+:global(:root[data-design='v3']) .panneau {
+  background: var(--surface);
+  border-radius: var(--rayon-panneau);
+  box-shadow: var(--ombre-carte);
+}
+
+/*
  * ═══════════════════════════════════════════════════════════════════════════
  * ÉCRAN ÉTROIT — LA RÈGLE QUI DOIT PASSER EN DERNIER
  * ═══════════════════════════════════════════════════════════════════════════
@@ -498,6 +609,8 @@
  * │ La V2 redéclare `.cadreAuth` sous `:root[data-design='v2']`, donc avec   │
  * │ une spécificité supérieure à celle d'une simple classe. Une règle        │
  * │ mobile écrite sur `.cadreAuth` seul perdait contre elle en silence :     │
+ * │ la V3 en fait autant, et pour la même raison — d'où le troisième        │
+ * │ sélecteur, ajouté au lot 8 avec le panneau unique.                       │
  * │ la grille restait à deux colonnes fixes, et rien dans la feuille ne      │
  * │ disait pourquoi. Les deux sélecteurs sont donc nommés, et le bloc est    │
  * │ placé en fin de fichier — après la surcharge, à égalité de spécificité.  │
@@ -505,7 +618,8 @@
  */
 @media (max-width: 760px) {
   .cadreAuth,
-  :global(:root[data-design='v2']) .cadreAuth {
+  :global(:root[data-design='v2']) .cadreAuth,
+  :global(:root[data-design='v3']) .cadreAuth {
     grid-template-columns: 1fr;
     min-height: auto;
     align-items: start;
@@ -520,7 +634,8 @@
    * se trouve.
    */
   .illustration,
-  :global(:root[data-design='v2']) .illustration {
+  :global(:root[data-design='v2']) .illustration,
+  :global(:root[data-design='v3']) .illustration {
     min-height: 0;
     height: auto;
     background: none;
@@ -533,7 +648,981 @@
     display: none;
   }
 
-  .contenu {
+  /*
+   * Le disque de terre cuite disparaît avec le panneau qui le portait : sans
+   * fond sombre pour le contenir, il ne serait plus qu'une tache orange au
+   * coin d'une page crème.
+   */
+  :global(:root[data-design='v3']) .illustration::before {
+    display: none;
+  }
+
+  .contenu,
+  :global(:root[data-design='v3']) .contenu {
     margin-left: 0;
+    padding-inline: 0;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * V3 — LES PIÈCES QU'ORGANIC AJOUTE À L'AUTHENTIFICATION.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Cotes du prototype de bureau, lignes 1276 à 1337. Le CADRE lui-même — la
+ * grille .95fr 1.05fr, le rayon de 38 px, l'ombre — est posé plus haut dans
+ * ce fichier depuis le lot 8 ; ce bloc-ci ne porte que ce que le lot 8 avait
+ * laissé de côté : le contenu du panneau de gauche, la bascule, l'œil du mot
+ * de passe, la rangée d'options et la note.
+ *
+ * Chaque classe porte une déclaration LOCALE avant sa règle V3 : un module
+ * CSS n'exporte que ce qu'il déclare localement, et `styles.x` vaudrait
+ * `undefined` sinon. `tests/unit/classes-css.test.ts` le vérifie.
+ */
+
+/* ── Le panneau de promesse ─────────────────────────────────────────────── */
+
+.promesseTitre,
+.promesseTexte,
+.preuves,
+.preuve,
+.preuveCoche {
+  margin: 0;
+}
+
+/*
+ * `clamp(28px, 3vw, 40px)` et `line-height: 1.08` — c'est un titre par le
+ * dessin, un paragraphe par le rôle. Voir l'encadré de `PanneauPromesse` :
+ * un `<h2>` posé AVANT le `<h1>` du formulaire ferait commencer la liste des
+ * titres de la page par une promesse commerciale.
+ */
+:global(:root[data-design='v3']) .promesseTitre {
+  position: relative;
+  margin: 0 0 16px;
+  font-family: var(--police-titre);
+  font-size: clamp(28px, 3vw, 40px);
+  font-weight: var(--graisse-normale);
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+}
+
+:global(:root[data-design='v3']) .promesseTexte {
+  position: relative;
+  margin: 0 0 32px;
+  font-size: 16.5px;
+  line-height: 1.65;
+  color: var(--chrome-encre);
+  opacity: 0.8;
+}
+
+/*
+ * `margin-top: auto` colle les trois preuves au BAS du panneau.
+ *
+ * C'est ce qui fait tenir la colonne sombre quelle que soit la hauteur du
+ * formulaire d'en face : la promesse reste en haut, les engagements en bas,
+ * et l'espace qui varie est celui du milieu — jamais celui qui sépare deux
+ * lignes de preuve.
+ */
+:global(:root[data-design='v3']) .preuves {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: auto 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+:global(:root[data-design='v3']) .preuve {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--chrome-encre);
+  opacity: 0.86;
+}
+
+/*
+ * La coche est terre cuite sur l'olive, et `flex: none` la garde carrée : sans
+ * cela une ligne de deux lignes l'étirerait, et les trois coches n'auraient
+ * pas la même taille.
+ */
+:global(:root[data-design='v3']) .preuveCoche {
+  flex: none;
+  margin-top: 4px;
+  color: var(--accent-sur-chrome, var(--action));
+}
+
+/* ── La bascule connexion / inscription ─────────────────────────────────── */
+
+.bascule,
+.onglet,
+.ongletActif {
+  display: block;
+}
+
+/*
+ * La piste : fond doux, rayon plein, 5 px de rembourrage, 340 px au plus.
+ * Le plafond compte — sans lui, deux pastilles de trois mots s'étirent sur
+ * toute la colonne et cessent de se lire comme un contrôle.
+ */
+:global(:root[data-design='v3']) .bascule {
+  display: flex;
+  max-width: 340px;
+  margin: 0 0 32px;
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--fond-doux);
+}
+
+:global(:root[data-design='v3']) .onglet {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  font-family: var(--police-titre);
+  font-size: 14.5px;
+  font-weight: var(--graisse-normale);
+  line-height: normal;
+  text-align: center;
+  color: var(--encre-douce);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+:global(:root[data-design='v3']) .onglet:hover {
+  color: var(--encre);
+}
+
+/*
+ * L'onglet actif prend la CARTE, pas l'accent.
+ *
+ * `05-components.md` : « Active = --card + shadow inside a --ground-2 track ».
+ * Le peindre en terre cuite en ferait un bouton d'appel — or il ne mène nulle
+ * part : c'est la page où l'on est déjà.
+ */
+:global(:root[data-design='v3']) .onglet.ongletActif,
+:global(:root[data-design='v3']) .onglet.ongletActif:hover {
+  background: var(--surface);
+  color: var(--encre);
+  box-shadow: var(--ombre-s);
+}
+
+/* ── L'œil du mot de passe ──────────────────────────────────────────────── */
+
+.champMotDePasse,
+.oeil {
+  position: relative;
+}
+
+:global(:root[data-design='v3']) .champMotDePasse {
+  position: relative;
+}
+
+/*
+ * Le bouton est posé sur le CHAMP, pas à côté.
+ *
+ * Le décalage vertical se compte depuis le bas : l'étiquette au-dessus du
+ * champ n'a pas la même hauteur d'une langue à l'autre, et centrer sur le
+ * conteneur entier ferait descendre l'œil sous le champ en anglais. En
+ * partant du bas, il reste dans le champ quelle que soit l'étiquette.
+ */
+:global(:root[data-design='v3']) .oeil {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--encre-douce);
+  cursor: pointer;
+  transition: color var(--transition-couleur);
+}
+
+:global(:root[data-design='v3']) .oeil:hover {
+  color: var(--encre);
+}
+
+/*
+ * Le champ lui-même réserve la place de l'œil, à droite.
+ *
+ * Sans ce rembourrage, un mot de passe long passe SOUS le bouton : on ne voit
+ * plus ce qu'on tape au moment précis où l'on vient de demander à le voir.
+ */
+:global(:root[data-design='v3']) .champMotDePasse input {
+  padding-right: 54px;
+}
+
+/* ── La rangée d'options, sous les champs ───────────────────────────────── */
+
+.rangeeOptions,
+.lienOubli,
+.caseConditions {
+  display: block;
+}
+
+:global(:root[data-design='v3']) .rangeeOptions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+/*
+ * Le lien d'oubli est SOULIGNÉ, et il l'est en permanence.
+ *
+ * C'est le seul lien du formulaire ; sans soulignement, un texte terre cuite
+ * au milieu de champs gris ressemble à une mention plutôt qu'à une porte.
+ * `text-underline-offset: 3px` est la valeur du prototype.
+ */
+:global(:root[data-design='v3']) .lienOubli {
+  margin-left: auto;
+  font-size: 14.5px;
+  color: var(--action-texte);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+:global(:root[data-design='v3']) .caseConditions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14.5px;
+  color: var(--encre-douce);
+  cursor: pointer;
+}
+
+/*
+ * `accent-color` plutôt qu'une case redessinée.
+ *
+ * Une case à cocher refaite en CSS perd l'indicateur d'état natif que les
+ * technologies d'assistance et les modes de contraste élevé savent lire.
+ * `accent-color` ne change que la teinte du coche, et c'est tout ce que le
+ * prototype demande.
+ */
+:global(:root[data-design='v3']) .caseConditions input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--action);
+}
+
+:global(:root[data-design='v3']) .caseConditions a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── La note de bas de formulaire ───────────────────────────────────────── */
+
+.note {
+  margin: 0;
+}
+
+:global(:root[data-design='v3']) .note {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+/* ── Les cotes que le lot 8 n'avait pas posées ──────────────────────────── */
+
+/*
+ * Le prototype écrit `padding: 48px 44px` des deux côtés, et un rembourrage
+ * de page de `52px 28px 96px`. Le lot 8 avait mis des `clamp()` : ils
+ * tiennent l'écran étroit, mais aucun n'atteint la cote au-delà de 1100 px,
+ * et le panneau était donc de quatre pixels trop serré partout.
+ */
+@media (min-width: 1100px) {
+  :global(:root[data-design='v3']) .illustration,
+  :global(:root[data-design='v3']) .contenu {
+    padding: 48px 44px;
+  }
+}
+
+:global(:root[data-design='v3']) .titre {
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: var(--graisse-normale);
+  line-height: 1.08;
+  margin: 0 0 8px;
+}
+
+:global(:root[data-design='v3']) .intro {
+  margin: 0 0 30px;
+  font-size: 15.5px;
+  color: var(--encre-douce);
+}
+
+/*
+ * Les champs : 18 px d'écart, 460 px au plus.
+ *
+ * Le plafond n'est pas une coquetterie — au-delà, une adresse de vingt
+ * caractères flotte au milieu d'un champ de six cents pixels, et l'œil ne
+ * sait plus où commence la saisie.
+ */
+:global(:root[data-design='v3']) .formulaire {
+  gap: 18px;
+  max-width: 460px;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * V3 — CE QUE LE RELEVÉ A MESURÉ, ET QUI NE CONCORDAIT PAS.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * `node scripts/releve-v3.mjs auth` compare vingt-trois sondes de l'écran de
+ * connexion à celles du prototype de bureau (lignes 1276 à 1337). Le bloc
+ * précédent avait POSÉ des cotes d'après la lecture du prototype ; celui-ci
+ * corrige ce que la MESURE a démenti. Les valeurs ci-dessous ne sont donc pas
+ * relues, elles sont relevées.
+ *
+ * Trois écarts sont ASSUMÉS et ne seront jamais rattrapés — ils sont
+ * expliqués à l'endroit où ils se produisent :
+ *   · la teinte du lien d'oubli (`--action-texte`) ;
+ *   · l'encre du bouton d'envoi ;
+ *   · la hauteur de cible des onglets de bascule.
+ */
+
+/* ── Le cadre : la page, pas la carte ───────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 1184 PIXELS, ET LA RAISON POUR LAQUELLE CE N'EST PAS 1100.              │
+ * │                                                                          │
+ * │ Le prototype pose `max-width: 1240px` avec `padding: 52px 28px 96px` :   │
+ * │ la carte occupe donc 1240 − 56 = 1184 px, et commence à 128 px du bord   │
+ * │ sur un écran de 1440. Le lot 8 avait retenu 1100 px — la carte était     │
+ * │ 84 px trop étroite, et CHAQUE cote intérieure en héritait : le panneau,  │
+ * │ la colonne, la largeur du texte de promesse, qui passait de deux lignes  │
+ * │ à trois.                                                                 │
+ * │                                                                          │
+ * │ `min(1184px, 100% - 56px)` reproduit les deux régimes d'un seul trait :  │
+ * │ au-delà de 1240 px de fenêtre la carte est fixe à 1184, en deçà elle     │
+ * │ garde les 28 px de gouttière du prototype.                               │
+ * │                                                                          │
+ * │ Les marges verticales suivent le même rembourrage — 52 px en haut,       │
+ * │ 96 px en bas — mais restent en `clamp()` : le prototype ne dessine que   │
+ * │ le bureau, et 52 px de blanc au-dessus d'un formulaire de téléphone      │
+ * │ repousseraient les champs sous la ligne de flottaison.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .cadreAuth {
+  max-width: min(1184px, 100% - 56px);
+  margin: clamp(24px, 5vw, 52px) auto clamp(32px, 7vw, 96px);
+
+  /*
+   * Le cadre ne PEINT plus : les deux colonnes le couvrent entièrement, et le
+   * prototype laisse ce div transparent. Ce n'est pas cosmétique — le fond
+   * dépassait d'un demi-pixel sous les angles arrondis, en un liseré crème
+   * que l'on prenait pour un défaut d'anticrénelage.
+   */
+  background: transparent;
+
+  /*
+   * `--ombre-l` EST le `--shadow-lg` du dossier, à l'octet près
+   * (`01-design-tokens.md` : `0 12px 32px color-mix(in srgb, 2e2b25 (hex) 22%,
+   * transparent)`). `--ombre-flottante`, elle, est un jeton hérité de la V2 —
+   * `0 12px 30px rgb(20 16 8 / 28%)` : deux pixels plus courte, plus dense et
+   * plus froide. Les trois échelons d'Organic existent déjà dans
+   * `tokens.css` ; il suffisait de nommer le bon.
+   */
+  box-shadow: var(--ombre-l);
+}
+
+/* ── La marque, en tête du panneau sombre ───────────────────────────────── */
+
+/*
+ * Le prototype dessine un disque de 44 px, 12 px d'écart au nom, le nom en
+ * Caprasimo 19 px, et 38 px de blanc sous la rangée. Le sceau était rendu à
+ * 32 px — la rangée mesurait 36 px de haut au lieu de 44, et tout le panneau
+ * remontait d'autant.
+ *
+ * Le sceau se désigne par `> span:first-child` et NON par sa classe : elle
+ * appartient à `marque.module.css`, et un module CSS ne peut pas nommer la
+ * classe d'un autre — écrite ici, `.sceau` deviendrait une classe locale de
+ * ce fichier-ci, hachée autrement, qui ne correspondrait à rien.
+ */
+:global(:root[data-design='v3']) .marqueAuth {
+  gap: 12px;
+  min-height: 44px;
+  margin: 0 0 38px;
+  font-size: 19px;
+  font-weight: var(--graisse-normale);
+  letter-spacing: normal;
+}
+
+:global(:root[data-design='v3']) .marqueAuth > span:first-child {
+  width: 44px;
+  height: 44px;
+}
+
+/* ── La bascule ─────────────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ONGLET ACTIF EST OLIVE PROFOND, ET NON LA CARTE.                      │
+ * │                                                                          │
+ * │ Le bloc précédent citait `05-components.md` — « Active = --card + shadow │
+ * │ inside a --ground-2 track » — et en tirait une pastille crème ombrée.    │
+ * │ Le prototype de bureau écrit l'inverse, et c'est lui qui fait foi        │
+ * │ (`docs/REFONTE-V3.md` §2) :                                              │
+ * │                                                                          │
+ * │   background: (authMode === t[0] ? 'var(--deep)' : 'transparent')        │
+ * │   color:      (authMode === t[0] ? 'var(--onDeep)' : 'var(--muted)')     │
+ * │                                                                          │
+ * │ — ligne 2198 du prototype. Mesuré : rgb(39, 46, 27) sur rgb(242, 234,    │
+ * │ 217), soit exactement `--chrome` et `--chrome-encre`. Le document décrit │
+ * │ la bascule GÉNÉRIQUE du système ; l'écran d'authentification, lui, la    │
+ * │ peint en sombre, et sans ombre.                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .onglet.ongletActif,
+:global(:root[data-design='v3']) .onglet.ongletActif:hover {
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  box-shadow: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ÉCART ASSUMÉ — LA CIBLE DE 44 PX TOMBE À 38.                           │
+ * │                                                                          │
+ * │ Le prototype pose `padding: 11px 16px` sans hauteur minimale : l'onglet  │
+ * │ mesure 38 px. Le bloc précédent avait imposé `min-height: 44px`, ce qui  │
+ * │ épaississait la piste de 48 à 54 px et décalait vers le bas tout ce qui  │
+ * │ suit dans la colonne.                                                    │
+ * │                                                                          │
+ * │ 44 px est la cible confortable de WCAG 2.5.5 — critère de niveau AAA.    │
+ * │ L'objectif du cahier des charges §5.3 est AA, et la version 2.1 ne fixe  │
+ * │ AUCUN minimum de cible à ce niveau : descendre à 38 px ne fait donc      │
+ * │ manquer aucun critère. C'est néanmoins un confort perdu, et il est écrit │
+ * │ ici pour qu'on sache que la cote a été choisie, et non subie.            │
+ * │                                                                          │
+ * │ Ces deux onglets sont par ailleurs des LIENS vers deux pages, doublés    │
+ * │ par le titre de l'écran : les rater ne fait pas perdre de saisie.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .onglet {
+  min-height: 0;
+  padding: 11px 16px;
+}
+
+/* ── Le titre de la colonne ─────────────────────────────────────────────── */
+
+/*
+ * −0,015 em, la même approche que la promesse d'en face — mesuré −0,57 px sur
+ * les 38 px du prototype. La valeur héritée, −0,01 em, laissait le titre
+ * 0,19 px plus large par caractère : invisible sur un mot, sensible sur une
+ * ligne entière.
+ */
+:global(:root[data-design='v3']) .titre {
+  letter-spacing: -0.015em;
+}
+
+/* ── Les champs ─────────────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES CHAMPS D'ORGANIC NE SONT PAS LES CHAMPS DE BASE.                    │
+ * │                                                                          │
+ * │ `base.module.css` dessine un contrôle de 44 px à rayon plein, bordure    │
+ * │ 1,5 px, fond `--fond`. Le prototype d'authentification en dessine un     │
+ * │ autre : 56,8 px de haut, rayon 18, bordure 1 px, fond `--ground-2`.      │
+ * │                                                                          │
+ * │ Le fond mérite un mot : `--ground-2` vaut efe3cd (hex), c'est-à-dire notre    │
+ * │ `--fond-doux` — celui de la piste de la bascule, qui concordait déjà.    │
+ * │ Les champs, eux, prenaient `--fond` (f5ead8 en hex), d'un ton trop clair : sur │
+ * │ la carte crème ils cessaient de se creuser.                              │
+ * │                                                                          │
+ * │ Rien de tout ceci ne remonte dans `base.module.css` : ces cotes sont     │
+ * │ celles d'UN écran, et les y poser les imposerait à tous les formulaires  │
+ * │ du site.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .formulaire input {
+  min-height: 0;
+  padding: 15px 18px;
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure);
+  border-radius: 18px;
+  /*
+   * 15,5 px est la cote du prototype. `base.module.css` tient 16 px parce
+   * qu'en deçà Safari iOS zoome au focus — la raison vaut toujours, et elle
+   * vaut sur le public de ce site. L'écart est ici RÉDUIT À L'ÉCRAN LARGE :
+   * la règle est reprise à 16 px sous 1100 px, plus bas dans ce fichier.
+   */
+  font-size: 15.5px;
+}
+
+/*
+ * L'étiquette : 12,5 px, graisse normale, encre douce, 7 px de blanc sous
+ * elle. Elle était rendue à 15 px en gras et en encre pleine — elle pesait
+ * plus lourd que la valeur qu'elle annonce.
+ */
+/*
+ * `:not(.caseConditions)` n'est pas une precaution : c'est une CORRECTION.
+ *
+ * La case des conditions est elle aussi un `<label>` dans ce formulaire, et
+ * sa regle propre — 14,5 px — perdait contre celle-ci, plus specifique d'un
+ * selecteur de type. L'inscription rendait donc sa ligne de consentement en
+ * 12,5 px : le seul texte de l'ecran qu'on demande a LIRE avant de cocher
+ * etait devenu le plus petit.
+ */
+:global(:root[data-design='v3']) .formulaire label:not(.caseConditions) {
+  font-size: 12.5px;
+  font-weight: var(--graisse-normale);
+  line-height: 20px;
+  color: var(--encre-douce);
+}
+
+/*
+ * L'écart étiquette / champ, porté par le conteneur de `Champ`.
+ *
+ * `.rangeeOptions` est exclue nommément : c'est le seul autre `div` du
+ * formulaire, et son écart de 16 px lui appartient.
+ */
+:global(:root[data-design='v3']) .formulaire div:not(.rangeeOptions) {
+  gap: 7px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ŒIL SE CENTRE SUR LE CHAMP — 9,4 PX, ET VOICI D'OÙ ILS VIENNENT.     │
+ * │                                                                          │
+ * │ Le prototype centre le bouton dans le champ (`top: 50%` + translation).  │
+ * │ Ici la boîte de référence n'est pas le champ mais son enveloppe, qui     │
+ * │ porte AUSSI l'étiquette : un centrage vertical descendrait l'œil sous le │
+ * │ champ dès que l'étiquette passe à deux lignes — ce qui arrive en anglais.│
+ * │                                                                          │
+ * │ On mesure donc depuis le BAS, qui est le bas du champ dans les deux cas. │
+ * │ Le champ fait 15 + 24,8 + 15 + 2 = 56,8 px, l'œil 38 : il reste          │
+ * │ (56,8 − 38) / 2 = 9,4 px de part et d'autre. La valeur de 8 px héritée   │
+ * │ posait l'œil 1,4 px trop bas.                                            │
+ * │                                                                          │
+ * │ Cette cote dépend donc de la hauteur du champ juste au-dessus : qui      │
+ * │ change l'un change l'autre.                                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .oeil {
+  bottom: 9.4px;
+}
+
+/*
+ * La rangée d'options garde les 24 px du prototype.
+ *
+ * Elle les tenait de la case « Rester connecté », que nous ne reproduisons
+ * pas (voir l'encadré de `index.tsx`). Sans elle, le seul lien d'oubli ne
+ * fait plus que 23,2 px, et tout ce qui suit remonte de huit dixièmes de
+ * pixel. Le refus de la case ne doit pas coûter le rythme de la colonne.
+ */
+:global(:root[data-design='v3']) .rangeeOptions {
+  min-height: 24px;
+}
+
+/* ── Le bouton d'envoi ──────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE BOUTON PRIMAIRE D'ORGANIC, POSÉ ICI SEULEMENT.                       │
+ * │                                                                          │
+ * │ `base.module.css` ne porte AUCUNE règle V3 : sous Organic, le bouton     │
+ * │ primaire garde donc le dessin de la V2 — rayon 11 px, bordure de 2 px,   │
+ * │ Figtree en gras — alors que la direction pose `--rayon-bouton: 999px` et │
+ * │ écrit ses appels en Caprasimo. C'est un manque qui dépasse cet écran :   │
+ * │ il touche tous les boutons du site, et il appartient à qui tient les     │
+ * │ composants de base. Le rattraper ici, pour le seul formulaire            │
+ * │ d'authentification, est délibérément étroit.                             │
+ * │                                                                          │
+ * │ ÉCART ASSUMÉ — l'encre reste `--action-encre` (l'encre sombre) là où le  │
+ * │ prototype écrit le blanc pur. Le blanc sur la terre cuite ne vaut que  │
+ * │ 3,4:1, sous les 4,5:1 qu'exige WCAG 1.4.3 pour un texte de 16,5 px non   │
+ * │ gras ; l'encre sombre passe à 6,2:1. `tokens.css` porte déjà ce choix    │
+ * │ pour tout le site, et le défaire ici le défairait pour l'action la plus  │
+ * │ importante de l'écran.                                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .formulaire button[type='submit'] {
+  min-height: 0;
+  padding: 17px;
+  border: 0;
+  border-radius: 999px;
+  font-family: var(--police-titre);
+  font-size: 16.5px;
+  font-weight: var(--graisse-normale);
+  box-shadow: var(--ombre-m);
+}
+
+/* ── Sous 1100 px : ce que le prototype de bureau ne dit pas ────────────── */
+
+/*
+ * Le prototype de bureau s'arrête au bureau. Deux cotes reprennent donc leur
+ * valeur de base sur les écrans étroits, et la mesure de l'auth mobile se
+ * fait contre le prototype MOBILE, qui dessine un autre écran.
+ *
+ * Les 16 px du champ sont la raison d'être de cette reprise : sous ce seuil,
+ * Safari iOS zoome au focus et déplace le formulaire sous le doigt.
+ */
+@media (max-width: 1099px) {
+  :global(:root[data-design='v3']) .formulaire input {
+    font-size: var(--taille-l);
+  }
+}
+
+/* ── Les trois cotes que la passe précédente avait déplacées ────────────── */
+
+/*
+ * La place de l'œil, RENDUE au champ de mot de passe.
+ *
+ * La règle générale `.formulaire input` ci-dessus réécrit `padding` en entier,
+ * et elle passe APRÈS `.champMotDePasse input` : le rembourrage droit de
+ * 54 px disparaissait, et un mot de passe long repassait sous le bouton. La
+ * reprise est donc écrite ici, après la règle qui l'avait effacée.
+ */
+:global(:root[data-design='v3']) .champMotDePasse input {
+  padding-right: 54px;
+}
+
+/*
+ * L'interligne du bouton d'envoi.
+ *
+ * Le prototype laisse `line-height: normal` — la valeur propre d'un `button`.
+ * Le nôtre héritait l'interligne de corps de 1,6, soit 26,4 px sur 16,5 : le
+ * bouton mesurait 60,4 px au lieu de 53, et les 7,4 px de différence
+ * repoussaient vers le bas la note, la carte, le panneau et la colonne — un
+ * seul interligne déréglait la hauteur de tout l'écran.
+ *
+ * `gap` suit la même logique : le bouton ne porte qu'un mot, et l'écart de
+ * 8 px hérité de `base.module.css` sert aux boutons à icône.
+ */
+:global(:root[data-design='v3']) .formulaire button[type='submit'] {
+  line-height: normal;
+  gap: normal;
+}
+
+/*
+ * La coche des preuves prend la terre cuite du prototype.
+ *
+ * Elle était peinte en `--accent-sur-chrome`, la terre cuite
+ * ÉCLAIRCIE du thème sombre. Le prototype écrit `stroke="var(--terra)"`,
+ * c'est-à-dire `--action` — mesuré 3,24:1 sur l'olive profond, au-dessus des
+ * 3:1 qu'exige WCAG 1.4.11 pour un élément non textuel. La version éclaircie
+ * ne corrigeait donc aucun défaut de contraste : elle en inventait un ton.
+ */
+:global(:root[data-design='v3']) .preuveCoche {
+  color: var(--action);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * V3 — L'AUTHENTIFICATION SUR TÉLÉPHONE, QUI EST UN AUTRE DESSIN.
+ * ══════════════════════════════════════════════════════════════════════════
+ *
+ * Relevé : `node scripts/releve-v3.mjs auth-mobile`, contre le prototype
+ * MOBILE (lignes 470 à 521), à 390 px.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PAS L'ÉCRAN DE BUREAU RÉTRÉCI, ET C'EST LE POINT.              │
+ * │                                                                          │
+ * │ Le prototype mobile REDESSINE l'authentification, il ne la comprime pas :│
+ * │                                                                          │
+ * │  · la carte à deux colonnes disparaît ; il reste une carte SOMBRE de     │
+ * │    promesse, posée au-dessus d'un formulaire à même la page ;            │
+ * │  · les trois preuves et le logo quittent le panneau, remplacés par un    │
+ * │    sur-titre en petites capitales ;                                      │
+ * │  · les champs passent sur la CARTE (`--surface`) et non sur le fond doux;│
+ * │  · l'onglet actif redevient clair et ombré — l'exact inverse du bureau,  │
+ * │    où il est olive profond. Les deux sont mesurés, les deux sont voulus. │
+ * │                                                                          │
+ * │ Le seuil est celui qui existait déjà dans ce fichier : 760 px.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  /*
+   * La page : 18 px de gouttière, contre les 28 px du bureau.
+   * Le cadre perd sa carte — bordure, rayon, ombre : sur téléphone il n'y a
+   * plus d'objet à découper, seulement une carte sombre et un formulaire.
+   */
+  :global(:root[data-design='v3']) .cadreAuth {
+    max-width: min(1184px, 100% - 36px);
+    margin: 18px auto 10px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  :global(:root[data-design='v3']) .contenu {
+    padding: 0;
+    background: transparent;
+  }
+
+  /* La carte sombre de promesse. */
+  :global(:root[data-design='v3']) .illustration {
+    padding: 22px 20px;
+    border: 0;
+    border-radius: 28px;
+    background: var(--chrome);
+    color: var(--chrome-encre);
+    box-shadow: none;
+  }
+
+  /*
+   * Le logo et les trois preuves quittent l'écran étroit.
+   *
+   * Ce n'est pas un repli faute de place : le prototype mobile ne les dessine
+   * pas. La marque est déjà dans l'en-tête du site — que ces écrans reçoivent
+   * en entier sous Organic — et trois engagements empilés au-dessus d'un
+   * formulaire repousseraient le premier champ hors de l'écran.
+   */
+  :global(:root[data-design='v3']) .marqueAuth,
+  :global(:root[data-design='v3']) .preuves {
+    display: none;
+  }
+
+  :global(:root[data-design='v3']) .promesseSurTitre {
+    margin: 0;
+    font-size: 10.5px;
+    line-height: normal;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.72;
+  }
+
+  :global(:root[data-design='v3']) .promesseTitre {
+    margin: 10px 0 8px;
+    font-size: 23px;
+    line-height: 1.15;
+    letter-spacing: normal;
+  }
+
+  :global(:root[data-design='v3']) .promesseTexte {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.82;
+  }
+
+  /* ── La bascule ─────────────────────────────────────────────────────── */
+
+  :global(:root[data-design='v3']) .bascule {
+    max-width: none;
+    margin: 20px 0 22px;
+  }
+
+  :global(:root[data-design='v3']) .onglet {
+    padding: 13px 14px;
+    line-height: normal;
+  }
+
+  /*
+   * L'onglet actif REPREND la carte et son ombre.
+   *
+   * Le bureau le peint en olive profond (voir plus haut, et la ligne 2198 du
+   * prototype de bureau) ; le prototype mobile écrit `var(--card)` avec
+   * `--shadow-sm`, ligne 962. Deux prototypes, deux dessins : la règle de
+   * bureau est donc REPRISE ici, et non étendue.
+   */
+  :global(:root[data-design='v3']) .onglet.ongletActif,
+  :global(:root[data-design='v3']) .onglet.ongletActif:hover {
+    background: var(--surface);
+    color: var(--encre);
+    box-shadow: var(--ombre-s);
+  }
+
+  /* ── Le formulaire ──────────────────────────────────────────────────── */
+
+  :global(:root[data-design='v3']) .titre {
+    font-size: 26px;
+    line-height: 1.12;
+  }
+
+  :global(:root[data-design='v3']) .intro {
+    margin: 0 0 22px;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+
+  :global(:root[data-design='v3']) .formulaire {
+    gap: 14px;
+    max-width: none;
+  }
+
+  /*
+   * `:not(.caseConditions)` doit etre REPETE ici : la regle de bureau porte
+   * ce selecteur, donc une classe de plus, et un simple `.formulaire label`
+   * lui cederait — l'etiquette gardait ses 20 px de bureau au lieu des
+   * 19,375 du prototype mobile.
+   */
+  :global(:root[data-design='v3']) .formulaire label:not(.caseConditions) {
+    line-height: 1.55;
+  }
+
+  /*
+   * Les champs passent sur la CARTE.
+   *
+   * Sur le bureau ils sont creusés dans la carte crème, en `--fond-doux` ;
+   * ici il n'y a plus de carte sous eux — ils sont posés à même le fond de
+   * page, et c'est le champ qui doit s'élever. Le prototype mobile écrit
+   * `background: var(--card)` : la profondeur change de sens quand le support
+   * change.
+   */
+  :global(:root[data-design='v3']) .formulaire input {
+    background: var(--surface);
+    line-height: 1.55;
+  }
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ ÉCART CONNU — L'ŒIL RESTE POSÉ SUR LE CHAMP, IL N'EST PAS DANS UNE    │
+   * │ RANGÉE.                                                                │
+   * │                                                                        │
+   * │ Le prototype mobile change la STRUCTURE du champ de mot de passe : la  │
+   * │ bordure passe sur une enveloppe en `display:flex`, le champ y devient  │
+   * │ `flex:1` et le bouton un frère de 44 px, hors du champ. Ici l'œil      │
+   * │ reste posé EN ABSOLU sur le champ, comme sur le bureau.                │
+   * │                                                                        │
+   * │ La cible passe tout de même à 44 px, et le rembourrage droit suit. Ce  │
+   * │ qui reste en écart est la largeur relevée du champ — 302 px contre     │
+   * │ 354 : le prototype rétrécit le champ, nous le laissons entier et lui   │
+   * │ réservons la place par le rembourrage. Le texte s'arrête au même       │
+   * │ pixel ; c'est la boîte qui diffère.                                    │
+   * │                                                                        │
+   * │ Aligner les deux demanderait de redécouper `ChampMotDePasse` pour le   │
+   * │ seul téléphone, donc de faire dépendre le balisage de la largeur —     │
+   * │ exactement ce que le sur-titre évite plus haut.                        │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  :global(:root[data-design='v3']) .oeil {
+    width: 44px;
+    height: 44px;
+    right: 6px;
+    bottom: 6px;
+  }
+
+  :global(:root[data-design='v3']) .champMotDePasse input {
+    padding-right: 56px;
+  }
+
+  /* ── Le bas du formulaire ───────────────────────────────────────────── */
+
+  :global(:root[data-design='v3']) .rangeeOptions {
+    min-height: 50px;
+    padding: 2px 0 4px;
+    gap: 14px;
+  }
+
+  /*
+   * Le lien d'oubli prend 44 px de haut : sur téléphone il est visé au doigt,
+   * et c'est le seul lien du formulaire.
+   */
+  :global(:root[data-design='v3']) .lienOubli {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  :global(:root[data-design='v3']) .formulaire button[type='submit'] {
+    font-size: 16px;
+    box-shadow: none;
+  }
+
+  :global(:root[data-design='v3']) .note {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    line-height: 1.6;
+  }
+}
+
+/*
+ * Le sur-titre n'existe QUE sur téléphone : au-delà de 760 px, la promesse
+ * est annoncée par la marque et par les trois preuves.
+ *
+ * La déclaration locale ci-dessous est ce qui fait exister `styles
+ * .promesseSurTitre` — sans elle, un module CSS n'exporte rien et le DOM
+ * recevrait la chaîne « undefined » comme nom de classe
+ * (`tests/unit/classes-css.test.ts`).
+ */
+.promesseSurTitre {
+  margin: 0;
+}
+
+@media (min-width: 761px) {
+  .promesseSurTitre {
+    display: none;
+  }
+}
+
+/* ── Les quatre cotes que le relevé mobile a démenties ──────────────────── */
+
+@media (max-width: 760px) {
+  /*
+   * L'INTERLIGNE DE CORPS DU PROTOTYPE MOBILE EST 1,55, PAS 1,6.
+   *
+   * Il ne se voit sur aucun texte — chaque élément pose le sien — mais il est
+   * hérité par tout ce qui n'en déclare pas, et il décidait de la hauteur des
+   * conteneurs : la carte de promesse, la piste de bascule, le formulaire et
+   * la rangée d'options le relevaient tous à 25,6 px au lieu de 24,8. Posé
+   * une fois sur le cadre, il descend là où il doit.
+   */
+  :global(:root[data-design='v3']) .cadreAuth {
+    line-height: 1.55;
+  }
+
+  /*
+   * L'onglet mobile fait 48 px : 13 + 22 + 13. `normal` donnait 16 px
+   * d'interligne à Caprasimo, donc 42 px, et la piste 52 au lieu de 58.
+   */
+  :global(:root[data-design='v3']) .onglet {
+    line-height: 22px;
+  }
+
+  /*
+   * L'œil se pose à 7 px du bord, et non 6.
+   *
+   * Le prototype mesure ses 6 px depuis l'INTÉRIEUR d'une enveloppe bordée ;
+   * ici la référence est le champ lui-même, dont la bordure d'un pixel n'est
+   * pas encore franchie. Un pixel de bordure, un pixel de décalage.
+   */
+  :global(:root[data-design='v3']) .oeil {
+    right: 7px;
+  }
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ 15,5 PX SUR TÉLÉPHONE — LA COTE DU PROTOTYPE, ET SON REVERS.          │
+   * │                                                                        │
+   * │ `base.module.css` tient 16 px parce qu'en deçà Safari iOS ZOOME au     │
+   * │ focus : la page grandit, le formulaire se décale, et l'on fait défiler │
+   * │ pour retrouver le champ qu'on vient de toucher. La raison est réelle,  │
+   * │ et elle vise le public §5.1 de ce site — majoritairement mobile.       │
+   * │                                                                        │
+   * │ Le prototype mobile écrit néanmoins 15,5 px, et la consigne de cette   │
+   * │ passe est la cote au pixel. La valeur du prototype est donc appliquée, │
+   * │ et l'arbitrage rendu au propriétaire : revenir à 16 px ne coûte que    │
+   * │ cette déclaration. C'est le seul endroit à changer.                    │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  :global(:root[data-design='v3']) .formulaire input {
+    font-size: 15.5px;
+  }
+}
+
+/*
+ * Le sur-titre suit l'interligne de corps du prototype mobile : 1,55, soit
+ * 16,275 px sur ses 10,5. `normal` le rendait à 13 px, et la carte sombre
+ * perdait trois pixels de haut.
+ */
+@media (max-width: 760px) {
+  :global(:root[data-design='v3']) .promesseSurTitre {
+    line-height: 1.55;
   }
 }

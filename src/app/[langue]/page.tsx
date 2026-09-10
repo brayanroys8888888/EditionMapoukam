@@ -5,12 +5,12 @@ import { catalogQuerySchema } from '@/domain/catalog/schemas';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
 import { lireOffres } from '@/lib/offers/service';
 import { lireTemoignages } from '@/lib/site/temoignages';
-import { identifierAppelant } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { GrilleCatalogue, teintesTheme } from '@/components/catalogue';
 import { Couverture } from '@/components/catalogue/couverture';
 import { Motif, teinteDepuisThemes, teinteDuTheme } from '@/components/motif';
 import { AccueilV2 } from '@/components/v2/accueil';
-import { versionDesign } from '@/design/version';
+import { structureRefondue } from '@/design/version';
 import { ajouterAuPanier } from './panier/actions';
 import styles from '@/components/accueil/accueil.module.css';
 
@@ -45,6 +45,25 @@ import styles from '@/components/accueil/accueil.module.css';
 const NOMBRE_NOUVEAUTES = 8;
 
 /**
+ * LES NOUVEAUTÉS DE L'ACCUEIL SONT DES CONTES, ET SEULEMENT DES CONTES.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE N'EST PAS UN DROIT, C'EST UNE VITRINE.                                │
+ * │                                                                          │
+ * │ Le support n'ouvre et ne ferme aucun accès — `access_for_books` ne lit   │
+ * │ jamais `type_document`, et rien ici ne le lui fait dire. Ce filtre est   │
+ * │ un choix d'ÉTALAGE : la vitrine s'adresse au parent qui cherche une      │
+ * │ histoire à lire le soir, et un cahier de graphisme au milieu des contes  │
+ * │ répond à une autre question que celle qu'il se pose.                     │
+ * │                                                                          │
+ * │ Les livrets ne disparaissent de nulle part : ils gardent leur rayon      │
+ * │ `/livrets`, le catalogue entier, la recherche et le plan de site. Seule  │
+ * │ la rangée « nouveautés » de l'accueil ne les mêle plus aux contes.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const SUPPORT_NOUVEAUTES = 'conte';
+
+/**
  * Combien de THÈMES la vitrine met en avant.
  *
  * La section montrait les cinq traditions, dans un ordre écrit ici. Les
@@ -57,7 +76,7 @@ const NOMBRE_THEMES_VITRINE = 5;
 export default async function Accueil({ params }: { params: Promise<{ langue: string }> }) {
   const langue = langueValide((await params).langue);
 
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 
@@ -75,7 +94,12 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
   const [nouveautes, facettes, offres, temoignages] = await Promise.all([
     listerCatalogue(
       appelant?.id ?? null,
-      catalogQuerySchema.parse({ langue, tri: 'nouveautes', taille: NOMBRE_NOUVEAUTES }),
+      catalogQuerySchema.parse({
+        langue,
+        tri: 'nouveautes',
+        taille: NOMBRE_NOUVEAUTES,
+        type: SUPPORT_NOUVEAUTES,
+      }),
     ).catch(() => null),
     lireFacettes(langue).catch(() => null),
     // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
@@ -94,7 +118,7 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
   // │ afficher que ce que la V1 affiche, puisqu'elle reçoit exactement les   │
   // │ mêmes objets.                                                          │
   // └────────────────────────────────────────────────────────────────────────┘
-  if (versionDesign() === 'v2') {
+  if (structureRefondue()) {
     return (
       <AccueilV2
         langue={langue}

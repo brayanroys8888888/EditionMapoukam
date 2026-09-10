@@ -172,3 +172,25 @@
     display: none;
   }
 }
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ORGANIC N'A PAS DE BULLES — SON FOND EST PLAT.                          │
+ * │                                                                          │
+ * │ Ce décor appartient à la V2, dont la crème est unie et un peu nue. La    │
+ * │ maquette d'Organic ne porte AUCUN dégradé de page : `background:         │
+ * │ var(--ground)`, et rien d'autre. Les seuls disques du dossier sont les   │
+ * │ deux du hero, qui sont bornés à sa section.                              │
+ * │                                                                          │
+ * │ Laissées en place, elles teintaient le fond en dégradé sur toute la      │
+ * │ hauteur — visible surtout derrière le carrousel, où la crème virait au   │
+ * │ rose puis au vert sous les couvertures.                                  │
+ * │                                                                          │
+ * │ Masquées plutôt que démontées : `Bulles` est servi par la même enveloppe │
+ * │ que la V2, et la V2 les garde. Le composant ne coûte aucun JavaScript —  │
+ * │ ce sont cinq `<span>` et des trames CSS.                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+:global(:root[data-design='v3']) .champ {
+  display: none;
+}

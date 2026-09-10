@@ -79,6 +79,8 @@ h3 {
   font-variation-settings: var(--titre-variations);
   font-weight: var(--graisse-forte);
   line-height: var(--interligne-titre);
+  /* `normal` sous Fraunces, `-0.015em` sous Caprasimo — voir `tokens.css`. */
+  letter-spacing: var(--traque-titre);
 }
 
 h4,
@@ -132,4 +134,140 @@ textarea {
 
 button {
   cursor: pointer;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `sr-only` ÉTAIT UTILISÉE QUATRE FOIS, ET N'EXISTAIT NULLE PART.         │
+ * │                                                                          │
+ * │ Quatre écrans posent `className="sr-only"` sur un texte destiné aux      │
+ * │ seuls lecteurs d'écran : le `h1` de l'écran de lecture, le libellé du    │
+ * │ comparatif d'offres, le titre d'une entrée de la page « à propos », et   │
+ * │ l'état d'une étape du tunnel. Aucune feuille du produit ne définissait   │
+ * │ la classe — la règle venait d'un `tailwind.css` retiré depuis, et il     │
+ * │ n'en restait qu'un commentaire dans `ecran.module.css`.                  │
+ * │                                                                          │
+ * │ Le défaut ne casse rien : il AFFICHE. « Petit Baobab » se lisait en      │
+ * │ haut à gauche de l'écran de lecture, collé au bord et rogné, par-dessus  │
+ * │ la scène. Une classe absente ne provoque aucune erreur, ni au build ni   │
+ * │ à l'exécution — c'est pourquoi elle a survécu à la suppression de la     │
+ * │ feuille qui la portait.                                                  │
+ * │                                                                          │
+ * │ Le retrait de la scène, PAS `display: none` ni `visibility: hidden` :    │
+ * │ ces deux-là retirent aussi le texte de l'arbre d'accessibilité, ce qui   │
+ * │ revient à supprimer le `h1` — et un écran sans `h1` est un écran sans    │
+ * │ point d'entrée pour qui l'écoute. L'élément doit rester rendu, mesuré,   │
+ * │ annoncé, et invisible.                                                   │
+ * │                                                                          │
+ * │ `white-space: nowrap` n'est pas décoratif : dans une boîte d'un pixel,   │
+ * │ un texte qui a le droit de se replier est replié à un caractère par      │
+ * │ ligne, et certains lecteurs d'écran l'épellent alors lettre par lettre.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ÉTATS GLOBAUX — le point 15 de `10-animation-spec.md`, dit « non négociable »
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA SÉLECTION PREND L'ACCENT, ET SEULEMENT SON FOND.                     │
+ * │                                                                          │
+ * │ `color` n'est pas redéclarée : imposer une encre à la sélection casse    │
+ * │ tous les textes qui portent déjà la leur — les titres en accent, la      │
+ * │ crème sur l'olive, les prix. Un fond translucide se pose sur n'importe   │
+ * │ quelle encre sans la remplacer.                                          │
+ * │                                                                          │
+ * │ Le fond est écrit à 28 % : au-delà, il masque le texte qu'il désigne.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+::selection {
+  background: color-mix(in srgb, var(--action) 34%, transparent);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CE QUI EST DÉSACTIVÉ NE SE CLIQUE PAS, ET SE VOIT COMME TEL.            │
+ * │                                                                          │
+ * │ `aria-disabled` est traité comme `disabled` : c'est l'attribut qu'on     │
+ * │ pose sur un lien ou sur un bouton qui doit rester ANNONCÉ — un `button   │
+ * │ disabled` sort de l'ordre de tabulation, et l'utilisateur au clavier ne  │
+ * │ sait alors pas qu'il existe une commande, ni pourquoi elle est fermée.   │
+ * │                                                                          │
+ * │ `pointer-events: none` ne suffirait pas seul : il n'empêche que la       │
+ * │ souris. C'est l'attribut lui-même qui bloque l'activation au clavier.    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+[disabled],
+[aria-disabled='true'] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE RETOUR TACTILE — `scale(.96)`, ET SURTOUT PAS UNE ONDULATION.        │
+ * │                                                                          │
+ * │ `10-animation-spec.md` est explicite : « Every tappable element gets it. │
+ * │ Do not replace it with a ripple. » Une ondulation part du point touché   │
+ * │ et met 300 ms à finir ; l'écrasement est instantané et dit la même       │
+ * │ chose. Sur la connexion lente de §5.1, la différence est celle entre     │
+ * │ « ça a marché » et « je retouche ».                                      │
+ * │                                                                          │
+ * │ La règle ne s'applique QU'AUX POINTEURS GROSSIERS — le doigt. À la       │
+ * │ souris, le survol dit déjà tout, et un bouton qui rétrécit au clic       │
+ * │ déplace la cible sous le curseur.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (pointer: coarse) {
+  a:active,
+  button:active,
+  summary:active,
+  [role='button']:active {
+    transform: scale(0.96);
+  }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AU DOIGT, LE SURVOL RESTE COLLÉ — ET C'EST LE SOULÈVEMENT QUI SE VOIT.  │
+ * │                                                                          │
+ * │ Sur un écran tactile, `:hover` se déclenche AU TOUCHER et ne se retire   │
+ * │ qu'au toucher suivant, ailleurs. Les vingt-trois `translateY(-2px)`      │
+ * │ de survol du produit laissent donc la carte qu'on vient de quitter       │
+ * │ soulevée, indéfiniment : la grille paraît de travers, et l'on ne sait    │
+ * │ pas pourquoi. C'est la garde que `10-animation-spec.md` réclame —        │
+ * │ « Guard with @media (hover: hover) ».                                    │
+ * │                                                                          │
+ * │ Elle est écrite UNE fois plutôt que vingt-trois : envelopper chaque      │
+ * │ règle aurait multiplié les occasions d'en oublier une, et la vingt-      │
+ * │ quatrième, écrite demain, ne serait couverte par personne.               │
+ * │                                                                          │
+ * │ `!important` est ici légitime, et c'est le seul du produit : la règle    │
+ * │ corrige une CAPACITÉ D'APPAREIL, elle doit battre toute règle de         │
+ * │ composant, et aucune ne peut avoir de raison valable de la contredire.   │
+ * │                                                                          │
+ * │ `:not(:active)` est indispensable : pendant le toucher, les deux états   │
+ * │ sont vrais à la fois, et sans lui cette règle effacerait le retour       │
+ * │ tactile `scale(.96)` juste au-dessus — on aurait corrigé un défaut en    │
+ * │ en créant un autre, au même endroit.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (hover: none) {
+  *:hover:not(:active) {
+    transform: none !important;
+  }
 }

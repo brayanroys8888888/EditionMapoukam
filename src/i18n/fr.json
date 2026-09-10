@@ -2,7 +2,8 @@
   "marque": {
     "_commentaire": "TRANCHÉ le 3 août 2026 : le nom commercial est « EditionMapoukam ». Il vit ici, en UNE clé, et nulle part ailleurs — en-tête, pied de page, titres de page, métadonnées ET emails le lisent d'ici. Un test échoue s'il est écrit en dur ailleurs. La valeur est identique dans les deux langues : un nom propre ne se traduit pas.",
     "nom": "EditionMapoukam",
-    "baseline": "Des contes du patrimoine africain, illustrés et racontés pour les enfants d'aujourd'hui."
+    "baseline": "Des contes du patrimoine africain, illustrés et racontés pour les enfants d'aujourd'hui.",
+    "signature": "Contes d’Afrique"
   },
   "etats": {
     "chargement": "Chargement…",
@@ -68,7 +69,16 @@
     "deconnexion": "Se déconnecter",
     "recherche": "Rechercher un conte",
     "allerAuContenu": "Aller au contenu",
-    "administration": "Administration"
+    "administration": "Administration",
+    "onglets": {
+      "accueil": "Accueil",
+      "compte": "Compte",
+      "contes": "Contes",
+      "libelle": "Navigation principale",
+      "livrets": "Livrets",
+      "panier": "Panier"
+    },
+    "promesse": "Livraison numérique immédiate · PDF et EPUB à garder pour toujours"
   },
   "langue": {
     "selecteur": "Langue du site",
@@ -161,7 +171,23 @@
     "emailNonVerifieRenvoye": "Si votre compte existe et n'est pas encore confirmé, un nouveau code vient d'être envoyé.",
     "attendre": "Trop de tentatives. Réessayez dans {secondes} secondes.",
     "continuer": "Continuer",
-    "allerAuCatalogue": "Parcourir le catalogue"
+    "allerAuCatalogue": "Parcourir le catalogue",
+    "accepterConditions": "J’accepte les conditions générales",
+    "accepterConditionsRequis": "Cochez les conditions générales pour créer votre compte.",
+    "afficherMotDePasse": "Afficher le mot de passe",
+    "connexionIntro": "Entrez vos identifiants pour retrouver votre bibliothèque.",
+    "emailExemple": "vous@exemple.com",
+    "inscriptionIntro": "Quelques secondes, et vos contes vous suivent partout.",
+    "masquerMotDePasse": "Masquer le mot de passe",
+    "nomExemple": "Prénom et nom",
+    "note": "Nous ne demandons jamais d’information sur les enfants. Aucun compte n’est nécessaire pour lire les premières pages d’un conte.",
+    "ongletsLibelle": "Connexion ou création de compte",
+    "preuveAchats": "Vos achats restent accessibles, sans limite de durée.",
+    "preuveCompte": "Un seul compte pour la maison et pour la classe.",
+    "preuveLecture": "La lecture reprend où l’enfant s’est arrêté.",
+    "promesseSurTitre": "Votre bibliothèque",
+    "promesseTexte": "Un compte garde vos contes achetés, vos livrets téléchargés et votre progression de lecture — sur téléphone comme en classe.",
+    "promesseTitre": "Votre bibliothèque vous suit partout"
   },
   "contes": {
     "_commentaire": "Le rayon des contes — le MÊME catalogue que `livrets`, avec l'autre valeur de `type_document`. Les deux rayons sont séparés depuis le 2 septembre 2026 : un conte se lit le soir, un livret s'imprime pour une classe, et les mêler obligeait le lecteur à poser un filtre avant de commencer.",
@@ -169,7 +195,9 @@
     "intro": "Des histoires du patrimoine africain, illustrées, à lire en ligne ou à garder en PDF et EPUB.",
     "compteTous": "{total} contes disponibles",
     "compteUn": "1 conte disponible",
-    "lien": "Contes"
+    "lien": "Contes",
+    "compteCarte": "titres illustrés",
+    "videTitre": "Aucun conte ne correspond"
   },
   "livrets": {
     "_commentaire": "Le rayon des livrets pédagogiques — le MÊME catalogue avec `type_document` posé. Le compte s'y lit sur le rayon, jamais sur le catalogue entier : « 3 sur 47 » laisserait croire que 44 livrets sont cachés par un filtre.",
@@ -177,7 +205,18 @@
     "intro": "Des supports d'activités à imprimer ou à projeter, tirés des contes du catalogue.",
     "compteTous": "{total} livrets pédagogiques disponibles",
     "compteUn": "1 livret pédagogique disponible",
-    "lien": "Livrets pédagogiques"
+    "lien": "Livrets pédagogiques",
+    "compteCarte": "livrets disponibles",
+    "compteFormatLibelle": "prêt à imprimer",
+    "compteFormatValeur": "A4",
+    "miseEnAvantBadge": "Gratuit · {n} fiches",
+    "miseEnAvantBadgeUne": "Gratuit · 1 fiche",
+    "miseEnAvantFeuilleter": "Feuilleter",
+    "miseEnAvantOuvrir": "Ouvrir le kit",
+    "surMesureAction": "Voir l’offre sur mesure",
+    "surMesureCorps": "Nous concevons des supports personnalisés — cahier d’activités, guide, supports visuels — de la conception intellectuelle à la maquette prête à imprimer.",
+    "surMesureTitre": "Un livret sur mesure pour votre école ?",
+    "videTitre": "Aucun livret ne correspond"
   },
   "catalogue": {
     "_commentaire": "La carte porte TROIS lignes d'accès, pas deux : la maquette n'en prévoyait qu'un prix ou « Avec l'abonnement », et tous deux invitent à obtenir ce qu'on détient déjà. La troisième vit dans `acces.purchase` / `acces.granted`, et prend le pas sur les autres. Elle est pilotée par `acces.reason` — qui décrit L'UTILISATEUR — jamais par `prix` ni `inclus_abonnement`, qui décrivent LE TITRE.",
@@ -222,7 +261,13 @@
     "nbPages": "{pages} pages",
     "trancheAgeCourte": "{min}–{max} ans",
     "trancheAgeCourteOuverte": "dès {min} ans",
-    "ouInclusAbonnement": "ou inclus dans l'abonnement"
+    "ouInclusAbonnement": "ou inclus dans l'abonnement",
+    "nbPagesUne": "1 page",
+    "niveauTous": "Tous les niveaux",
+    "niveaux": "Niveau scolaire",
+    "vue": "Affichage",
+    "vueGrille": "Grille",
+    "vueListe": "Liste"
   },
   "fiche": {
     "_commentaire": "Les actions sont pilotées par `acces.canRead` et `acces.canDownload`, JAMAIS déduites de `reason`. Un conte à la fois gratuit et acheté rend `reason: 'purchase'` ET `canDownload: true` ; un abonné sur le même titre rend `reason: 'subscription'` ET `canDownload: false`. Déduire le droit du motif donne le bon résultat la plupart du temps, et le mauvais exactement là où la règle métier centrale se joue.",
@@ -341,7 +386,23 @@
     "associationNote": "Une partie des contenus reste lisible sans adhérer.",
     "bientot": "Bientôt",
     "oui": "Oui",
-    "non": "Non"
+    "non": "Non",
+    "abonnementLimite": "Ne donne pas le droit de télécharger les livres : cela reste réservé à l’achat.",
+    "abonnementOeil": "Lecture en ligne",
+    "abonnementPrixNote": "Sans engagement, résiliable en un clic.",
+    "abonnementTitreCarte": "Abonnement lecture",
+    "achatLimite": "N’ouvre pas la lecture en ligne de tout le catalogue.",
+    "achatOeil": "À l’unité",
+    "achatPrixNote": "Un paiement, le fichier est à vous.",
+    "associationDonne1": "Les contenus réservés : récits de terrain détaillés, comptes rendus d’ateliers.",
+    "associationDonne2": "Les ressources d’accompagnement et les supports adaptés.",
+    "associationDonne3": "Les invitations aux séminaires et aux formations.",
+    "associationLimite": "N’ouvre pas la lecture en ligne du catalogue.",
+    "associationOeil": "Association DAVE",
+    "associationPrixNote": "Adhésion distincte de l’abonnement de lecture.",
+    "associationTitreCarte": "Adhérer à l’association",
+    "oeil": "Nos offres",
+    "questionsToutes": "Toutes les questions"
   },
   "accueil": {
     "_commentaire": "Copie reprise des maquettes, à une exception près : tout CHIFFRE en est retiré. La maquette écrit « Soixante histoires » et « Huit histoires à lire aujourd'hui. Soixante au catalogue. » — deux comptes qui seraient faux le jour de la mise en ligne et faux à jamais ensuite. Ils viennent des facettes du catalogue, par substitution.",
@@ -406,7 +467,8 @@
     "refus_promo_deja_utilise": "Vous avez déjà utilisé ce code.",
     "refus_promo_zone": "Ce code ne s'applique pas à votre zone de facturation.",
     "refus_promo_montant_minimum": "Le montant de votre panier est inférieur au minimum exigé par ce code.",
-    "zoneDivergente": "Le pays de votre moyen de paiement change la grille tarifaire applicable. Le montant ci-dessus est celui qui sera facturé."
+    "zoneDivergente": "Le pays de votre moyen de paiement change la grille tarifaire applicable. Le montant ci-dessus est celui qui sera facturé.",
+    "ajoutEnCours": "Ajout au panier en cours�"
   },
   "paiement": {
     "_commentaire": "ÉCRAN DE RÈGLEMENT, SIMULÉ, ET IL LE DIT — le bandeau vit dans la section `simulation`. Le NUMÉRO DE CARTE reste hors d'ici pour de bon : les prestataires réels imposent des champs hébergés chez eux. Le Mobile Money, lui, demande bien un numéro de téléphone, et ce champ survivra tel quel à l'intégration. Rien de ce qui est saisi n'est conservé : aucune table du projet ne le porte.",
@@ -419,7 +481,21 @@
     "remboursee": "Cette commande a été remboursée.",
     "versBibliotheque": "Voir ma bibliothèque",
     "versPanier": "Retour au panier",
-    "payerMontant": "Payer {montant}"
+    "payerMontant": "Payer {montant}",
+    "choisirDabord": "Choisissez d’abord un moyen de paiement.",
+    "confirmationTitre": "Merci, votre commande est confirmée",
+    "continuer": "Continuer",
+    "echoueeTitre": "Le paiement n’a pas abouti",
+    "fichiersTitre": "Vos fichiers",
+    "lire": "Lire en ligne",
+    "livraison": "Livraison",
+    "livraisonImmediate": "Livraison immédiate : vos fichiers sont disponibles dès le paiement confirmé.",
+    "livraisonOfferte": "Offerte",
+    "rassurance": "Paiement sécurisé. Aucune donnée bancaire n’est conservée par nos soins.",
+    "recapTitre": "Votre commande",
+    "rembourseeTitre": "Commande remboursée",
+    "retourAccueil": "Retour à l’accueil",
+    "titreRegler": "Régler votre commande"
   },
   "compte": {
     "_commentaire": "L'ÉTAT CENTRAL DU PROJET EST « ABONNEMENT EXPIRÉ + BIBLIOTHÈQUE REMPLIE ». Il doit répondre à trois questions sans ambiguïté : ce que j'ai perdu (la lecture en ligne des titres d'abonnement), ce que je garde (mes achats, lecture ET téléchargement, sans limite de durée), et pourquoi (l'abonnement ouvrait la lecture, jamais le fichier). C'est le bug classique du domaine.",
@@ -450,7 +526,21 @@
     "perteAbonnementPourquoi": "L'abonnement ouvrait la lecture en ligne, jamais le fichier.",
     "perteAbonnementAction": "Reprendre un abonnement",
     "choixLangue": "Langue",
-    "choixFormat": "Format"
+    "choixFormat": "Format",
+    "trouverConte": "Trouver un nouveau conte",
+    "langueLecture": "Langue de lecture",
+    "recevoirNouveautes": "Recevoir les nouveautés par email",
+    "changerMotDePasse": "Changer le mot de passe",
+    "abonnementEtAdhesion": "Abonnement et adhésion",
+    "lectureEnLigne": "LECTURE EN LIGNE",
+    "activeJusquAu": "Active jusqu'au {date}",
+    "gererAdhesion": "Gérer mon adhésion",
+    "activerAbonnement": "Activer l’abonnement",
+    "gererAbonnement": "Gérer mon abonnement",
+    "nomComplet": "Nom complet",
+    "adresseEmail": "Adresse email",
+    "telephone": "Téléphone",
+    "enregistrer": "Enregistrer"
   },
   "lecteur": {
     "_commentaire": "UN 403 hors_extrait SUR UN TITRE POSSÉDÉ AU CHARGEMENT SE TRAITE COMME UNE PERTE DE SESSION, JAMAIS COMME UN REFUS D'ACHAT. La route des pages est PUBLIQUE : un jeton mort y vaut « visiteur », et l'enfant recevrait « achetez ce titre » sur un conte que ses parents ont payé. C'est le pire message que la plateforme puisse produire, et le filet est ici.",
@@ -466,7 +556,10 @@
     "finExtraitAction": "Obtenir le conte entier",
     "retourFiche": "Retour à la fiche",
     "interfaceEffacee": "Touchez l'écran pour revoir les boutons",
-    "pageIndisponible": "Cette page n'a pas pu être affichée. Réessayez dans un instant."
+    "pageIndisponible": "Cette page n'a pas pu être affichée. Réessayez dans un instant.",
+    "extraitLibre": "Extrait en accès libre. La suite s’ouvre avec l’abonnement ou l’achat du titre.",
+    "pleinEcran": "Plein écran",
+    "quitterPleinEcran": "Quitter le plein écran"
   },
   "abonnement": {
     "_commentaire": "L'écran affiche `statut` — le statut OBSERVÉ, dates repliées — jamais `statut_rapporte`. `anomalie` est NOMMÉE et invite à écrire au support : ce n'est pas une « erreur », c'est presque toujours un webhook perdu, et l'utilisateur n'y peut rien.",
@@ -511,7 +604,11 @@
     "aproposStudio": "À propos du studio",
     "aideEtQuestions": "Aide et questions",
     "mentionsLegales": "Mentions légales",
-    "droits": "© {annee} {marque}"
+    "droits": "© {annee} {marque}",
+    "lettreAction": "S�inscrire",
+    "lettreChamp": "Votre email",
+    "lettreSujet": "Inscription � la lettre des nouveaut�s",
+    "lettreTitre": "Recevoir les nouveaut�s"
   },
   "v2": {
     "precedent": "Précédent",
@@ -569,6 +666,7 @@
     "assoLire": "Lire",
     "assoMinutes": "{minutes} min de lecture",
     "assoRetour": "Tous les contenus",
+    "assoSuiteTitre": "À lire ensuite",
     "assoVide": "Aucun contenu pour le moment.",
     "assoReserve": "Réservé aux adhérents",
     "assoMurTitre": "Ce contenu est réservé aux adhérents",
@@ -629,7 +727,47 @@
     "aproposCatalogueTitre": "Les histoires que nous publions",
     "aproposFondatrice": "Mapoukam Foka",
     "aproposFondatriceRole": "Fondatrice",
-    "themesOeil": "Par thème"
+    "themesOeil": "Par thème",
+    "aproposSignature": "Bonne exploration de notre site, et belle découverte de nos univers !",
+    "assoContenusOeil": "Nos contenus",
+    "compteThemes": "thèmes",
+    "compteTitres": "titres illustrés",
+    "contactAdresse": "Adresse",
+    "contactCourriel": "Email",
+    "contactEmailIndice": "vous@exemple.com",
+    "contactFormNote": "Les champs marqués d’un point sont nécessaires pour vous répondre.",
+    "contactMessageIndice": "Dites-nous tout…",
+    "contactNomIndice": "Prénom et nom",
+    "contactSujet": "Votre demande porte sur",
+    "contactSujetAssociation": "L’association",
+    "contactSujetConsulting": "Le consulting",
+    "contactSujetLivre": "Un livre",
+    "contactSujetLivret": "Un livret pour ma classe",
+    "contactTelephone": "Téléphone",
+    "filAriane": "Fil d’Ariane",
+    "heroEventailCorps": "Des thèmes nommés, pas des rayons vides",
+    "heroEventailTitre": "{n} titres au catalogue",
+    "heroPreuveContes": "titres au catalogue",
+    "heroPreuveFormats": "formats à garder : PDF et EPUB",
+    "heroPreuveThemes": "thèmes à explorer",
+    "histoireBadge": "Des thèmes nommés, des âges précisés",
+    "themesVoir": "Voir les contes",
+    "ficheApports": "Ce que ce titre apporte",
+    "ficheAuteur": "Auteur",
+    "ficheContinuerLecture": "Reprendre la lecture",
+    "ficheFeuilleter": "Feuilleter les premières pages",
+    "ficheObjectifs": "Objectifs pédagogiques",
+    "ficheOngletAvis": "Avis",
+    "ficheOngletDetails": "Détails",
+    "ficheOngletExtrait": "Extrait",
+    "ficheOngletsLibelle": "En savoir plus sur ce titre",
+    "livretApercu": "Planche {n} sur {total}",
+    "livretApercuAide": "aperçu des premières planches",
+    "livretAutres": "D’autres livrets pédagogiques",
+    "livretFormat": "Format",
+    "livretFormatValeur": "PDF et EPUB, prêts à imprimer",
+    "livretPrixNote": "Achat à l’unité, téléchargement compris",
+    "livretVignette": "Planche {n}"
   },
   "pages": {
     "introuvableTitre": "Cette page n’existe pas",
@@ -1005,7 +1143,11 @@
     "temoignageModifie": "Témoignage enregistré.",
     "temoignagePublie": "Témoignage publié.",
     "temoignageDepublie": "Témoignage retiré de l’accueil.",
-    "temoignageSupprime": "Témoignage supprimé."
+    "temoignageSupprime": "Témoignage supprimé.",
+    "livretNiveau": "Niveau scolaire",
+    "livretNiveauAide": "Le niveau visé, écrit comme l’éditeur le dit — « PS · MS · GS ». Aucune liste fermée : les systèmes scolaires diffèrent d’un pays à l’autre. Vider le champ retire le niveau.",
+    "livretObjectifs": "Objectifs pédagogiques",
+    "livretObjectifsAide": "Un objectif par ligne, dans l’ordre où ils s’enchaînent. Ils s’affichent avec une coche sur la mise en avant du rayon. Vider la zone les retire tous."
   },
   "tunnel": {
     "_commentaire": "Le fil d'étapes est un REPÈRE, jamais une navigation : on ne revient pas sur une étape franchie en cliquant dessus, parce qu'une commande créée ne se dé-crée pas. Les étapes passées sont donc annoncées comme telles aux lecteurs d'écran, sans être des liens.",
@@ -1121,5 +1263,34 @@
     "corps": "Un vrai prestataire produit trois issues, et les trois méritent leur écran. Le bouton principal simule le succès ; les deux autres sont là pour éprouver ce qui arrive ensuite.",
     "echouer": "Simuler un échec",
     "abandonner": "Simuler un abandon"
+  },
+  "recherche": {
+    "aucun": "Aucun titre ne porte ce nom. Essayez un thème, ou un âge.",
+    "echap": "Échap",
+    "fermer": "Fermer la recherche",
+    "placeholder": "Un titre, un thème, un âge…",
+    "suggestions": "Suggestions",
+    "titre": "Rechercher dans le catalogue"
+  },
+  "theme": {
+    "jour": "Jour",
+    "libelle": "Thème du site",
+    "nuit": "Nuit",
+    "versClair": "Passer au thème clair",
+    "versSombre": "Passer au thème sombre"
+  },
+  "toast": {
+    "avisDepose": "Votre avis est parti en modération.",
+    "avisRetire": "Votre avis est retiré.",
+    "connexion": "Connexion réussie.",
+    "deconnexion": "Votre session est fermée.",
+    "inscription": "Compte créé — bienvenue !",
+    "motDePasse": "Un lien de réinitialisation vient de partir par email.",
+    "panierAjout": "Ajouté au panier.",
+    "panierAjoutTitre": "« {titre} » ajouté au panier",
+    "panierRefus": "Ce titre n’a pas pu être ajouté.",
+    "panierRetrait": "Retiré du panier.",
+    "profil": "Informations enregistrées.",
+    "reprise": "Reprise à la page {n}."
   }
 }

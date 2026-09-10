@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 
-import { ChampsCoordonnees, ChoixMoyens, FilEtapes } from '@/components/tunnel';
+import {
+  ChampsCoordonnees,
+  ChoixMoyens,
+  FilEtapes,
+  SceauIssue,
+  monogramme,
+} from '@/components/tunnel';
 import { EnteteV2 } from '@/components/enveloppe/v2';
 import type { Utilisateur } from '@/domain/api/contract';
 import { MOYENS_PAIEMENT, paysDeLOperateur } from '@/domain/payments/moyens';
@@ -32,19 +38,13 @@ const LECTEUR: Utilisateur = { ...ADMIN, role: 'user', email: 'parent@exemple.te
 
 describe('le fil d’étapes', () => {
   it('situe l’étape en cours, en toutes lettres AUSSI', () => {
-    // ┌────────────────────────────────────────────────────────────────────┐
-    // │ Sous 560 px, les noms d'étapes sont retirés et seules les pastilles │
-    // │ restent. « Étape 2 sur 4 » est la seule chose qui subsiste — et      │
-    // │ c'est justement la question qu'on se pose en payant sur un          │
-    // │ téléphone.                                                          │
-    // └────────────────────────────────────────────────────────────────────┘
     render(<FilEtapes langue="fr" parcours="achat" etape={2} />);
 
-    expect(screen.getByText('Étape 2 sur 4')).toBeTruthy();
+    expect(screen.getByText('Étape 2 sur 3')).toBeTruthy();
   });
 
   it('marque l’étape courante par `aria-current`, et une seule', () => {
-    const { container } = render(<FilEtapes langue="fr" parcours="achat" etape={3} />);
+    const { container } = render(<FilEtapes langue="fr" parcours="achat" etape={2} />);
 
     const courantes = container.querySelectorAll('[aria-current="step"]');
     expect(courantes.length).toBe(1);
@@ -52,13 +52,7 @@ describe('le fil d’étapes', () => {
   });
 
   it('AUCUNE étape n’est un lien, pas même celle déjà franchie', () => {
-    // ┌────────────────────────────────────────────────────────────────────┐
-    // │ Revenir de « Paiement » à « Récapitulatif » supposerait de dé-créer │
-    // │ une commande, ce qui n'existe pas : elle a un identifiant, et un    │
-    // │ webhook peut arriver dessus à tout instant. Chaque écran offre le   │
-    // │ retour qui a du sens pour LUI ; ce fil ne fait que situer.          │
-    // └────────────────────────────────────────────────────────────────────┘
-    const { container } = render(<FilEtapes langue="fr" parcours="achat" etape={4} />);
+    const { container } = render(<FilEtapes langue="fr" parcours="achat" etape={3} />);
 
     expect(container.querySelectorAll('a').length).toBe(0);
   });
@@ -259,5 +253,77 @@ describe('le raccourci d’administration dans l’en-tête', () => {
     expect(
       within(container).getByRole('link', { name: 'Administration' }).getAttribute('href'),
     ).toBe('/en/admin');
+  });
+});
+
+/**
+ * ╔═══════════════════════════════════════════════════════════════════════════╗
+ * ║ LE MONOGRAMME ET LE SCEAU — lot 7.                                        ║
+ * ╚═══════════════════════════════════════════════════════════════════════════╝
+ */
+describe('le monogramme des moyens de paiement', () => {
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ IL EST TIRÉ DU LIBELLÉ, ET C'EST TOUT L'ENJEU.                       │
+   * │                                                                      │
+   * │ Une table d'abréviations écrite à la main aurait affiché « CB » sur   │
+   * │ le site anglais, où ces deux lettres ne veulent rien dire. Le tirer   │
+   * │ du libellé traduit le rend juste dans les deux langues, et dans       │
+   * │ toutes celles qu'on ajoutera.                                         │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('prend l’initiale des deux premiers mots', () => {
+    expect(monogramme('Orange Money')).toBe('OM');
+    expect(monogramme('Carte bancaire')).toBe('CB');
+    expect(monogramme('Bank card')).toBe('BC');
+  });
+
+  /** Jamais trois lettres : « MTN Mobile Money » n'abrège rien en « MMM ». */
+  it('s’arrête à deux lettres', () => {
+    expect(monogramme('MTN Mobile Money')).toBe('MM');
+  });
+
+  it('un mot seul rend une lettre', () => {
+    expect(monogramme('Carte')).toBe('C');
+  });
+
+  /**
+   * Il est DÉCORATIF : le nom complet est écrit juste à côté, et deux lettres
+   * épelées avant chaque moyen n'ajouteraient que du bruit à l'annonce.
+   */
+  it('il n’est pas annoncé — le nom complet l’est', () => {
+    const { container } = render(
+      <ChoixMoyens langue="fr" lienDuMoyen={(moyen) => `/fr/paiement/x?moyen=${moyen}`} />,
+    );
+
+    const sigles = container.querySelectorAll('[aria-hidden="true"]');
+    expect(sigles.length).toBeGreaterThanOrEqual(MOYENS_PAIEMENT.length);
+
+    // Et le nom, lui, reste lisible par tous.
+    expect(screen.getByText('Orange Money')).toBeTruthy();
+  });
+});
+
+describe('le sceau d’issue', () => {
+  /**
+   * Un écran d'issue se lit avant d'être lu : jusqu'ici, « payé » et
+   * « échoué » se présentaient de la même façon — un paragraphe en gras dans
+   * un panneau — et il fallait lire la phrase pour savoir si l'on avait payé.
+   */
+  it('rend une coche pour la réussite, une croix pour l’échec', () => {
+    const { container: reussi } = render(<SceauIssue issue="reussie" />);
+    const { container: echoue } = render(<SceauIssue issue="echouee" />);
+
+    expect(reussi.querySelector('path')?.getAttribute('d')).toContain('M4 12.5');
+    expect(echoue.querySelector('path')?.getAttribute('d')).toContain('M6 6l12 12');
+  });
+
+  /**
+   * Il est décoratif : la phrase juste en dessous dit déjà ce qu'il montre, et
+   * une coche annoncée deux fois n'aide personne.
+   */
+  it('il ne s’annonce pas', () => {
+    const { container } = render(<SceauIssue issue="reussie" />);
+    expect(container.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
   });
 });

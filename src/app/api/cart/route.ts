@@ -90,7 +90,13 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  return ok({ ajoute: true });
+  /*
+   * `deja` n'est pas un refus : la ligne est bien au panier, elle y était
+   * déjà. L'interface s'en sert pour ouvrir le tiroir plutôt que d'avancer sa
+   * pastille — `06-interactions-state.md`. Le serveur, lui, ne décide rien de
+   * plus qu'avant.
+   */
+  return ok({ ajoute: true, deja: resultat.deja });
 }
 
 export async function DELETE(request: Request): Promise<Response> {

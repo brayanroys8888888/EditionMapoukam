@@ -61,7 +61,7 @@
 
 .carteVedette:hover {
   transform: translateY(-5px);
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
   box-shadow: var(--ombre-carte-survol);
   color: var(--encre);
 }
@@ -69,7 +69,7 @@
 .vedetteVisuel {
   position: relative;
   min-height: 260px;
-  background: var(--v2-vert);
+  background: var(--chrome);
   overflow: hidden;
 }
 
@@ -105,7 +105,7 @@
 
 .carte:hover {
   transform: translateY(-5px);
-  border-color: var(--v2-vert);
+  border-color: var(--accent-encre);
   box-shadow: var(--ombre-carte-survol);
   color: var(--encre);
 }
@@ -113,7 +113,7 @@
 .carteVisuel {
   position: relative;
   height: 150px;
-  background: var(--v2-vert);
+  background: var(--chrome);
   overflow: hidden;
 }
 
@@ -140,9 +140,9 @@
   gap: 7px;
   padding: 6px 13px;
   border-radius: var(--rayon-pastille);
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   border: 1.5px solid var(--bordure-forte);
-  color: var(--v2-ocre-encre);
+  color: var(--action-texte);
   font-size: var(--taille-xs);
   font-weight: var(--graisse-forte);
   text-transform: uppercase;
@@ -189,7 +189,7 @@
   margin-top: 16px;
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 /* La flèche avance au survol — le mouvement dit « ça continue par là ». */
@@ -269,11 +269,11 @@
   margin-top: 48px;
   font-size: var(--taille-l);
   font-weight: var(--graisse-forte);
-  color: var(--v2-vert);
+  color: var(--accent-encre);
 }
 
 .retour:hover {
-  color: var(--v2-vert-clair);
+  color: var(--second-encre);
 }
 
 /* ── CE QUI EST RÉSERVÉ ────────────────────────────────────────────────── */
@@ -290,7 +290,7 @@
   gap: 6px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: var(--v2-fond-doux);
+  background: var(--fond-doux);
   color: var(--encre-douce);
   font-size: 0.75rem;
   font-weight: 600;
@@ -353,7 +353,7 @@
   flex-direction: column;
   align-items: center;
   gap: 16px;
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto clamp(32px, 4vw, 48px);
   padding: 0 24px;
   text-align: center;
@@ -386,7 +386,7 @@
  * elle se charge, et le lecteur perd la ligne qu'il lisait.
  */
 .video {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto clamp(40px, 5vw, 64px);
   padding: 0 24px;
 }
@@ -414,7 +414,7 @@
 /* ── LA PRÉSENTATION, EN TÊTE DE L'ESPACE ──────────────────────────────── */
 
 .presentation {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto;
   padding: 0 24px;
 }
@@ -460,7 +460,7 @@
 
 /* Le titre de la section des contenus, sous la présentation. */
 .sectionTitre {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto 8px;
   padding: 0 24px;
   font-family: var(--police-titre);
@@ -469,7 +469,7 @@
 }
 
 .sectionTexte {
-  max-width: 72ch;
+  max-width: var(--largeur-editorial);
   margin: 0 auto 32px;
   padding: 0 24px;
   color: var(--encre-douce);
@@ -526,4 +526,82 @@
 
 .boutonSecondaire:hover {
   border-color: currentColor;
+}
+
+/* ── LA PHOTO DE L'ARTICLE, ET LA RANGÉE QUI LE SUIT ───────────────────── */
+
+/*
+ * La photo est plus large que le texte, et c'est le but.
+ *
+ * `.article` tient sa mesure de lecture à 760 px — la largeur à laquelle on
+ * lit sans perdre sa ligne. Une image contrainte à cette mesure aurait la
+ * taille d'un paragraphe : elle n'ouvrirait pas l'article, elle l'illustrerait
+ * en passant. Elle prend donc `--largeur-editorial`, la largeur des blocs
+ * éditoriaux du site, et le texte reprend sa mesure en dessous.
+ *
+ * Le rapport est FIXÉ. Sans lui, la place de l'image n'est connue qu'une fois
+ * l'image arrivée, et tout ce qui suit saute vers le bas à ce moment-là — sur
+ * la connexion lente du §5.1, ce saut tombe pendant qu'on lit déjà.
+ */
+.photo {
+  max-width: var(--largeur-editorial);
+  margin: clamp(28px, 4vw, 44px) auto 0;
+  padding: 0 20px;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1.5px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--fond-doux);
+}
+
+/*
+ * Le logo au-dessus du titre du panneau.
+ *
+ * Il porte le nom et la devise en pixels ; son `alt` les écrit. Il est bien
+ * plus petit qu'en tête de l'espace associatif — ici il IDENTIFIE l'appel,
+ * il ne le domine pas. `width`/`height` sont ceux du fichier et réservent la
+ * place avant l'arrivée de l'image.
+ */
+.murLogo {
+  display: block;
+  width: 100%;
+  max-width: 96px;
+  height: auto;
+  margin: 0 auto 18px;
+  border-radius: var(--rayon-carte);
+}
+
+/*
+ * La rangée « À lire ensuite ».
+ *
+ * Elle est SÉPARÉE du texte par un filet et par un fond différent : sans quoi
+ * trois cartes posées à la suite d'un article ont l'air d'en être la fin.
+ */
+.suite {
+  border-top: 1px solid var(--bordure);
+  background: var(--fond-doux);
+  padding: clamp(40px, 5vw, 64px) 20px clamp(48px, 6vw, 72px);
+}
+
+.suiteTitre {
+  max-width: var(--largeur-editorial);
+  margin: 0 auto clamp(24px, 3vw, 32px);
+  font-family: var(--police-titre);
+  font-size: clamp(22px, 2.4vw, 28px);
+  letter-spacing: -0.02em;
+}
+
+/*
+ * La grille reprend `.liste`, bornée à la largeur éditoriale : sans borne,
+ * trois cartes s'étireraient sur toute la largeur d'un écran large et ne
+ * s'aligneraient plus sur le titre juste au-dessus.
+ */
+.suite .liste {
+  max-width: var(--largeur-editorial);
+  margin: 0 auto;
 }

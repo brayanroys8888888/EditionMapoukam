@@ -1,20 +1,19 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
-import type { ReactNode } from 'react';
 
-import { langueValide, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
+import { langueValide, traduire } from '@/i18n';
 import {
   lirePresentationAssociation,
   LOGO_ASSOCIATION,
   VIDEO_PRESENTATION,
 } from '@/content/association';
-import {
-  lireContenusAssociatifs,
-  type ContenuAssociatif,
-} from '@/lib/association/service';
-import { identifierAppelant } from '@/lib/auth/session';
+import { lireContenusAssociatifs } from '@/lib/association/service';
+import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
 import { Revele } from '@/components/v2/revele';
+import { CarteContenu } from '@/components/v2/carte-association';
+import { AssociationV3 } from '@/components/v2/association-v3';
+import { estV3 } from '@/design/version';
 import styles from '@/components/v2/association.module.css';
 import boutique from '@/components/v2/boutique.module.css';
 
@@ -53,122 +52,13 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
   return { title: presentation.titre, description: presentation.chapeau };
 }
 
-const IMAGE_PAR_CATEGORIE: Record<ContenuAssociatif['categorie'], string> = {
-  'vie-associative': '/images/blog-4.png',
-  actions: '/images/blog-4.png',
-  accompagnement: '/images/blog-1.png',
-  pedagogie: '/images/blog-2.png',
-  culture: '/images/blog-3.png',
-  'besoins-specifiques': '/images/blog-1.png',
-};
-
-function CarteContenu({
-  langue,
-  contenu,
-  vedette = false,
-}: {
-  langue: LangueInterface;
-  contenu: ContenuAssociatif;
-  vedette?: boolean;
-}): ReactNode {
-  const categorie = traduire(langue, `v2.cat_${contenu.categorie}` as CleTraduction);
-  const image = contenu.imageUrl ?? IMAGE_PAR_CATEGORIE[contenu.categorie];
-
-  const corps = (
-    <>
-      <span className={styles.categorie}>{categorie}</span>
-
-      <span className={vedette ? `${styles.titre} ${styles.titreVedette}` : styles.titre}>
-        {contenu.titre}
-      </span>
-
-      <span className={styles.chapeau}>{contenu.chapeau}</span>
-
-      <span className={styles.meta}>
-        {contenu.publieLe ? (
-          <time dateTime={contenu.publieLe.slice(0, 10)}>
-            {new Date(contenu.publieLe).toLocaleDateString(langue, {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-              // `UTC` explicite : sans lui, une date à minuit recule d'un jour
-              // pour tout lecteur à l'ouest de Greenwich.
-              timeZone: 'UTC',
-            })}
-          </time>
-        ) : null}
-
-        {contenu.minutes ? (
-          <>
-            <span aria-hidden="true">·</span>
-            <span>
-              {traduire(langue, 'v2.assoMinutes').replace('{minutes}', String(contenu.minutes))}
-            </span>
-          </>
-        ) : null}
-      </span>
-
-      {/*
-        La pastille n'apparaît que sur ce qui est FERMÉ À CE LECTEUR. Un
-        adhérent ne voit aucun cadenas, parce que `peutLire` est vrai pour lui —
-        et c'est la base qui l'a dit.
-      */}
-      {contenu.peutLire ? null : (
-        <span className={styles.reserve}>
-          <span className={styles.cadenas} aria-hidden="true">
-            🔒
-          </span>
-          {traduire(langue, 'v2.assoReserve')}
-        </span>
-      )}
-
-      <span className={styles.lire}>
-        {traduire(langue, 'v2.assoLire')}
-        <span className={styles.fleche} aria-hidden="true">
-          →
-        </span>
-      </span>
-    </>
-  );
-
-  const lien = `/${langue}/association/${contenu.slug}`;
-
-  if (vedette) {
-    return (
-      <a className={styles.carteVedette} href={lien}>
-        <span className={styles.vedetteVisuel}>
-          <img
-            src={image}
-            alt={contenu.titre}
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        </span>
-        <span className={styles.vedetteCorps}>{corps}</span>
-      </a>
-    );
-  }
-
-  return (
-    <a className={styles.carte} href={lien}>
-      <span className={styles.carteVisuel}>
-        <img
-          src={image}
-          alt={contenu.titre}
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-        />
-      </span>
-      <span className={styles.carteCorps}>{corps}</span>
-    </a>
-  );
-}
-
 export default async function PageAssociation({ params }: Parametres) {
   const langue = langueValide((await params).langue);
   const presentation = lirePresentationAssociation(langue);
 
   // Un visiteur non connecté est le chemin nominal : `identifierAppelant` rend
   // `null`, et la base rend alors le verdict `preview` sur ce qui est réservé.
-  const appelant = await identifierAppelant(
+  const appelant = await identifierAppelantAvecCookies(
     new Request('http://interne/', { headers: await headers() }),
   );
 
@@ -180,6 +70,25 @@ export default async function PageAssociation({ params }: Parametres) {
   }
 
   const [premier, ...suite] = contenus;
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ÉCRAN EST REDESSINÉ — PAS SEULEMENT REPEINT.         │
+   * │                                                                      │
+   * │ Le bandeau partagé disparaît, le héros prend sa place avec le logo    │
+   * │ et deux photographies de terrain, les trois axes deviennent une       │
+   * │ bande olive, et les contenus passent d'une grille de cartes à un      │
+   * │ contenu en grand plus une colonne de lignes.                          │
+   * │                                                                      │
+   * │ Ce qui ne change pas : la liste vient de la même requête, dans le     │
+   * │ même ordre, et le cadenas y est LU. La V2 reste en place, intacte,    │
+   * │ sous cette condition — le même partage que sur `/contact`,            │
+   * │ `/a-propos` et `/expertise`.                                          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return <AssociationV3 langue={langue} contenus={contenus} />;
+  }
 
   return (
     <>
@@ -209,6 +118,12 @@ export default async function PageAssociation({ params }: Parametres) {
             alt={presentation.logoAlt}
             width={LOGO_ASSOCIATION.largeur}
             height={LOGO_ASSOCIATION.hauteur}
+            // `eager`, et c'est l'exception qui confirme la règle : ce logo est
+            // en haut de l'écran, il identifie l'association avant tout le
+            // reste, et le différer ferait apparaître un trou à l'endroit qu'on
+            // regarde en premier.
+            loading="eager"
+            decoding="async"
           />
           <p className={styles.devise}>{presentation.devise}</p>
         </div>

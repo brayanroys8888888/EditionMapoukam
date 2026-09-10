@@ -1107,15 +1107,24 @@ interdit Fraunces au back-office.
 
 ---
 
-## 6. Identifiants d'administration (base LOCALE)
+## 6. Identifiants de connexion (base LOCALE)
 
-```
-admin@editionmapoukam.test
-Adm-JL8HLFGBbdoS-7
-```
+Deux comptes, un par rôle, pour éprouver les deux moitiés du site — un écran
+d'administration ne se teste pas depuis un compte administrateur seul : il faut
+aussi vérifier qu'un compte ordinaire y reçoit bien un **404**, et non un 403.
 
-Régénérables : `npm run admin:creer [adresse] [mot de passe]`.
+| Rôle | Adresse | Mot de passe |
+| --- | --- | --- |
+| `admin` | `admin@editionmapoukam.test` | `Adm-Mapoukam-2026` |
+| `user` | `parent@editionmapoukam.test` | `Usr-Mapoukam-2026` |
+
+Régénérables : `npm run compte:creer [adresse] [mot de passe] [admin|user]`.
+Sans argument de rôle, c'est `admin` — `npm run admin:creer` reste donc ce
+qu'elle a toujours été.
+
 Le script refuse de tourner en production **et** si la base n'est pas locale.
+Relancé sur une adresse existante, il remet le mot de passe et confirme
+l'adresse plutôt que d'échouer : deux exécutions donnent le même résultat.
 
 ---
 

@@ -1,0 +1,713 @@
+/*
+ * ╔══════════════════════════════════════════════════════════════════════════╗
+ * ║ LE RÈGLEMENT — LES MESURES DU PROTOTYPE, LIGNES 1339 À 1478.             ║
+ * ╚══════════════════════════════════════════════════════════════════════════╝
+ *
+ * Aucune couleur n'est écrite ici : la feuille ne lit que des jetons, et c'est
+ * ce qui la fait suivre le thème sombre — que le prototype n'avait pas à
+ * servir.
+ */
+
+.page {
+  max-width: var(--largeur-page);
+  margin: 0 auto;
+  padding: 44px 28px 96px;
+}
+
+/* ── Fil d'Ariane ───────────────────────────────────────────────────────── */
+
+.ariane {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+.arianeLien {
+  color: var(--encre-douce);
+}
+
+.arianeLien:hover {
+  color: var(--accent-encre);
+}
+
+.arianeCourant {
+  color: var(--accent-encre);
+}
+
+/* ── Le fil d'étapes ────────────────────────────────────────────────────── */
+
+/*
+ * Une LISTE ORDONNÉE, et non trois pastilles côte à côte : un rang se dit, et
+ * « étape 3 sur 4 » ne s'entend pas dans un `<div>`. L'état de chacune est
+ * annoncé en toutes lettres — une pastille sombre et un aplat clair ne
+ * distinguent rien pour qui ne voit pas l'écran.
+ */
+.etapes {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 34px;
+  padding: 0;
+  list-style: none;
+}
+
+.etape {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  background: var(--surface);
+  color: var(--encre-douce);
+  font-size: 13.5px;
+}
+
+.etapeCourante {
+  background: var(--chrome);
+  border-color: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+.etapeNumero {
+  font-family: var(--police-titre);
+  letter-spacing: var(--traque-titre);
+}
+
+/* ── Titre et bandeau ───────────────────────────────────────────────────── */
+
+.titre {
+  margin: 0 0 30px;
+  font-family: var(--police-titre);
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.04;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+/*
+ * Le bandeau de simulation vit dans `tunnel.module.css`, écrit une fois pour
+ * les deux tunnels. Cette boîte ne fait que le placer : le redessiner ici
+ * aurait donné deux bandeaux à garder d'accord, dont un seul est jamais lu.
+ */
+.bandeau {
+  margin: 0 0 26px;
+}
+
+/* ── Les deux colonnes ──────────────────────────────────────────────────── */
+
+.colonnes {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 34px;
+  align-items: start;
+}
+
+.gauche {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.carte {
+  padding: 30px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--surface);
+}
+
+.carteTitre {
+  margin: 0 0 18px;
+  font-family: var(--police-titre);
+  font-size: 20px;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+/* ── Le choix du moyen ──────────────────────────────────────────────────── */
+
+.moyens {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.moyen {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: var(--cible-min);
+  padding: 16px 18px;
+  border: 2px solid var(--bordure);
+  border-radius: var(--rayon-bloc);
+  background: transparent;
+  color: var(--encre);
+  transition: border-color var(--transition-couleur), background var(--transition-couleur);
+}
+
+.moyen:hover {
+  border-color: var(--marque);
+  color: var(--encre);
+}
+
+.moyenRetenu {
+  background: var(--fond-doux);
+  border-color: var(--marque);
+}
+
+/*
+ * UN SEUL APLAT POUR LES TROIS MONOGRAMMES.
+ *
+ * Le prototype peint chacun de la couleur de son opérateur — olive, orange,
+ * jaune — et y écrit deux lettres blanches. Deux des trois échouent au seuil
+ * AA du §5.3, le jaune très largement, et `design-tokens.test.ts` refuse déjà
+ * le blanc sur la terre cuite pour la même raison. L'olive du chrome les prend
+ * tous les trois ; le nom complet, à côté, distingue les moyens mieux qu'une
+ * teinte.
+ */
+.moyenSigle {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-size: 13px;
+  letter-spacing: var(--traque-titre);
+}
+
+.moyenTexte {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+}
+
+.moyenNom {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 16.5px;
+  letter-spacing: var(--traque-titre);
+}
+
+.moyenNote {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--encre-douce);
+}
+
+/*
+ * La pastille est DÉCORATIVE : `aria-current` sur le lien dit déjà lequel est
+ * retenu, et un cercle annoncé en plus ne dirait rien de neuf.
+ */
+.pastille {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  background: transparent;
+}
+
+.pastillePleine {
+  border-color: var(--marque);
+  background: var(--marque);
+  box-shadow: inset 0 0 0 4px var(--surface);
+}
+
+/* ── La bande de réassurance ────────────────────────────────────────────── */
+
+.reassurance {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 24px;
+  border-radius: var(--rayon-carte);
+  background: var(--fond-doux);
+}
+
+.cadenas {
+  flex: none;
+  color: var(--second-encre);
+}
+
+.reassuranceTexte {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+}
+
+/* ── La carte de simulation ─────────────────────────────────────────────── */
+
+/*
+ * ELLE NE RESSEMBLE PAS AUX AUTRES CARTES, ET C'EST TOUT L'OBJET.
+ *
+ * Mêlés au bouton de paiement, « simuler un échec » et « simuler un abandon »
+ * se ressembleraient assez pour être pressés l'un pour l'autre. Le filet
+ * pointillé et le fond sourd disent, avant qu'on lise, que cette carte n'est
+ * pas le chemin normal — c'est un atelier posé à côté du tunnel.
+ *
+ * Elle disparaît entièrement devant un prestataire réel : voir `simule`.
+ */
+.simulation {
+  border-style: dashed;
+  background: var(--fond-doux);
+}
+
+.simulationCorps {
+  margin: 0 0 18px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--encre-douce);
+}
+
+.simulationBoutons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.boutonSecondaire,
+.boutonDiscret {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 12px 20px;
+  border-radius: var(--rayon-bouton);
+  font-size: var(--taille-base);
+  font-weight: var(--graisse-demi);
+}
+
+.boutonSecondaire {
+  border: 1.5px solid var(--bordure-forte);
+  background: transparent;
+  color: var(--encre);
+}
+
+.boutonSecondaire:hover {
+  border-color: var(--encre);
+  color: var(--encre);
+}
+
+.boutonDiscret {
+  border: 0;
+  background: transparent;
+  color: var(--encre-douce);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.boutonDiscret:hover {
+  color: var(--encre);
+}
+
+/* ── Le récapitulatif ───────────────────────────────────────────────────── */
+
+.recap {
+  position: sticky;
+  /*
+   * 100 px : la hauteur de l'en-tête collant, plus une respiration. Sans elle,
+   * la carte se glisse SOUS l'en-tête au défilement, et le titre « Votre
+   * commande » disparaît en premier.
+   */
+  top: 100px;
+  padding: 30px;
+  border: 1px solid var(--bordure);
+  border-radius: 32px;
+  background: var(--surface);
+  box-shadow: var(--ombre-m);
+}
+
+.recapTitre {
+  margin: 0 0 20px;
+  font-family: var(--police-titre);
+  font-size: 20px;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.lignes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ligne {
+  display: flex;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.vignette,
+.vignetteVide {
+  flex: none;
+  width: 48px;
+  height: 68px;
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow: var(--ombre-s);
+}
+
+/* Un titre sans couverture garde sa place : la ligne ne se décale pas. */
+.vignetteVide {
+  display: block;
+  background: var(--fond-doux);
+  box-shadow: none;
+}
+
+.ligneTexte {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ligneTitre {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: var(--traque-titre);
+}
+
+.ligneMeta {
+  display: block;
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+.lignePrix {
+  flex: none;
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  color: var(--accent-encre);
+  white-space: nowrap;
+}
+
+.totaux {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--bordure);
+}
+
+.totalLigne {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-4);
+  font-size: 14.5px;
+  color: var(--encre-douce);
+}
+
+.totalLigne dt,
+.totalLigne dd {
+  margin: 0;
+}
+
+.totalFinal {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--espace-4);
+  margin-top: 6px;
+}
+
+.totalFinal dt {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 17px;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.totalMontant {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 26px;
+  letter-spacing: var(--traque-titre);
+  color: var(--accent-encre);
+}
+
+.payer {
+  width: 100%;
+  margin-top: 22px;
+  padding: 17px;
+  border: 0;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-encre);
+  font-family: var(--police-titre);
+  font-size: 16.5px;
+  letter-spacing: var(--traque-titre);
+  box-shadow: var(--ombre-m);
+  transition: background var(--transition-couleur);
+}
+
+.payer:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+.recapAttente {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--encre-douce);
+}
+
+.recapMention {
+  margin: 14px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/* ── L'issue ────────────────────────────────────────────────────────────── */
+
+.issue {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 80px 28px 110px;
+  text-align: center;
+}
+
+.issueTitre {
+  margin: 0 0 14px;
+  font-family: var(--police-titre);
+  font-size: clamp(32px, 3.6vw, 48px);
+  line-height: 1.05;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.issueTexte {
+  max-width: 520px;
+  margin: 0 auto 32px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+.fichiers {
+  margin-bottom: 32px;
+  padding: 30px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-panneau);
+  background: var(--surface);
+  text-align: left;
+}
+
+.fichiersTitre {
+  margin: 0 0 18px;
+  font-family: var(--police-titre);
+  font-size: 18px;
+  letter-spacing: var(--traque-titre);
+  color: var(--encre);
+}
+
+.fichier {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.lignes .ligne:last-child,
+.lignes .fichier:last-child {
+  border-bottom: 0;
+}
+
+.fichierVignette,
+.fichierVignetteVide {
+  flex: none;
+  width: 44px;
+  height: 62px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.fichierVignetteVide {
+  display: block;
+  background: var(--fond-doux);
+}
+
+.fichierTitre {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--police-titre);
+  font-size: 15.5px;
+  letter-spacing: var(--traque-titre);
+}
+
+.fichierLire {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 11px 18px;
+  border-radius: var(--rayon-pastille);
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  font-family: var(--police-titre);
+  font-size: 13.5px;
+  letter-spacing: var(--traque-titre);
+}
+
+.fichierLire:hover {
+  background: var(--chrome-2);
+  color: var(--chrome-encre);
+}
+
+.issueRecap {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0 0 32px;
+  text-align: left;
+}
+
+/*
+ * L'identifiant de commande en chiffres tabulaires : c'est une référence qu'on
+ * recopie, et une police proportionnelle y fait confondre le 1 et le l.
+ */
+.issueReference {
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.issueActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+}
+
+.boutonPrimaire,
+.boutonContour {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 16px 28px;
+  border-radius: var(--rayon-pastille);
+  font-family: var(--police-titre);
+  font-size: 16px;
+  letter-spacing: var(--traque-titre);
+}
+
+.boutonPrimaire {
+  border: 0;
+  background: var(--action);
+  color: var(--action-encre);
+}
+
+.boutonPrimaire:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+}
+
+.boutonContour {
+  border: 1.5px solid var(--encre);
+  background: transparent;
+  color: var(--encre);
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonContour:hover {
+  background: var(--encre);
+  color: var(--fond);
+}
+
+/* ── Formats étroits ────────────────────────────────────────────────────── */
+
+/*
+ * Le récapitulatif passe AU-DESSUS du formulaire, et non en dessous.
+ *
+ * Sur téléphone, la colonne de droite deviendrait une longue traîne sous les
+ * champs : on taperait ses coordonnées sans plus voir ce qu'on paie. Remonté,
+ * il joue le rôle que la carte collante joue sur grand écran.
+ */
+@media (max-width: 980px) {
+  .colonnes {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .recap {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 26px 16px 64px;
+  }
+
+  .carte,
+  .recap,
+  .fichiers {
+    padding: 20px;
+  }
+
+  .issue {
+    padding: 48px 16px 72px;
+  }
+
+  .moyen {
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .issueActions .boutonPrimaire,
+  .issueActions .boutonContour {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
+/*
+ * ── LE CHAMP DE SAISIE DU TUNNEL ────────────────────────────────────────
+ *
+ * Ajouté avec le panier Organic, qui porte le champ de code promo. Les
+ * coordonnées, elles, passent par `ChampsCoordonnees` et gardent leur propre
+ * feuille : ce champ-ci ne les remplace pas, il sert les saisies simples du
+ * tunnel.
+ *
+ * L'anneau de focus vaut 3 px, comme partout : l'accessibilité ne se négocie
+ * pas contre une maquette (docs/maquettes/JETONS.md, écart É3).
+ */
+.saisie {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  background: var(--fond);
+  font: inherit;
+  color: var(--encre);
+}
+
+.saisie:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: 2px;
+}
+
+/* Le bouton du champ suit le champ, jamais collé à lui. */
+.saisie + * {
+  margin-top: 14px;
+}
