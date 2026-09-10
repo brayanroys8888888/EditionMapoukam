@@ -536,7 +536,7 @@ export function FicheV2({
               │ cadre vide serait pire que l'image approchée.                │
               └──────────────────────────────────────────────────────────────┘
             */}
-            {livret && estV3() && planches !== undefined && planches.length > 0 ? (
+            {livret && planches !== undefined && planches.length > 0 ? (
               <FichePlanches langue={langue} planches={planches} titre={fiche.titre} />
             ) : (
             <div className={styles.ficheVisuel}>

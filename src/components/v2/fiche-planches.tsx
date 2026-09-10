@@ -52,11 +52,11 @@ export function FichePlanches({
         src={active.url}
         {...(active.largeur !== null ? { width: active.largeur } : {})}
         {...(active.hauteur !== null ? { height: active.hauteur } : {})}
-        /*
-         * `eager` : c'est l'objet qu'on est venu voir, et il est au-dessus de
-         * la ligne de flottaison. Le différer ferait clignoter la moitié de
-         * l'écran sur la connexion du §5.1.
-         */
+        style={
+          active.largeur !== null && active.hauteur !== null
+            ? { aspectRatio: `${active.largeur} / ${active.hauteur}` }
+            : undefined
+        }
         loading="eager"
         decoding="async"
         alt={titre}
@@ -79,11 +79,6 @@ export function FichePlanches({
                 height={76}
                 loading="lazy"
                 decoding="async"
-                /*
-                 * `alt` vide et libellé porté par le BOUTON : sans cela, un
-                 * lecteur d'écran annonce deux fois la même chose — le nom de
-                 * l'image, puis celui de la commande qui la contient.
-                 */
                 alt=""
               />
               <span className={styles.vignetteLibelle}>
@@ -98,9 +93,14 @@ export function FichePlanches({
         {traduire(langue, 'v2.livretApercu')
           .replace('{n}', String(Math.min(rang, planches.length - 1) + 1))
           .replace('{total}', String(planches.length))}
-        {' — '}
-        {traduire(langue, 'v2.livretApercuAide')}
+        {planches.length > 1 ? (
+          <>
+            {' — '}
+            {traduire(langue, 'v2.livretApercuAide')}
+          </>
+        ) : null}
       </p>
+
     </div>
   );
 }
