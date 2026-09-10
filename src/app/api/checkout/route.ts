@@ -62,13 +62,14 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const env = getServerEnv();
+  const langue = garde.appelant.langue_preferee || 'fr';
   const session = await getPaymentProvider().ouvrirCheckout({
     orderId: commande.id,
     montant: { montant: commande.montant_total, devise: commande.devise },
     zone: commande.zone,
     client: { userId: garde.appelant.id, email: garde.appelant.email },
-    urlRetourSucces: `${env.NEXT_PUBLIC_APP_URL}/commandes/${commande.id}`,
-    urlRetourAbandon: `${env.NEXT_PUBLIC_APP_URL}/panier`,
+    urlRetourSucces: `${env.NEXT_PUBLIC_APP_URL}/${langue}/paiement/${commande.id}`,
+    urlRetourAbandon: `${env.NEXT_PUBLIC_APP_URL}/${langue}/panier`,
   });
 
   logger.info('Tunnel de paiement ouvert', {
