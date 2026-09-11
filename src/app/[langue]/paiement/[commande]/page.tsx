@@ -125,6 +125,12 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
   };
 
   // ── Repli de confirmation Notch Pay (si le webhook Sandbox a du retard) ──
+  //
+  // Quand Notch Pay redirige le navigateur vers cette page avec `status=complete`,
+  // le webhook asynchrone peut ne pas encore être arrivé. On interroge l'API
+  // directement et, si Notch Pay confirme le paiement, on honore la commande
+  // immédiatement. Un redirect vers la même page (sans query) garantit que
+  // l'écran de succès s'affiche d'emblée, sans attendre un rechargement manuel.
   const statusNotch = premier(requete['status']);
   const refNotch = premier(requete['reference']) || premier(requete['notchpay_trxref']);
 
@@ -137,14 +143,15 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
           const client = createServiceClient();
           await honorerCommande(commande.id, { referencePaiement: refNotch, client });
           viderFileEnArrierePlan({ client });
-          const commandeMiseAJour = await lireCommandeDe(appelant.id, identifiant);
-          if (commandeMiseAJour) {
-            Object.assign(commande, commandeMiseAJour);
-          }
+          // Redirect propre : la page se recharge sans query params, relit
+          // la commande (maintenant `paye`) et affiche l'écran de confirmation.
+          redirect(`/${langue}/paiement/${identifiant}`);
         }
       }
-    } catch {
-      // Ignorer silencieusement : l'affichage normal prendra le relais.
+    } catch (e) {
+      // Si l'erreur vient du redirect Next.js, la propager normalement.
+      if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
+      // Sinon, ignorer silencieusement : l'affichage normal prendra le relais.
     }
   }
 
