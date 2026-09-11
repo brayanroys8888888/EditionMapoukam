@@ -19,6 +19,10 @@ import {
 import { IssuePaiementV3, PaiementV3, type CommandeAffichee } from '@/components/v2/paiement-v3';
 import { estV3 } from '@/design/version';
 import { getPaymentProvider } from '@/adapters/registry';
+import { NotchPayPaymentProvider } from '@/adapters/payment/notchpay/notchpay-payment-provider';
+import { createServiceClient } from '@/lib/supabase/clients';
+import { honorerCommande } from '@/lib/orders/fulfillment';
+import { viderFileEnArrierePlan } from '@/lib/emails/file';
 import ecran from '@/components/ecran/ecran.module.css';
 import { reglerCommande } from '../../panier/actions';
 
@@ -119,6 +123,30 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
     lignes: commande.lignes,
     prixAffiches: commande.lignes.map((ligne) => afficher(ligne.prix_unitaire)),
   };
+
+  // ── Repli de confirmation Notch Pay (si le webhook Sandbox a du retard) ──
+  const statusNotch = premier(requete['status']);
+  const refNotch = premier(requete['reference']) || premier(requete['notchpay_trxref']);
+
+  if (commande.statut === 'en_attente' && (statusNotch === 'complete' || Boolean(refNotch))) {
+    try {
+      const provider = getPaymentProvider();
+      if (provider instanceof NotchPayPaymentProvider && refNotch) {
+        const tx = await provider.relirePaiement(refNotch);
+        if (tx && tx.status === 'complete') {
+          const client = createServiceClient();
+          await honorerCommande(commande.id, { referencePaiement: refNotch, client });
+          viderFileEnArrierePlan({ client });
+          const commandeMiseAJour = await lireCommandeDe(appelant.id, identifiant);
+          if (commandeMiseAJour) {
+            Object.assign(commande, commandeMiseAJour);
+          }
+        }
+      }
+    } catch {
+      // Ignorer silencieusement : l'affichage normal prendra le relais.
+    }
+  }
 
   // ── L'issue, quand la commande n'est plus payable ───────────────────────
   if (commande.statut !== 'en_attente') {
