@@ -424,8 +424,8 @@ export class NotchPayPaymentProvider implements PaymentProvider {
      * produise une exception au lieu d'un refus. Une longueur ne révèle rien —
      * celle d'un condensé SHA-256 est publique.
      */
-    if (recue.length !== calculee.length) return { valide: false, raison: 'signature_invalide' };
-    if (!timingSafeEqual(recue, calculee)) return { valide: false, raison: 'signature_invalide' };
+    if (recue.length !== calculee.length) return { valide: false, raison: `signature_invalide (longueurs diff: recu=${recue.length}, attendu=${calculee.length})` };
+    if (!timingSafeEqual(recue, calculee)) return { valide: false, raison: `signature_invalide (recu=${entete.trim()}, attendu=${attendue})` };
 
     return { valide: true };
   }
