@@ -74,8 +74,21 @@ export function MenuMobile({
   administrateur?: boolean;
 }): ReactNode {
   const [ouvert, setOuvert] = useState(false);
+  const [rendu, setRendu] = useState(false);
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ PENDANT L'ANIMATION DE SORTIE, LE PANNEAU EST DÉJÀ FERMÉ.             │
+   * │                                                                        │
+   * │ Il reste monté 280 ms pour glisser hors de l'écran, mais il n'est plus │
+   * │ un dialogue : sans rôle, `inert`, hors d'atteinte du clavier et des    │
+   * │ lecteurs d'écran. Un dialogue « encore là » pendant qu'il disparaît    │
+   * │ serait annoncé ouvert à quelqu'un qui vient de le fermer.              │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const [fermeture, setFermeture] = useState(false);
   const bouton = useRef<HTMLButtonElement | null>(null);
   const panneau = useRef<HTMLDivElement | null>(null);
+  const minuterieFermeture = useRef<number | null>(null);
 
   const segment = chemin.split('/')[2] ?? '';
 
@@ -94,6 +107,15 @@ export function MenuMobile({
 
   const fermer = useCallback(() => {
     setOuvert(false);
+    setFermeture(true);
+    if (minuterieFermeture.current !== null) {
+      window.clearTimeout(minuterieFermeture.current);
+    }
+    minuterieFermeture.current = window.setTimeout(() => {
+      setRendu(false);
+      setFermeture(false);
+      minuterieFermeture.current = null;
+    }, 280);
     // Le focus RETOURNE au bouton : sans cela il repart au début du document,
     // et l'on retraverse toute la page pour revenir où l'on était.
     bouton.current?.focus();
@@ -127,7 +149,9 @@ export function MenuMobile({
      */
     const large = window.matchMedia('(min-width: 901px)');
     const surLargeur = (): void => {
-      if (large.matches) setOuvert(false);
+      // `fermer`, et non `setOuvert(false)` : sans la minuterie, le panneau
+      // resterait monté pour toujours — invisible, mais annoncé ouvert.
+      if (large.matches) fermer();
     };
     large.addEventListener('change', surLargeur);
 
@@ -139,6 +163,14 @@ export function MenuMobile({
     };
   }, [ouvert, fermer]);
 
+  useEffect(() => {
+    return () => {
+      if (minuterieFermeture.current !== null) {
+        window.clearTimeout(minuterieFermeture.current);
+      }
+    };
+  }, []);
+
   return (
     <>
       <button
@@ -146,7 +178,13 @@ export function MenuMobile({
         type="button"
         className={styles.bouton}
         onClick={() => {
-          setOuvert(true);
+          if (minuterieFermeture.current !== null) {
+            window.clearTimeout(minuterieFermeture.current);
+            minuterieFermeture.current = null;
+          }
+          setFermeture(false);
+          setRendu(true);
+          window.requestAnimationFrame(() => setOuvert(true));
         }}
         aria-label={traduire(langue, 'navigation.principal')}
         aria-expanded={ouvert}
@@ -170,7 +208,7 @@ export function MenuMobile({
         </svg>
       </button>
 
-      {ouvert
+      {rendu
         ? createPortal(
             <>
               {/*
@@ -199,6 +237,7 @@ export function MenuMobile({
                */}
               <div
                 className={styles.voile}
+                data-ouvert={ouvert ? '' : undefined}
                 onClick={fermer}
                 aria-hidden="true"
                 role="presentation"
@@ -207,8 +246,12 @@ export function MenuMobile({
               <div
                 ref={panneau}
                 className={styles.panneau}
-                role="dialog"
-                aria-modal="true"
+                // Un attribut et non une classe, comme le voile : `.ouvert`
+                // n'existe qu'accolé à `.panneau`, et n'est donc pas exporté.
+                data-ouvert={ouvert ? '' : undefined}
+                role={fermeture ? undefined : 'dialog'}
+                aria-modal={fermeture ? undefined : true}
+                inert={fermeture}
                 aria-label={traduire(langue, 'navigation.principal')}
               >
                 {/* La poignée de la feuille : dessinée par la V3 seule. */}

@@ -48,6 +48,14 @@
   inset: 0;
   z-index: 9999;
   background: rgb(24 20 12 / 45%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+
+.voile[data-ouvert] {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 /* La poignée de la feuille V3 — sans dessin ici, elle ne prend aucune place. */
@@ -74,7 +82,17 @@
   background: var(--chrome);
   color: var(--chrome-encre);
   padding: 18px 20px 26px;
-  animation: entree 0.24s ease;
+  transform: translateY(-10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.28s ease, opacity 0.24s ease;
+}
+
+/* Un attribut et non une classe : voir le composant, et `.voile[data-ouvert]`. */
+.panneau[data-ouvert] {
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 @keyframes entree {
@@ -329,7 +347,12 @@
    * lecteur voit.
    */
   box-shadow: 0 -14px 40px rgb(20 16 8 / 28%);
-  animation: monteeFeuille 0.38s var(--ease);
+  transform: translateY(103%);
+  transition: transform 0.38s var(--ease), opacity 0.24s ease;
+}
+
+:global(:root[data-design='v3']) .panneau[data-ouvert] {
+  transform: none;
 }
 
 /*
@@ -345,6 +368,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .voile,
+  .panneau {
+    transition: none;
+  }
+
   :global(:root[data-design='v3']) .panneau {
     animation: none;
   }

@@ -1050,12 +1050,13 @@
 :global(:root[data-design='v3']) .enteteInterieur {
   min-height: 76px;
   padding: 0 28px;
+  justify-content: space-between;
   /*
-   * 34 px, la valeur du prototype. La navigation étant poussée à droite par
-   * `margin-left: auto`, cette gouttière ne se voit qu'entre la marque et le
-   * premier onglet, et entre le dernier onglet et les actions.
+   * La marque et les actions occupent chacune une extrémité de la barre. La
+   * navigation reste entre les deux, sans laisser un `margin: auto` reprendre
+   * le contrôle de la répartition.
    */
-  gap: 34px;
+  gap: 48px;
 }
 
 /*
@@ -1168,7 +1169,7 @@
 }
 
 :global(:root[data-design='v3']) .navigation {
-  margin: 0 0 0 auto;
+  margin: 0;
   gap: 26px;
   font-size: 14.5px;
 }
