@@ -336,6 +336,9 @@ export function BoutiqueV2({
           key={valeur}
           scroll={false}
           href={lien({ tri: valeur, page: undefined })}
+          // Toute variante filtrée ou triée est `nofollow` : voir
+          // `@/components/catalogue/variantes`, où le piège à robots est décrit.
+          rel="nofollow"
           className={
             valeur === filtres.tri
               ? `${styles.triLien} ${styles.triActif}`
@@ -380,6 +383,7 @@ export function BoutiqueV2({
               href={lien({
                 [PARAM_VUE]: valeur === "grille" ? undefined : valeur,
               })}
+              rel="nofollow"
               aria-current={actif ? "true" : undefined}
             >
               {ICONES_VUE[valeur]}
@@ -622,6 +626,7 @@ export function BoutiqueV2({
                             : styles.pastilleNiveau
                         }
                         href={lienFeuille({ niveau: undefined, page: undefined })}
+                        rel="nofollow"
                         aria-current={niveauPose === undefined ? "true" : undefined}
                       >
                         {traduire(langue, "catalogue.niveauTous")}
@@ -643,6 +648,7 @@ export function BoutiqueV2({
                               niveau: actif ? undefined : facette.valeur,
                               page: undefined,
                             })}
+                            rel="nofollow"
                             aria-current={actif ? "true" : undefined}
                           >
                             {facette.valeur}
@@ -700,6 +706,7 @@ export function BoutiqueV2({
                                     : undefined,
                                 page: undefined,
                               })}
+                              rel="nofollow"
                               aria-current={actif ? "true" : undefined}
                             >
                               {facette.valeur}{" "}
@@ -747,6 +754,7 @@ export function BoutiqueV2({
                                 acces: actif ? undefined : type,
                                 page: undefined,
                               })}
+                              rel="nofollow"
                               aria-current={actif ? "true" : undefined}
                             >
                               {traduire(langue, cle)}

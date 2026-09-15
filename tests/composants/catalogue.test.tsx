@@ -555,6 +555,24 @@ describe('les filtres sont des LIENS, et vivent dans l’URL', () => {
     expect(retrait.getAttribute('href')).not.toContain('themes=');
   });
 
+  it('les liens de filtre et de tri sont `nofollow` — le piège à robots', () => {
+    // Chaque pastille mène à une variante filtrée : un robot qui les suivait
+    // toutes ne finissait jamais, et le premier déploiement a été mis en pause
+    // pour quotas dépassés. Voir `src/components/catalogue/variantes.ts`.
+    const { container } = render(
+      <>
+        <BarreFiltres langue="fr" facettes={FACETTES} filtres={FILTRES_VIDES} lien={LIEN} />
+        <SelecteurTri langue="fr" tri="nouveautes" lien={LIEN} />
+      </>,
+    );
+
+    const liens = [...container.querySelectorAll('a')];
+    expect(liens.length).toBeGreaterThan(0);
+    for (const lien of liens) {
+      expect(lien.getAttribute('rel')).toBe('nofollow');
+    }
+  });
+
   it('poser un filtre RAMÈNE À LA PREMIÈRE PAGE', () => {
     // Sans cela, filtrer depuis la page 4 afficherait la page 4 d'un
     // résultat qui n'en compte qu'une — c'est-à-dire un écran vide.

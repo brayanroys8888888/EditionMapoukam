@@ -18,8 +18,14 @@ import {
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import {
+  lienVariante,
+  metadonneesVariante,
+  type ModificationLien,
+} from '@/components/catalogue/variantes';
 import { teinteDuTheme } from '@/components/motif';
 import { BoutiqueV2, vueDepuisRequete } from '@/components/v2/boutique';
+import { getServerEnv } from '@/lib/config/env';
 import { estV3, structureRefondue } from '@/design/version';
 import { ajouterAuPanier } from '../panier/actions';
 import styles from '@/components/catalogue/catalogue.module.css';
@@ -51,11 +57,17 @@ function premier(valeur: string | string[] | undefined): string | undefined {
   return Array.isArray(valeur) ? valeur[0] : valeur;
 }
 
-export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
     title: traduire(langue, 'catalogue.titre'),
     description: traduire(langue, 'marque.baseline'),
+    ...metadonneesVariante({
+      base: getServerEnv().NEXT_PUBLIC_APP_URL,
+      langue,
+      chemin: '/catalogue',
+      requete: await searchParams,
+    }),
   };
 }
 
@@ -105,23 +117,9 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
 
   const base = `/${langue}/catalogue`;
 
-  /**
-   * URL d'une variante des filtres courants.
-   *
-   * Elle repart des paramètres BRUTS de l'URL, et non des valeurs analysées :
-   * les seconds portent des défauts — `tri=nouveautes`, `page=1` — qu'il serait
-   * inutile d'écrire dans chaque lien, et qui allongeraient toutes les adresses
-   * partagées.
-   */
-  const lien = (modification: Record<string, string | number | undefined>): string => {
-    const suivants = new URLSearchParams(brut);
-    for (const [cle, valeur] of Object.entries(modification)) {
-      if (valeur === undefined) suivants.delete(cle);
-      else suivants.set(cle, String(valeur));
-    }
-    const chaine = suivants.toString();
-    return chaine.length > 0 ? `${base}?${chaine}` : base;
-  };
+  // URL d'une variante des filtres courants — une seule implémentation, avec
+  // les rayons : voir `lienVariante`.
+  const lien = (modification: ModificationLien): string => lienVariante(base, brut, modification);
 
   const filtres: FiltresCatalogue = {
     q: parametres.q,

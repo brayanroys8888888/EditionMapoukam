@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
 import { langueValide, traduire } from '@/i18n';
+import { metadonneesVariante } from '@/components/catalogue/variantes';
+import { getServerEnv } from '@/lib/config/env';
 import { Rayon, aplatirRequete, type ClesRayon } from '../rayon';
 
 /**
@@ -36,11 +38,17 @@ interface Parametres {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
     title: traduire(langue, CLES.titre),
     description: traduire(langue, CLES.intro),
+    ...metadonneesVariante({
+      base: getServerEnv().NEXT_PUBLIC_APP_URL,
+      langue,
+      chemin: '/contes',
+      requete: await searchParams,
+    }),
   };
 }
 

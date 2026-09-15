@@ -18,6 +18,7 @@ import {
   type FiltrePose,
   type FiltresCatalogue,
 } from '@/components/catalogue';
+import { lienVariante, type ModificationLien } from '@/components/catalogue/variantes';
 import { teinteDuTheme } from '@/components/motif';
 import { BoutiqueV2, vueDepuisRequete } from '@/components/v2/boutique';
 import { estV3, structureRefondue } from '@/design/version';
@@ -169,25 +170,11 @@ export async function Rayon({
     return <Erreur langue={langue} code="erreur_interne" />;
   }
 
-  /**
-   * URL d'une variante des filtres courants.
-   *
-   * Elle repart des paramètres BRUTS de l'URL, et non des valeurs analysées :
-   * les seconds portent des défauts — `tri=nouveautes`, `page=1` — qu'il serait
-   * inutile d'écrire dans chaque lien, et qui allongeraient toutes les adresses
-   * partagées.
-   */
-  const lien = (modification: Record<string, string | number | undefined>): string => {
-    const suivants = new URLSearchParams(brut);
-    for (const [cle, valeur] of Object.entries(modification)) {
-      if (valeur === undefined) suivants.delete(cle);
-      else suivants.set(cle, String(valeur));
-    }
-    // Même raison qu'au-dessus : le type ne se dépose jamais dans l'URL d'ici.
-    suivants.delete('type');
-    const chaine = suivants.toString();
-    return chaine.length > 0 ? `${base}?${chaine}` : base;
-  };
+  // URL d'une variante des filtres courants — la même implémentation que le
+  // catalogue : voir `lienVariante`. Même raison qu'au-dessus : le type ne se
+  // dépose jamais dans l'URL d'ici.
+  const lien = (modification: ModificationLien): string =>
+    lienVariante(base, brut, modification, ['type']);
 
   const filtres: FiltresCatalogue = {
     q: parametres.q,

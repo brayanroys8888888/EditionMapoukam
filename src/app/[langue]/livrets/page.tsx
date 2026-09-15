@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 
 import { langueValide, traduire } from '@/i18n';
+import { metadonneesVariante } from '@/components/catalogue/variantes';
+import { getServerEnv } from '@/lib/config/env';
 import { estV3 } from '@/design/version';
 import type { EntreeCatalogue } from '@/domain/catalog/types';
 import { LivretMisEnAvant } from '@/components/v2/livret-mis-en-avant';
@@ -37,11 +39,17 @@ interface Parametres {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
     title: traduire(langue, CLES.titre),
     description: traduire(langue, CLES.intro),
+    ...metadonneesVariante({
+      base: getServerEnv().NEXT_PUBLIC_APP_URL,
+      langue,
+      chemin: '/livrets',
+      requete: await searchParams,
+    }),
   };
 }
 

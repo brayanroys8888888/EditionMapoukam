@@ -434,6 +434,9 @@ export function PastilleFiltre({
      */
     <Link
       href={href}
+      // Une variante filtrée n'est pas une page à explorer : voir
+      // `./variantes.ts`, où le piège à robots est décrit.
+      rel="nofollow"
       scroll={false}
       className={[
         styles.pastilleFiltre,
@@ -503,6 +506,7 @@ export function FiltresActifs({
           key={pose.cle}
           className={styles.pastilleRetirable}
           href={pose.retrait}
+          rel="nofollow"
           style={pose.teinte ? teintesPalette(pose.teinte) : undefined}
           aria-label={`${traduire(langue, 'catalogue.retirerFiltre')} : ${pose.libelle}`}
         >
@@ -710,6 +714,7 @@ export function SelecteurTri({
         <a
           key={valeur}
           href={lien({ tri: valeur, page: undefined })}
+          rel="nofollow"
           className={[styles.triLien, valeur === tri ? styles.triActif : null]
             .filter(Boolean)
             .join(' ')}

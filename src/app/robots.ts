@@ -68,6 +68,21 @@ export default function robots(): MetadataRoute.Robots {
         '/en/nouveau-mot-de-passe',
         '/fr/confirmation',
         '/en/confirmation',
+        // ┌──────────────────────────────────────────────────────────────────┐
+        // │ LES VARIANTES FILTRÉES DES ÉCRANS DE CATALOGUE.                  │
+        // │                                                                  │
+        // │ Le `?` final n'interdit que les adresses À PARAMÈTRES : l'écran  │
+        // │ nu reste exploré, et les titres restent atteignables par lui et  │
+        // │ par le plan du site. Sans cette ligne, des robots s'enfermaient  │
+        // │ dans les combinaisons de filtres jusqu'à épuiser les quotas de   │
+        // │ l'hébergeur — voir `@/components/catalogue/variantes`.           │
+        // └──────────────────────────────────────────────────────────────────┘
+        '/fr/catalogue?',
+        '/en/catalogue?',
+        '/fr/contes?',
+        '/en/contes?',
+        '/fr/livrets?',
+        '/en/livrets?',
       ],
     },
     sitemap: `${base}/sitemap.xml`,
