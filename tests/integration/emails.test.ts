@@ -124,15 +124,60 @@ describe('(a) UN ÉCHEC D’ENVOI N’ANNULE JAMAIS LE FAIT MÉTIER', () => {
       await query(`select 1 from public.entitlements where user_id = $1`, [acheteur.id]),
     ).toHaveLength(1);
 
-    // Et l'email n'est pas perdu : la ligne porte son erreur, consultable.
+    // Et l'email n'est pas perdu : il reste EN ATTENTE, avec son erreur
+    // consultable, pour la prochaine tentative (migration 0086).
     const ligne = await queryOne<{ statut: string; tentatives: number; derniere_erreur: string }>(
       `select statut, tentatives, derniere_erreur from public.email_outbox
         where user_id = $1`,
       [acheteur.id],
     );
-    expect(ligne?.statut).toBe('echoue');
+    expect(ligne?.statut).toBe('en_attente');
     expect(ligne?.tentatives).toBe(1);
     expect(ligne?.derniere_erreur).toContain('injoignable');
+  });
+
+  it('un email en échec PART au vidage suivant, quand le serveur répond de nouveau', async () => {
+    // ┌──────────────────────────────────────────────────────────────────────┐
+    // │ LE CAS DU 15 SEPTEMBRE 2026.                                         │
+    // │                                                                      │
+    // │ Une confirmation de commande avait échoué une fois, et n'était plus  │
+    // │ jamais reprise : `echoue` au premier essai, et `emails_a_envoyer` ne │
+    // │ relit que les emails en attente.                                     │
+    // └──────────────────────────────────────────────────────────────────────┘
+    await commanderEtPayer(acheteur);
+    await viderFile({ mailer: new MailerEnPanne() });
+
+    const espion = new MailerEspion();
+    await viderFile({ mailer: espion });
+
+    expect(espion.messages.map((m) => m.destinataire)).toContain(acheteur.email);
+    const ligne = await queryOne<{ statut: string; tentatives: number }>(
+      `select statut, tentatives from public.email_outbox where user_id = $1`,
+      [acheteur.id],
+    );
+    expect(ligne).toEqual({ statut: 'envoye', tentatives: 2 });
+  });
+
+  it('un email est ABANDONNÉ à sa cinquième tentative, pas avant', async () => {
+    await commanderEtPayer(acheteur);
+    const statut = async (): Promise<{ statut: string; tentatives: number } | undefined> =>
+      await queryOne<{ statut: string; tentatives: number }>(
+        `select statut, tentatives from public.email_outbox where user_id = $1`,
+        [acheteur.id],
+      );
+
+    for (let essai = 1; essai <= 4; essai += 1) {
+      await viderFile({ mailer: new MailerEnPanne() });
+    }
+    expect(await statut()).toEqual({ statut: 'en_attente', tentatives: 4 });
+
+    await viderFile({ mailer: new MailerEnPanne() });
+    expect(await statut()).toEqual({ statut: 'echoue', tentatives: 5 });
+
+    // Abandonné, il n'est plus repris : un vidage réussi ne le renvoie pas.
+    const espion = new MailerEspion();
+    await viderFile({ mailer: espion });
+    expect(espion.messages.map((m) => m.destinataire)).not.toContain(acheteur.email);
   });
 
   it('l’email est PROGRAMMÉ dans la transaction, envoyé seulement après', async () => {

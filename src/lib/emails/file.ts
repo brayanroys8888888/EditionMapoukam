@@ -22,6 +22,9 @@ import type { Mailer } from '@/adapters/mail/types';
  * │ Conséquence : un serveur de messagerie en panne laisse des lignes en     │
  * │ attente, et rien d'autre. La commande reste payée, les droits restent    │
  * │ octroyés, et l'email partira au prochain vidage.                         │
+ * │                                                                          │
+ * │ Jusqu'à la CINQUIÈME tentative : au-delà, `marquer_email` l'abandonne    │
+ * │ (`echoue`). La règle vit en base, migration 0086 — pas ici.              │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
