@@ -1,22 +1,60 @@
 #!/usr/bin/env node
 /**
- * Crée — ou promeut — un compte administrateur sur la base PRODUCTION Supabase.
+ * Crée — ou promeut — un compte administrateur sur la base HÉBERGÉE Supabase.
  *
  * Ce script cible explicitement la base en ligne. Il est réservé à une
  * utilisation ponctuelle et manuelle par le propriétaire du projet.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUN IDENTIFIANT DANS CE FICHIER (CLAUDE.md, règle 6).                 │
+ * │                                                                          │
+ * │ Il a longtemps porté l'URL et la clé `service_role` du projet en dur, et │
+ * │ le dépôt est public : la clé a donc été exposée. Elles se lisent         │
+ * │ désormais dans `.env.production.local`, non versionné — ou dans          │
+ * │ l'environnement du shell, qui a la priorité.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Variables lues :
+ *   NEXT_PUBLIC_SUPABASE_URL    https://<ref>.supabase.co
+ *   SUPABASE_SERVICE_ROLE_KEY   la clé `service_role` du même projet
+ *   NEXT_PUBLIC_APP_URL         facultative — sert à afficher les liens
  *
  * Usage :
  *   node scripts/creer-admin-prod.mjs
  *   node scripts/creer-admin-prod.mjs mon.adresse@exemple.fr MonMotDePasse123
  */
+import { join } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
 
-// ── Identifiants production ─────────────────────────────────────────────────
+// ── Identifiants ────────────────────────────────────────────────────────────
 
-const urlSupabase = 'https://peejevfgbwjprggwclga.supabase.co';
-const cleService =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlZWpldmZnYndqcHJnZ3djbGdhIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NTc3ODg4NCwiZXhwIjoyMTAxMzU0ODg0fQ.yXJ7cjjgny5BzdwjQB0GfmkbPBXEqfWYFa6Ke3V4AR8';
+// dotenv n'écrase pas une variable déjà posée : le shell garde la main.
+config({ path: join(process.cwd(), '.env.production.local'), quiet: true });
+
+const urlSupabase = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+const cleService = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+if (!urlSupabase || !cleService) {
+  console.error(
+    'NEXT_PUBLIC_SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manque.\n' +
+      'Renseignez-les dans .env.production.local (Supabase → Project Settings → API).',
+  );
+  process.exit(1);
+}
+
+// La garde inverse de `creer-admin.mjs` : une base locale a son propre script.
+const estLocale = /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:\d+)?/i.test(urlSupabase);
+if (estLocale) {
+  console.error(
+    `Refus : ${urlSupabase} est une base locale.\n` +
+      'Utilisez `npm run admin:creer` pour la pile de développement.',
+  );
+  process.exit(1);
+}
+
+const urlApp = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, '');
 
 // ── Arguments ───────────────────────────────────────────────────────────────
 
@@ -33,8 +71,8 @@ const service = createClient(urlSupabase, cleService, {
 
 // ── Création ou promotion ───────────────────────────────────────────────────
 
-console.log(`\n  Connexion à la base de production...`);
-console.log(`  Projet : ${urlSupabase}`);
+console.log(`\n  Connexion à la base hébergée...`);
+console.log(`  Projet : ${new URL(urlSupabase).host}`);
 console.log(`  Email  : ${email}\n`);
 
 const { data: usersData, error: errList } = await service.auth.admin.listUsers({
@@ -98,8 +136,10 @@ console.log(`    Adresse       ${email}`);
 console.log(`    Mot de passe  ${motDePasse}`);
 console.log(`    Identifiant   ${id}`);
 console.log('');
-console.log(`    Connexion     https://editionmapoukam.com/fr/connexion`);
-console.log(`    Admin         https://editionmapoukam.com/fr/admin`);
-console.log('');
+if (urlApp) {
+  console.log(`    Connexion     ${urlApp}/fr/connexion`);
+  console.log(`    Admin         ${urlApp}/fr/admin`);
+  console.log('');
+}
 console.log("  Notez ce mot de passe — relancer le script avec la même adresse le remplacera.");
 console.log('');
