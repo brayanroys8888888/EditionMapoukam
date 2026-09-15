@@ -1,5 +1,26 @@
 import { Resend } from 'resend';
+import { getServerEnv } from '@/lib/config/env';
 import type { Mailer, MessageMail, ResultatEnvoi } from './types';
+
+/**
+ * L'expéditeur, sur le domaine VÉRIFIÉ chez Resend.
+ *
+ * Il n'y a plus de repli sur `onboarding@resend.dev` : cette adresse de
+ * démonstration ne livre qu'au propriétaire du compte Resend. Un email parti
+ * d'elle « réussit » côté serveur et n'arrive jamais chez le client — la
+ * panne la plus difficile à voir. Une variable absente échoue donc
+ * franchement, et l'erreur est inscrite dans la file d'emails.
+ */
+function expediteur(): string {
+  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  if (!from) {
+    throw new Error(
+      'RESEND_FROM_EMAIL manque : attendu une adresse du domaine vérifié chez Resend, ' +
+        'par exemple « Édition Mapoukam <noreply@edition-mapoukam.royceproject.site> ».',
+    );
+  }
+  return from;
+}
 
 export class ResendMailer implements Mailer {
   readonly nom = 'resend';
@@ -11,8 +32,8 @@ export class ResendMailer implements Mailer {
   }
 
   async envoyer(message: MessageMail): Promise<ResultatEnvoi> {
-    const from = process.env.RESEND_FROM_EMAIL || 'Édition Mapoukam <onboarding@resend.dev>';
-    
+    const from = expediteur();
+
     // Si un HTML est fourni, on l'utilise. Sinon, on enveloppe le texte dans le design global.
     const contenuHtml = message.html || this.envelopperDansDesign(message.texte);
 
@@ -38,6 +59,10 @@ export class ResendMailer implements Mailer {
    * Enveloppe un texte brut dans le design email d'Édition Mapoukam.
    */
   private envelopperDansDesign(texteBrut: string): string {
+    // L'adresse du site vient du déploiement, jamais d'une constante : l'ancienne,
+    // écrite ici en dur, désignait un déploiement mis en pause depuis.
+    const site = getServerEnv().NEXT_PUBLIC_APP_URL.replace(/\/+$/, '');
+
     // Convertir les sauts de ligne en balises <br/>, et détecter les liens pour les styliser
     const texteFormate = texteBrut
       .replace(/</g, '&lt;').replace(/>/g, '&gt;') // Éviter l'injection
@@ -45,7 +70,7 @@ export class ResendMailer implements Mailer {
       .map(ligne => {
         // Formater les liens qui commencent par http ou /
         if (ligne.trim().startsWith('http') || ligne.trim().startsWith('/')) {
-          const url = ligne.trim().startsWith('/') ? `https://editionmapoukam.vercel.app${ligne.trim()}` : ligne.trim();
+          const url = ligne.trim().startsWith('/') ? `${site}${ligne.trim()}` : ligne.trim();
           return `<div style="text-align:center;margin:32px 0;"><a href="${url}" style="display:inline-block;background-color:#16371f;color:#ffffff;text-decoration:none;font-size:16px;font-weight:700;padding:14px 32px;border-radius:50px;">Accéder à mon espace</a></div>`;
         }
         return ligne ? `<p style="margin:0 0 16px;font-size:16px;color:#1c2b1e;line-height:1.6;">${ligne}</p>` : '';
@@ -93,7 +118,7 @@ export class ResendMailer implements Mailer {
 export async function envoyerCodeVerificationResend(email: string, code: string) {
   const key = process.env.RESEND_API_KEY;
   const resend = new Resend(key);
-  const from = process.env.RESEND_FROM_EMAIL || 'Édition Mapoukam <onboarding@resend.dev>';
+  const from = expediteur();
   return resend.emails.send({
     from,
     to: email,

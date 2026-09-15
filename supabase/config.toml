@@ -263,7 +263,9 @@ host = "smtp.resend.com"
 port = 465
 user = "resend"
 pass = "env(RESEND_API_KEY)"
-admin_email = "noreply@editionmapoukam.royceproject.site"
+# Le domaine vérifié chez Resend porte un TIRET : edition-mapoukam. Sans lui,
+# l'adresse désigne un domaine qui n'existe pas, et Resend refuse d'envoyer.
+admin_email = "noreply@edition-mapoukam.royceproject.site"
 sender_name = "Édition Mapoukam"
 
 # ┌──────────────────────────────────────────────────────────────────────────┐
