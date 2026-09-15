@@ -33,6 +33,8 @@ conte d'afrique/
 # divers
 .DS_Store
 Thumbs.db
+# Réglages d'affichage de dossier que l'Explorateur Windows écrit tout seul.
+desktop.ini
 coverage/
 *.log
 
@@ -50,3 +52,9 @@ captures/
 # dans docs/REFONTE-V3.md.
 design_handoff_edition_mapoukam/
 .captures/
+
+.vercel
+.env*
+
+# Exports du Supabase hébergé : données réelles (comptes, commandes), jamais versionnées.
+exports-supabase/
