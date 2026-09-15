@@ -1,9 +1,11 @@
+import { after } from 'next/server';
+
 import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clients';
 import { rendre } from '@/domain/emails/templates';
 import { rendreHtml } from './html';
 import { getServerEnv } from '@/lib/config/env';
 import { logger } from '@/lib/logger';
-import { FileMailer } from '@/adapters/mail/file-mailer';
+import { getMailer } from '@/adapters/registry';
 import type { Mailer } from '@/adapters/mail/types';
 
 /**
@@ -61,7 +63,17 @@ interface LigneFile {
  */
 export async function viderFile(options: OptionsVidage = {}): Promise<RapportVidage> {
   const client = options.client ?? createServiceClient();
-  const mailer = options.mailer ?? new FileMailer();
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LE MAILER CONFIGURÉ, JAMAIS UN ADAPTATEUR ÉCRIT EN DUR.               │
+   * │                                                                        │
+   * │ Ce défaut valait `new FileMailer()` : en production, chaque email de   │
+   * │ la file tentait d'écrire dans `.mails/` sur un disque en lecture seule │
+   * │ (`ENOENT: mkdir '/var/task/.mails'`), quel que soit `MAILER`. Le choix │
+   * │ de l'adaptateur appartient au registre, et à lui seul.                 │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const mailer = options.mailer ?? getMailer();
   const rapport: RapportVidage = { envoyes: 0, echoues: 0 };
 
   const attente = await client.rpc('emails_a_envoyer', {
@@ -146,9 +158,31 @@ export async function viderFile(options: OptionsVidage = {}): Promise<RapportVid
  * puisse pas transformer un email perdu en webhook rejoué.
  */
 export function viderFileEnArrierePlan(options: OptionsVidage = {}): void {
-  void viderFile(options).catch((erreur: unknown) => {
-    logger.warn('Vidage de la file d’emails interrompu', {
-      detail: erreur instanceof Error ? erreur.message : String(erreur),
-    });
-  });
+  const vider = (): Promise<void> =>
+    viderFile(options).then(
+      () => undefined,
+      (erreur: unknown) => {
+        logger.warn('Vidage de la file d’emails interrompu', {
+          detail: erreur instanceof Error ? erreur.message : String(erreur),
+        });
+      },
+    );
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ `after()`, POUR QUE L'HÉBERGEUR ATTENDE LA FIN DE L'ENVOI.            │
+   * │                                                                        │
+   * │ Une promesse lancée sans être attendue peut être interrompue dès que   │
+   * │ la réponse est partie : une fonction serverless est gelée à la fin de  │
+   * │ la requête. `after()` la déclare, et l'hébergeur la mène à son terme.  │
+   * │                                                                        │
+   * │ Hors d'une requête — un test, un script — `after()` lève : on retombe  │
+   * │ alors sur la promesse détachée, qui y suffit.                          │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  try {
+    after(vider);
+  } catch {
+    void vider();
+  }
 }
