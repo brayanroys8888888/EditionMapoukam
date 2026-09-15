@@ -424,8 +424,14 @@ export class NotchPayPaymentProvider implements PaymentProvider {
      * produise une exception au lieu d'un refus. Une longueur ne révèle rien —
      * celle d'un condensé SHA-256 est publique.
      */
-    if (recue.length !== calculee.length) return { valide: false, raison: `signature_invalide (longueurs diff: recu=${recue.length}, attendu=${calculee.length})` };
-    if (!timingSafeEqual(recue, calculee)) return { valide: false, raison: `signature_invalide (recu=${entete.trim()}, attendu=${attendue})` };
+    /*
+     * Le motif ne dit jamais QUELLE signature était attendue. Il finit dans
+     * les journaux et dans `webhook_events.erreur` : y écrire le condensé
+     * calculé donnerait, pour un corps choisi, la signature qui le fait
+     * accepter.
+     */
+    if (recue.length !== calculee.length) return { valide: false, raison: 'signature_invalide' };
+    if (!timingSafeEqual(recue, calculee)) return { valide: false, raison: 'signature_invalide' };
 
     return { valide: true };
   }
@@ -513,6 +519,40 @@ export class NotchPayPaymentProvider implements PaymentProvider {
 
     const donnees = (await reponse.json()) as { transaction?: TransactionNotchPay };
     return donnees.transaction ?? null;
+  }
+
+  /**
+   * La transaction relue est-elle le règlement complet de CETTE commande ?
+   *
+   * ┌──────────────────────────────────────────────────────────────────────────┐
+   * │ LA RÉFÉRENCE VIENT DE L'ADRESSE DE RETOUR, DONC DU VISITEUR.            │
+   * │                                                                          │
+   * │ « Notch Pay dit que cette transaction est payée » ne suffit pas :        │
+   * │ n'importe quelle transaction réussie — la sienne, pour une commande à    │
+   * │ un euro — ferait honorer une commande chère ouverte à côté. La           │
+   * │ transaction doit donc désigner CETTE commande (la référence posée à      │
+   * │ l'ouverture du paiement), pour SON montant et dans SA devise.            │
+   * │                                                                          │
+   * │ Au moindre écart, la réponse est non : le webhook reste le chemin        │
+   * │ normal, et ce repli ne sert qu'à ne pas le faire attendre.               │
+   * └──────────────────────────────────────────────────────────────────────────┘
+   */
+  async confirmerReglement(
+    reference: string,
+    attendu: { commandeId: string; montant: number; devise: string },
+  ): Promise<boolean> {
+    const transaction = await this.relirePaiement(reference);
+    if (!transaction || transaction.status !== 'complete') return false;
+
+    const designeLaCommande =
+      transaction.reference === attendu.commandeId ||
+      transaction.merchant_reference === attendu.commandeId;
+
+    return (
+      designeLaCommande &&
+      transaction.amount === attendu.montant &&
+      transaction.currency?.toUpperCase() === attendu.devise.toUpperCase()
+    );
   }
 
   /**

@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { langueValide, traduire } from '@/i18n';
+import type { ReponseBibliotheque } from '@/domain/api/contract';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { GabaritEspace } from '@/components/espace';
 import { GabaritEspaceV3, stylesEspaceV3 as e3 } from '@/components/v2/espace-v3';
@@ -70,14 +71,14 @@ export default async function PageCompte({ params }: Parametres) {
   const langueLecture = (appelant.langue_preferee || langue).toUpperCase();
 
   const { lireBibliotheque } = await import('@/lib/account/bibliotheque');
-  let bibliotheque;
+  let bibliotheque: ReponseBibliotheque;
   try {
     bibliotheque = await lireBibliotheque(appelant.id, langue);
   } catch {
-    bibliotheque = { achats: [] };
+    bibliotheque = { achats: [], en_cours: [] };
   }
   const nbTitres = bibliotheque.achats.length;
-  const nbLivretsGratuits = bibliotheque.achats.filter((a: any) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
+  const nbLivretsGratuits = bibliotheque.achats.filter((a) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
 
   if (estV3()) {
     return (

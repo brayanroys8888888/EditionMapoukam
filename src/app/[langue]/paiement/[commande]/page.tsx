@@ -19,10 +19,7 @@ import {
 import { IssuePaiementV3, PaiementV3, type CommandeAffichee } from '@/components/v2/paiement-v3';
 import { estV3 } from '@/design/version';
 import { getPaymentProvider } from '@/adapters/registry';
-import { NotchPayPaymentProvider } from '@/adapters/payment/notchpay/notchpay-payment-provider';
-import { createServiceClient } from '@/lib/supabase/clients';
-import { honorerCommande } from '@/lib/orders/fulfillment';
-import { viderFileEnArrierePlan } from '@/lib/emails/file';
+import { confirmerReglementDeRepli } from '@/lib/orders/confirmation-repli';
 import ecran from '@/components/ecran/ecran.module.css';
 import { reglerCommande } from '../../panier/actions';
 
@@ -135,24 +132,20 @@ export default async function PagePaiement({ params, searchParams }: Parametres)
   const refNotch = premier(requete['reference']) || premier(requete['notchpay_trxref']);
 
   if (commande.statut === 'en_attente' && (statusNotch === 'complete' || Boolean(refNotch))) {
-    try {
-      const provider = getPaymentProvider();
-      if (provider instanceof NotchPayPaymentProvider && refNotch) {
-        const tx = await provider.relirePaiement(refNotch);
-        if (tx && tx.status === 'complete') {
-          const client = createServiceClient();
-          await honorerCommande(commande.id, { referencePaiement: refNotch, client });
-          viderFileEnArrierePlan({ client });
-          // Redirect propre : la page se recharge sans query params, relit
-          // la commande (maintenant `paye`) et affiche l'écran de confirmation.
-          redirect(`/${langue}/paiement/${identifiant}`);
-        }
+    let confirmee = false;
+    if (refNotch) {
+      try {
+        // La vérification qui compte — cette transaction désigne-t-elle
+        // CETTE commande, pour son montant ? — vit dans la fonction appelée.
+        confirmee = await confirmerReglementDeRepli(commande, refNotch);
+      } catch {
+        // Notch Pay injoignable : l'affichage normal prend le relais, et le
+        // webhook reste le chemin de confirmation.
       }
-    } catch (e) {
-      // Si l'erreur vient du redirect Next.js, la propager normalement.
-      if (e instanceof Error && e.message === 'NEXT_REDIRECT') throw e;
-      // Sinon, ignorer silencieusement : l'affichage normal prendra le relais.
     }
+    // Redirect propre, HORS du `try` : la page se recharge sans paramètres,
+    // relit la commande (maintenant `paye`) et affiche la confirmation.
+    if (confirmee) redirect(`/${langue}/paiement/${identifiant}`);
   }
 
   // ── L'issue, quand la commande n'est plus payable ───────────────────────

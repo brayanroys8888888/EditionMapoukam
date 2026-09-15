@@ -72,7 +72,7 @@ export default async function PageAbonnement({ params }: Parametres) {
     return <Erreur langue={langue} code="erreur_interne" />;
   }
   const nbTitres = bibliotheque.achats.length;
-  const nbLivretsGratuits = bibliotheque.achats.filter((a: any) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
+  const nbLivretsGratuits = bibliotheque.achats.filter((a) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
 
   if (!courant) {
     if (estV3()) {

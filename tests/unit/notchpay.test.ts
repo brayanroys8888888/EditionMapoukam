@@ -393,3 +393,70 @@ describe('l’en-tête exporté', () => {
     expect(ENTETE_SIGNATURE_NOTCHPAY).toBe('x-notch-signature');
   });
 });
+
+describe('le repli de confirmation — la transaction doit désigner CETTE commande', () => {
+  // ┌────────────────────────────────────────────────────────────────────┐
+  // │ LA FAILLE QUE CES TESTS FERMENT.                                   │
+  // │                                                                    │
+  // │ La référence arrive par l'adresse de retour : le visiteur la       │
+  // │ choisit. Le repli honorait la commande affichée dès que Notch Pay  │
+  // │ disait « payée » — pour N'IMPORTE QUELLE transaction. Payer une    │
+  // │ commande à un euro, puis ouvrir celle d'un coffret avec la même    │
+  // │ référence, suffisait à recevoir le coffret.                        │
+  // └────────────────────────────────────────────────────────────────────┘
+  const ATTENDU = { commandeId: 'commande-a', montant: 1500, devise: 'XAF' };
+
+  function relue(ecarts: Record<string, unknown> = {}) {
+    return transportSimule({
+      corps: {
+        transaction: {
+          status: 'complete',
+          reference: 'commande-a',
+          amount: 1500,
+          currency: 'XAF',
+          ...ecarts,
+        },
+      },
+    });
+  }
+
+  it('confirme le règlement complet de la commande, pour son montant et sa devise', async () => {
+    const { appels, transport } = relue();
+
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(true);
+    expect(appels[0]?.url).toMatch(/\/payments\/trx_1$/);
+  });
+
+  it('accepte la référence MARCHANDE quand `reference` est celle du prestataire', async () => {
+    const { transport } = relue({ reference: 'trx.notchpay', merchant_reference: 'commande-a' });
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(true);
+  });
+
+  it('REFUSE une transaction réussie qui règle une AUTRE commande', async () => {
+    const { transport } = relue({ reference: 'commande-b', merchant_reference: 'commande-b' });
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(false);
+  });
+
+  it('refuse un montant différent — une commande moins chère réglée à sa place', async () => {
+    const { transport } = relue({ amount: 100 });
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(false);
+  });
+
+  it('refuse une autre devise, et ignore la casse de la même', async () => {
+    const autre = relue({ currency: 'EUR' });
+    await expect(provider({ transport: autre.transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(false);
+
+    const casse = relue({ currency: 'xaf' });
+    await expect(provider({ transport: casse.transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(true);
+  });
+
+  it('refuse une transaction qui n’est pas COMPLÈTE', async () => {
+    const { transport } = relue({ status: 'pending' });
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(false);
+  });
+
+  it('refuse une transaction introuvable, sans lever', async () => {
+    const { transport } = transportSimule({ statut: 404, corps: { message: 'not found' } });
+    await expect(provider({ transport }).confirmerReglement('trx_1', ATTENDU)).resolves.toBe(false);
+  });
+});

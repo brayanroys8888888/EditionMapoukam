@@ -149,3 +149,67 @@ export async function lireCommandeDe(
     })),
   };
 }
+
+/** Une commande de l'historique du client, prête à être dessinée. */
+export interface CommandeHistorique {
+  id: string;
+  cree_le: string;
+  montant_total: number;
+  devise: string;
+  statut: string;
+  prestataire: string;
+  /**
+   * Un titre par ligne, dans la langue demandée quand elle existe, sinon dans
+   * une autre. `null` quand aucune traduction ne subsiste — jamais une invention.
+   */
+  titres: (string | null)[];
+}
+
+/**
+ * L'historique des commandes d'un client, de la plus récente à la plus ancienne.
+ *
+ * Même garde que `lireCommandeDe` : le filtre `user_id` est DANS la requête,
+ * et les commandes d'autrui ne sont jamais chargées. Deux lectures, jamais une
+ * par commande : les commandes, puis les titres de tous leurs livres.
+ */
+export async function listerCommandesDe(
+  userId: string,
+  langue: string,
+  options: { client?: AppSupabaseClient } = {},
+): Promise<CommandeHistorique[]> {
+  const client = options.client ?? createServiceClient();
+
+  const { data } = await client
+    .from('orders')
+    .select('id, cree_le, montant_total, devise, statut, prestataire, order_items(book_id)')
+    .eq('user_id', userId)
+    .order('cree_le', { ascending: false });
+
+  const commandes = data ?? [];
+  const livres = [...new Set(commandes.flatMap((c) => c.order_items.map((ligne) => ligne.book_id)))];
+
+  const titres = new Map<string, string | null>();
+  if (livres.length > 0) {
+    const { data: traductions } = await client
+      .from('book_translations')
+      .select('book_id, langue, titre')
+      .in('book_id', livres);
+
+    for (const traduction of traductions ?? []) {
+      // La langue demandée l'emporte ; à défaut, la première trouvée.
+      if (traduction.langue === langue || !titres.has(traduction.book_id)) {
+        titres.set(traduction.book_id, traduction.titre);
+      }
+    }
+  }
+
+  return commandes.map((c) => ({
+    id: c.id,
+    cree_le: c.cree_le,
+    montant_total: c.montant_total,
+    devise: c.devise,
+    statut: c.statut,
+    prestataire: c.prestataire,
+    titres: c.order_items.map((ligne) => titres.get(ligne.book_id) ?? null),
+  }));
+}

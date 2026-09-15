@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { langueValide, traduire } from '@/i18n';
+import type { ReponseBibliotheque } from '@/domain/api/contract';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { GabaritEspace } from '@/components/espace';
 import { GabaritEspaceV3, stylesEspaceV3 as e3 } from '@/components/v2/espace-v3';
@@ -33,51 +34,36 @@ export default async function PageCommandes({ params }: Parametres) {
   const langueLecture = (appelant.langue_preferee || langue).toUpperCase();
 
   const { lireBibliotheque } = await import('@/lib/account/bibliotheque');
-  let bibliotheque;
+  let bibliotheque: ReponseBibliotheque;
   try {
     bibliotheque = await lireBibliotheque(appelant.id, langue);
   } catch {
-    bibliotheque = { achats: [] };
+    bibliotheque = { achats: [], en_cours: [] };
   }
   const nbTitres = bibliotheque.achats.length;
-  const nbLivretsGratuits = bibliotheque.achats.filter((a: any) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
+  const nbLivretsGratuits = bibliotheque.achats.filter((a) => a.source === 'offert' || a.slug.includes('livret') || a.slug.includes('gratuit')).length;
 
-  const { createServiceClient } = await import('@/lib/supabase/clients');
+  // Les commandes sont lues par `src/lib`, avec le filtre `user_id` DANS la
+  // requête : la clé de service n'a rien à faire dans une page.
+  const { listerCommandesDe } = await import('@/lib/orders/lecture');
   const { lireDevise, formateur } = await import('@/lib/money/affichage');
-  const client = createServiceClient();
-  
-  const { data: rawOrders } = await client
-    .from('orders')
-    .select(`
-      id, cree_le, montant_total, devise, statut, prestataire,
-      order_items(
-        book_id,
-        books(
-          book_translations(titre, langue)
-        )
-      )
-    `)
-    .eq('user_id', appelant.id)
-    .order('cree_le', { ascending: false });
+  const historique = await listerCommandesDe(appelant.id, langue);
 
-  const formatters = new Map();
-  async function formatPrix(montant: number, deviseCode: string) {
-    if (!formatters.has(deviseCode)) {
-      const dev = await lireDevise(deviseCode, { client });
-      formatters.set(deviseCode, formateur(dev));
+  const formatters = new Map<string, (montant: number) => string>();
+  async function formatPrix(montant: number, deviseCode: string): Promise<string> {
+    let formater = formatters.get(deviseCode);
+    if (!formater) {
+      formater = formateur(await lireDevise(deviseCode));
+      formatters.set(deviseCode, formater);
     }
-    return formatters.get(deviseCode)(montant);
+    return formater(montant);
   }
 
-  const commandes = await Promise.all((rawOrders || []).map(async (o: any) => {
+  const commandes = await Promise.all(historique.map(async (o) => {
     const montant = await formatPrix(o.montant_total, o.devise);
     const date = new Date(o.cree_le).toLocaleDateString(langue === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-    
-    const titles = (o.order_items || []).map((item: any) => {
-      const tr = item.books?.book_translations || [];
-      const trLang = tr.find((t: any) => t.langue === langue) || tr[0];
-      return trLang?.titre || 'Titre inconnu';
-    }).join(' · ');
+
+    const titles = o.titres.map((titre) => titre ?? 'Titre inconnu').join(' · ');
 
     let statutLabel = o.statut;
     if (o.statut === 'paye') statutLabel = langue === 'fr' ? 'Payée' : 'Paid';
@@ -87,7 +73,7 @@ export default async function PageCommandes({ params }: Parametres) {
 
     // Short ID : year - short uuid
     const year = new Date(o.cree_le).getFullYear();
-    const shortId = '#' + year + '-' + o.id.split('-')[0].substring(0, 4);
+    const shortId = '#' + year + '-' + o.id.slice(0, 4);
 
     return {
       id: shortId,
