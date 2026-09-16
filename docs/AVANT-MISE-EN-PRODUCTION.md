@@ -261,6 +261,38 @@ base.
 
 ---
 
+### S7 — Deux avis de sécurité MOYENS, hors d'atteinte de npm 10.9.2
+
+**Constat.** `npm audit` rend **zéro critique et zéro élevé** depuis le
+16 septembre 2026. Restent deux avis **moyens**, sur `vitest` et
+`@vitest/mocker` (≤ 4.1.10) : lecture de fichier arbitraire par le simulateur
+de redirection.
+
+**Pourquoi ils ne sont pas corrigés, alors que le correctif existe.**
+`vitest@4.1.11` les ferme, et npm **refuse de l'installer** : il plante dans
+`#loadPeerSet` avec `Cannot read properties of null (reading 'edgesOut')` dès
+qu'on touche à `vitest`. La cause est nommée, pas supposée : `better-auth`
+déclare `peerOptional vitest@"^2 || ^3 || ^4 || ^5"`, et npm **10.9.2** se
+casse en parcourant cet ensemble de pairs. Deux essais à blanc l'établissent —
+sans toucher à `vitest`, la résolution passe ; avec `^4.1.11`, elle plante.
+
+**Ce qui a été écarté, et pourquoi.** `--legacy-peer-deps` résout, mais son
+plan retire `@testing-library/dom` — un **pair** de `@testing-library/react` et
+de `@testing-library/user-event`, dont dépendent les 34 tests de composants.
+Le remède coûtait plus que le mal.
+
+**Risque accepté.** Ces paquets ne sont **jamais livrés** : ce sont des
+dépendances de développement. La faille suppose d'exécuter du code dans
+l'environnement de test, où l'on exécute déjà le nôtre.
+
+**Ce qu'il faudra faire, le jour venu.** Mettre npm à jour (11.x corrige
+arborist), puis `vitest` en `^4.1.11` — ou attendre une version de
+`better-auth` qui abandonne ce `peerOptional`. La mise à jour de npm touche
+l'outillage **global** de la machine : c'est une décision du propriétaire, pas
+un détail d'installation.
+
+---
+
 ## 4. Récapitulatif
 
 | # | Point | Catégorie | Dépend de |
@@ -281,6 +313,7 @@ base.
 | S4 | Audit EPUB hors de la porte | À surveiller | — |
 | S5 | Seuil commercial de l'abonnement | À surveiller | — |
 | S6 | Connexion Google : variable à poser dans l'hébergeur | À surveiller | — |
+| S7 | Deux avis MOYENS sur l'outillage de test | À surveiller | npm 11 |
 
 **Cinq bloquants, dont trois se résolvent avec B5.** Traiter l'ordonnanceur et
 brancher un prestataire de paiement ramène la liste à deux points : B4, et le
