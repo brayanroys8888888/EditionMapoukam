@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { langueValide, traduire } from '@/i18n';
 import { FormulaireConnexion } from '@/components/auth';
+import { googleActif } from '@/lib/auth/google-mode';
 import { connexion, renvoyerCode } from '../actions';
 
 /**
@@ -41,6 +42,7 @@ export default async function PageConnexion({ params, searchParams }: Parametres
       attente={Number.isFinite(attente) && attente > 0 ? attente : undefined}
       motif={premier(requete['motif'])}
       inscrit={premier(requete['inscrit']) === '1'}
+      google={googleActif()}
     />
   );
 }

@@ -147,6 +147,74 @@
   margin-top: var(--espace-4);
 }
 
+/* ── Connexion par un fournisseur tiers ─────────────────────────────────── */
+
+/*
+ * Le bloc entier, séparateur compris. Il est APRÈS le formulaire, jamais
+ * avant : l'adresse et le mot de passe restent le chemin principal, et un
+ * bouton de fournisseur posé en tête pousse à renoncer au compte qu'on a déjà.
+ */
+.tiers {
+  margin-top: var(--espace-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace-4);
+}
+
+.separateur {
+  display: flex;
+  align-items: center;
+  gap: var(--espace-3);
+  margin: 0;
+  color: var(--encre-douce);
+  font-size: var(--taille-m);
+}
+
+.separateur::before,
+.separateur::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--bordure);
+}
+
+/*
+ * Un LIEN dessiné comme le bouton secondaire.
+ *
+ * Il ne peut pas réutiliser `Bouton` : celui-ci rend un `<button>`, et le
+ * parcours commence par une navigation. Les mesures sont donc reprises de
+ * `base.module.css` — cible de 44 px, rayon de 11, contour de focus — parce
+ * qu'un lien qui a l'air d'un bouton doit aussi se comporter comme lui.
+ */
+.boutonTiers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espace-2);
+  min-height: var(--cible-min);
+  padding: 14px 24px;
+  border: 2px solid var(--encre);
+  border-radius: 11px;
+  background: transparent;
+  color: var(--encre);
+  font-family: var(--police-interface);
+  font-size: var(--taille-l);
+  font-weight: var(--graisse-forte);
+  text-align: center;
+  text-decoration: none;
+  transition: background var(--transition-couleur), color var(--transition-couleur);
+}
+
+.boutonTiers:hover {
+  background: var(--encre);
+  color: var(--fond);
+}
+
+.boutonTiers:focus-visible {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
 /*
  * Erreur au niveau du FORMULAIRE, et non du champ.
  *

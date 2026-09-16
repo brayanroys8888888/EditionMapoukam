@@ -227,6 +227,40 @@ qu'il marche.
 
 ---
 
+### S6 — La connexion par Google est écrite deux fois, et éteinte par défaut
+
+**Constat.** `AUTH_GOOGLE` vaut `desactive`, `supabase` ou `better-auth`, et le
+défaut est `desactive` : les routes rendent 404 et le bouton n'apparaît pas.
+Les deux implémentations sont livrées et testées, mais **aucune ne sert tant que
+la variable n'est pas posée dans l'hébergeur**.
+
+**Ce qu'il reste à faire, et par qui.** Rien de tout ceci n'est du code :
+
+| Action | Où | Nécessaire pour |
+| --- | --- | --- |
+| `AUTH_GOOGLE=supabase` | variables Vercel, puis redéploiement | que le bouton apparaisse en ligne |
+| Activer Google | tableau de bord Supabase → Authentication → Providers | **déjà fait** (vérifié le 16 septembre 2026) |
+| `…/api/auth/google/retour` en URL de redirection | Supabase → URL Configuration | **déjà accepté** (vérifié, les trois adresses) |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET` | variables Vercel | **seulement** si l'on passe à `better-auth` |
+| `…/api/better-auth/callback/google` en URI autorisée | console Google Cloud | idem |
+
+**Pourquoi ce n'est pas bloquant.** L'adresse et le mot de passe restent le
+chemin principal, et le bouton est posé APRÈS le formulaire : un fournisseur
+tiers indisponible ne ferme aucune porte.
+
+**Le point à surveiller.** `sessionPourIdentiteVerifiee` ouvre une session sans
+mot de passe et rapproche les comptes par l'adresse email. Elle exige que le
+fournisseur ait vérifié cette adresse. Ce refus ne doit jamais être assoupli :
+son absence ne casserait rien de visible, et laisserait entrer n'importe qui
+dans le compte d'un client.
+
+**À nettoyer, sans lien avec Google mais trouvé en le vérifiant.**
+`.env.production.local` pointe encore sur l'ANCIEN projet Supabase
+(`peejevfgbwjprggwclga`). Un script qui le lirait travaillerait sur la mauvaise
+base.
+
+---
+
 ## 4. Récapitulatif
 
 | # | Point | Catégorie | Dépend de |
@@ -246,6 +280,7 @@ qu'il marche.
 | S3 | Seuil d'agrégation à cinq | À surveiller | — |
 | S4 | Audit EPUB hors de la porte | À surveiller | — |
 | S5 | Seuil commercial de l'abonnement | À surveiller | — |
+| S6 | Connexion Google : variable à poser dans l'hébergeur | À surveiller | — |
 
 **Cinq bloquants, dont trois se résolvent avec B5.** Traiter l'ordonnanceur et
 brancher un prestataire de paiement ramène la liste à deux points : B4, et le

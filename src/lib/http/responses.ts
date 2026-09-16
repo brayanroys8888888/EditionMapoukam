@@ -48,6 +48,31 @@ export function noContent(options: { cookies?: readonly string[] } = {}): Respon
 }
 
 /**
+ * Redirection de NAVIGATION, cookies compris.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ 303, ET NON 302.                                                        │
+ * │                                                                          │
+ * │ Un 303 impose au navigateur de suivre en GET, quelle que soit la méthode │
+ * │ d'origine. C'est ce qui évite qu'un retour de fournisseur OAuth soit     │
+ * │ rejoué en POST sur un écran qui n'en attend pas.                         │
+ * │                                                                          │
+ * │ `Response.redirect()` n'est pas employée : elle rend une réponse dont    │
+ * │ les en-têtes sont IMMUABLES, et la session ne pourrait donc pas y poser  │
+ * │ ses cookies — c'est-à-dire que la connexion aboutirait sans connecter.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+export function redirection(
+  destination: string,
+  options: { cookies?: readonly string[] } = {},
+): Response {
+  return new Response(null, {
+    status: 303,
+    headers: withCookies({ location: destination }, options.cookies),
+  });
+}
+
+/**
  * Erreur destinée au client.
  *
  * `detailInterne` n'est jamais sérialisé : il ne sert qu'au journal.

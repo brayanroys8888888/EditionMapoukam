@@ -81,6 +81,21 @@ const PUBLIQUES: Readonly<Record<string, string>> = {
   '/api/auth/logout':
     'Répond 204 même sans jeton valide : refuser à quelqu’un de partir n’aurait aucun sens, ' +
     'et laisserait le navigateur avec ses cookies. La révocation, elle, exige un jeton lisible.',
+  '/api/auth/google':
+    'Entrée de la connexion par Google : elle s’adresse par construction à quelqu’un qui n’a ' +
+    'pas encore de session — c’est le point d’entrée d’un nouveau visiteur, comme l’inscription. ' +
+    'Elle ne lit aucune donnée et ne fait que rediriger vers le fournisseur. Sa garde est ' +
+    'l’interrupteur `AUTH_GOOGLE` : éteint, elle rend 404 et non 403.',
+  '/api/auth/google/retour':
+    'Authentifiée par le CODE D’AUTORISATION et le vérifieur PKCE du cookie d’état, jamais par ' +
+    'une session : elle sert précisément à en ouvrir une. Même montage que `/api/auth/otp` et ' +
+    'que le rafraîchissement — le secret présenté EST l’authentification. Un code sans le ' +
+    'vérifieur correspondant ne vaut rien, ce qui est tout l’objet de PKCE.',
+  '/api/better-auth/[...all]':
+    'Routes de Better Auth, dont l’adresse de rappel de Google. Authentifiées par son cookie ' +
+    'd’état SIGNÉ, jamais par une session applicative — et fermées par 404 hors ' +
+    '`AUTH_GOOGLE=better-auth`, pour qu’une seconde surface d’authentification ne reste pas ' +
+    'ouverte quand c’est Supabase qui sert.',
 };
 
 describe('INVENTAIRE — toute route exposée est recensée', () => {

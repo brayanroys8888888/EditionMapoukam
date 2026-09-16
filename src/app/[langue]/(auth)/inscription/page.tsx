@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 
 import { langueValide, traduire } from '@/i18n';
 import { FormulaireInscription } from '@/components/auth';
+import { googleActif } from '@/lib/auth/google-mode';
 import { inscription } from '../actions';
 
 /**
@@ -38,6 +39,7 @@ export default async function PageInscription({ params, searchParams }: Parametr
       action={inscription.bind(null, langue)}
       erreur={premier(requete['erreur'])}
       attente={Number.isFinite(attente) && attente > 0 ? attente : undefined}
+      google={googleActif()}
     />
   );
 }

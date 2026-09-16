@@ -128,6 +128,64 @@ describe('plafonds des URL signées (CLAUDE.md règle 3, docs/PLAN.md D6)', () =
   });
 });
 
+describe('interrupteur de connexion par Google', () => {
+  it('est éteint par défaut', () => {
+    // La pile locale doit tourner sans compte chez qui que ce soit : un défaut
+    // qui exigerait des clés Google ferait échouer le démarrage de quiconque
+    // clone le dépôt.
+    useEnv({ AUTH_GOOGLE: undefined });
+
+    expect(getServerEnv().AUTH_GOOGLE).toBe('desactive');
+  });
+
+  it('accepte `supabase` SANS exiger les clés Google', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ Sous ce mode, le secret vit chez Supabase. L'exiger une seconde    │
+    // │ fois ici ne protégerait rien et multiplierait les endroits d'où il │
+    // │ peut fuiter.                                                        │
+    // └────────────────────────────────────────────────────────────────────┘
+    useEnv({ AUTH_GOOGLE: 'supabase' });
+
+    expect(getServerEnv().AUTH_GOOGLE).toBe('supabase');
+  });
+
+  it('refuse `better-auth` quand un secret manque', () => {
+    useEnv({ AUTH_GOOGLE: 'better-auth' });
+
+    expect(() => getServerEnv()).toThrow(/GOOGLE_CLIENT_ID/);
+  });
+
+  it('refuse un secret de signature trop court', () => {
+    // Sans base de données, l'état de l'échange voyage dans un cookie signé
+    // par ce secret : court, il est falsifiable.
+    useEnv({
+      AUTH_GOOGLE: 'better-auth',
+      GOOGLE_CLIENT_ID: 'un-client',
+      GOOGLE_CLIENT_SECRET: 'un-secret',
+      BETTER_AUTH_SECRET: 'trop-court',
+    });
+
+    expect(() => getServerEnv()).toThrow(/BETTER_AUTH_SECRET/);
+  });
+
+  it('accepte `better-auth` complet', () => {
+    useEnv({
+      AUTH_GOOGLE: 'better-auth',
+      GOOGLE_CLIENT_ID: 'un-client',
+      GOOGLE_CLIENT_SECRET: 'un-secret',
+      BETTER_AUTH_SECRET: 'a'.repeat(32),
+    });
+
+    expect(getServerEnv().AUTH_GOOGLE).toBe('better-auth');
+  });
+
+  it('refuse une valeur inconnue', () => {
+    useEnv({ AUTH_GOOGLE: 'google-one-tap' });
+
+    expect(() => getServerEnv()).toThrow(/AUTH_GOOGLE/);
+  });
+});
+
 describe('protection de la clé service_role (CLAUDE.md règle 2)', () => {
   it('refuse de démarrer si une variable NEXT_PUBLIC_* contient la clé de service', () => {
     useEnv({ NEXT_PUBLIC_LEAK: MINIMAL_ENV['SUPABASE_SERVICE_ROLE_KEY'] });

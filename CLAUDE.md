@@ -46,8 +46,37 @@ seulement sont devenues génériques — l'en-tête de signature, demandé au
 prestataire au lieu d'une constante, et `simule`, qui fait disparaître la
 console de simulation devant un prestataire réel.
 
-Hors paiement, **aucune clé API de service externe n'est utilisée.** Tout tourne
-sur la machine de développement.
+**La connexion par Google fait exception depuis le 16 septembre 2026.**
+Décision du propriétaire : on peut se connecter avec un compte Google, et les
+**deux** implémentations sont écrites — Supabase Auth et Better Auth — parce
+qu'il a demandé « les deux, et une variable pour basculer ».
+
+L'exception est **bornée par du code, pas par la mémoire** : `AUTH_GOOGLE` vaut
+`desactive`, `supabase` ou `better-auth`, et **`desactive` est le défaut**. Sur
+la pile locale, aucune route Google ne répond, aucun bouton n'apparaît, et rien
+n'exige de compte chez qui que ce soit.
+
+Trois choses, pour que personne n'ait à relire le code pour les retrouver :
+
+1. **La session servie reste une session Supabase.** Les deux chemins
+   aboutissent à `etablirSession` — profil relu en base, statut du compte
+   vérifié, lignée de jetons ouverte. Il n'y a pas de seconde autorité sur
+   « qui est connecté », et il ne doit jamais y en avoir : les politiques RLS
+   n'en connaissent qu'une.
+2. **Better Auth est monté SANS base de données.** Son état tient dans un
+   cookie signé. Donc aucune migration, aucune table sans politique RLS, et
+   aucun jeton Google conservé. Ne pas « finir le travail » en lui donnant une
+   base : ce qu'on ne stocke pas ne fuite pas.
+3. **L'adresse email doit être vérifiée par le fournisseur.** Le rapprochement
+   des comptes se fait sur elle ; sans ce contrôle, « se connecter avec
+   Google » deviendrait « se connecter en tant que n'importe qui ».
+
+`better-auth` est sous licence **MIT**, et ce n'est pas un SDK de service : le
+dépôt n'a toujours ajouté aucun paquet d'un prestataire. `docs/API-CONTRAT.md`
+§6 Q2 porte le détail et le tableau des trois valeurs.
+
+Hors paiement et connexion Google, **aucune clé API de service externe n'est
+utilisée.** Tout tourne sur la machine de développement.
 
 Les actions qui dépendraient normalement d'un tiers sont **simulées par des
 adaptateurs locaux**, derrière les mêmes interfaces que leurs futurs équivalents

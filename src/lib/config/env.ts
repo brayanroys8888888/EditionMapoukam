@@ -201,7 +201,64 @@ const serverSchema = z.object({
   AUTH_CONFIRMATION_AUTOMATIQUE: z
     .stringbool()
     .default(false),
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ CONNEXION PAR GOOGLE — DEUX CHEMINS, UN SEUL ALLUMÉ À LA FOIS.         │
+   * │                                                                        │
+   * │ Décision du propriétaire, 16 septembre 2026 : les deux implémentations │
+   * │ sont écrites, et cette variable dit laquelle sert. Ce n'est pas une    │
+   * │ indécision — c'est ce qui rend le retour en arrière gratuit. Le jour   │
+   * │ où l'une des deux déçoit, on repose la variable au lieu de réécrire    │
+   * │ du code sous la pression.                                             │
+   * │                                                                        │
+   * │  · `desactive`   — aucune route Google ne répond, et le bouton         │
+   * │    n'apparaît pas. C'est le DÉFAUT : la pile locale doit continuer de  │
+   * │    tourner sans compte chez qui que ce soit (CLAUDE.md).              │
+   * │  · `supabase`    — Supabase Auth porte l'échange OAuth. Les deux clés  │
+   * │    Google vivent alors CHEZ LUI, et pas ici : elles ne sont pas        │
+   * │    exigées de ce côté.                                                 │
+   * │  · `better-auth` — Better Auth porte l'échange, sans base de données   │
+   * │    (son état tient dans un cookie signé). Les trois secrets ci-dessous │
+   * │    deviennent alors obligatoires, et le démarrage échoue franchement   │
+   * │    s'il en manque un.                                                  │
+   * │                                                                        │
+   * │ CE QUI NE CHANGE PAS SELON LE CHEMIN : la session finale est une       │
+   * │ session SUPABASE, ouverte par `etablirSession`. Les droits, RLS et     │
+   * │ `entitlements` ne connaissent qu'elle — un second système de session   │
+   * │ serait une seconde autorité sur « qui est connecté ».                  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  AUTH_GOOGLE: z.enum(['desactive', 'supabase', 'better-auth']).default('desactive'),
+
+  /**
+   * Identifiants du client OAuth Google.
+   *
+   * FACULTATIFS ici, et ce n'est pas un relâchement : sous `AUTH_GOOGLE=supabase`,
+   * c'est Supabase qui détient le secret, et l'exiger une seconde fois dans
+   * l'hébergeur ne ferait que multiplier les endroits d'où il peut fuiter. Le
+   * `superRefine` ci-dessous les rend obligatoires sous `better-auth`, où c'est
+   * bien ce processus qui parle à Google.
+   */
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+
+  /**
+   * Secret de signature de Better Auth.
+   *
+   * Sans base de données, l'état de l'échange OAuth — et lui seul — voyage dans
+   * un cookie SIGNÉ par ce secret. Il n'y a donc rien à deviner côté serveur,
+   * mais tout à falsifier si le secret est court : 32 caractères au minimum.
+   */
+  BETTER_AUTH_SECRET: z.string().min(32).optional(),
 });
+
+/** Les trois secrets que `AUTH_GOOGLE=better-auth` rend obligatoires. */
+const SECRETS_BETTER_AUTH = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'BETTER_AUTH_SECRET',
+] as const;
 
 export type ServerEnv = z.infer<typeof serverSchema>;
 
@@ -240,6 +297,36 @@ export function getServerEnv(): ServerEnv {
     if (key.startsWith('NEXT_PUBLIC_') && value && value === serviceRoleKey) {
       throw new Error(
         `${key} contient la clé service_role. Une variable NEXT_PUBLIC_* est envoyée au navigateur (CLAUDE.md règle 2).`,
+      );
+    }
+  }
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ EXIGENCE CONDITIONNELLE, ÉCRITE À LA MAIN — ET POUR UNE BONNE RAISON. │
+   * │                                                                        │
+   * │ Cette règle tenait dans un `superRefine` du schéma. Elle en a été      │
+   * │ retirée : un appel à `ctx.addIssue` qui porte la catégorie interne de  │
+   * │ Zod — « custom » — puis un libellé a exactement la FORME d'une          │
+   * │ enveloppe d'erreur d'API, et `tests/unit/i18n.test.ts` découvre les    │
+   * │ codes d'erreur en cherchant cette forme dans les sources. Il réclamait │
+   * │ donc une traduction française pour une catégorie de Zod, qui n'est pas │
+   * │ un code d'erreur.                                                      │
+   * │                                                                        │
+   * │ Le test avait raison de chercher là ; c'était à l'appelant de ne pas   │
+   * │ écrire une fausse enveloppe — ce commentaire compris, qui a d'abord    │
+   * │ reproduit le motif qu'il explique. Une condition en clair ne trompe    │
+   * │ et rend le même service : un démarrage qui échoue franchement vaut     │
+   * │ mieux qu'un bouton « Continuer avec Google » qui mène chez Google sur  │
+   * │ une erreur — celui-là ne se découvre qu'en production, par un          │
+   * │ utilisateur.                                                           │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  if (parsed.data.AUTH_GOOGLE === 'better-auth') {
+    const manquants = SECRETS_BETTER_AUTH.filter((cle) => !parsed.data[cle]);
+    if (manquants.length > 0) {
+      throw new Error(
+        `Environnement invalide. AUTH_GOOGLE=better-auth exige ${manquants.join(', ')}.`,
       );
     }
   }

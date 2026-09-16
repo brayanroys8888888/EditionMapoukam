@@ -404,3 +404,79 @@ describe('accessibilité des formulaires', () => {
     expect(titres[0]?.textContent).toBe('Créer un compte');
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONNEXION PAR GOOGLE — L'INTERRUPTEUR SE VOIT, LE CHEMIN CHOISI NON
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('bouton « Continuer avec Google »', () => {
+  it('est absent tant que l’interrupteur n’est pas posé', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ `AUTH_GOOGLE=desactive` est le DÉFAUT, et les routes rendent 404.  │
+    // │ Un bouton affiché malgré tout mènerait à une page introuvable —    │
+    // │ c'est-à-dire que le seul moyen de découvrir le réglage serait de   │
+    // │ cliquer dessus.                                                    │
+    // └────────────────────────────────────────────────────────────────────┘
+    render(<FormulaireConnexion langue="fr" action={ACTION} />);
+
+    expect(screen.queryByRole('link', { name: 'Continuer avec Google' })).toBeNull();
+  });
+
+  it('est un LIEN, pas un bouton, et il porte la langue', () => {
+    // Le parcours commence par une navigation vers une route qui redirige.
+    // Un `<button>` exigerait du JavaScript là où un lien n'en demande pas —
+    // et §5.1 décrit une partie du public sur connexion lente.
+    render(<FormulaireConnexion langue="fr" action={ACTION} google />);
+
+    const lien = screen.getByRole('link', { name: 'Continuer avec Google' });
+
+    expect(lien.getAttribute('href')).toBe('/api/auth/google?langue=fr');
+    expect(lien.tagName).toBe('A');
+  });
+
+  it('suit la langue — le contre-test', () => {
+    render(<FormulaireConnexion langue="en" action={ACTION} google />);
+
+    expect(
+      screen.getByRole('link', { name: 'Continue with Google' }).getAttribute('href'),
+    ).toBe('/api/auth/google?langue=en');
+  });
+
+  it('ne laisse RIEN deviner du chemin qui conduit l’échange', () => {
+    // ┌────────────────────────────────────────────────────────────────────┐
+    // │ C'est ce qui rend la bascule gratuite : passer de `supabase` à     │
+    // │ `better-auth` ne doit toucher ni le lien, ni l'écran, ni un test.  │
+    // │ Si le nom du chemin transparaissait ici, changer d'avis coûterait  │
+    // │ un déploiement de code au lieu d'une variable.                     │
+    // └────────────────────────────────────────────────────────────────────┘
+    const { container } = render(<FormulaireConnexion langue="fr" action={ACTION} google />);
+
+    expect(container.innerHTML).not.toMatch(/better|supabase/i);
+  });
+
+  it('est proposé aussi à l’inscription', () => {
+    // Chez Google il n'y a pas deux gestes : c'est l'existence de l'adresse
+    // en base qui décide si l'on vient de créer un compte ou d'en rouvrir un.
+    render(<FormulaireInscription langue="fr" action={ACTION} google />);
+
+    expect(
+      screen.getByRole('link', { name: 'Continuer avec Google' }).getAttribute('href'),
+    ).toBe('/api/auth/google?langue=fr');
+  });
+
+  it('est absent de l’inscription tant que l’interrupteur n’est pas posé', () => {
+    render(<FormulaireInscription langue="fr" action={ACTION} />);
+
+    expect(screen.queryByRole('link', { name: 'Continuer avec Google' })).toBeNull();
+  });
+
+  it('ne remplace jamais le formulaire : les deux champs restent là', () => {
+    // Le fournisseur tiers est une COMMODITÉ. Le jour où il tombe, ou pour qui
+    // n'a pas de compte Google, l'adresse et le mot de passe doivent rester le
+    // chemin principal — et ils restent AVANT le bouton dans l'ordre de lecture.
+    render(<FormulaireConnexion langue="fr" action={ACTION} google />);
+
+    expect(screen.getByLabelText('Adresse email')).toBeDefined();
+    expect(screen.getByLabelText('Mot de passe')).toBeDefined();
+  });
+});

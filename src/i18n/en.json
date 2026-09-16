@@ -53,7 +53,9 @@
     "inconnue": "Something went wrong.",
     "version_francaise_absente": "This content cannot be published: its French version is missing, title included.",
     "texte_francais_absent": "This testimonial cannot be published: its French text is missing.",
-    "motif_de_refus_requis": "A rejection must carry its reason: it is shown to the author, and a silent rejection always comes back."
+    "motif_de_refus_requis": "A rejection must carry its reason: it is shown to the author, and a silent rejection always comes back.",
+    "google_refuse": "Signing in with Google did not complete. Try again, or sign in with your email address and password.",
+    "google_indisponible": "Signing in with Google is not available at the moment."
   },
   "navigation": {
     "principal": "Main navigation",
@@ -185,7 +187,9 @@
     "preuveLecture": "Reading picks up where the child left off.",
     "promesseSurTitre": "Your library",
     "promesseTexte": "An account keeps the tales you have bought, the kits you have downloaded and your reading progress — on a phone as in a classroom.",
-    "promesseTitre": "Your library follows you everywhere"
+    "promesseTitre": "Your library follows you everywhere",
+    "google": "Continue with Google",
+    "googleSeparateur": "or"
   },
   "contes": {
     "titre": "Tales",

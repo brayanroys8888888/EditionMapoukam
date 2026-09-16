@@ -6,6 +6,7 @@ import { messageErreur, traduire, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
 import { Marque } from '@/components/v2/marque';
 import { LONGUEUR_MOT_DE_PASSE_MIN } from '@/lib/auth/schemas';
+import { lienGoogle } from '@/lib/auth/google';
 import { estV3 } from '@/design/version';
 import { BasculeAuth, PanneauPromesse } from './panneau';
 import { ChampMotDePasse } from './mot-de-passe';
@@ -114,11 +115,14 @@ export function FormulaireInscription({
   action,
   erreur,
   attente,
+  google = false,
 }: {
   langue: LangueInterface;
   action: ActionFormulaire;
   erreur?: string;
   attente?: number;
+  /** `AUTH_GOOGLE` est posé. Le composant ne le lit pas : la page le lui dit. */
+  google?: boolean;
 }): ReactNode {
   const [motDePasse, setMotDePasse] = useState('');
 
@@ -247,6 +251,23 @@ export function FormulaireInscription({
 
           {estV3() ? <p className={styles.note}>{traduire(langue, 'auth.note')}</p> : null}
         </form>
+
+        {/*
+         * Le même bloc qu'à la connexion, et volontairement : chez Google, il
+         * n'y a pas deux gestes. « Créer un compte » et « se connecter »
+         * aboutissent au même échange, et c'est l'existence de l'adresse en
+         * base qui décide laquelle des deux choses vient de se produire.
+         */}
+        {google ? (
+          <div className={styles.tiers}>
+            <p className={styles.separateur} aria-hidden="true">
+              {traduire(langue, 'auth.googleSeparateur')}
+            </p>
+            <a className={styles.boutonTiers} href={lienGoogle(langue)}>
+              {traduire(langue, 'auth.google')}
+            </a>
+          </div>
+        ) : null}
 
         {estV3() ? null : (
           <nav className={styles.liens} aria-label={traduire(langue, 'auth.inscriptionTitre')}>

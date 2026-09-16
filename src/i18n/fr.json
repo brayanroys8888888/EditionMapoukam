@@ -53,7 +53,9 @@
     "inconnue": "Une erreur est survenue.",
     "version_francaise_absente": "Ce contenu n’est pas publiable : il lui manque sa version française, titre compris.",
     "texte_francais_absent": "Ce témoignage n’est pas publiable : il lui manque son texte français.",
-    "motif_de_refus_requis": "Un refus doit porter son motif : il est rendu à son auteur, et un refus muet revient toujours."
+    "motif_de_refus_requis": "Un refus doit porter son motif : il est rendu à son auteur, et un refus muet revient toujours.",
+    "google_refuse": "La connexion avec Google n’a pas abouti. Réessayez, ou connectez-vous avec votre adresse et votre mot de passe.",
+    "google_indisponible": "La connexion avec Google n’est pas disponible pour le moment."
   },
   "navigation": {
     "principal": "Navigation principale",
@@ -187,7 +189,9 @@
     "preuveLecture": "La lecture reprend où l’enfant s’est arrêté.",
     "promesseSurTitre": "Votre bibliothèque",
     "promesseTexte": "Un compte garde vos contes achetés, vos livrets téléchargés et votre progression de lecture — sur téléphone comme en classe.",
-    "promesseTitre": "Votre bibliothèque vous suit partout"
+    "promesseTitre": "Votre bibliothèque vous suit partout",
+    "google": "Continuer avec Google",
+    "googleSeparateur": "ou"
   },
   "contes": {
     "_commentaire": "Le rayon des contes — le MÊME catalogue que `livrets`, avec l'autre valeur de `type_document`. Les deux rayons sont séparés depuis le 2 septembre 2026 : un conte se lit le soir, un livret s'imprime pour une classe, et les mêler obligeait le lecteur à poser un filtre avant de commencer.",

@@ -252,6 +252,9 @@ payant et `public, max-age=<ttl>` pour le gratuit.
 | `GET /api/auth/me` | session | — | `{ utilisateur: {id,email,role,langue_preferee} }` |
 | `POST /api/auth/password/reset` | public | `email` | `204`, **toujours** |
 | `POST /api/auth/password/update` | session | `password` | `204` |
+| `GET /api/auth/google` | public | `langue?` | `303` vers le fournisseur + cookie d'état ; `404` si `AUTH_GOOGLE=desactive` |
+| `GET /api/auth/google/retour` | public | `code`, `langue?` | `303` vers `/{langue}/contes` + cookies de session, ou vers `/{langue}/connexion?erreur=…` |
+| `GET`/`POST` `/api/better-auth/*` | public | — | routes de Better Auth ; `404` hors `AUTH_GOOGLE=better-auth` |
 | `GET /api/account/anonymize` | session | — | `{ notice }` — ce qui est effacé, ce qui est conservé |
 | `POST /api/account/anonymize` | session | `confirmation: true` | `204` |
 
@@ -866,11 +869,43 @@ l'étape 0 sans elles : elle ne produit aucun écran. **Il me les faut avant
 l'étape 1.** À défaut, dites-le et je proposerai une grammaire visuelle à
 valider, ce qui coûtera un aller-retour de plus.
 
-**Q2 — Connexion Google.** §4.2 F5 la dit « optionnelle mais recommandée ».
-Aucune route ne l'implémente, et l'activer suppose un compte Google — donc un
-service externe, que le mode 100 % local exclut. **Je la considère hors
-périmètre** sauf indication contraire ; le point est signalé, pas tranché
-seul.
+**Q2 — Connexion Google. ✅ TRANCHÉE le 16 septembre 2026 : elle est
+implémentée DEUX FOIS, et une variable dit laquelle sert.** §4.2 F5 la dit
+« optionnelle mais recommandée ». Elle était hors périmètre tant que le mode
+100 % local l'était aussi ; le site est en ligne depuis, et la question a
+changé de nature.
+
+Décision du propriétaire : les deux chemins sont écrits, et `AUTH_GOOGLE`
+choisit.
+
+| Valeur | Qui conduit l'échange OAuth | Où vivent les clés Google |
+|---|---|---|
+| `desactive` *(défaut)* | personne — les routes rendent 404, le bouton n'apparaît pas | nulle part |
+| `supabase` | Supabase Auth | chez Supabase |
+| `better-auth` | Better Auth, **sans base de données** | dans l'environnement de l'application |
+
+Ce n'est pas une indécision : c'est ce qui rend le retour en arrière gratuit.
+Le jour où l'un des deux déçoit, on repose la variable au lieu de réécrire du
+code sous la pression.
+
+**Ce qui ne change pas selon le chemin :** la session servie est une session
+**Supabase**, ouverte par `etablirSession` — le même point de passage que le
+mot de passe et que le code à six chiffres. Profil relu en base, statut du
+compte vérifié, lignée de jetons ouverte, cookies posés. Un compte suspendu ne
+peut donc pas rentrer par Google, ce qui serait arrivé si ce chemin avait eu sa
+propre façon d'ouvrir une session.
+
+**Le rapprochement se fait sur l'adresse email, et c'est pourquoi elle doit
+être vérifiée.** Sous `better-auth`, l'identité rendue par le fournisseur est
+refusée si `emailVerified` ne vaut pas `true` : sans ce contrôle, quiconque
+disposerait d'une adresse non confirmée chez Google se connecterait au compte
+d'un client existant.
+
+**Ce que la connexion par Google ne fait pas :** elle ne demande à Google que
+l'identité — ni contacts, ni agenda, ni accès hors ligne — et aucun jeton du
+fournisseur n'est conservé. Sous `better-auth`, l'état de l'échange tient dans
+un cookie signé : aucune table, donc aucune migration, et rien à protéger par
+une politique RLS qui n'existerait pas.
 
 **Q3 — Vérification d'email et réinitialisation. ✅ TRANCHÉE le 3 août 2026 :
 code à six chiffres saisi.** La proposition initiale — `POST /api/auth/session`,

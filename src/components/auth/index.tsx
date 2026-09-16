@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { messageErreur, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { Bouton, Champ } from '@/components/base';
 import { Marque } from '@/components/v2/marque';
+import { lienGoogle } from '@/lib/auth/google';
 import { estV3 } from '@/design/version';
 import { BasculeAuth, PanneauPromesse } from './panneau';
 import { ChampMotDePasse } from './mot-de-passe';
@@ -124,6 +125,45 @@ export function MessageAuth({
   );
 }
 
+/**
+ * « Continuer avec Google ».
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN LIEN, ET NON UN BOUTON QUI APPELLERAIT QUELQUE CHOSE.                │
+ * │                                                                          │
+ * │ Le parcours commence par une NAVIGATION vers `/api/auth/google`, qui     │
+ * │ redirige vers le fournisseur. Un lien fait cela nativement : il          │
+ * │ fonctionne sans JavaScript, il s'ouvre dans un nouvel onglet si          │
+ * │ l'utilisateur le demande, et le navigateur l'annonce comme ce qu'il est. │
+ * │                                                                          │
+ * │ Ce composant ne sait pas LEQUEL des deux chemins servira — Supabase Auth │
+ * │ ou Better Auth. L'adresse est la même, et c'est ce qui permet de         │
+ * │ basculer d'une implémentation à l'autre sans toucher un écran.           │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+function ConnexionGoogle({
+  langue,
+  affiche,
+}: {
+  langue: LangueInterface;
+  affiche: boolean;
+}): ReactNode {
+  if (!affiche) return null;
+
+  return (
+    <div className={styles.tiers}>
+      {/* Décoratif : le trait n'apporte rien à qui écoute la page, et « ou »
+          annoncé seul entre deux boutons n'apporterait que de la confusion. */}
+      <p className={styles.separateur} aria-hidden="true">
+        {traduire(langue, 'auth.googleSeparateur')}
+      </p>
+      <a className={styles.boutonTiers} href={lienGoogle(langue)}>
+        {traduire(langue, 'auth.google')}
+      </a>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CONNEXION
 // ═══════════════════════════════════════════════════════════════════════════
@@ -155,6 +195,7 @@ export function FormulaireConnexion({
   motif,
   actionRenvoi,
   inscrit = false,
+  google = false,
 }: EtatFormulaire & {
   /** Motif porté par le middleware — `session_revoquee` après un vol de jeton. */
   motif?: string;
@@ -162,6 +203,8 @@ export function FormulaireConnexion({
   actionRenvoi?: ActionFormulaire;
   /** Arrive d'une inscription dont le compte est immédiatement utilisable. */
   inscrit?: boolean;
+  /** `AUTH_GOOGLE` est posé. Le composant ne le lit pas : la page le lui dit. */
+  google?: boolean;
 }): ReactNode {
   const bloque = attente !== undefined && attente > 0;
 
@@ -260,6 +303,8 @@ export function FormulaireConnexion({
 
           {estV3() ? <p className={styles.note}>{traduire(langue, 'auth.note')}</p> : null}
         </form>
+
+        <ConnexionGoogle langue={langue} affiche={google} />
 
         {/* Proposé UNIQUEMENT sur `email_non_verifie` : ailleurs, ce bouton
             confirmerait l'existence du compte à qui essaie une adresse au hasard. */}

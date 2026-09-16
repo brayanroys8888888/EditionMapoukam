@@ -5,6 +5,124 @@
 
 ---
 
+## 0 octies. La connexion par Google — écrite DEUX FOIS, et un interrupteur
+
+> Écrit le 16 septembre 2026.
+
+### La demande
+
+> « je veux maintenant qu'on puisse ce connecter par google grace a beterauth »
+
+puis, après que j'aie recommandé Supabase seul :
+
+> « peux tu faire les deux stp ? et prevoire une variable d'environement qui va
+> nous permettre de switcher entre les deux »
+
+Les deux implémentations, donc, et une variable pour choisir.
+
+### L'interrupteur
+
+`AUTH_GOOGLE` vaut `desactive` (**le défaut**), `supabase` ou `better-auth`.
+Éteint : les trois routes rendent **404**, et le bouton n'apparaît pas. La pile
+locale continue donc de tourner sans compte Google, ce que CLAUDE.md exige.
+
+Ce n'est pas une indécision : c'est ce qui rend le retour en arrière gratuit.
+Le jour où l'un des deux chemins déçoit, on repose la variable — pas de
+déploiement de code sous la pression.
+
+### Les quatre arbitrages, à ne pas rejouer
+
+1. **Les deux chemins finissent à `etablirSession`.** La session servie est
+   TOUJOURS une session Supabase : les droits, RLS et `entitlements` ne
+   connaissent qu'elle. Un second système de session serait une seconde
+   autorité sur « qui est connecté », et un compte suspendu rentrerait par la
+   porte qui a oublié le contrôle de statut.
+2. **Better Auth est monté SANS base de données.** Son état tient dans un
+   cookie signé. Donc aucune migration, aucune table sans politique RLS, aucun
+   jeton Google conservé. Ne pas « finir le travail » en lui donnant une base.
+3. **L'adresse d'autorisation est fabriquée à la main**, pas demandée à
+   `signInWithOAuth`. Le client Supabase range le vérifieur PKCE dans son
+   propre magasin — `localStorage` dans un navigateur, une instance jetée avec
+   la réponse sur le serveur. Le vérifieur serait donc perdu AVANT que Google
+   réponde. Il voyage dans un cookie `HttpOnly`, et l'échange se fait par
+   `fetch` sur `token?grant_type=pkce`, comme l'adaptateur Notch Pay parle à son
+   API sans SDK.
+4. **Pas de greffon `nextCookies`.** Il pose les cookies par le magasin de Next,
+   donc depuis un contexte asynchrone. Nos routes rendent une `Response` et
+   posent leurs cookies dessus : c'est ce qui permet à un test de les appeler
+   comme des fonctions, sans démarrer de serveur.
+
+### Le point le plus dangereux du lot
+
+`sessionPourIdentiteVerifiee` ouvre une session **sans mot de passe**, et
+rapproche les comptes **par l'adresse email**. Elle refuse donc, bruyamment,
+toute identité dont `emailVerifie` ne vaut pas exactement `true`.
+
+Le jour où ce refus disparaîtrait, **rien ne casserait** : le parcours Google
+continuerait de fonctionner, et quiconque disposerait d'une adresse non
+confirmée entrerait dans le compte d'un client existant. C'est le test nommé
+« REFUSE une adresse que le fournisseur n'a pas vérifiée », et il est le plus
+important du fichier d'intégration.
+
+### Le piège : un commentaire qui casse un test d'architecture
+
+L'exigence conditionnelle des trois secrets tenait dans un `superRefine` du
+schéma d'environnement. `tests/unit/i18n.test.ts` **découvre les codes d'erreur
+de l'API en cherchant leur forme dans les sources** — un `code` suivi d'un
+`message` — et réclamait une traduction française pour la catégorie interne de
+Zod, « custom », qui n'est pas un code d'erreur.
+
+Le test avait raison de chercher là. La règle est donc écrite en clair dans
+`getServerEnv()`. Et le commentaire qui explique ce retrait a d'abord **reproduit
+le motif qu'il expliquait**, refaisant échouer le test : il est reformulé.
+
+### Le second piège, et il n'était pas de moi
+
+`verify` a rendu cinq échecs, dont trois — `access`, `schema`, `refresh` — qui
+n'avaient aucun rapport avec Google. La base portait un **15ᵉ livre**,
+`la-riviere-qui-parlait-2` : un brouillon laissé par
+`ingestion-sans-poppler.test.ts`, dont le hook de nettoyage avait expiré à
+120 s sous une machine chargée. CLAUDE.md avertit exactement de ceci — « un
+conte ingéré à l'essai fait échouer ce test sans qu'aucun message ne parle
+d'ingestion ». Résidu effacé, les trois fichiers repassent au vert, et le
+fichier d'ingestion retourne en 14,8 s.
+
+### Ce qui a été construit
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `src/lib/config/env.ts` | `AUTH_GOOGLE`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `BETTER_AUTH_SECRET` |
+| `src/lib/auth/google.ts` | PKCE, cookie d'état, adresse d'autorisation — **aucune E/S**, donc testable hors ligne |
+| `src/lib/auth/google-mode.ts` | lecture de l'interrupteur, **côté serveur seulement** |
+| `src/lib/auth/google-session.ts` | l'échange PKCE, et la frappe d'une session pour une identité vérifiée |
+| `src/lib/auth/better-auth.ts` | l'instance, sans base, télémétrie coupée explicitement |
+| `src/app/api/auth/google/route.ts` | l'entrée, commune aux deux chemins |
+| `src/app/api/auth/google/retour/route.ts` | le retour, où les deux chemins se rejoignent |
+| `src/app/api/better-auth/[...all]/route.ts` | les routes de Better Auth, 404 hors de son mode |
+| `src/components/auth/` | le bouton — un **lien**, pas un bouton : le parcours est une navigation |
+| `tests/unit/auth-google.test.ts` | 16 tests (dont le défi comparé à `node:crypto`, seconde implémentation) |
+| `tests/integration/auth-google.test.ts` | 16 tests (dont la cohérence du couple défi/vérifieur) |
+| `tests/composants/auth.test.tsx` | 8 tests de plus, dont « ne laisse RIEN deviner du chemin choisi » |
+
+`verify` : **1941 tests, 122 fichiers, zéro échec** (+45).
+
+### À savoir avant de reprendre
+
+- `AUTH_GOOGLE` est **absent de `.env.local`** : le bouton n'apparaît donc pas
+  encore. Poser `AUTH_GOOGLE=supabase` pour le voir.
+- Google est **actif sur le projet hébergé** `gfwlzhpuaupayaydyecv`, et gotrue
+  **accepte** les adresses de retour de production, de `vercel.app` et de
+  `localhost:3000` (vérifié, pas supposé).
+- Le mode `supabase` n'exige **aucune clé** de ce côté. Le mode `better-auth`
+  exige les trois secrets, et une URI de rappel de plus chez Google.
+- `.env.production.local` pointe encore sur l'**ancien** projet
+  `peejevfgbwjprggwclga`, où Google est à `false`. Fichier périmé.
+- En local, `[auth.external.google]` de `supabase/config.toml` est à
+  `enabled = false` : des clés vides feraient échouer `supabase start`, donc
+  tout le développement, pour une fonction dont on se sert rarement.
+
+---
+
 ## 0 septies. L'Association DAVE — les vrais textes, le logo, la vidéo
 
 > Écrit le 4 septembre 2026.
