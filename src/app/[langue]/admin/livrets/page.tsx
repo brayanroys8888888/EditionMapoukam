@@ -45,12 +45,13 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 }
 
 export default async function PageAdminLivrets({ params, searchParams }: Parametres) {
-  const langue = await exigerAdministrateur((await params).langue);
+  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
 
   return (
     <ListeLivres
       langue={langue}
+      administrateur={administrateur}
       requete={requete}
       section="/livrets"
       base={`/${langue}/admin/livrets`}
@@ -60,9 +61,25 @@ export default async function PageAdminLivrets({ params, searchParams }: Paramet
         sousTitre: 'admin.livretsSousTitre',
         vide: 'admin.aucunLivret',
         supprime: 'admin.livretSupprime',
+        colonneTitre: 'admin.colLivret',
+        decompteUn: 'admin.decompteLivretUn',
+        decompte: 'admin.decompteLivrets',
       }}
       actions={
         <a className={styles.boutonPrimaire} href={`/${langue}/admin/livrets/nouveau`}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
           {traduire(langue, 'admin.livretNouveau')}
         </a>
       }

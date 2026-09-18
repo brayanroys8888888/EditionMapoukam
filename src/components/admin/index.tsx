@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 
-import { traduire, type LangueInterface } from '@/i18n';
+import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
+import { nomUtilisateurEffectif, type Appelant } from '@/lib/auth/session';
+import { deconnecter } from '@/app/[langue]/admin/actions';
 import styles from './admin.module.css';
 
 /**
@@ -16,106 +18,226 @@ import styles from './admin.module.css';
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ AUCUNE FRAUNCES ICI — c'est la seule règle typographique que la charte  │
- * │ pose pour le back-office, et elle est juste : une police à caractère se  │
- * │ lit mal sur trente lignes de tableau.                                    │
+ * │ LA POLICE D'AFFICHAGE REVIENT, MAIS SEULEMENT SUR LES TITRES.           │
+ * │                                                                          │
+ * │ Ce fichier portait « aucune Fraunces ici », et l'argument tenait pour le │
+ * │ CORPS : une police à caractère se lit mal sur trente lignes de tableau.  │
+ * │ Il ne tenait pas pour les titres, et le prototype d'administration du    │
+ * │ 17 septembre 2026 le montre — `h1` et nom de marque dans la police       │
+ * │ d'affichage, tout le reste dans celle d'interface. Un back-office qui    │
+ * │ n'emploie jamais la voix de la marque cesse de ressembler au produit.    │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
 /**
- * Les sections de l'administration, et leur chemin.
+ * Les sections de l'administration, rangées en quatre groupes.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE GROUPEMENT REMPLACE L'ORDRE, ET FAIT SON TRAVAIL MIEUX QUE LUI.      │
+ * │                                                                          │
+ * │ La liste était plate et ordonnée par FRÉQUENCE : les écrans quotidiens   │
+ * │ en tête, les écrans de réglage en bas. L'intention était juste, mais     │
+ * │ rien ne la rendait lisible — onze entrées de même graisse, à un pixel    │
+ * │ d'écart, et « Codes promo » voisinait « Association Dave » sans qu'on    │
+ * │ sache pourquoi.                                                          │
+ * │                                                                          │
+ * │ Les quatre groupes du prototype disent la parenté à la place de l'ordre. │
+ * │ Aucune entrée n'est ajoutée ni retirée : c'est une PARTITION des onze,   │
+ * │ et le premier groupe n'a délibérément pas de titre — « Tableau de bord » │
+ * │ est seul de son espèce, et lui coiffer un intertitre en inventerait une. │
+ * └──────────────────────────────────────────────────────────────────────────┘
  *
  * « Contes » PORTE LES DEUX SUPPORTS, « Livrets » N'EN PORTE QU'UN — et
  * c'est la forme du catalogue public, reprise telle quelle : `/catalogue`
  * montre tout, `/contes` et `/livrets` sont des rayons.
- *
- * L'onglet des livrets a été ajouté le 3 septembre 2026. L'accès d'un livret
- * se règle titre par titre, et cette liste est le seul chemin vers la fiche
- * qui porte les trois leviers ; un filtre, lui, se perd à chaque retour sur
- * l'écran, ne se met pas en favori, et rien dans ce rail ne disait qu'il
- * existait.
- *
- * « Offres » et « Association Dave » ont été ajoutés le 3 septembre 2026, avec
- * §3.6 et §4.3 F12 bis. Les deux sont en BAS du rail, après les promos : ce
- * sont des écrans de réglage, ouverts quelques fois par an, quand ceux du
- * dessus sont ouverts tous les jours. Les mettre en tête aurait déplacé les
- * écrans quotidiens sous une liste qu'on ne consulte presque jamais.
  */
-const SECTIONS = [
-  { cle: 'admin.tableauDeBord', chemin: '' },
-  { cle: 'admin.contes', chemin: '/contes' },
-  { cle: 'admin.livrets', chemin: '/livrets' },
-  { cle: 'admin.commandes', chemin: '/commandes' },
-  { cle: 'admin.abonnements', chemin: '/abonnements' },
-  { cle: 'admin.utilisateurs', chemin: '/utilisateurs' },
-  { cle: 'admin.promos', chemin: '/promos' },
-  { cle: 'admin.offres', chemin: '/offres' },
-  { cle: 'admin.association', chemin: '/association' },
-  { cle: 'admin.avis', chemin: '/avis' },
-  { cle: 'admin.temoignages', chemin: '/temoignages' },
+const GROUPES = [
+  {
+    titre: null,
+    entrees: [{ cle: 'admin.tableauDeBord', chemin: '' }],
+  },
+  {
+    titre: 'admin.groupeCatalogue',
+    entrees: [
+      { cle: 'admin.contes', chemin: '/contes' },
+      { cle: 'admin.livrets', chemin: '/livrets' },
+    ],
+  },
+  {
+    titre: 'admin.groupeVentes',
+    entrees: [
+      { cle: 'admin.commandes', chemin: '/commandes' },
+      { cle: 'admin.abonnements', chemin: '/abonnements' },
+      { cle: 'admin.offres', chemin: '/offres' },
+      { cle: 'admin.promos', chemin: '/promos' },
+    ],
+  },
+  {
+    titre: 'admin.groupeCommunaute',
+    entrees: [
+      { cle: 'admin.utilisateurs', chemin: '/utilisateurs' },
+      { cle: 'admin.avis', chemin: '/avis' },
+      { cle: 'admin.temoignages', chemin: '/temoignages' },
+      { cle: 'admin.association', chemin: '/association' },
+    ],
+  },
 ] as const;
 
-export type SectionAdmin = (typeof SECTIONS)[number]['chemin'];
+export type SectionAdmin = (typeof GROUPES)[number]['entrees'][number]['chemin'];
+
+/**
+ * Les initiales du disque d'identité.
+ *
+ * Deux lettres au plus, prises sur les deux premiers MOTS : « Royce Brayan »
+ * donne RB, « admin » donne A. Jamais les deux premières lettres d'un seul
+ * mot — « Ro » ne se lit pas comme des initiales, il se lit comme un mot
+ * coupé.
+ */
+function initiales(nom: string): string {
+  return nom
+    .split(/\s+/)
+    .filter((mot) => mot.length > 0)
+    .slice(0, 2)
+    .map((mot) => mot[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
 export function GabaritAdmin({
   langue,
   section,
+  administrateur,
   titre,
   sousTitre,
   actions,
+  enteteActions,
+  aere = false,
+  enteteIntegree = false,
   children,
 }: {
   langue: LangueInterface;
   section: SectionAdmin;
+  /** Qui est connecté — la garde vient de le lire, il n'est pas relu ici. */
+  administrateur: Appelant;
   titre: string;
   sousTitre?: string;
-  /** Boutons d'écran, à droite du titre. */
+  /**
+   * Ce que porte la BARRE SUPÉRIEURE : l'action principale de l'écran, et
+   * l'indicateur de suivi là où il a un sens. Collante, donc atteignable sur
+   * un tableau de dix-huit lignes sans remonter.
+   */
   actions?: ReactNode;
+  /** Ce qui se pose à DROITE DU TITRE — le sélecteur de période, et lui seul. */
+  enteteActions?: ReactNode;
+  /** Le tableau de bord empile des panneaux étrangers : il respire plus. */
+  aere?: boolean;
+  /**
+   * L'écran porte son propre titre, dans son contenu.
+   *
+   * La fiche d'un titre met son `h1` DANS sa carte d'identité, à côté de la
+   * couverture — c'est ce qui en fait une identité et non un en-tête. Le
+   * gabarit garde alors `titre` pour le fil d'Ariane et ne rend pas son
+   * bandeau : deux `h1` sur une page, c'est un document sans titre pour un
+   * lecteur d'écran, qui n'a plus de quoi trancher.
+   */
+  enteteIntegree?: boolean;
   children: ReactNode;
 }): ReactNode {
+  const nom = nomUtilisateurEffectif(administrateur.nom_complet, administrateur.id);
+
   return (
     <div className={styles.gabarit}>
       <nav className={styles.rail} aria-label={traduire(langue, 'admin.titre')}>
         <a className={styles.marque} href={`/${langue}/admin`}>
           {/* Décoratif : le nom qui suit porte déjà l'information. */}
           <span className={styles.logo} aria-hidden="true" />
-          {traduire(langue, 'marque.nom')}
+          <span className={styles.marqueTexte}>
+            <span className={styles.marqueNom}>{traduire(langue, 'marque.nom')}</span>
+            <span className={styles.mention}>{traduire(langue, 'admin.titre')}</span>
+          </span>
         </a>
-        <p className={styles.mention}>{traduire(langue, 'admin.titre')}</p>
 
-        <ul className={styles.liens}>
-          {SECTIONS.map((entree) => {
-            const actif = entree.chemin === section;
-            return (
-              <li key={entree.chemin}>
-                <a
-                  className={actif ? `${styles.lien} ${styles.lienActif}` : styles.lien}
-                  href={`/${langue}/admin${entree.chemin}`}
-                  aria-current={actif ? 'page' : undefined}
-                >
-                  {traduire(langue, entree.cle)}
-                </a>
-              </li>
-            );
-          })}
-        </ul>
+        <div className={styles.groupes}>
+          {GROUPES.map((groupe, rang) => (
+            <div className={styles.groupe} key={groupe.titre ?? `groupe-${String(rang)}`}>
+              {groupe.titre ? (
+                <p className={styles.groupeTitre}>
+                  {traduire(langue, groupe.titre as CleTraduction)}
+                </p>
+              ) : null}
 
-        <a className={styles.retourSite} href={`/${langue}`}>
-          <span aria-hidden="true">←</span>
-          {traduire(langue, 'admin.retourSite')}
-        </a>
+              <ul className={styles.liens}>
+                {groupe.entrees.map((entree) => {
+                  const actif = entree.chemin === section;
+                  return (
+                    <li key={entree.chemin}>
+                      <a
+                        className={actif ? `${styles.lien} ${styles.lienActif}` : styles.lien}
+                        href={`/${langue}/admin${entree.chemin}`}
+                        aria-current={actif ? 'page' : undefined}
+                      >
+                        {traduire(langue, entree.cle)}
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.pied}>
+          {/* Décoratif : le nom est écrit juste à côté, en toutes lettres. */}
+          <span className={styles.pastille} aria-hidden="true">
+            {initiales(nom)}
+          </span>
+          <span className={styles.piedIdentite}>
+            <span className={styles.piedNom}>{nom}</span>
+            <span className={styles.piedRole}>
+              {traduire(langue, 'admin.roleAdministrateur')}
+            </span>
+          </span>
+
+          {/*
+            Un FORMULAIRE, jamais un lien : une déconnexion change l'état du
+            serveur, et un `<a>` se déclenche au pré-chargement du navigateur.
+          */}
+          <form action={deconnecter}>
+            <input type="hidden" name="langue" value={langue} />
+            <button type="submit" className={styles.sortir}>
+              {traduire(langue, 'admin.sortir')}
+            </button>
+          </form>
+        </div>
       </nav>
 
       <main className={styles.contenu}>
-        <div className={styles.entete}>
-          <div>
-            <h1 className={styles.titre}>{titre}</h1>
-            {sousTitre ? <p className={styles.sousTitre}>{sousTitre}</p> : null}
+        <div className={styles.barreSuperieure}>
+          {/*
+            Le fil se DÉDUIT du titre de l'écran : l'écrire une seconde fois
+            en prop laisserait les deux diverger, et c'est le fil qui aurait
+            l'air d'avoir raison.
+          */}
+          <div className={styles.filAriane}>
+            {traduire(langue, 'admin.titre')} · {titre}
           </div>
-          {actions}
+          {actions ? <div className={styles.barreActions}>{actions}</div> : null}
         </div>
 
-        {children}
+        <div className={styles.page}>
+          <div className={aere ? `${styles.colonne} ${styles.colonneAeree}` : styles.colonne}>
+            {enteteIntegree ? null : (
+              <div className={styles.entete}>
+                <div>
+                  <h1 className={styles.titre}>{titre}</h1>
+                  {sousTitre ? <p className={styles.sousTitre}>{sousTitre}</p> : null}
+                </div>
+                {enteteActions}
+              </div>
+            )}
+
+            {children}
+          </div>
+        </div>
       </main>
     </div>
   );

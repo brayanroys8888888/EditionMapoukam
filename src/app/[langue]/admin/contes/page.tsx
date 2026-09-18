@@ -36,13 +36,14 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 }
 
 export default async function PageAdminContes({ params, searchParams }: Parametres) {
-  const langue = await exigerAdministrateur((await params).langue);
+  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
   const base = `/${langue}/admin/contes`;
 
   return (
     <ListeLivres
       langue={langue}
+      administrateur={administrateur}
       requete={requete}
       section="/contes"
       base={base}
@@ -53,20 +54,43 @@ export default async function PageAdminContes({ params, searchParams }: Parametr
         sousTitre: 'admin.contesSousTitre',
         vide: 'admin.aucunConte',
         supprime: 'admin.conteSupprime',
+        colonneTitre: 'admin.colConte',
+        decompteUn: 'admin.decompteTitreUn',
+        decompte: 'admin.decompteTitres',
       }}
+      /*
+        L'action PRINCIPALE monte dans la barre supérieure, qui est collante :
+        sur un catalogue de dix-huit titres, « Ajouter un conte » n'était
+        atteignable qu'en remontant tout le tableau.
+      */
       actions={
-        <>
-          {/*
-            Deux portes vers la MÊME chaîne d'ingestion. Le type de document
-            n'est pas une case à cocher qu'on oublie : il se choisit en entrant.
-          */}
-          <a className={styles.boutonDiscret} href={`/${langue}/admin/livrets/nouveau`}>
-            {traduire(langue, 'admin.livretNouveau')}
-          </a>
-          <a className={styles.boutonPrimaire} href={`${base}/nouveau`}>
-            {traduire(langue, 'admin.conteNouveau')}
-          </a>
-        </>
+        <a className={styles.boutonPrimaire} href={`${base}/nouveau`}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {traduire(langue, 'admin.conteNouveau')}
+        </a>
+      }
+      /*
+        Deux portes vers la MÊME chaîne d'ingestion. Le type de document n'est
+        pas une case à cocher qu'on oublie : il se choisit en entrant. La
+        seconde porte reste à côté du titre, en lien de traverse — deux boutons
+        primaires côte à côte ne désignent plus d'action principale.
+      */
+      enteteActions={
+        <a className={styles.boutonDiscret} href={`/${langue}/admin/livrets/nouveau`}>
+          {traduire(langue, 'admin.livretNouveau')}
+        </a>
       }
     />
   );

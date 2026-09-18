@@ -67,13 +67,14 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 }
 
 export default async function PageAdminLivretNouveau({ params, searchParams }: Parametres) {
-  const langue = await exigerAdministrateur((await params).langue);
+  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
   const erreur = premier(requete['erreur']);
 
   return (
     <GabaritAdmin
       langue={langue}
+      administrateur={administrateur}
       // Déposer un livret, c'est être dans le rayon des livrets : le rail le
       // dit, et le bouton de retour y ramène.
       section="/livrets"

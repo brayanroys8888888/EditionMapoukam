@@ -22,13 +22,90 @@
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PAS D'ORGANIC EST DÉCLARÉ ICI, ET NULLE PART AILLEURS.               │
+ * │                                                                          │
+ * │ Le prototype d'administration mesure tout sur l'échelle d'Organic —      │
+ * │ 4,4 / 8,8 / 13,2 / 17,6 / 26,4 / 35,2 px, soit le pas du projet à une    │
+ * │ densité de 1,10×. Ce n'est PAS `--espace-*`, qui vaut 4 / 8 / 12 / 16 /  │
+ * │ 22 / 32 : écrire `var(--espace-4)` là où le dessin demande 17,6 px       │
+ * │ manque d'un pixel et demi à chaque emboîtement, et l'écart s'additionne  │
+ * │ — c'est exactement le défaut que la passe au pixel a trouvé sur la page  │
+ * │ de contact, juste de couleur et fausse de vingt pixels.                  │
+ * │                                                                          │
+ * │ Ces pas ne montent pas dans `tokens.css` : aucune autre surface du       │
+ * │ produit ne les emploie, et un jeton global lu par un seul module est un  │
+ * │ jeton qu'on finira par croire partagé. Ils sont déclarés sur le gabarit  │
+ * │ et hérités par tout ce qu'il contient.                                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .gabarit {
+  --pas-1: 4.4px;
+  --pas-2: 8.8px;
+  --pas-3: 13.2px;
+  --pas-4: 17.6px;
+  --pas-6: 26.4px;
+  --pas-8: 35.2px;
+
+  /* La largeur du rail. Le dégradé de colonne ci-dessous doit la suivre. */
+  --rail-largeur: 248px;
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'ADMINISTRATION LIT EN 15 / 1,55 — LE SITE PUBLIC EN 16 / 1,6.       │
+   * │                                                                        │
+   * │ Ce n'est pas une divergence, c'est ce que les deux prototypes disent.  │
+   * │ Celui du site public déclare EN CLAIR `font-size:16px;line-height:1.6` │
+   * │ sur sa racine, et la passe au pixel du 6 septembre 2026 a poussé       │
+   * │ `--interligne-corps` à 1,6 pour le suivre. Celui de l'administration   │
+   * │ ne déclare rien : il hérite du `body { font-size: 15px; line-height:   │
+   * │ 1.55 }` du système Organic.                                            │
+   * │                                                                        │
+   * │ L'écart n'a l'air de rien et se voit partout : l'interligne est HÉRITÉ │
+   * │ par tout ce qui ne se déclare pas, si bien que chaque étiquette, chaque│
+   * │ sur-titre et chaque hauteur de champ dérivait — 17,05 px contre 17,6,  │
+   * │ 20,15 contre 20,8 — et l'erreur s'additionnait d'un emboîtement à      │
+   * │ l'autre. C'est le premier défaut qu'a trouvé le relevé, et il en       │
+   * │ expliquait la moitié.                                                  │
+   * │                                                                        │
+   * │ Un back-office lit plus dense qu'une vitrine : la valeur est juste     │
+   * │ pour ce qu'elle sert.                                                  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  font-size: var(--taille-base);
+  line-height: 1.55;
+
+  /*
+   * Le rayon d'une carte d'Organic : `--radius-lg` × 1,15, soit 32,2 px.
+   * L'échelle du projet l'encadre sans le porter — 30 px au panneau, 34 px au
+   * héros — et arrondir à l'un ou à l'autre déplacerait chaque coin de deux
+   * pixels. Il est donc écrit, une fois, ici.
+   */
+  --carte-rayon: 32.2px;
+
+  /*
+   * Le rayon moyen d'Organic — `--radius-md`, 16 px. L'échelle du projet porte
+   * 18 px à `--rayon-encart`, valeur arrêtée pour le site public : la reprendre
+   * ici arrondirait chaque levier de deux pixels de trop.
+   */
+  --rayon-md: 16px;
+
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: 0;
   min-height: 100vh;
-  background: var(--fond-doux);
+
+  /*
+    Le SOL de l'administration est `--fond`, et non la bande creuse.
+
+    L'écran posait `--fond-doux` — le second plan d'Organic, celui des bandes
+    en retrait. Le prototype pose `--color-bg`, le premier plan. L'écart fait
+    quatre points de clarté, et il inverse le rapport avec les cartes : sur la
+    bande creuse, une carte en `--surface` ne se détachait plus.
+  */
+  background: var(--fond);
 }
 
 /*
@@ -46,8 +123,9 @@
  * │                                                                          │
  * │ Le dégradé à arrêts francs peint donc la colonne sur TOUTE la hauteur du │
  * │ gabarit, derrière un rail qui, lui, continue de coller. Deux arrêts à la │
- * │ même position : aucune transition, une frontière nette à 236 px — la     │
- * │ largeur du rail, et la seule valeur à garder en accord avec lui.         │
+ * │ même position : aucune transition, une frontière nette à `--rail-largeur`│
+ * │ — la seule valeur à garder en accord avec le rail, et elle est déclarée  │
+ * │ une fois, sur le gabarit.                                               │
  * │                                                                          │
  * │ Sous 820 px le rail se déplie en barre horizontale et porte de nouveau   │
  * │ son propre fond : le dégradé n'a plus de sens et ne s'applique pas.      │
@@ -57,8 +135,8 @@
   .gabarit {
     background: linear-gradient(
       to right,
-      var(--chrome-2) 0 236px,
-      var(--fond-doux) 236px
+      var(--chrome) 0 var(--rail-largeur),
+      var(--fond) var(--rail-largeur)
     );
   }
 }
@@ -76,29 +154,49 @@
    * tout ce qu'il contient.
    */
   --focus-couleur: var(--chrome-encre);
-  flex: 0 0 236px;
-  align-self: stretch;
-  background: var(--chrome-2);
+  flex: 0 0 var(--rail-largeur);
+  align-self: flex-start;
+  background: var(--chrome);
   color: var(--chrome-encre);
-  padding: 24px 16px;
+  padding: 0;
   position: sticky;
   top: 0;
-  max-height: 100vh;
+  height: 100vh;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
+/*
+ * L'EN-TÊTE DU RAIL — sceau, nom, et la mention SOUS le nom.
+ *
+ * La mention vivait auparavant sur sa propre ligne, décalée de 42 px pour
+ * s'aligner sous le nom. C'était un alignement calculé à la main, donc faux
+ * dès que le sceau changeait de taille. Elle est maintenant DANS le bloc de
+ * texte, à côté du sceau : l'alignement vient de la grille, plus d'un nombre.
+ */
 .marque {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
-  font-size: var(--taille-l);
-  font-weight: var(--graisse-forte);
+  padding: var(--pas-6) var(--pas-4) var(--pas-4);
   color: var(--chrome-encre);
 }
 
 .marque:hover {
   color: var(--chrome-encre);
+}
+
+.marqueTexte {
+  display: block;
+  min-width: 0;
+}
+
+.marqueNom {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: var(--taille-l);
+  line-height: 1.1;
 }
 
 /*
@@ -113,8 +211,21 @@
  * │ `src/components/v2/marque.tsx`, reprise ici telle quelle plutôt que       │
  * │ réinventée — un même logo posé de deux façons finit par diverger.         │
  * │                                                                          │
- * │ Disque OCRE et encre VERT NUIT, comme le ton `sombre` du mot-symbole : un │
- * │ disque vert sur le vert nuit du rail disparaîtrait.                       │
+ * │ Disque de MARQUE et encre de marque, comme le ton `sombre` du mot-symbole :│
+ * │ un disque de la couleur du rail y disparaîtrait.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PROTOTYPE ÉCRIT « EM » EN CRÈME. ON NE LE SUIT SUR AUCUN DES DEUX.   │
+ * │                                                                          │
+ * │ Sur les DEUX lettres : ce produit a un logo officiel, et le prototype    │
+ * │ n'en disposait pas — des initiales sont ce qu'on dessine quand il manque │
+ * │ une image, pas un choix de direction artistique.                         │
+ * │                                                                          │
+ * │ Sur la CRÈME : `--color-bg` sur `--color-accent` vaut 2,6:1, et          │
+ * │ `tests/unit/design-tokens.test.ts` refuse nommément le clair sur la      │
+ * │ terre cuite, dans les deux thèmes. `--marque-encre` est la valeur que le │
+ * │ projet a posée pour ce cas précis, au lot 8.                            │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -131,11 +242,11 @@
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 .logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: var(--action);
+  background: var(--marque);
   position: relative;
 }
 
@@ -145,7 +256,7 @@
   /* Le logo occupe 72 % du disque : au-delà il touche les bords, en deçà il
      flotte. La même proportion que le mot-symbole du site public. */
   inset: 14%;
-  background: var(--chrome-2);
+  background: var(--marque-encre);
   mask-image: url('/images/logo-mapoukam.png');
   mask-repeat: no-repeat;
   mask-position: center;
@@ -153,70 +264,184 @@
 }
 
 .mention {
-  font-size: var(--taille-xs);
-  font-weight: var(--graisse-forte);
+  display: block;
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.11em;
-  color: var(--action);
-  margin-bottom: 26px;
-  padding-left: 42px;
+  letter-spacing: 0.12em;
+  color: var(--accent-sur-chrome);
+  margin-top: 3px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ONZE ENTRÉES RANGÉES EN QUATRE GROUPES.                                 │
+ * │                                                                          │
+ * │ La liste plate ne disait pas que « Codes promo » et « Témoignages du    │
+ * │ site » n'ont rien à voir l'un avec l'autre — elle les posait à un pixel  │
+ * │ d'écart, dans la même colonne, avec la même graisse. Le groupement ne    │
+ * │ retire ni n'ajoute aucune entrée : c'est une PARTITION de la liste       │
+ * │ existante, dans son ordre existant.                                     │
+ * │                                                                          │
+ * │ Le premier groupe n'a pas de titre, et c'est voulu : « Tableau de bord » │
+ * │ est seul de son espèce, et lui coiffer un intertitre en inventerait une. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.groupes {
+  flex: 1;
+  padding: 0 var(--pas-3) var(--pas-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.groupeTitre {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--chrome-encre) 45%, transparent);
+  padding: 0 14px;
+  margin: 0 0 6px;
 }
 
 .liens {
   list-style: none;
-  margin: 0 0 26px;
+  margin: 0;
   padding: 0;
-  display: grid;
-  gap: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .lien {
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: var(--cible-min);
-  padding: 10px 14px;
-  border-radius: var(--rayon-controle);
+  gap: 8px;
+  padding: 9px 14px;
+  border-radius: 14px;
   color: var(--chrome-encre);
-  font-size: var(--taille-base);
-  font-weight: var(--graisse-demi);
-  opacity: 0.82;
+  font-size: var(--taille-m);
+  opacity: 0.92;
   transition: background var(--transition-couleur), opacity var(--transition-couleur);
 }
 
 .lien:hover {
-  background: rgb(251 247 239 / 12%);
+  background: color-mix(in srgb, var(--chrome-encre) 12%, transparent);
   color: var(--chrome-encre);
   opacity: 1;
 }
 
 /* L'onglet courant porte aussi `aria-current` — la couleur le REDIT. */
 .lienActif {
-  background: var(--action);
-  color: var(--action-encre);
+  background: var(--marque);
+  color: var(--marque-encre);
   opacity: 1;
   font-weight: var(--graisse-forte);
 }
 
 .lienActif:hover {
-  background: var(--action);
-  color: var(--action-encre);
+  background: var(--marque);
+  color: var(--marque-encre);
 }
 
-.retourSite {
-  display: inline-flex;
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PIED DU RAIL DIT QUI EST CONNECTÉ, ET PERMET DE PARTIR.              │
+ * │                                                                          │
+ * │ Sur la surface la plus privilégiée du produit, « sous quel compte suis-je│
+ * │ en train d'agir » n'est pas une coquetterie : c'est la question qu'on se │
+ * │ pose avant de publier ou de rembourser. Rien ne la portait.              │
+ * │                                                                          │
+ * │ Le « Retour au site » qui occupait cette place n'a pas disparu — il est  │
+ * │ dans le nom de la marque, en haut du rail, qui a toujours mené à         │
+ * │ l'accueil de l'administration ; et le site public est à un clic du nom.  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+/*
+ * Le formulaire de « Sortir » ne doit pas faire boîte.
+ *
+ * Enveloppé dans un `<form>`, le bouton n'était plus l'enfant du pied : il se
+ * centrait dans le formulaire, qui se centrait dans le pied, et le mot
+ * descendait de neuf dixièmes de pixel. `display: contents` efface la boîte
+ * intermédiaire sans toucher au formulaire lui-même.
+ */
+.pied form {
+  display: contents;
+}
+
+.pied {
+  padding: var(--pas-4);
+  border-top: 1px solid color-mix(in srgb, var(--chrome-encre) 14%, transparent);
+  display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: var(--cible-min);
-  padding: 0 14px;
-  font-size: var(--taille-m);
-  color: var(--chrome-encre);
-  opacity: 0.7;
+  gap: 10px;
 }
 
-.retourSite:hover {
-  color: var(--action);
-  opacity: 1;
+.pastille {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 50%;
+  /*
+    Sauge, et non le second olive : sur l'olive du rail, un disque olive ne se
+    détache pas. `--second` porte sa propre encre, `--second-contre`, dont le
+    contraste est vérifié — ce qu'une teinte choisie à l'œil n'aurait pas.
+  */
+  background: var(--second);
+  color: var(--second-contre);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-forte);
+}
+
+.piedIdentite {
+  min-width: 0;
+  flex: 1;
+}
+
+.piedNom {
+  display: block;
+  font-size: var(--taille-s);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.piedRole {
+  display: block;
+  font-size: 11px;
+  color: color-mix(in srgb, var(--chrome-encre) 50%, transparent);
+}
+
+/*
+ * « Sortir » est un BOUTON dans un formulaire, jamais un lien.
+ *
+ * Une déconnexion change l'état du serveur : posée sur un `<a>`, elle serait
+ * déclenchée par le pré-chargement d'un navigateur ou l'aperçu d'un lien.
+ * Le bouton porte l'apparence d'un lien, et rien de plus.
+ */
+.sortir {
+  font-size: 11px;
+  /*
+    Un `<button>` ne prend pas l'interligne du document : les navigateurs lui
+    posent le leur, et le mot « Sortir » descendait de neuf dixièmes de pixel
+    par rapport au lien du prototype. `font: inherit` ne le corrige pas seul —
+    la propriété raccourcie n'emporte pas l'interligne hérité.
+  */
+  line-height: inherit;
+  color: var(--accent-sur-chrome);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.sortir:hover {
+  color: var(--chrome-encre);
 }
 
 /* ── Contenu ────────────────────────────────────────────────────────────── */
@@ -224,7 +449,82 @@
 .contenu {
   flex: 1 1 560px;
   min-width: 300px;
-  padding: clamp(24px, 3vw, 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BARRE SUPÉRIEURE — OÙ SUIS-JE, ET QUE PUIS-JE FAIRE ICI.             │
+ * │                                                                          │
+ * │ Elle porte deux choses que le contenu ne portait nulle part : le chemin  │
+ * │ (« Administration · Contes ») et l'action principale de l'écran. Celle-ci│
+ * │ vivait à droite du `h1` et défilait donc hors de vue : sur un catalogue  │
+ * │ de dix-huit titres, « Ajouter un conte » n'était atteignable qu'en       │
+ * │ remontant. Collante, elle reste sous la main.                            │
+ * │                                                                          │
+ * │ Le repli `@supports` n'est pas une politesse : sans `backdrop-filter`,   │
+ * │ un fond à 94 % laisse le tableau défiler VISIBLEMENT sous le fil         │
+ * │ d'Ariane, et les deux textes se superposent. Le même repli que l'en-tête │
+ * │ du site public, pour la même raison.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.barreSuperieure {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: color-mix(in srgb, var(--fond) 94%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--bordure);
+  padding: var(--pas-3) var(--pas-6);
+  display: flex;
+  align-items: center;
+  gap: var(--pas-4);
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .barreSuperieure {
+    background: var(--fond);
+  }
+}
+
+.filAriane {
+  font-size: var(--taille-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--encre) 50%, transparent);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.barreActions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--pas-3);
+}
+
+.page {
+  padding: var(--pas-6) var(--pas-6) var(--pas-8);
+}
+
+/*
+ * La colonne de l'écran. Deux écarts, et le choix n'est pas cosmétique :
+ * les listes enchaînent des blocs qui se lisent ensemble (filtres, puis le
+ * tableau qu'ils filtrent) ; le tableau de bord empile des panneaux qui n'ont
+ * rien à voir l'un avec l'autre, et qu'un écart plus large sépare vraiment.
+ */
+.colonne {
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.colonneAeree {
+  gap: var(--pas-6);
 }
 
 .entete {
@@ -232,27 +532,46 @@
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 26px;
+  gap: var(--pas-4);
 }
 
 /*
- * Nunito, pas Fraunces — y compris pour un `h1`. La réinitialisation globale
- * pose la police de titre sur `h1`/`h2`/`h3` ; il faut donc la reprendre ici.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE TITRE REPREND LA POLICE D'AFFICHAGE — c'était la seule voix absente. │
+ * │                                                                          │
+ * │ L'administration écrivait ses titres dans la police d'INTERFACE, pour    │
+ * │ tenir sur des écrans denses. Le prototype tranche autrement : 42 px dans │
+ * │ la police de titre, interlignage 1,12, exactement comme le site public.  │
+ * │ Un back-office qui n'emploie jamais la voix de la marque finit par ne    │
+ * │ plus ressembler au produit qu'il administre.                             │
+ * │                                                                          │
+ * │ La taille est FIXE et non `clamp()` : le prototype la mesure, et une     │
+ * │ taille qui varie avec la fenêtre ne se mesure pas.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 .titre {
-  font-family: var(--police-interface);
-  font-variation-settings: normal;
-  font-size: clamp(24px, 2.6vw, 32px);
-  font-weight: var(--graisse-forte);
+  font-family: var(--police-titre);
+  /*
+    400, et non 700 : Caprasimo n'a qu'une graisse, et c'est elle que le
+    prototype mesure. La réinitialisation globale posait 700 — invisible sous
+    une police à graisse unique, faux dès qu'une autre direction la sert.
+  */
+  font-weight: var(--graisse-normale);
+  font-size: 42px;
+  line-height: 1.12;
   letter-spacing: -0.015em;
-  line-height: 1.15;
+  margin: 0 0 4px;
 }
 
+/*
+ * L'interligne n'est PAS redéclaré : il vient du gabarit, à 1,55. Écrit 1,6
+ * ici, il rendait la phrase trois quarts de pixel plus haute — et tout ce qui
+ * suit le titre descendait d'autant, sur les trois écrans.
+ */
 .sousTitre {
-  font-size: var(--taille-l);
-  color: var(--encre-douce);
-  margin-top: 6px;
+  font-size: var(--taille-base);
+  color: color-mix(in srgb, var(--encre) 60%, transparent);
+  margin: 0;
 }
 
 /*
@@ -572,21 +891,26 @@
 
 /* ── Le suivi en direct ─────────────────────────────────────────────────── */
 
+/*
+ * L'indicateur de suivi vit désormais dans la BARRE SUPÉRIEURE, et c'est elle
+ * qu'il dimensionne : sur le tableau de bord, aucun bouton ne l'accompagne, si
+ * bien que la hauteur de la barre — et la position de tout l'écran — se lit
+ * sur ce texte. À 13 px il poussait la barre à 47,5 px contre 46.
+ */
 .direct {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--taille-s);
-  font-weight: var(--graisse-demi);
-  color: var(--encre-douce);
+  gap: 7px;
+  font-size: 11px;
+  color: var(--second-encre);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .directPouls,
 .directArret {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: var(--rayon-pastille);
   flex: 0 0 auto;
 }
@@ -598,7 +922,16 @@
  * chiffres ne sont pas une photographie.
  */
 .directPouls {
-  background: var(--region-afrique_ouest-accent);
+  /*
+    LA SAUGE, ET NON LA TEINTE D'UNE RÉGION.
+
+    Ce point lisait `--region-afrique_ouest-accent` — la couleur de l'Afrique
+    de l'Ouest — sur un indicateur qui ne parle d'aucune région. Sous la V3 les
+    deux valeurs coïncident, si bien que rien ne se voyait ; c'est exactement
+    le défaut que le lot 6 a corrigé sur le lecteur, et que deux tests
+    interdisent désormais ailleurs.
+  */
+  background: var(--second-encre);
   animation: battement 2.4s ease-in-out infinite;
 }
 
@@ -728,22 +1061,74 @@
   max-width: var(--largeur-texte);
 }
 
+/*
+ * L'ÉTIQUETTE D'UN CHAMP EST UNE ÉTIQUETTE, PAS UN TITRE.
+ *
+ * Elle valait 14 px en gras, à l'encre pleine — la même graisse et la même
+ * couleur que la valeur saisie juste dessous, si bien qu'une rangée de champs
+ * remplis se lisait comme une alternance de deux textes de même poids. Le
+ * prototype la pose à 12 px, sans gras, à 70 % d'encre : elle nomme, elle ne
+ * réclame pas.
+ */
 .libelle {
-  font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
-  color: var(--encre);
+  font-size: var(--taille-xs);
+  font-weight: var(--graisse-normale);
+  color: color-mix(in srgb, var(--encre) 70%, transparent);
 }
 
+/*
+ * La boîte d'Organic : 36 px de haut, 6/14 de rembourrage, un pixel de trait.
+ *
+ * Elle mesurait 41,7 px — trois pixels de rembourrage en trop en haut et en
+ * bas, et un trait à 1,5 px. Sur une fiche qui aligne quinze champs, l'écart
+ * se cumulait en presque soixante pixels de hauteur.
+ *
+ * Le fond est `--fond-doux` : `01-design-tokens.md` réserve ce plan aux
+ * « inputs on cards », et une saisie du même crème que la carte qui la porte
+ * ne se voit plus.
+ */
 .saisie {
   width: 100%;
-  min-height: var(--cible-min);
-  padding: 9px 13px;
-  border: 1.5px solid var(--bordure-forte);
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--bordure);
   border-radius: var(--rayon-controle);
-  background: var(--fond);
+  background: var(--fond-doux);
   color: var(--encre);
+  caret-color: var(--marque);
   font-family: var(--police-interface);
   font-size: var(--taille-m);
+}
+
+.saisie:hover {
+  border-color: color-mix(in srgb, var(--encre) 45%, transparent);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE ZONE DE TEXTE N'EST PAS UNE PASTILLE.                               │
+ * │                                                                          │
+ * │ Organic termine sa feuille par un cadre arrondi qui pousse boutons,      │
+ * │ puces, segments ET saisies à 999 px. Sur un champ d'une ligne, ce rayon  │
+ * │ vaut la moitié de sa hauteur : c'est la pastille, et c'est la signature  │
+ * │ de la direction.                                                         │
+ * │                                                                          │
+ * │ Sur une zone de 160 px de haut, le même rayon dessine deux demi-cercles  │
+ * │ de quatre-vingts pixels. Le bloc cesse d'être un rectangle : il mange    │
+ * │ ses propres coins, et le texte que l'on tape s'en écarte. Le prototype   │
+ * │ porte le défaut sans le voir — ses zones y sont vides.                   │
+ * │                                                                          │
+ * │ La règle SUIVIE est donc celle qu'Organic déclare AVANT son cadre        │
+ * │ arrondi : `--radius-md`, 16 px. Ce n'est pas un écart au système, c'est  │
+ * │ son premier état — et la pastille reste partout où elle a du sens.       │
+ * │                                                                          │
+ * │ `resize: vertical` vient du même endroit : une zone élargie à la souris  │
+ * │ déborderait de sa colonne de grille.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+textarea.saisie {
+  border-radius: var(--rayon-md);
+  resize: vertical;
 }
 
 .aide {
@@ -816,18 +1201,39 @@
  * catalogue public.
  */
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA BOÎTE DU BOUTON EST CELLE D'ORGANIC, ET ELLE PORTE LA BARRE.         │
+ * │                                                                          │
+ * │ Le bouton mesurait 36 px de haut — le plancher tactile — contre 36,4 px  │
+ * │ dans le prototype. Quatre dixièmes de pixel, et ils ne restaient pas     │
+ * │ chez eux : c'est le bouton qui DONNE sa hauteur à la barre supérieure,   │
+ * │ et toute la page descendait de cette fraction, cumulée à chaque bloc.    │
+ * │                                                                          │
+ * │ D'où le rembourrage et l'interligne d'Organic, écrits en clair :         │
+ * │ 8,8 / 15,84 px, 14 px sur 1,2, un pixel de trait. Le plancher tactile    │
+ * │ reste, et ne mord plus — 36,4 passe au-dessus de 36.                     │
+ * │                                                                          │
+ * │ La police d'AFFICHAGE sur un bouton n'est pas propre à l'administration :│
+ * │ le site public la pose déjà sur les siens (`.feuilleter`,               │
+ * │ `.surMesureAction`). C'est la voix de la marque, et un back-office qui   │
+ * │ l'évite finit par ne plus ressembler au produit.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .boutonPrimaire,
 .boutonSecondaire,
 .boutonDiscret {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-height: var(--cible-min);
-  padding: 0 18px;
+  padding: var(--pas-2) calc(var(--pas-3) * 1.2);
   border-radius: var(--rayon-bouton);
-  font-family: var(--police-interface);
+  font-family: var(--police-titre);
   font-size: var(--taille-m);
-  font-weight: var(--graisse-forte);
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
   cursor: pointer;
   transition: background var(--transition-couleur), border-color var(--transition-couleur),
     transform var(--transition-forme);
@@ -850,7 +1256,7 @@
 }
 
 .boutonPrimaire {
-  border: 1.5px solid var(--marque);
+  border: 1px solid var(--marque);
   background: var(--marque);
   color: var(--marque-encre);
 }
@@ -862,7 +1268,7 @@
 }
 
 .boutonSecondaire {
-  border: 1.5px solid var(--bordure-forte);
+  border: 1px solid var(--bordure-forte);
   background: var(--fond);
   color: var(--encre);
 }
@@ -873,7 +1279,7 @@
 }
 
 .boutonDiscret {
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--encre-douce);
   text-decoration: underline;
@@ -1260,24 +1666,72 @@
   margin-bottom: 30px;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 820 PX, LE RAIL SE DÉPLIE — ET LES GROUPES SE METTENT EN FILE.     │
+ * │                                                                          │
+ * │ Les quatre intertitres disparaissent : couchés à l'horizontale, ils      │
+ * │ doubleraient la hauteur de la barre pour ranger une liste qui défile     │
+ * │ déjà d'un seul geste. Ils sont masqués en RETRAIT DE SCÈNE et non en     │
+ * │ `display: none` — la structure reste annoncée à un lecteur d'écran, qui  │
+ * │ lui ne manque pas de place.                                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 @media (max-width: 820px) {
   .rail {
     flex: 1 1 100%;
     position: static;
-    max-height: none;
-    padding: 16px;
+    height: auto;
+    padding: 0;
+  }
+
+  .marque {
+    padding: var(--pas-4) var(--pas-4) var(--pas-2);
+  }
+
+  .groupes {
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    gap: var(--pas-3);
+    padding: 0 var(--pas-4) var(--pas-3);
+  }
+
+  .groupe {
+    display: flex;
+    align-items: center;
+  }
+
+  .groupeTitre {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .liens {
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    overflow-x: auto;
+    flex-direction: row;
     gap: 6px;
   }
 
-  .mention {
-    padding-left: 0;
-    margin-bottom: 14px;
+  .lien {
+    white-space: nowrap;
+  }
+
+  .barreSuperieure {
+    padding: var(--pas-3) var(--pas-4);
+  }
+
+  .page {
+    padding: var(--pas-4) var(--pas-4) var(--pas-6);
+  }
+
+  .titre {
+    font-size: 30px;
   }
 }
 
@@ -1318,3 +1772,1130 @@
   outline-offset: var(--focus-decalage);
 }
 
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LES ÉCRANS DE LISTE — prototype « Admin EditionMapoukam v2 », 17/09/2026.
+
+   Cotes relevées sur le prototype servi à 1400 px : carte de filtres de
+   112 px, tableau en grille, rangées de 72 px (76 quand la cellule porte des
+   manques sur une seconde ligne).
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.carte {
+  background: var(--surface);
+  border-radius: var(--carte-rayon);
+  box-shadow: var(--ombre-s);
+}
+
+/* ── La carte de filtres ────────────────────────────────────────────────── */
+
+.filtresCarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-3) var(--pas-4);
+}
+
+.filtresLigne {
+  display: flex;
+  gap: var(--pas-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filtresBarres {
+  display: flex;
+  gap: var(--pas-3);
+  flex-wrap: wrap;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA LOUPE EST LE BOUTON D'ENVOI, ET NON UN DESSIN POSÉ À CÔTÉ.           │
+ * │                                                                          │
+ * │ Le prototype cherche à la frappe : il n'a donc aucun bouton, et sa loupe │
+ * │ est décorative. Ce formulaire est un `GET` qui doit marcher sans         │
+ * │ JavaScript — la recherche du catalogue public suit la même règle. Il lui │
+ * │ faut donc une commande d'envoi.                                         │
+ * │                                                                          │
+ * │ En ajouter une à droite aurait décalé le décompte et changé la largeur   │
+ * │ du champ. La loupe DEVIENT la commande : mêmes pixels que le prototype,  │
+ * │ et un bouton réel là où il n'y avait qu'un dessin. Sa boîte fait 36 px   │
+ * │ pour rester saisissable, centrée sur les 21 px où le prototype pose      │
+ * │ l'icône.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.rechercheChamp {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.rechercheEnvoi {
+  position: absolute;
+  left: 3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--encre);
+  opacity: 0.45;
+  cursor: pointer;
+  border-radius: var(--rayon-pastille);
+}
+
+.rechercheEnvoi:hover {
+  opacity: 1;
+}
+
+.rechercheSaisieOrganic {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 14px 6px 38px;
+  font: inherit;
+  font-size: var(--taille-m);
+  color: var(--encre);
+  caret-color: var(--marque);
+  background: var(--fond-doux);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+}
+
+.rechercheSaisieOrganic:hover {
+  border-color: color-mix(in srgb, var(--encre) 45%, transparent);
+}
+
+.decompte {
+  font-size: var(--taille-s);
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+  white-space: nowrap;
+}
+
+/* ── Le commutateur segmenté ────────────────────────────────────────────── */
+
+/*
+ * Les segments restent des LIENS : l'état du filtre vit dans l'adresse, comme
+ * partout dans ce produit. Un éditeur qui envoie « la liste des brouillons »
+ * envoie bien la liste des brouillons.
+ */
+.seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  overflow: hidden;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+}
+
+.segOpt {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  font-size: var(--taille-s);
+  color: var(--encre);
+}
+
+.segOpt + .segOpt {
+  border-left: 1px solid var(--bordure);
+}
+
+.segOpt:hover {
+  background: color-mix(in srgb, var(--encre) 7%, transparent);
+  color: var(--encre);
+}
+
+.segActif,
+.segActif:hover {
+  background: var(--marque);
+  color: var(--marque-encre);
+}
+
+/* Le compte du segment — discret, il qualifie l'étiquette sans la disputer. */
+.segCompte {
+  opacity: 0.55;
+  margin-left: 2px;
+}
+
+/* ── Le tableau en grille ───────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE GRILLE SUR UN TABLEAU RETIRE SA SÉMANTIQUE — D'OÙ LES RÔLES.       │
+ * │                                                                          │
+ * │ Le prototype pose ses colonnes en `grid-template-columns`, avec des      │
+ * │ `fr`, un 96 px et un 20 px. Aucune largeur de `<col>` ne reproduit ce    │
+ * │ mélange : il faut la grille.                                            │
+ * │                                                                          │
+ * │ Or `display: grid` sur un `<table>` fait PERDRE aux navigateurs le rôle  │
+ * │ de tableau — lignes, colonnes et en-têtes disparaissent de l'arbre       │
+ * │ d'accessibilité, et un lecteur d'écran n'annonce plus « colonne Statut » │
+ * │ en arrivant sur une cellule. Le balisage reste juste, la restitution ne  │
+ * │ l'est plus, et RIEN ne le signale : c'est le genre de panne qu'il faut   │
+ * │ un lecteur d'écran pour voir.                                           │
+ * │                                                                          │
+ * │ Les rôles ARIA explicites rendent ce que la mise en page retire. Un test │
+ * │ les exige, parce qu'ils sont invisibles à la relecture et qu'un          │
+ * │ `role="cell"` oublié ne casse rien de visible.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.grille {
+  display: block;
+  width: 100%;
+  min-width: var(--grille-min);
+}
+
+.grille thead,
+.grille tbody {
+  display: block;
+}
+
+.grille tr {
+  display: grid;
+  grid-template-columns: var(--grille-colonnes);
+  align-items: center;
+  gap: var(--pas-3);
+  padding: var(--pas-3) var(--pas-4);
+}
+
+.grille th,
+.grille td {
+  display: block;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.grilleCadre {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.grilleEntete {
+  border-bottom: 1px solid var(--bordure);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+}
+
+.grilleEntete th {
+  font-weight: var(--graisse-normale);
+  text-align: left;
+}
+
+.grilleRangee {
+  border-bottom: 1px solid color-mix(in srgb, var(--encre) 7%, transparent);
+}
+
+.grilleRangee:hover {
+  background: color-mix(in srgb, var(--marque) 7%, transparent);
+}
+
+.grilleRangee:last-child {
+  border-bottom: 0;
+}
+
+/*
+ * Le titre EST le lien d'édition — comme partout ailleurs dans le produit.
+ * Le prototype rend toute la rangée cliquable ; on ne le suit pas : une
+ * rangée cliquable n'est atteignable ni au clavier ni par un lecteur d'écran
+ * sans lui fabriquer un rôle de bouton, et le lien porte déjà le geste.
+ */
+.grilleTitre {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--accent-encre);
+  overflow-wrap: anywhere;
+}
+
+.grilleSousLigne {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+}
+
+.grilleAuteur {
+  font-size: var(--taille-s);
+  color: color-mix(in srgb, var(--encre) 75%, transparent);
+}
+
+.grilleAcces {
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--encre) 70%, transparent);
+}
+
+.grillePrix {
+  font-size: 12.5px;
+  text-align: right;
+}
+
+/*
+ * L'en-tête de la colonne des prix s'ALIGNE à droite, mais garde les 11 px
+ * des autres en-têtes. Lui poser `.grillePrix` lui donnait 12,5 px : la
+ * rangée d'en-tête grandissait de deux pixels et demi, et tout le tableau
+ * descendait avec elle. Le relevé l'a vu ; l'œil, non.
+ */
+.grilleColPrix {
+  text-align: right;
+}
+
+.grillePrixLigne {
+  white-space: nowrap;
+}
+
+.grilleSansPrix {
+  color: color-mix(in srgb, var(--encre) 45%, transparent);
+}
+
+/* Le chevron de fin de rangée — décoratif, le lien porte le geste. */
+.grilleChevron {
+  display: block;
+  opacity: 0.35;
+}
+
+.grilleVide {
+  padding: var(--pas-6);
+  text-align: center;
+  font-size: var(--taille-m);
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+  margin: 0;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LE TABLEAU DE BORD — prototype « Admin EditionMapoukam v2 », 17/09/2026.
+
+   L'écran avait huit sections de même rang, empilées dans l'ordre où elles
+   avaient été écrites. Le prototype lui donne une hiérarchie : ce qui bloque
+   en haut, les chiffres ensuite, le détail après, et le calme en une ligne.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── La carte d'alerte ──────────────────────────────────────────────────── */
+
+.bloquant {
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-radius: var(--carte-rayon);
+  box-shadow: var(--ombre-m);
+  padding: var(--pas-6);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--pas-4);
+  flex-wrap: wrap;
+}
+
+.bloquantChiffre {
+  font-family: var(--police-titre);
+  font-size: 56px;
+  line-height: 0.9;
+  color: var(--accent-sur-chrome);
+  flex: none;
+}
+
+.bloquantTexte {
+  flex: 1;
+  min-width: 220px;
+}
+
+.bloquantTitre {
+  font-family: var(--police-titre);
+  font-size: 21px;
+  line-height: 1.15;
+  margin: 0 0 4px;
+}
+
+.bloquantNote {
+  margin: 0;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--chrome-encre) 72%, transparent);
+}
+
+/*
+ * Les deux compteurs secondaires, derrière un filet vertical.
+ *
+ * Ils restent SUR la carte d'alerte plutôt que de descendre dans le bandeau :
+ * ce sont des ennuis, et le bandeau compte de l'argent. Mélanger les deux
+ * ferait lire « 0 copie à purger » comme un résultat commercial.
+ */
+.bloquantSecondaires {
+  flex: none;
+  display: flex;
+  gap: var(--pas-6);
+  padding-left: var(--pas-6);
+  border-left: 1px solid color-mix(in srgb, var(--chrome-encre) 18%, transparent);
+}
+
+.bloquantSecondaireValeur {
+  font-family: var(--police-titre);
+  font-size: 22px;
+  line-height: 1;
+}
+
+.bloquantSecondaireIntitule {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--chrome-encre) 60%, transparent);
+  max-width: 110px;
+}
+
+/* ── Le bandeau de chiffres ─────────────────────────────────────────────── */
+
+/*
+ * Le filet entre les cellules est le FOND qui transparaît par un écart d'un
+ * pixel — pas une bordure. Une bordure aurait doublé sur les cellules
+ * voisines, et se serait dédoublée au repli de la grille.
+ */
+.bandeau {
+  padding: 0;
+  overflow: hidden;
+}
+
+.bandeauGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1px;
+  background: var(--bordure);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bandeauCellule {
+  padding: var(--pas-4) var(--pas-6);
+  background: var(--surface);
+}
+
+.bandeauIntitule {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+  margin-bottom: 6px;
+}
+
+.bandeauValeur {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.bandeauNote {
+  display: block;
+  font-size: var(--taille-xs);
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+  margin-top: 4px;
+}
+
+/* ── Un panneau de détail ───────────────────────────────────────────────── */
+
+.panneaux {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--pas-4);
+  align-items: start;
+}
+
+.panneau {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-4) var(--pas-6) var(--pas-6);
+}
+
+.panneauEntete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pas-3);
+  border-bottom: 1px solid var(--bordure);
+  padding-bottom: var(--pas-2);
+}
+
+.panneauTitre {
+  font-family: var(--police-titre);
+  font-size: var(--taille-l);
+  line-height: 1.12;
+  margin: 0;
+}
+
+.panneauMention {
+  font-size: var(--taille-xs);
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+}
+
+.panneauCorps {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Les rangées d'un panneau ───────────────────────────────────────────── */
+
+.ligneBilan {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--pas-3);
+  padding: 11px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--encre) 8%, transparent);
+}
+
+.ligneBilan:last-child {
+  border-bottom: 0;
+}
+
+.ligneBilanNom {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ligneBilanValeur {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  white-space: nowrap;
+  text-align: right;
+  min-width: 62px;
+}
+
+/* ── Les barres de proportion ───────────────────────────────────────────── */
+
+.proportions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.proportionEntete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13.5px;
+  margin-bottom: 6px;
+}
+
+.proportionNom {
+  font-weight: var(--graisse-demi);
+}
+
+.proportionValeur {
+  font-weight: var(--graisse-forte);
+}
+
+/* Un zéro ne se crie pas : il se distingue en s'effaçant, pas en rougissant. */
+.proportionZero {
+  color: color-mix(in srgb, var(--encre) 50%, transparent);
+}
+
+.proportionPiste {
+  display: block;
+  height: 10px;
+  border-radius: var(--rayon-pastille);
+  background: var(--bordure);
+  overflow: hidden;
+}
+
+/*
+ * La largeur vient d'une PROPORTION, mise en pourcentage ici.
+ *
+ * Le composant passe `--part` entre 0 et 1, et non « 42% » : une
+ * multiplication par cent écrite en TypeScript ne se distingue pas d'une
+ * conversion de montant en centimes, et la règle qui interdit celle-ci dans
+ * le code métier l'attrape — à juste titre.
+ */
+.proportionPart {
+  display: block;
+  height: 100%;
+  width: calc(var(--part, 0) * 100%);
+  background: var(--marque);
+}
+
+/* ── « À compléter avant publication » ──────────────────────────────────── */
+
+.brouillon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: var(--pas-3);
+  padding: 12px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--encre) 8%, transparent);
+}
+
+.brouillon:last-child {
+  border-bottom: 0;
+}
+
+.brouillon:hover {
+  background: color-mix(in srgb, var(--marque) 7%, transparent);
+}
+
+.brouillonNom {
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brouillonManques {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.brouillonChevron {
+  display: block;
+  opacity: 0.4;
+}
+
+/* ── La ligne du calme ──────────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN PANNEAU VIDE SE REPLIE ICI. UN PANNEAU GARNI, JAMAIS.                │
+ * │                                                                          │
+ * │ Le prototype replie cinq panneaux d'un coup — mais son jeu de            │
+ * │ démonstration est vide, et il montre donc l'état « tout est calme », pas │
+ * │ une règle de repliement. Écrite littéralement, elle cacherait des        │
+ * │ données dès qu'il y en aurait.                                          │
+ * │                                                                          │
+ * │ La règle implémentée est donc l'inverse : un panneau QUI A quelque chose │
+ * │ à montrer se rend en entier, et seul un panneau vide descend ici, réduit │
+ * │ à son nom. Huit cadres vides valaient un écran en panne ; une ligne qui  │
+ * │ les nomme vaut une réponse.                                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.calme {
+  display: flex;
+  align-items: baseline;
+  gap: var(--pas-4);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--bordure);
+  padding-top: var(--pas-4);
+}
+
+.calmeIntitule {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--encre) 50%, transparent);
+  flex: none;
+  margin: 0;
+}
+
+.calmeListe {
+  display: flex;
+  gap: var(--pas-3);
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Le sélecteur de période ────────────────────────────────────────────── */
+
+.periode {
+  background: var(--fond);
+  flex-wrap: wrap;
+}
+
+/* ── Deux pièces menues, mais qui manquaient ────────────────────────────── */
+
+/*
+ * L'étiquette neutre — un code de langue, un rang, une catégorie. Elle ne
+ * porte JAMAIS un état : `.etat` existe pour ça, avec ses trois teintes.
+ */
+.etiquette {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: var(--rayon-pastille);
+  background: var(--fond-doux);
+  color: var(--encre-douce);
+}
+
+/* « Tout voir » — un lien de traverse, souligné, jamais un bouton. */
+.lienSouligne {
+  font-size: var(--taille-s);
+  color: var(--accent-encre);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LA FICHE D'UN TITRE — prototype « Admin EditionMapoukam v2 », 17/09/2026.
+
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ UNE COLONNE DE 3 800 PX DEVIENT DEUX COLONNES ET UNE BARRE COLLANTE.    │
+   │                                                                          │
+   │ L'écran empilait ses six sections de même rang : champs, prix,           │
+   │ publication, versions, ajout, suppression. « Publier » se trouvait donc  │
+   │ au tiers de la page, et il fallait remonter pour voir ce qui manquait    │
+   │ encore — sur l'écran dont c'est précisément la question.                 │
+   │                                                                          │
+   │ Le prototype range ce qui se DÉCIDE (publication, prix) dans une barre   │
+   │ latérale collante, et laisse à gauche ce qui se SAISIT. Les deux restent │
+   │ visibles ensemble : on corrige un champ en voyant la liste des manques   │
+   │ se tenir à côté.                                                         │
+   └──────────────────────────────────────────────────────────────────────────┘
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.retourFiche {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: var(--taille-s);
+  color: var(--accent-encre);
+  text-decoration: none;
+}
+
+.retourFiche:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── La carte d'identité ────────────────────────────────────────────────── */
+
+.ficheEntete {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--pas-6);
+  padding: var(--pas-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--pas-2);
+}
+
+.ficheCouvertureBloc {
+  width: 148px;
+  flex: none;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'EMPLACEMENT DE COUVERTURE NE DÉPOSE RIEN, ET C'EST VOULU.             │
+ * │                                                                          │
+ * │ Le prototype y pose un `image-slot` qui accepte un fichier. Deux raisons │
+ * │ de ne pas le suivre ici :                                                │
+ * │                                                                          │
+ * │   * `admin_lire_livre` ne rend AUCUNE couverture — l'afficher demande    │
+ * │     une colonne de plus à la fonction SQL, c'est-à-dire une question de  │
+ * │     données, pas de design. Le dossier a déjà tranché ainsi pour les     │
+ * │     vignettes du panier ;                                                │
+ * │   * `covers-architecture` interdit qu'un dépôt de couverture se fasse    │
+ * │     ailleurs que dans son module. La couverture vient de la page 1 du    │
+ * │     PDF, par la chaîne d'ingestion — et la légende le dit.               │
+ * │                                                                          │
+ * │ L'emplacement garde donc ses cotes exactes et reste muet : il tient la   │
+ * │ place que la couverture occupera le jour où la fonction la rendra.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.ficheCouverture {
+  width: 148px;
+  height: 206px;
+  border-radius: 10px;
+  background: var(--fond-doux);
+  border: 1px dashed var(--bordure);
+}
+
+.ficheCouvertureLegende {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--encre) 50%, transparent);
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.ficheIdentite {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+}
+
+.ficheTitreLigne {
+  display: flex;
+  align-items: center;
+  gap: var(--pas-3);
+  flex-wrap: wrap;
+}
+
+/*
+ * 34 px, et non les 42 px du `h1` d'écran.
+ *
+ * Ce titre est un SLUG — « le-prince-qui-voulait-etre-gentil » — et il vit
+ * dans une carte, à côté d'une couverture de 148 px. À 42 px il passait sur
+ * deux lignes et poussait la carte à la hauteur d'un hero.
+ */
+.ficheTitre {
+  font-family: var(--police-titre);
+  font-weight: var(--graisse-normale);
+  font-size: 34px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ficheSousTitre {
+  margin: 0;
+  font-size: var(--taille-base);
+  color: color-mix(in srgb, var(--encre) 60%, transparent);
+}
+
+.ficheReperes {
+  display: flex;
+  gap: var(--pas-6);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--bordure);
+  padding-top: var(--pas-3);
+  margin: var(--pas-2) 0 0;
+  font-size: var(--taille-s);
+}
+
+.ficheRepereIntitule {
+  font-size: 11px;
+  opacity: 0.55;
+}
+
+.ficheRepereValeur {
+  font-weight: var(--graisse-demi);
+  margin: 0;
+}
+
+/* ── Les deux colonnes ──────────────────────────────────────────────────── */
+
+.ficheColonnes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--pas-6);
+  align-items: start;
+}
+
+.ficheColonnePrincipale {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-6);
+  min-width: 0;
+}
+
+/*
+ * 84 px : la hauteur de la barre supérieure, plus la respiration du prototype.
+ * Sous cette valeur, le haut de la carte de publication passe DERRIÈRE la
+ * barre translucide à chaque défilement.
+ */
+.ficheLaterale {
+  position: sticky;
+  top: 84px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+  max-width: 360px;
+  min-width: 0;
+}
+
+.ficheSectionTitre {
+  font-family: var(--police-titre);
+  font-weight: var(--graisse-normale);
+  font-size: 25px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--pas-3);
+}
+
+.ficheCarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+  padding: var(--pas-3);
+}
+
+/* Les cartes de la barre latérale respirent moins : elles ne saisissent rien. */
+.ficheCarteSerree {
+  gap: var(--pas-3);
+}
+
+.ficheKicker {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin: 0;
+}
+
+/* ── Les trois leviers d'accès ──────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS CASES DEVIENNENT TROIS RANGÉES QUI SE VOIENT.                     │
+ * │                                                                          │
+ * │ Les leviers étaient des cases à cocher nues, alignées à gauche, avec     │
+ * │ leur note en dessous. C'est la commande la plus lourde de conséquence de │
+ * │ tout le back-office — « vendu à l'unité » est le SEUL levier qui ouvre   │
+ * │ le téléchargement — et rien ne la distinguait d'un réglage de confort.   │
+ * │                                                                          │
+ * │ La rangée entière est une cible, elle s'entoure et se colore quand elle  │
+ * │ est active. La case réelle reste DANS la rangée, masquée en retrait de   │
+ * │ scène : c'est elle qui porte l'état, le clavier et le formulaire ; le    │
+ * │ carré dessiné n'est qu'un reflet.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.leviers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.levier {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  padding: 11px 13px;
+  border-radius: var(--rayon-md);
+  border: 1px solid var(--bordure);
+  background: var(--fond);
+  cursor: pointer;
+}
+
+.levier:hover {
+  border-color: var(--marque);
+}
+
+/* La case réelle : en retrait de scène, jamais supprimée de l'arbre. */
+.levierCaseReelle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.levierCase {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  color: var(--marque-encre);
+  border: 1.5px solid var(--bordure);
+  background: transparent;
+}
+
+.levierCase svg {
+  opacity: 0;
+}
+
+/* L'état vient de la CASE, jamais d'une classe posée au rendu : une classe
+   calculée côté serveur ne suivrait pas le clic avant rechargement. */
+.levier:has(.levierCaseReelle:checked) {
+  border-color: var(--marque);
+  background: color-mix(in srgb, var(--marque) 10%, transparent);
+}
+
+.levier:has(.levierCaseReelle:checked) .levierCase {
+  border-color: var(--marque);
+  background: var(--marque);
+}
+
+.levier:has(.levierCaseReelle:checked) .levierCase svg {
+  opacity: 1;
+}
+
+.levier:has(.levierCaseReelle:focus-visible) {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: var(--focus-decalage);
+}
+
+/*
+ * Le nom est un BLOC : en ligne, il partageait sa ligne avec la note et la
+ * rangée mesurait un pixel et demi de moins que la maquette.
+ */
+.levierNom {
+  display: block;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-demi);
+  cursor: pointer;
+}
+
+.levierNote {
+  display: block;
+  font-size: var(--taille-xs);
+  opacity: 0.62;
+  margin-top: 1px;
+}
+
+
+/*
+ * Dans une carte de la fiche, l'écart entre champs vient du `gap` du
+ * conteneur. La marge de `.champ` s'y ajouterait — dix-huit pixels de trop
+ * entre chaque ligne — et sa largeur de lecture n'a pas de sens sur un champ
+ * de formulaire, qui doit suivre sa colonne.
+ */
+.ficheCarte .champ {
+  margin-bottom: 0;
+  max-width: none;
+  gap: 5px;
+}
+
+
+/* ── Les sections de la fiche prennent les cotes d'Organic ──────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CES TROIS RÈGLES SONT PORTÉES PAR LE CONTENEUR, ET NON PAR LES CLASSES. │
+ * │                                                                          │
+ * │ `.section`, `.sectionTitre` et `.cadre` servent les DOUZE écrans         │
+ * │ d'administration. Les recoter à la racine aurait déplacé onze écrans     │
+ * │ qu'aucun prototype ne décrit, et dont personne n'aurait mesuré le        │
+ * │ résultat.                                                                │
+ * │                                                                          │
+ * │ La fiche est le seul écran que le prototype détaille : ses cotes         │
+ * │ s'appliquent donc DANS `.ficheColonnes`, et nulle part ailleurs. Le jour │
+ * │ où les autres écrans seront relevés, ces règles remonteront d'un cran.   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* L'écart entre sections vient du `gap` de la colonne : la marge ferait double. */
+.ficheColonnes .section {
+  margin-bottom: 0;
+}
+
+.ficheColonnes .sectionTitre {
+  font-family: var(--police-titre);
+  font-variation-settings: normal;
+  font-weight: var(--graisse-normale);
+  font-size: 25px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--pas-3);
+}
+
+/*
+ * La carte perd sa bordure au profit de l'ombre.
+ *
+ * Organic détache ses cartes par l'élévation, pas par un trait : une bordure
+ * ET une ombre font deux frontières pour un seul bloc, et la carte paraît
+ * cernée. Le rayon passe aux 32,2 px du système.
+ */
+.ficheColonnes .cadre {
+  border: 0;
+  border-radius: var(--carte-rayon);
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+  overflow-x: visible;
+}
+
+/*
+ * Le rembourrage d'Organic vaut `--space-3`, et il est porté par la CARTE.
+ * `.formulaire` le posait lui-même, en `clamp(16px, 2vw, 24px)` : les deux
+ * s'additionnaient dès que la carte en prenait un.
+ */
+.ficheColonnes .cadre {
+  padding: var(--pas-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+/*
+ * Le formulaire ne rembourre plus : la carte le fait. Les deux s'additionnaient
+ * — `clamp(16px, 2vw, 24px)` par-dessus les 13,2 px du système.
+ */
+.ficheColonnes .cadre > .formulaire {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.ficheColonnes .cadre > .formulaire > .champ {
+  margin-bottom: 0;
+  max-width: none;
+  gap: 5px;
+}
+
+/*
+ * Dans la fiche, une rangée de champs est une GRILLE et non une file.
+ *
+ * `.rangee` répartit en flex avec `flex: 1 1 150px` : deux champs de longueurs
+ * différentes prenaient des largeurs différentes, et la colonne de droite se
+ * décalait d'un champ à l'autre. Le prototype pose une grille à colonnes
+ * égales, qui se replie sous 200 px.
+ */
+.ficheColonnes .rangee {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--pas-4);
+  margin-bottom: 0;
+  align-items: start;
+}
+
+.ficheColonnes .rangee .champ {
+  flex: none;
+}
+
+/*
+ * TROIS CHAMPS COURTS TIENNENT SUR UNE LIGNE, PAS DEUX PLUS UN.
+ *
+ * Âge minimum, âge maximum et pages de l'extrait sont trois nombres à deux
+ * chiffres. À 200 px de largeur minimale, le troisième passait à la ligne et
+ * la rangée se lisait comme deux groupes sans rapport. Le prototype leur
+ * donne 130 px — la place d'un nombre et de son étiquette, pas davantage.
+ */
+.ficheColonnes .rangeeSerree {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+}
+
+/* La barre latérale respire moins : on n'y saisit presque rien. */
+.ficheLaterale .cadre,
+.ficheLaterale .cadre > .formulaire,
+.ficheLaterale .cadre > .formulaire > .champ {
+  gap: var(--pas-3);
+}
+
+/*
+ * LA CARTE DE PUBLICATION S'ÉLÈVE D'UN CRAN.
+ *
+ * C'est la seule de la fiche qui porte une DÉCISION — publier, remettre en
+ * brouillon, archiver. Le prototype la distingue par l'élévation plutôt que
+ * par une couleur : `elev-md` contre `elev-sm`. Une teinte aurait fait une
+ * quatrième couleur de carte sur un écran qui en a déjà trois.
+ */
+.ficheLaterale .section:first-child .cadre {
+  box-shadow: var(--ombre-m);
+}

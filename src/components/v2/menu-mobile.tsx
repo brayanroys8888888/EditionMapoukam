@@ -45,7 +45,8 @@ const ENTREES: EntreeMenu[] = [
   { cle: 'documents.livrets_pedagogiques', chemin: 'livrets' },
   { cle: 'navigation.offres', chemin: 'offres' },
   { cle: 'navigation.association', chemin: 'association' },
-  { cle: 'navigation.expertise', chemin: 'expertise' },
+  { cle: 'navigation.expertiseMapoukam', chemin: 'expertise' },
+  { cle: 'navigation.expertiseWatosonne', chemin: 'expertise/watosonne' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
   { cle: 'pied.contact', chemin: 'contact' },
 ];
@@ -272,7 +273,9 @@ export function MenuMobile({
 
                 <ul className={styles.liens}>
                   {ENTREES.map((entree) => {
-                    const actif = entree.chemin === segment;
+                    const actif =
+                      chemin === `/${langue}/${entree.chemin}` ||
+                      (entree.chemin === 'expertise' && chemin.startsWith(`/${langue}/expertise/`));
                     return (
                       <li key={entree.chemin}>
                         <a

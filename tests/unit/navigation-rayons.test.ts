@@ -65,6 +65,16 @@ function cheminsDuTableau(fichier: string, nom: string): string[] {
   return [...bloc.matchAll(/chemin:\s*'([^']+)'/g)].map((trouve) => trouve[1] as string);
 }
 
+describe('les sous-menus d’expertise', () => {
+  it('propose Mapoukam consulting et Watosonne Consulting', () => {
+    const source = readFileSync(join(RACINE, 'src', 'components', 'enveloppe', 'v2.tsx'), 'utf8');
+
+    expect(source).toContain("cle: 'navigation.expertiseMapoukam'");
+    expect(source).toContain("cle: 'navigation.expertiseWatosonne'");
+    expect(source).toContain("chemin: 'expertise/watosonne'");
+  });
+});
+
 describe('les rayons du catalogue', () => {
   it('sont les mêmes dans l’en-tête V1 et dans l’en-tête V2', () => {
     const v1 = cheminsDuTableau(join('src', 'components', 'enveloppe', 'index.tsx'), 'RAYONS');

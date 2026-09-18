@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import type { TypeDocument } from '@/domain/catalog/types';
 import { listerLivres } from '@/lib/admin/service';
+import type { Appelant } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, stylesAdmin as styles, type SectionAdmin } from '@/components/admin';
 
@@ -75,10 +76,17 @@ export interface ClesListeLivres {
   vide: CleTraduction;
   /** Le message de retour après une suppression réussie. */
   supprime: CleTraduction;
+  /** L'intitulé de la première colonne — « Conte » ou « Livret ». */
+  colonneTitre: CleTraduction;
+  /** Le décompte de résultats, au singulier puis au pluriel. */
+  decompteUn: CleTraduction;
+  decompte: CleTraduction;
 }
 
 interface ProprietesListeLivres {
   langue: LangueInterface;
+  /** Qui est connecté — traversé jusqu'au pied du rail, jamais relu ici. */
+  administrateur: Appelant;
   /** Les paramètres d’URL, déjà attendus par l’écran appelant. */
   requete: Record<string, string | string[] | undefined>;
   /** L’onglet à marquer actif dans le rail. */
@@ -94,8 +102,10 @@ interface ProprietesListeLivres {
    */
   typeImpose: TypeDocument | null;
   cles: ClesListeLivres;
-  /** Les boutons de dépôt, propres à chaque écran. */
+  /** L'action principale, dans la barre supérieure. */
   actions: ReactNode;
+  /** Ce qui se pose à droite du titre — un lien de traverse, au plus. */
+  enteteActions?: ReactNode;
 }
 
 function premier(valeur: string | string[] | undefined): string | undefined {
@@ -104,12 +114,14 @@ function premier(valeur: string | string[] | undefined): string | undefined {
 
 export async function ListeLivres({
   langue,
+  administrateur,
   requete,
   section,
   base,
   typeImpose,
   cles,
   actions,
+  enteteActions,
 }: ProprietesListeLivres): Promise<ReactNode> {
   const demande = premier(requete['statut']);
   // Un statut inconnu dans l'URL ne fait pas tomber l'écran : il est ignoré.
@@ -123,13 +135,14 @@ export async function ListeLivres({
     typeImpose === null && TYPES.includes(typeDemande as (typeof TYPES)[number])
       ? typeDemande
       : undefined;
-  const type = typeImpose ?? typeChoisi;
 
   const q = premier(requete['q'])?.trim();
 
   const resultat = await listerLivres({
-    statut: statut ?? null,
-    type: type ?? null,
+    // Le statut n'est PAS filtré en base : les comptes des segments se lisent
+    // sur l'ensemble. Voir le bloc « LES COMPTES DES SEGMENTS » plus bas.
+    statut: null,
+    type: typeImpose ?? null,
     page: 1,
     taille: 100,
   }).catch(() => null);
@@ -137,14 +150,6 @@ export async function ListeLivres({
 
   const tousLivres = resultat.donnees as unknown as LigneLivre[];
   const terme = q ? q.toLowerCase() : null;
-  const livres = terme
-    ? tousLivres.filter(
-        (l) =>
-          l.slug.toLowerCase().includes(terme) ||
-          l.auteur.toLowerCase().includes(terme) ||
-          l.id.toLowerCase().includes(terme),
-      )
-    : tousLivres;
 
   /**
    * Un lien qui change UN filtre et conserve les autres.
@@ -186,13 +191,71 @@ export async function ListeLivres({
   const ficheDe = (type: TypeDocument): string =>
     `/${langue}/admin/${type === 'livret_pedagogique' ? 'livrets' : 'contes'}`;
 
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LES COMPTES DES SEGMENTS SE LISENT SUR L'ENSEMBLE, CHACUN DE SON CÔTÉ. │
+   * │                                                                        │
+   * │ « Brouillon 5 » est ce qui rend les brouillons trouvables : sans le     │
+   * │ compte, il faut cliquer sur chaque segment pour savoir s'il porte       │
+   * │ quelque chose. Les deux groupes comptent INDÉPENDAMMENT — le compte     │
+   * │ d'un statut ignore le support choisi, et l'inverse — parce qu'un        │
+   * │ segment répond à « combien si je clique ici », pas à « combien en plus  │
+   * │ de ce qui est déjà coché ».                                            │
+   * │                                                                        │
+   * │ D'où une seule interrogation, SANS statut, filtrée ensuite ici. Le      │
+   * │ support imposé, lui, reste filtré EN BASE : c'est la portée de l'écran, │
+   * │ pas un filtre, et `total_lignes` doit le refléter.                     │
+   * │                                                                        │
+   * │ Limite assumée, et elle préexiste : au-delà de la page de cent titres,  │
+   * │ la liste ET les comptes sont tronqués. C'était déjà le cas de la        │
+   * │ recherche, qui filtre elle aussi sur la page reçue.                    │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const parStatut = (valeur: string | undefined): LigneLivre[] =>
+    valeur ? tousLivres.filter((l) => l.statut === valeur) : tousLivres;
+
+  const parType = (valeur: string | undefined): LigneLivre[] =>
+    valeur ? tousLivres.filter((l) => l.type_document === valeur) : tousLivres;
+
+  const correspond = (l: LigneLivre): boolean => {
+    if (statut && l.statut !== statut) return false;
+    if (typeChoisi && l.type_document !== typeChoisi) return false;
+    if (!terme) return true;
+    return (
+      l.slug.toLowerCase().includes(terme) ||
+      l.auteur.toLowerCase().includes(terme) ||
+      l.id.toLowerCase().includes(terme)
+    );
+  };
+
+  const livres = tousLivres.filter(correspond);
+
+  const decompte = `${String(livres.length)} ${traduire(
+    langue,
+    livres.length === 1 ? cles.decompteUn : cles.decompte,
+  )}`;
+
+  /*
+   * Les colonnes du prototype, à l'unité près. Le support n'a PAS sa colonne :
+   * il est passé sur la seconde ligne de la cellule principale, avec les
+   * manques — une colonne entière pour deux valeurs possibles coûtait plus de
+   * largeur qu'elle n'en informait.
+   */
+  const colonnes =
+    typeImpose === null
+      ? 'minmax(0,2.2fr) minmax(0,1fr) 96px minmax(0,1.1fr) minmax(0,1.3fr) 20px'
+      : 'minmax(0,2.4fr) minmax(0,1fr) 96px minmax(0,1fr) minmax(0,1fr) 20px';
+  const largeurMin = typeImpose === null ? '700px' : '660px';
+
   return (
     <GabaritAdmin
       langue={langue}
+      administrateur={administrateur}
       section={section}
       titre={traduire(langue, cles.titre)}
       sousTitre={traduire(langue, cles.sousTitre)}
       actions={actions}
+      enteteActions={enteteActions}
     >
       {/*
         La suppression ramène ICI, et non sur l'écran du titre supprimé : le
@@ -203,114 +266,159 @@ export async function ListeLivres({
         <p className={styles.succes}>{traduire(langue, cles.supprime)}</p>
       ) : null}
 
-      {/* ── Barre de recherche admin ────────────────────────────────────── */}
-      <form method="get" action={base} className={styles.recherche} role="search">
-        {statut ? <input type="hidden" name="statut" value={statut} /> : null}
-        {typeChoisi ? <input type="hidden" name="type" value={typeChoisi} /> : null}
-        <input
-          type="search"
-          name="q"
-          defaultValue={q ?? ''}
-          placeholder={traduire(langue, 'admin.recherchePlaceholder')}
-          className={styles.rechercheSaisie}
-          aria-label={traduire(langue, 'catalogue.recherche')}
-        />
-        <button type="submit" className={styles.boutonSecondaire}>
-          {traduire(langue, 'catalogue.rechercheAction')}
-        </button>
-        {q ? (
-          <a className={styles.boutonDiscret} href={lien({ statut: undefined, type: undefined })}>
-            {traduire(langue, 'catalogue.retirerTousFiltres')}
-          </a>
-        ) : null}
-      </form>
+      {/* ── Recherche et filtres, dans une seule carte ───────────────────── */}
+      <div className={`${styles.carte} ${styles.filtresCarte}`}>
+        <form method="get" action={base} className={styles.filtresLigne} role="search">
+          {statut ? <input type="hidden" name="statut" value={statut} /> : null}
+          {typeChoisi ? <input type="hidden" name="type" value={typeChoisi} /> : null}
 
-      {/* ── Filtres de statut ────────────────────────────────────────────── */}
-      <nav className={styles.filtres} aria-label={traduire(langue, 'admin.colStatut')}>
-        <a
-          className={statut ? styles.filtre : `${styles.filtre} ${styles.filtreActif}`}
-          href={lien({ statut: undefined })}
-          aria-current={statut ? undefined : 'true'}
-        >
-          {traduire(langue, 'admin.tousLesStatuts')}
-        </a>
-
-        {STATUTS.map((valeur) => {
-          const actif = statut === valeur;
-          return (
-            <a
-              key={valeur}
-              className={actif ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-              href={lien({ statut: valeur })}
-              aria-current={actif ? 'true' : undefined}
+          <div className={styles.rechercheChamp}>
+            <button
+              type="submit"
+              className={styles.rechercheEnvoi}
+              aria-label={traduire(langue, 'catalogue.rechercheAction')}
             >
-              {traduire(langue, `admin.statut_${valeur}` as CleTraduction)}
-            </a>
-          );
-        })}
-      </nav>
-
-      {/*
-        ┌────────────────────────────────────────────────────────────────────┐
-        │ SANS CE FILTRE, L’ACCÈS MODULAIRE DES LIVRETS EST INATTEIGNABLE.   │
-        │                                                                    │
-        │ Les trois leviers se posent titre par titre, sur la fiche          │
-        │ d’édition, et cette liste est le seul chemin vers cette fiche. Sur │
-        │ deux cents titres mêlés, régler l’accès des livrets demandait de   │
-        │ les ouvrir un par un pour voir de quel support il s’agit.          │
-        │                                                                    │
-        │ L’onglet des livrets n’en a pas besoin : son support est dans son  │
-        │ adresse. Un filtre qui ne peut prendre qu’une valeur n’est pas un  │
-        │ filtre, c’est une décoration qui se clique sans rien changer.      │
-        └────────────────────────────────────────────────────────────────────┘
-      */}
-      {typeImpose === null ? (
-        <nav className={styles.filtres} aria-label={traduire(langue, 'admin.colSupport')}>
-          <a
-            className={typeChoisi ? styles.filtre : `${styles.filtre} ${styles.filtreActif}`}
-            href={lien({ type: undefined })}
-            aria-current={typeChoisi ? undefined : 'true'}
-          >
-            {traduire(langue, 'admin.tousLesSupports')}
-          </a>
-
-          {TYPES.map((valeur) => {
-            const actif = typeChoisi === valeur;
-            return (
-              <a
-                key={valeur}
-                className={actif ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-                href={lien({ type: valeur })}
-                aria-current={actif ? 'true' : undefined}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                aria-hidden="true"
               >
-                {traduire(langue, `documents.${valeur}` as CleTraduction)}
-              </a>
-            );
-          })}
-        </nav>
-      ) : null}
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q ?? ''}
+              placeholder={traduire(langue, 'admin.recherchePlaceholder')}
+              className={styles.rechercheSaisieOrganic}
+              aria-label={traduire(langue, 'catalogue.recherche')}
+            />
+          </div>
 
-      <div className={styles.cadre}>
+          <p className={styles.decompte}>{decompte}</p>
+        </form>
+
+        <div className={styles.filtresBarres}>
+          {/* ── Statut ──────────────────────────────────────────────────── */}
+          <nav className={styles.seg} aria-label={traduire(langue, 'admin.colStatut')}>
+            <a
+              className={statut ? styles.segOpt : `${styles.segOpt} ${styles.segActif}`}
+              href={lien({ statut: undefined })}
+              aria-current={statut ? undefined : 'true'}
+            >
+              {traduire(langue, 'admin.tousLesStatuts')}
+              <span className={styles.segCompte}>{parStatut(undefined).length}</span>
+            </a>
+
+            {STATUTS.map((valeur) => {
+              const actif = statut === valeur;
+              return (
+                <a
+                  key={valeur}
+                  className={actif ? `${styles.segOpt} ${styles.segActif}` : styles.segOpt}
+                  href={lien({ statut: valeur })}
+                  aria-current={actif ? 'true' : undefined}
+                >
+                  {traduire(langue, `admin.statut_${valeur}` as CleTraduction)}
+                  <span className={styles.segCompte}>{parStatut(valeur).length}</span>
+                </a>
+              );
+            })}
+          </nav>
+
+          {/*
+            ┌──────────────────────────────────────────────────────────────┐
+            │ SANS CE FILTRE, L'ACCÈS MODULAIRE DES LIVRETS EST            │
+            │ INATTEIGNABLE.                                               │
+            │                                                              │
+            │ Les trois leviers se posent titre par titre, sur la fiche    │
+            │ d'édition, et cette liste est le seul chemin vers cette       │
+            │ fiche. Sur deux cents titres mêlés, régler l'accès des        │
+            │ livrets demandait de les ouvrir un par un pour voir de quel   │
+            │ support il s'agit.                                           │
+            │                                                              │
+            │ L'onglet des livrets n'en a pas besoin : son support est dans │
+            │ son adresse. Un filtre qui ne peut prendre qu'une valeur      │
+            │ n'est pas un filtre, c'est une décoration qui se clique sans  │
+            │ rien changer.                                                │
+            └──────────────────────────────────────────────────────────────┘
+          */}
+          {typeImpose === null ? (
+            <nav className={styles.seg} aria-label={traduire(langue, 'admin.colSupport')}>
+              <a
+                className={typeChoisi ? styles.segOpt : `${styles.segOpt} ${styles.segActif}`}
+                href={lien({ type: undefined })}
+                aria-current={typeChoisi ? undefined : 'true'}
+              >
+                {traduire(langue, 'admin.tousLesSupports')}
+                <span className={styles.segCompte}>{parType(undefined).length}</span>
+              </a>
+
+              {TYPES.map((valeur) => {
+                const actif = typeChoisi === valeur;
+                return (
+                  <a
+                    key={valeur}
+                    className={actif ? `${styles.segOpt} ${styles.segActif}` : styles.segOpt}
+                    href={lien({ type: valeur })}
+                    aria-current={actif ? 'true' : undefined}
+                  >
+                    {traduire(langue, `documents.${valeur}` as CleTraduction)}
+                    <span className={styles.segCompte}>{parType(valeur).length}</span>
+                  </a>
+                );
+              })}
+            </nav>
+          ) : null}
+        </div>
+      </div>
+
+      {/* ── Le tableau ───────────────────────────────────────────────────── */}
+      <div className={`${styles.carte} ${styles.grilleCadre}`}>
         {livres.length === 0 ? (
-          <p className={styles.vide}>{traduire(langue, cles.vide)}</p>
+          <p className={styles.grilleVide}>{traduire(langue, cles.vide)}</p>
         ) : (
-          <table className={styles.tableau}>
-            <thead>
-              <tr>
-                <th scope="col">{traduire(langue, 'admin.colSlug')}</th>
-                <th scope="col">{traduire(langue, 'admin.colAuteur')}</th>
-                <th scope="col">{traduire(langue, 'admin.colStatut')}</th>
-                {typeImpose === null ? (
-                  <th scope="col">{traduire(langue, 'admin.colSupport')}</th>
-                ) : null}
-                <th scope="col">{traduire(langue, 'admin.colAcces')}</th>
-                <th scope="col" className={styles.numerique}>
+          <table
+            className={styles.grille}
+            role="table"
+            style={
+              {
+                '--grille-colonnes': colonnes,
+                '--grille-min': largeurMin,
+              } as CSSProperties
+            }
+          >
+            <thead role="rowgroup">
+              <tr className={styles.grilleEntete} role="row">
+                <th scope="col" role="columnheader">
+                  {traduire(langue, cles.colonneTitre)}
+                </th>
+                <th scope="col" role="columnheader">
+                  {traduire(langue, 'admin.colAuteur')}
+                </th>
+                <th scope="col" role="columnheader">
+                  {traduire(langue, 'admin.colStatut')}
+                </th>
+                <th scope="col" role="columnheader">
+                  {traduire(langue, 'admin.colAcces')}
+                </th>
+                <th scope="col" role="columnheader" className={styles.grilleColPrix}>
                   {traduire(langue, 'admin.colPrix')}
+                </th>
+                {/* La colonne du chevron : sans intitulé, mais elle existe. */}
+                <th scope="col" role="columnheader">
+                  <span className="sr-only">{traduire(langue, 'admin.colOuvrir')}</span>
                 </th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody role="rowgroup">
               {livres.map((livre) => {
                 const acces = [
                   livre.gratuit ? traduire(langue, 'admin.accesGratuit') : null,
@@ -327,34 +435,52 @@ export async function ListeLivres({
                 const prix = Object.entries(livre.prix ?? {});
 
                 return (
-                  <tr key={livre.id}>
-                    <td className={styles.cellulePrincipale}>
+                  <tr key={livre.id} className={styles.grilleRangee} role="row">
+                    <td role="cell">
                       {/*
                         Le slug est le lien d'édition. Une colonne « Modifier »
                         de plus aurait ajouté une cible à viser sur une ligne
                         qui en a déjà : le nom du titre EST ce sur quoi on
                         clique pour l'ouvrir, partout ailleurs dans le produit.
                       */}
-                      <a href={`${ficheDe(livre.type_document)}/${livre.id}`}>{livre.slug}</a>
+                      <a
+                        className={styles.grilleTitre}
+                        href={`${ficheDe(livre.type_document)}/${livre.id}`}
+                      >
+                        {livre.slug}
+                      </a>
 
                       {/*
-                        Les manques ne s'affichent QUE s'il y en a. Une ligne
+                        La seconde ligne — le support, puis les manques.
+
+                        Le support n'y figure que sur l'écran du catalogue
+                        entier : sur l'onglet des livrets, il répéterait le
+                        titre de l'écran sur chacune des lignes.
+
+                        Les manques ne s'affichent QUE s'il y en a. Une mention
                         « publiable » sur chaque titre publié serait du bruit.
                       */}
-                      {livre.manques.length > 0 ? (
-                        <ul className={styles.manques}>
+                      {typeImpose === null || livre.manques.length > 0 ? (
+                        <div className={styles.grilleSousLigne}>
+                          {typeImpose === null ? (
+                            <span>
+                              {traduire(langue, `documents.${livre.type_document}` as CleTraduction)}
+                            </span>
+                          ) : null}
                           {livre.manques.map((manque) => (
-                            <li key={manque} className={styles.manque}>
+                            <span key={manque} className={styles.manque}>
                               {manque}
-                            </li>
+                            </span>
                           ))}
-                        </ul>
+                        </div>
                       ) : null}
                     </td>
 
-                    <td>{livre.auteur}</td>
+                    <td role="cell" className={styles.grilleAuteur}>
+                      {livre.auteur}
+                    </td>
 
-                    <td>
+                    <td role="cell">
                       <span
                         className={`${styles.etat} ${
                           livre.statut === 'publie'
@@ -368,33 +494,47 @@ export async function ListeLivres({
                       </span>
                     </td>
 
-                    {typeImpose === null ? (
-                      <td>
-                        {traduire(langue, `documents.${livre.type_document}` as CleTraduction)}
-                      </td>
-                    ) : null}
-
                     {/*
                       Les trois leviers sont INDÉPENDANTS : un titre peut être
-                      offert, inclus dans l’abonnement, vendu à l’unité, ou
+                      offert, inclus dans l'abonnement, vendu à l'unité, ou
                       plusieurs à la fois. La cellule les ÉNUMÈRE donc, elle ne
                       choisit pas un « mode » parmi trois — ce serait fabriquer
                       une exclusivité que ni la base ni le moteur de droits
-                      n’imposent.
+                      n'imposent.
                     */}
-                    <td>
+                    <td role="cell" className={styles.grilleAcces}>
                       {acces.length > 0 ? acces.join(' · ') : traduire(langue, 'admin.nonPublie')}
                     </td>
 
-                    <td className={styles.numerique}>
-                      {prix.length === 0
-                        ? traduire(langue, 'admin.aucunPrix')
-                        : prix
-                            .map(
-                              ([zone, valeur]) =>
-                                `${zone} ${String(valeur.montant)} ${valeur.devise}`,
-                            )
-                            .join(' · ')}
+                    <td role="cell" className={styles.grillePrix}>
+                      {prix.length === 0 ? (
+                        <span className={styles.grilleSansPrix}>
+                          {traduire(langue, 'admin.aucunPrix')}
+                        </span>
+                      ) : (
+                        prix.map(([zone, valeur]) => (
+                          <div key={zone} className={styles.grillePrixLigne}>
+                            {zone} {valeur.montant} {valeur.devise}
+                          </div>
+                        ))
+                      )}
+                    </td>
+
+                    <td role="cell">
+                      {/* Décoratif : le titre, à gauche, porte déjà le lien. */}
+                      <svg
+                        className={styles.grilleChevron}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.75"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
                     </td>
                   </tr>
                 );

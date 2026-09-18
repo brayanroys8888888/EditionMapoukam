@@ -8,6 +8,7 @@ import { RechercheGlobale } from '@/components/v2/recherche-globale';
 import { Marque } from '@/components/v2/marque';
 import { MenuMobile } from '@/components/v2/menu-mobile';
 import { EnteteReactif } from '@/components/v2/entete-reactif';
+import { DetailsSurvol } from './details-survol';
 import { estV3 } from '@/design/version';
 import { IDENTITE_EDITEUR } from '@/content/editorial';
 import styles from './v2.module.css';
@@ -153,9 +154,13 @@ const RAYONS: EntreeNav[] = [
 const NAVIGATION: EntreeNav[] = [
   { cle: 'navigation.offres', chemin: 'offres' },
   { cle: 'navigation.association', chemin: 'association' },
-  { cle: 'navigation.expertise', chemin: 'expertise' },
   { cle: 'navigation.apropos', chemin: 'a-propos' },
   { cle: 'pied.contact', chemin: 'contact' },
+];
+
+const EXPERTISE: EntreeNav[] = [
+  { cle: 'navigation.expertiseMapoukam', chemin: 'expertise' },
+  { cle: 'navigation.expertiseWatosonne', chemin: 'expertise/watosonne' },
 ];
 
 export function EnteteV2({
@@ -189,6 +194,7 @@ export function EnteteV2({
 }): ReactNode {
   /** Le premier segment après la langue — `/fr/catalogue` → `catalogue`. */
   const segment = chemin.split('/')[2] ?? '';
+  const expertiseActive = chemin.startsWith(`/${langue}/expertise`);
 
   const interieur = (
     <>
@@ -226,7 +232,7 @@ export function EnteteV2({
            * │ oublier de remettre à zéro.                                  │
            * └───────────────────────────────────────────────────────────┘
            */}
-          <details className={styles.rayons}>
+          <DetailsSurvol className={styles.rayons}>
             <summary
               className={styles.rayonsResume}
               /*
@@ -252,7 +258,32 @@ export function EnteteV2({
                 </li>
               ))}
             </ul>
-          </details>
+          </DetailsSurvol>
+
+          <DetailsSurvol className={styles.rayons} ouvert={expertiseActive}>
+            <summary
+              className={styles.rayonsResume}
+              aria-current={expertiseActive ? 'true' : undefined}
+            >
+              {traduire(langue, 'navigation.expertise')}
+            </summary>
+
+            <ul className={styles.rayonsListe}>
+              {EXPERTISE.map((entree) => {
+                const courante = chemin === `/${langue}/${entree.chemin}`;
+                return (
+                  <li key={entree.chemin}>
+                    <a
+                      href={`/${langue}/${entree.chemin}`}
+                      aria-current={courante ? 'page' : undefined}
+                    >
+                      {traduire(langue, entree.cle)}
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
+          </DetailsSurvol>
 
           {NAVIGATION.map((entree) => {
             const courante = entree.chemin === segment;

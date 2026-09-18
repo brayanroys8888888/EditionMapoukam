@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 import { langueValide, traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { tableauDeBord } from '@/lib/admin/service';
@@ -8,8 +8,6 @@ import { lireDevise, formateur } from '@/lib/money/affichage';
 import { getClock } from '@/lib/clock';
 import { Erreur } from '@/components/etats';
 import {
-  CarteMontant,
-  Compteur,
   GabaritAdmin,
   GraphiqueBarres,
   Rafraichissement,
@@ -159,35 +157,6 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
   };
 }
 
-/** Un tableau simple, avec son titre et son message de vide. */
-function Bloc({
-  titre,
-  vide,
-  garni,
-  children,
-}: {
-  titre: string;
-  vide: string;
-  /** Y a-t-il quelque chose à montrer ? */
-  garni: boolean;
-  children: ReactNode;
-}): ReactNode {
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionTitre}>{titre}</h2>
-
-      {/*
-       * Un bloc sans contenu n'est pas une carte vide : c'est un emplacement.
-       * Le cadre discontinu de `cadreVide` le dit, et évite que huit sections
-       * sans données donnent l'impression d'un écran en panne.
-       */}
-      <div className={garni ? styles.cadre : `${styles.cadre} ${styles.cadreVide}`}>
-        {garni ? children : <p className={`${styles.vide} ${styles.videCalme}`}>{vide}</p>}
-      </div>
-    </section>
-  );
-}
-
 /** Le compte, ou la mention de masquage sous le seuil d'agrégation. */
 function SousSeuil({
   valeur,
@@ -210,7 +179,7 @@ function SousSeuil({
 }
 
 export default async function PageAdmin({ params, searchParams }: Parametres) {
-  const langue = await exigerAdministrateur((await params).langue);
+  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
 
   const brut = requete['periode'];
@@ -323,370 +292,390 @@ export default async function PageAdmin({ params, searchParams }: Parametres) {
     affichage: String(ligne.nombre),
   }));
 
-  const barresLangues: BarreGraphique[] = lignesLangues.map((ligne) => ({
-    libelle: traduire(langue, `langue.${ligne.langue}` as CleTraduction),
-    valeur: ligne.achats,
-    affichage: String(ligne.achats),
-  }));
 
   const base = `/${langue}/admin`;
+
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ LES PANNEAUX VIDES SE DÉCLARENT ICI, ET SE REPLIENT TOUT SEULS.       │
+   * │                                                                        │
+   * │ Chaque panneau dit son nom et s'il porte quelque chose. Ceux qui       │
+   * │ portent se rendent en entier, dans l'ordre ; ceux qui ne portent rien  │
+   * │ descendent dans la ligne « Rien à signaler », réduits à leur nom.      │
+   * │                                                                        │
+   * │ La liste est déclarée UNE fois et lue deux — une fois pour rendre, une │
+   * │ fois pour nommer le calme. Deux listes auraient fini par diverger, et  │
+   * │ c'est le genre d'écart qui fait disparaître un panneau sans que rien   │
+   * │ ne le dise.                                                            │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  const panneaux = [
+    { cle: 'abonnes', intitule: traduire(langue, 'admin.abonnesTitre'), garni: barresAbonnes.length > 0 },
+    { cle: 'mouvements', intitule: traduire(langue, 'admin.mouvementsTitre'), garni: barresMouvements.length > 0 },
+    { cle: 'lus', intitule: traduire(langue, 'admin.titresLusTitre'), garni: lignesLus.length > 0 },
+    { cle: 'zones', intitule: traduire(langue, 'admin.zonesTitre'), garni: lignesZones.length > 0 },
+    { cle: 'anomalies', intitule: traduire(langue, 'admin.anomalies'), garni: anomalies.length > 0 },
+  ];
+  const calmes = panneaux.filter((p) => !p.garni);
+  const garni = (cle: string): boolean => panneaux.find((p) => p.cle === cle)?.garni ?? false;
+
+  /*
+   * Les achats par langue, en parts d'un tout.
+   *
+   * La part se calcule sur le MAXIMUM et non sur la somme : une barre pleine
+   * veut dire « c'est la langue qui achète le plus », ce qu'on cherche à voir.
+   * Sur la somme, deux langues à égalité donneraient deux demi-barres, et
+   * l'écran dirait « moitié moins » là où il n'y a aucun écart.
+   */
+  const maxAchats = Math.max(0, ...lignesLangues.map((l) => l.achats));
 
   return (
     <GabaritAdmin
       langue={langue}
+      administrateur={administrateur}
       section=""
       titre={traduire(langue, 'admin.tableauDeBord')}
       sousTitre={traduire(langue, 'admin.tableauSousTitre')}
+      aere
       actions={<Rafraichissement langue={langue} />}
+      enteteActions={
+        <nav
+          className={`${styles.seg} ${styles.periode}`}
+          aria-label={traduire(langue, 'admin.periodeTitre')}
+        >
+          {PERIODES.map((valeur) => {
+            const actif = valeur.cle === periodeChoisie.cle;
+            return (
+              <a
+                key={valeur.cle}
+                className={actif ? `${styles.segOpt} ${styles.segActif}` : styles.segOpt}
+                href={`${base}?periode=${valeur.cle}`}
+                aria-current={actif ? 'true' : undefined}
+              >
+                {traduire(langue, `admin.periode_${valeur.cle}` as CleTraduction)}
+              </a>
+            );
+          })}
+        </nav>
+      }
     >
-      {/* ── Ce qui demande une attention ─────────────────────────────────── */}
-      <ul className={`${styles.chiffres} ${styles.section}`}>
-        <Compteur
-          intitule={traduire(langue, 'admin.anomalies')}
-          valeur={anomalies.length}
-          note={traduire(langue, 'admin.anomaliesNote')}
-        />
-        <Compteur
-          intitule={traduire(langue, 'admin.brouillons')}
-          valeur={brouillons.length}
-          note={traduire(langue, 'admin.brouillonsNote')}
-        />
-        <Compteur
-          intitule={traduire(langue, 'admin.copies')}
-          valeur={copies}
-          note={traduire(langue, 'admin.copiesNote')}
-        />
-      </ul>
+      {/*
+        ── Ce qui bloque, en tête ─────────────────────────────────────────
 
-      {/* ── La période ───────────────────────────────────────────────────── */}
-      <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.financesTitre')}</h2>
-      <p className={styles.graphiqueLegende}>{traduire(langue, 'admin.financesSousTitre')}</p>
+        Les brouillons occupent la place principale parce que ce sont les
+        seuls des trois sur lesquels l'éditeur AGIT depuis cet écran : il y a
+        un bouton, il mène à la liste filtrée. Une anomalie d'abonnement se
+        résout côté prestataire, une copie se purge toute seule.
+      */}
+      <div className={styles.bloquant}>
+        <p className={styles.bloquantChiffre}>{brouillons.length}</p>
+        <div className={styles.bloquantTexte}>
+          <p className={styles.bloquantTitre}>{traduire(langue, 'admin.brouillons')}</p>
+          <p className={styles.bloquantNote}>{traduire(langue, 'admin.brouillonsNote')}</p>
+        </div>
 
-      <nav className={styles.filtres} aria-label={traduire(langue, 'admin.periodeTitre')}>
-        {PERIODES.map((valeur) => {
-          const actif = valeur.cle === periodeChoisie.cle;
-          return (
-            <a
-              key={valeur.cle}
-              className={actif ? `${styles.filtre} ${styles.filtreActif}` : styles.filtre}
-              href={`${base}?periode=${valeur.cle}`}
-              aria-current={actif ? 'true' : undefined}
-            >
-              {traduire(langue, `admin.periode_${valeur.cle}` as CleTraduction)}
-            </a>
-          );
-        })}
-      </nav>
+        <a className={styles.boutonPrimaire} href={`${base}/contes?statut=brouillon`}>
+          {traduire(langue, 'admin.voirBrouillons')}
+        </a>
 
-      {/* ── Chiffre d'affaires, une carte par devise ─────────────────────── */}
+        <div className={styles.bloquantSecondaires}>
+          <div>
+            <p className={styles.bloquantSecondaireValeur}>{anomalies.length}</p>
+            <p className={styles.bloquantSecondaireIntitule}>
+              {traduire(langue, 'admin.anomalies')}
+            </p>
+          </div>
+          <div>
+            <p className={styles.bloquantSecondaireValeur}>{copies}</p>
+            <p className={styles.bloquantSecondaireIntitule}>{traduire(langue, 'admin.copies')}</p>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        ── Le bandeau de chiffres ─────────────────────────────────────────
+
+        UNE SÉRIE PAR DEVISE, ET JAMAIS DE TOTAL.
+
+        Le prototype montre quatre cellules parce que son jeu de démonstration
+        n'a qu'une devise. Ici la grille s'ajuste : quatre cellules par devise
+        rencontrée, et deux devises en font huit. Additionner un euro et un
+        franc CFA produirait un nombre que personne ne facturera — c'est la
+        même raison qui interdit de dessiner des montants sur une échelle
+        commune.
+      */}
       {lignesResume.length === 0 ? (
-        <p className={`${styles.cadre} ${styles.vide} ${styles.videCalme} ${styles.section}`}>
+        <p className={`${styles.carte} ${styles.grilleVide}`}>
           {traduire(langue, resume?.ok ? 'admin.caVide' : 'admin.financesIndisponible')}
         </p>
       ) : (
-        <ul className={styles.montants}>
-          {lignesResume.map((ligne) => (
-            <CarteMontant
-              key={ligne.devise}
-              devise={ligne.devise}
-              intitule={traduire(langue, 'admin.caNet')}
-              principal={enDevise(ligne.net, ligne.devise)}
-              details={[
-                {
-                  terme: traduire(langue, 'admin.caBrut'),
-                  valeur: enDevise(ligne.brut, ligne.devise),
-                },
-                {
-                  terme: traduire(langue, 'admin.caRembourse'),
-                  valeur: enDevise(ligne.rembourse, ligne.devise),
-                },
-                {
-                  terme: traduire(langue, 'admin.caCommandes'),
-                  valeur: String(ligne.nb_transactions),
-                },
-              ]}
-            />
-          ))}
-        </ul>
+        <div className={`${styles.carte} ${styles.bandeau}`}>
+          <ul className={styles.bandeauGrille}>
+            {lignesResume.flatMap((ligne) => [
+              <li key={`${ligne.devise}-net`} className={styles.bandeauCellule}>
+                <span className={styles.bandeauIntitule}>
+                  {traduire(langue, 'admin.caNet')} · {ligne.devise}
+                </span>
+                <span className={styles.bandeauValeur}>{enDevise(ligne.net, ligne.devise)}</span>
+                <span className={styles.bandeauNote}>
+                  {enDevise(ligne.rembourse, ligne.devise)} ·{' '}
+                  {traduire(langue, 'admin.caRembourse')}
+                </span>
+              </li>,
+              <li key={`${ligne.devise}-brut`} className={styles.bandeauCellule}>
+                <span className={styles.bandeauIntitule}>
+                  {traduire(langue, 'admin.caBrut')} · {ligne.devise}
+                </span>
+                <span className={styles.bandeauValeur}>{enDevise(ligne.brut, ligne.devise)}</span>
+              </li>,
+              <li key={`${ligne.devise}-commandes`} className={styles.bandeauCellule}>
+                <span className={styles.bandeauIntitule}>
+                  {traduire(langue, 'admin.caCommandes')} · {ligne.devise}
+                </span>
+                <span className={styles.bandeauValeur}>{ligne.nb_transactions}</span>
+              </li>,
+            ])}
+          </ul>
+        </div>
       )}
 
-      {/* ── Abonnés et mouvements, en barres ─────────────────────────────── */}
-      <div className={styles.colonnes}>
-        <section>
-          <h3 className={styles.sectionTitre}>{traduire(langue, 'admin.abonnesTitre')}</h3>
-
-          {barresAbonnes.length === 0 ? (
-            <p className={`${styles.cadre} ${styles.vide} ${styles.videCalme}`}>
-              {traduire(langue, 'admin.abonnesVide')}
-            </p>
-          ) : (
-            <>
-              <GraphiqueBarres
-                titre={traduire(langue, 'admin.abonnesTitre')}
-                barres={barresAbonnes}
-              />
-              <p className={styles.graphiqueLegende}>
-                {traduire(langue, 'admin.graphiqueLegende')}
-              </p>
-            </>
-          )}
-        </section>
-
-        <section>
-          <h3 className={styles.sectionTitre}>{traduire(langue, 'admin.mouvementsTitre')}</h3>
-
-          {barresMouvements.length === 0 ? (
-            <p className={`${styles.cadre} ${styles.vide} ${styles.videCalme}`}>
-              {traduire(langue, 'admin.mouvementsVide')}
-            </p>
-          ) : (
-            <GraphiqueBarres
-              titre={traduire(langue, 'admin.mouvementsTitre')}
-              barres={barresMouvements}
-              accent
-            />
-          )}
-        </section>
-      </div>
-
-      {/* ── Titres les plus achetés ──────────────────────────────────────── */}
-      <Bloc
-        titre={traduire(langue, 'admin.titresAchetesTitre')}
-        vide={traduire(langue, achetes?.ok ? 'admin.titresAchetesVide' : 'admin.financesIndisponible')}
-        garni={lignesAchetes.length > 0}
-      >
-        <table className={styles.tableau}>
-          <thead>
-            <tr>
-              <th scope="col">{traduire(langue, 'admin.colTitre')}</th>
-              <th scope="col">{traduire(langue, 'admin.colLangue')}</th>
-              <th scope="col" className={styles.numerique}>
-                {traduire(langue, 'admin.colAchats')}
-              </th>
-              <th scope="col" className={styles.numerique}>
-                {traduire(langue, 'admin.colMontant')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lignesAchetes.map((ligne) => (
-              <tr key={`${ligne.book_id}:${ligne.langue}:${ligne.devise}`}>
-                <td className={styles.cellulePrincipale}>{ligne.slug}</td>
-                <td>{ligne.langue}</td>
-                <td className={styles.numerique}>{ligne.nb_achats}</td>
-                {/* Le montant est mis en forme dans SA devise, jamais converti :
-                    la même ligne peut exister en EUR et en XAF. */}
-                <td className={styles.numerique}>{enDevise(ligne.montant, ligne.devise)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Bloc>
-
-      {/* ── Titres les plus lus ──────────────────────────────────────────── */}
-      <Bloc
-        titre={traduire(langue, 'admin.titresLusTitre')}
-        vide={traduire(langue, lus?.ok ? 'admin.titresLusVide' : 'admin.financesIndisponible')}
-        garni={lignesLus.length > 0}
-      >
-        <table className={styles.tableau}>
-          <thead>
-            <tr>
-              <th scope="col">{traduire(langue, 'admin.colTitre')}</th>
-              <th scope="col">{traduire(langue, 'admin.colLangue')}</th>
-              <th scope="col" className={styles.numerique}>
-                {traduire(langue, 'admin.colLecteurs')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {lignesLus.map((ligne) => (
-              <tr key={`${ligne.book_id}:${ligne.langue}`}>
-                <td className={styles.cellulePrincipale}>{ligne.slug}</td>
-                <td>{ligne.langue}</td>
-                <td className={styles.numerique}>{ligne.nb_lecteurs}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Bloc>
-
-      {/* ── Langues et zones ─────────────────────────────────────────────── */}
-      <div className={styles.colonnes}>
-        <section>
-          <h3 className={styles.sectionTitre}>{traduire(langue, 'admin.languesTitre')}</h3>
-
-          {lignesLangues.length === 0 ? (
-            <p className={`${styles.cadre} ${styles.vide} ${styles.videCalme}`}>
-              {traduire(langue, 'admin.languesVide')}
-            </p>
-          ) : (
-            <>
-              <GraphiqueBarres
-                titre={traduire(langue, 'admin.languesTitre')}
-                barres={barresLangues}
-              />
-
-              <div className={styles.cadre}>
-                <table className={styles.tableau}>
-                  <thead>
-                    <tr>
-                      <th scope="col">{traduire(langue, 'admin.colLangue')}</th>
-                      <th scope="col" className={styles.numerique}>
-                        {traduire(langue, 'admin.colAchats')}
-                      </th>
-                      <th scope="col" className={styles.numerique}>
-                        {traduire(langue, 'admin.colTelechargements')}
-                      </th>
-                      <th scope="col" className={styles.numerique}>
-                        {traduire(langue, 'admin.colLecteurs')}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lignesLangues.map((ligne) => (
-                      <tr key={ligne.langue}>
-                        <td className={styles.cellulePrincipale}>{ligne.langue}</td>
-                        {/* `achats` est COMPTABLE et reste exact ;
-                            téléchargements et lecteurs sont COMPORTEMENTAUX et
-                            passent sous le seuil d'agrégation. */}
-                        <td className={styles.numerique}>{ligne.achats}</td>
-                        <td className={styles.numerique}>
-                          <SousSeuil valeur={ligne.telechargements} langue={langue} />
-                        </td>
-                        <td className={styles.numerique}>
-                          <SousSeuil valeur={ligne.lecteurs} langue={langue} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+      {/* ── Titres les plus achetés, et les achats par langue ─────────────── */}
+      {lignesAchetes.length > 0 || lignesLangues.length > 0 ? (
+        <div className={styles.panneaux}>
+          {lignesAchetes.length > 0 ? (
+            <section className={`${styles.carte} ${styles.panneau}`}>
+              <div className={styles.panneauEntete}>
+                <h2 className={styles.panneauTitre}>
+                  {traduire(langue, 'admin.titresAchetesTitre')}
+                </h2>
               </div>
-            </>
-          )}
-        </section>
 
-        <section>
-          <h3 className={styles.sectionTitre}>{traduire(langue, 'admin.zonesTitre')}</h3>
+              <div className={styles.panneauCorps}>
+                {lignesAchetes.map((ligne) => (
+                  <div key={`${ligne.book_id}-${ligne.langue}`} className={styles.ligneBilan}>
+                    <span className={styles.ligneBilanNom}>{ligne.slug}</span>
+                    <span className={styles.etiquette}>{ligne.langue}</span>
+                    <span className={styles.ligneBilanValeur}>
+                      {enDevise(ligne.montant, ligne.devise)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-          {lignesZones.length === 0 ? (
-            <p className={`${styles.cadre} ${styles.vide} ${styles.videCalme}`}>
-              {traduire(langue, 'admin.zonesVide')}
-            </p>
-          ) : (
-            <div className={styles.cadre}>
-              <table className={styles.tableau}>
-                <thead>
-                  <tr>
-                    <th scope="col">{traduire(langue, 'admin.colZone')}</th>
-                    <th scope="col" className={styles.numerique}>
-                      {traduire(langue, 'admin.colTelechargements')}
-                    </th>
-                    <th scope="col" className={styles.numerique}>
-                      {traduire(langue, 'admin.colLecteurs')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lignesZones.map((ligne) => (
-                    <tr key={ligne.zone}>
-                      <td className={styles.cellulePrincipale}>
-                        {traduire(langue, `admin.conteZone_${ligne.zone}` as CleTraduction)}
-                      </td>
-                      <td className={styles.numerique}>{ligne.telechargements}</td>
-                      <td className={styles.numerique}>
-                        <SousSeuil valeur={ligne.lecteurs} langue={langue} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </div>
+          {lignesLangues.length > 0 ? (
+            <section className={`${styles.carte} ${styles.panneau}`}>
+              <div className={styles.panneauEntete}>
+                <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.languesTitre')}</h2>
+                <span className={styles.panneauMention}>
+                  {traduire(langue, 'admin.graphiqueLegende')}
+                </span>
+              </div>
 
-      <p className={styles.note}>{traduire(langue, 'admin.seuilNote')}</p>
+              <div className={styles.proportions}>
+                {lignesLangues.map((ligne) => {
+                  /*
+                    La part passe en PROPORTION, et c'est le style qui la met en
+                    pourcentage. Écrite `× 100` ici, elle se lisait comme une
+                    conversion de montant — et la règle qui interdit ce geste
+                    dans le code métier l'attrapait, à juste titre : rien ne
+                    distingue, dans une multiplication par cent, une part d'un
+                    prix en centimes.
+                  */
+                  const part = maxAchats > 0 ? ligne.achats / maxAchats : 0;
+                  return (
+                    <div key={ligne.langue}>
+                      <p className={styles.proportionEntete}>
+                        <span className={styles.proportionNom}>
+                          {traduire(langue, `langue.${ligne.langue}` as CleTraduction)}
+                        </span>
+                        <span
+                          className={
+                            ligne.achats === 0
+                              ? `${styles.proportionValeur} ${styles.proportionZero}`
+                              : styles.proportionValeur
+                          }
+                        >
+                          {ligne.achats}
+                        </span>
+                      </p>
+                      {/*
+                        La barre est une aide à la lecture posée SUR le nombre,
+                        jamais à sa place : le chiffre exact est écrit au-dessus,
+                        et c'est lui qu'un lecteur d'écran annonce.
+                      */}
+                      <span className={styles.proportionPiste} aria-hidden="true">
+                        <span
+                          className={styles.proportionPart}
+                          style={{ '--part': part } as CSSProperties}
+                        />
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
+        </div>
+      ) : null}
 
-      {/* ── Les brouillons, et ce qui leur manque ────────────────────────── */}
-      <Bloc
-        titre={traduire(langue, 'admin.brouillons')}
-        vide={traduire(langue, 'admin.rienASignaler')}
-        garni={brouillons.length > 0}
-      >
-        <table className={styles.tableau}>
-          <thead>
-            <tr>
-              <th scope="col">{traduire(langue, 'admin.colSlug')}</th>
-              <th scope="col">{traduire(langue, 'admin.manquePour')}</th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* ── À compléter avant publication ────────────────────────────────── */}
+      {brouillons.length > 0 ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.brouillons')}</h2>
+            <a className={styles.lienSouligne} href={`${base}/contes?statut=brouillon`}>
+              {traduire(langue, 'admin.toutVoir')}
+            </a>
+          </div>
+
+          <div className={styles.panneauCorps}>
             {brouillons.map((brouillon) => (
-              <tr key={brouillon.id}>
-                <td className={styles.cellulePrincipale}>
-                  {/* Le slug mène à l'écran d'édition : ce tableau nomme des
-                      titres incomplets, et l'endroit où les compléter est à un
-                      clic plutôt qu'à une recherche dans le catalogue. */}
-                  <a href={`${base}/contes/${brouillon.id}`}>{brouillon.slug}</a>
-                </td>
-                <td>
-                  {/*
-                    Les manques viennent de `manques_pour_publication`, LA
-                    MÊME fonction que le déclencheur de publication. Ce qui
-                    est affiché ici est exactement ce que la base refusera
-                    — jamais une approximation qui laisserait découvrir le
-                    refus au moment de publier.
-                  */}
-                  <ul className={styles.manques}>
-                    {brouillon.manques.map((manque) => (
-                      <li key={manque} className={styles.manque}>
-                        {manque}
-                      </li>
-                    ))}
-                  </ul>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Bloc>
+              <div key={brouillon.id} className={styles.brouillon}>
+                {/*
+                  Le slug mène à l'écran d'édition : ce panneau nomme des titres
+                  incomplets, et l'endroit où les compléter est à un clic plutôt
+                  qu'à une recherche dans le catalogue.
+                */}
+                <a className={styles.brouillonNom} href={`${base}/contes/${brouillon.id}`}>
+                  {brouillon.slug}
+                </a>
 
-      {/* ── Les anomalies d'abonnement ───────────────────────────────────── */}
-      <Bloc
-        titre={traduire(langue, 'admin.anomalies')}
-        vide={traduire(langue, 'admin.rienASignaler')}
-        garni={anomalies.length > 0}
-      >
-        <table className={styles.tableau}>
-          <thead>
-            <tr>
-              <th scope="col">{traduire(langue, 'admin.colCommande')}</th>
-              <th scope="col">{traduire(langue, 'admin.colStatut')}</th>
-              <th scope="col" className={styles.numerique}>
-                {traduire(langue, 'admin.colDate')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+                {/*
+                  Les manques viennent de `manques_pour_publication`, LA MÊME
+                  fonction que le déclencheur de publication. Ce qui est affiché
+                  ici est exactement ce que la base refusera — jamais une
+                  approximation qui laisserait découvrir le refus au moment de
+                  publier.
+                */}
+                <span className={styles.brouillonManques}>
+                  {brouillon.manques.map((manque) => (
+                    <span key={manque} className={styles.manque}>
+                      {manque}
+                    </span>
+                  ))}
+                </span>
+
+                <svg
+                  className={styles.brouillonChevron}
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Les panneaux qui ont quelque chose à montrer ──────────────────── */}
+      {garni('abonnes') ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.abonnesTitre')}</h2>
+            <span className={styles.panneauMention}>
+              {traduire(langue, 'admin.graphiqueLegende')}
+            </span>
+          </div>
+          <GraphiqueBarres titre={traduire(langue, 'admin.abonnesTitre')} barres={barresAbonnes} />
+        </section>
+      ) : null}
+
+      {garni('mouvements') ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.mouvementsTitre')}</h2>
+          </div>
+          <GraphiqueBarres titre={traduire(langue, 'admin.mouvementsTitre')} barres={barresMouvements} accent />
+        </section>
+      ) : null}
+
+      {garni('lus') ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.titresLusTitre')}</h2>
+          </div>
+          <div className={styles.panneauCorps}>
+            {lignesLus.map((ligne) => (
+              <div key={`${ligne.book_id}-${ligne.langue}`} className={styles.ligneBilan}>
+                <span className={styles.ligneBilanNom}>{ligne.slug}</span>
+                <span className={styles.etiquette}>{ligne.langue}</span>
+                <span className={styles.ligneBilanValeur}>{ligne.nb_lecteurs}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {garni('zones') ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.zonesTitre')}</h2>
+            <span className={styles.panneauMention}>{traduire(langue, 'admin.seuilNote')}</span>
+          </div>
+          <div className={styles.panneauCorps}>
+            {lignesZones.map((ligne) => (
+              <div key={ligne.zone} className={styles.ligneBilan}>
+                <span className={styles.ligneBilanNom}>{ligne.zone}</span>
+                <span className={styles.panneauMention}>
+                  {traduire(langue, 'admin.colTelechargements')} {ligne.telechargements}
+                </span>
+                <span className={styles.ligneBilanValeur}>
+                  <SousSeuil valeur={ligne.lecteurs} langue={langue} />
+                </span>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {garni('anomalies') ? (
+        <section className={`${styles.carte} ${styles.panneau}`}>
+          <div className={styles.panneauEntete}>
+            <h2 className={styles.panneauTitre}>{traduire(langue, 'admin.anomalies')}</h2>
+            <span className={styles.panneauMention}>
+              {traduire(langue, 'admin.anomaliesNote')}
+            </span>
+          </div>
+          <div className={styles.panneauCorps}>
             {anomalies.map((anomalie) => (
-              <tr key={anomalie.subscription_id}>
-                <td className={styles.cellulePrincipale}>{anomalie.subscription_id}</td>
-                <td>
-                  <span className={`${styles.etat} ${styles.etatAlerte}`}>
-                    {anomalie.statut_rapporte}
-                  </span>
-                </td>
-                <td className={styles.numerique}>
+              <div key={anomalie.subscription_id} className={styles.ligneBilan}>
+                <span className={styles.ligneBilanNom}>{anomalie.subscription_id}</span>
+                <span className={`${styles.etat} ${styles.etatAlerte}`}>
+                  {anomalie.statut_rapporte}
+                </span>
+                <span className={styles.ligneBilanValeur}>
                   {anomalie.fin_periode
                     ? new Date(anomalie.fin_periode).toLocaleDateString(langue)
                     : traduire(langue, 'admin.nonPublie')}
-                </td>
-              </tr>
+                </span>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </Bloc>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ── Le calme, en une ligne ────────────────────────────────────────── */}
+      {calmes.length > 0 ? (
+        <div className={styles.calme}>
+          <p className={styles.calmeIntitule}>{traduire(langue, 'admin.rienASignaler')}</p>
+          <ul className={styles.calmeListe}>
+            {calmes.map((panneau) => (
+              <li key={panneau.cle}>{panneau.intitule}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <p className={styles.note}>{traduire(langue, 'admin.seuilNote')}</p>
     </GabaritAdmin>
   );
 }

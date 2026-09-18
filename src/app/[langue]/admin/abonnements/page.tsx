@@ -91,7 +91,7 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 }
 
 export default async function PageAdminAbonnements({ params, searchParams }: Parametres) {
-  const langue = await exigerAdministrateur((await params).langue);
+  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
 
   const brut = requete['statut'];
@@ -121,6 +121,7 @@ export default async function PageAdminAbonnements({ params, searchParams }: Par
   return (
     <GabaritAdmin
       langue={langue}
+      administrateur={administrateur}
       section="/abonnements"
       titre={traduire(langue, 'admin.abonnements')}
       sousTitre={traduire(langue, 'admin.abonnementsSousTitre')}

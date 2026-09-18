@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 
 export default async function PageAdminConte({ params, searchParams }: Parametres) {
   const { langue: langueBrute, id } = await params;
-  const langue = await exigerAdministrateur(langueBrute);
+  const { langue, administrateur } = await exigerAdministrateur(langueBrute);
 
-  return <FicheLivre langue={langue} id={id} requete={await searchParams} />;
+  return <FicheLivre langue={langue} administrateur={administrateur} id={id} requete={await searchParams} />;
 }

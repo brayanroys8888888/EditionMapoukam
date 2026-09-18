@@ -25,6 +25,43 @@ const BUREAU = { width: 1440, height: 1000 };
 const MOBILE = { width: 390, height: 844 };
 
 const COMPTE = { email: 'utilisateur@mapoukam.fr', motDePasse: 'User123456!' };
+const COMPTE_ADMIN = { email: 'admin@editionmapoukam.test', motDePasse: 'Adm-Mapoukam-2026' };
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE PROTOTYPE D'ADMINISTRATION N'EST PAS DANS LE DOSSIER DE PASSATION.   │
+ * │                                                                          │
+ * │ Les deux prototypes du site public ont été déposés sous                  │
+ * │ `design_handoff_edition_mapoukam/` le 5 septembre 2026. Celui de         │
+ * │ l'administration est arrivé le 17, et il vit dans le projet Claude       │
+ * │ Design — pas sur ce disque.                                             │
+ * │                                                                          │
+ * │ D'où cette variable : on lui passe une URL servie, valable une heure, et │
+ * │ RIEN n'est écrit ici — un jeton de service n'a pas sa place dans un      │
+ * │ fichier versionné. Le repli reste le chemin local, pour le jour où le    │
+ * │ fichier descendra dans le dossier comme les deux autres.                 │
+ * │                                                                          │
+ * │   MAQUETTE_ADMIN='<url servie>' node scripts/releve-v3.mjs admin-contes  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const MAQUETTE_ADMIN =
+  process.env['MAQUETTE_ADMIN'] ??
+  `file:///${resolve('design_handoff_edition_mapoukam/Admin EditionMapoukam v2.dc.html').replace(/\\/g, '/')}`;
+
+/**
+ * Ouvre le prototype d'administration sur l'écran voulu.
+ *
+ * Le prototype démarre sur le tableau de bord ; les autres écrans s'atteignent
+ * en cliquant leur entrée de rail, comme le ferait un éditeur.
+ */
+async function maquetteAdmin(page, entree) {
+  await page.goto(MAQUETTE_ADMIN, { waitUntil: 'load' });
+  await page.waitForTimeout(2200);
+  if (entree) {
+    await page.getByText(entree, { exact: true }).first().click();
+    await page.waitForTimeout(1000);
+  }
+}
 
 /** Les propriétés relevées sur chaque sonde. */
 const PROPRIETES = [
@@ -244,14 +281,14 @@ function comparer(nom, cote, gauche, droite, releves) {
  * │ rendu par le serveur, mais son action ne part pas avant l'hydratation.   │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-async function connecter(contexte) {
+async function connecter(contexte, compte = COMPTE) {
   const page = await contexte.newPage();
   await page.goto(`${APP}/fr/connexion`, { waitUntil: 'load' });
   await page.waitForTimeout(1200);
 
   const formulaire = page.locator('form').filter({ has: page.locator('input[name="password"]') });
-  await formulaire.locator('input[name="email"]').fill(COMPTE.email);
-  await formulaire.locator('input[name="password"]').fill(COMPTE.motDePasse);
+  await formulaire.locator('input[name="email"]').fill(compte.email);
+  await formulaire.locator('input[name="password"]').fill(compte.motDePasse);
 
   await Promise.all([
     page.waitForURL((u) => !u.pathname.includes('connexion'), { timeout: 20000 }),
@@ -293,6 +330,94 @@ async function poser(page) {
   });
   await page.waitForTimeout(3500);
 }
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LES SONDES DU CHROME D'ADMINISTRATION — les mêmes sur les trois écrans.  │
+ * │                                                                          │
+ * │ Le prototype porte ses cotes EN CLAIR dans l'attribut `style`. Les       │
+ * │ sondes visent donc cet attribut plutôt qu'une classe : le moteur de      │
+ * │ rendu du prototype n'en fabrique pas, et viser une position dans l'arbre │
+ * │ casserait au premier bloc ajouté.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const SONDES_CHROME_ADMIN = {
+  'rail': { maquette: 'div[style*="width: 248px"]', app: '[class*="admin_rail"]' },
+  'rail en-tête': {
+    maquette: 'div[style*="width: 248px"] > div:first-child',
+    app: '[class*="admin_marque"]',
+  },
+  'sceau': {
+    maquette: 'div[style*="width: 36px"][style*="border-radius: 50%"]',
+    app: '[class*="admin_logo"]',
+    // Le prototype écrit « EM » DANS le disque, faute de disposer du logo ;
+    // ici le disque porte le vrai mot-symbole, en masque. Seule la boîte se
+    // compare — la typographie d'un texte qui n'existe pas, non.
+    ignore: ['fontFamily', 'fontSize', 'lineHeight', 'color'],
+  },
+  'nom de marque': {
+    maquette: 'div[style*="font-size: 16px"][style*="line-height: 1.1"]',
+    app: '[class*="admin_marqueNom"]',
+    // Le prototype écrit « EditionMapoukam » dans une boîte de 151 px fixée
+    // par son frère ; ici le nom prend la largeur restante.
+    ignore: ['w'],
+  },
+  'mention': {
+    maquette: 'div[style*="letter-spacing: 0.12em"]',
+    app: '[class*="admin_mention"]',
+    ignore: ['w'],
+  },
+  'zone des groupes': {
+    maquette: 'div[style*="width: 248px"] > div[style*="flex: 1 1 0%"]',
+    app: '[class*="admin_groupes"]',
+    // La hauteur dépend du nombre d'entrées rendues, et la nôtre en a onze.
+    ignore: ['h'],
+  },
+  'intertitre de groupe': {
+    maquette: 'div[style*="letter-spacing: 0.14em"]',
+    app: '[class*="admin_groupeTitre"]',
+  },
+  'pied du rail': {
+    maquette: 'div[style*="width: 248px"] > div:last-child',
+    app: '[class*="admin_pied"]',
+  },
+  'pastille d’identité': {
+    maquette: 'div[style*="width: 30px"][style*="border-radius: 50%"]',
+    app: '[class*="admin_pastille"]',
+  },
+  'nom au pied': {
+    maquette: 'div[style*="width: 248px"] > div:last-child div[style*="font-size: 13px"]',
+    app: '[class*="admin_piedNom"]',
+    ignore: ['w'],
+  },
+  'sortir': {
+    maquette: 'div[style*="width: 248px"] > div:last-child a',
+    app: '[class*="admin_sortir"]',
+    // Un `<a>` dans la maquette, un `<button>` ici — le bouton est requis :
+    // une déconnexion change l'état du serveur. La boîte diffère donc.
+    ignore: ['x', 'w', 'h', 'backgroundColor'],
+  },
+  'barre supérieure': {
+    maquette: 'div[style*="backdrop-filter: blur(10px)"]',
+    app: '[class*="admin_barreSuperieure"]',
+  },
+  'fil d’Ariane': {
+    maquette: 'div[style*="letter-spacing: 0.06em"]',
+    app: '[class*="admin_filAriane"]',
+    ignore: ['w'],
+  },
+  'zone de page': {
+    maquette: 'div[style*="padding: var(--space-6) var(--space-6) var(--space-8)"]',
+    app: '[class*="admin_page"]',
+    ignore: ['h'],
+  },
+  'colonne': {
+    maquette: 'div[style*="max-width: 1200px"]',
+    app: '[class*="admin_colonne"]',
+    ignore: ['h'],
+  },
+  'titre': { maquette: 'h1', app: '[class*="admin_titre"]', ignore: ['w'] },
+};
 
 /* ══ Les scènes ═══════════════════════════════════════════════════════════ */
 
@@ -2067,6 +2192,288 @@ const SCENES = {
       },
     },
   },
+
+  /* ══ ADMINISTRATION — tableau de bord ═════════════════════════════════ */
+
+  'admin-bord': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, null),
+    app: async (p) => {
+      // « Depuis le début » : sur trente jours, le jeu de démonstration n'a
+      // aucune recette, et le bandeau de chiffres ne se rend pas du tout.
+      await p.goto(`${APP}/fr/admin?periode=tout`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'carte d’alerte': {
+        // `.card.elev-md` : le rail porte lui aussi l'olive en fond.
+        maquette: '.card.elev-md',
+        app: '[class*="admin_bloquant__"]',
+        ignore: ['h'],
+      },
+      'chiffre d’alerte': {
+        maquette: '.card.elev-md div[style*="font-size: 56px"]',
+        app: '[class*="admin_bloquantChiffre"]',
+        ignore: ['w'],
+      },
+      'titre d’alerte': {
+        maquette: '.card.elev-md div[style*="font-size: 21px"]',
+        app: '[class*="admin_bloquantTitre"]',
+        ignore: ['w', 'h'],
+      },
+      'filet des secondaires': {
+        maquette: '.card.elev-md div[style*="border-left: 1px solid"]',
+        app: '[class*="admin_bloquantSecondaires"]',
+        ignore: ['x', 'w'],
+      },
+      'bandeau': {
+        maquette: 'div[style*="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))"]',
+        app: '[class*="admin_bandeauGrille"]',
+        ignore: ['y', 'h'],
+      },
+      'cellule de bandeau': {
+        maquette:
+          'div[style*="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))"] > div:first-child',
+        app: '[class*="admin_bandeauCellule"]',
+        ignore: ['y', 'h'],
+      },
+      'sur-titre de cellule': {
+        maquette: 'div[style*="letter-spacing: 0.12em"][style*="font-size: 10px"]',
+        app: '[class*="admin_bandeauIntitule"]',
+        ignore: ['x', 'y', 'w'],
+      },
+      'valeur de cellule': {
+        maquette: 'div[style*="font-size: 30px"]',
+        app: '[class*="admin_bandeauValeur"]',
+        ignore: ['y', 'w'],
+      },
+      'grille des panneaux': {
+        maquette: 'div[style*="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))"]',
+        app: '[class*="admin_panneaux"]',
+        ignore: ['y', 'h'],
+      },
+      'ligne du calme': {
+        maquette: 'div[style*="border-top: 1px solid var(--color-divider)"]',
+        app: '[class*="admin_calme"]',
+        ignore: ['y', 'h'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — contes ══════════════════════════════════════════ */
+
+  'admin-contes': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Contes'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/contes`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'bouton principal': {
+        maquette: 'div[style*="backdrop-filter: blur(10px)"] button',
+        app: '[class*="admin_barreActions"] a',
+      },
+      'carte de filtres': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"]',
+        app: '[class*="admin_filtresCarte"]',
+      },
+      'champ de recherche': {
+        maquette: 'input[class*="input"]',
+        app: '[class*="admin_rechercheSaisieOrganic"]',
+      },
+      'décompte': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"] div[style*="white-space: nowrap"]',
+        app: '[class*="admin_decompte"]',
+        // Aligné à droite d'un champ souple : sa position suit la largeur.
+        ignore: ['x', 'w'],
+      },
+      'segmenté': { maquette: '.seg', app: '[class*="admin_seg"]', ignore: ['w'] },
+      'segment': { maquette: '.seg-opt', app: '[class*="admin_segOpt"]', ignore: ['w'] },
+      'cadre du tableau': {
+        maquette: 'div[style*="overflow-x: auto"]',
+        app: '[class*="admin_grilleCadre"]',
+        // `gap` : la maquette empile en flex, nous en bloc — même résultat.
+        ignore: ['h', 'gap'],
+      },
+      'en-tête de colonnes': {
+        maquette: 'div[style*="min-width: 700px"]:first-of-type',
+        app: '[class*="admin_grilleEntete"]',
+      },
+      'première rangée': {
+        maquette: 'div[style*="min-width: 700px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        // La hauteur suit le contenu : 76 px avec des manques, 72 sans.
+        ignore: ['h'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — livrets pédagogiques ════════════════════════════ */
+
+  'admin-livrets': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Livrets pédagogiques'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/livrets`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'carte de filtres': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"]',
+        app: '[class*="admin_filtresCarte"]',
+      },
+      'champ de recherche': {
+        maquette: 'input[class*="input"]',
+        app: '[class*="admin_rechercheSaisieOrganic"]',
+      },
+      'segmenté': { maquette: '.seg', app: '[class*="admin_seg"]', ignore: ['w'] },
+      'cadre du tableau': {
+        maquette: 'div[style*="overflow-x: auto"]',
+        app: '[class*="admin_grilleCadre"]',
+        // `gap` : la maquette empile en flex, nous en bloc — même résultat.
+        ignore: ['h', 'gap'],
+      },
+      'en-tête de colonnes': {
+        maquette: 'div[style*="min-width: 660px"]:first-of-type',
+        app: '[class*="admin_grilleEntete"]',
+      },
+      'première rangée': {
+        maquette: 'div[style*="min-width: 660px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        ignore: ['h'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — la fiche d'un titre ═════════════════════════════ */
+
+  'admin-fiche': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    /*
+     * PAS de pleine page ici, à la différence des autres scènes : la capture
+     * pleine page défile le document, et la maquette reste au point où elle
+     * s'est arrêtée. Toutes les ordonnées se lisaient alors avec sept cents
+     * pixels d'écart — un relevé faux, et faux de façon crédible.
+     */
+    pleinePage: false,
+    maquette: async (p) => {
+      await maquetteAdmin(p, 'Contes');
+      // Une rangée du tableau ouvre le détail — c'est le geste de l'éditeur.
+      await p.getByText('le-prince-qui-voulait-etre-gentil', { exact: true }).first().click();
+      await p.waitForTimeout(1200);
+      /*
+       * Playwright FAIT DÉFILER pour cliquer, et la maquette reste où elle
+       * s'est arrêtée : sept cents pixels plus bas. Toutes les ordonnées se
+       * lisaient alors faussées — et faussées de façon crédible, ce qui est
+       * le pire cas. On remonte avant de sonder.
+       */
+      await p.evaluate(() => { globalThis.scrollTo(0, 0); });
+      await p.waitForTimeout(400);
+    },
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/contes?statut=brouillon`, { waitUntil: 'load' });
+      await p.waitForTimeout(1000);
+      await p.locator('[class*="grilleTitre"]').first().click();
+      await p.waitForTimeout(1500);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'lien de retour': {
+        maquette: 'div[style*="max-width: 1200px"] > a:first-child',
+        app: '[class*="admin_retourFiche"]',
+      },
+      'carte d’identité': {
+        maquette: 'div[style*="max-width: 1200px"] > div.card:first-of-type',
+        app: '[class*="admin_ficheEntete"]',
+        ignore: ['h'],
+      },
+      'emplacement de couverture': {
+        maquette: 'image-slot',
+        app: '[class*="admin_ficheCouverture__"]',
+        /*
+         * Seule la BOÎTE se compare. `image-slot` est un élément sur mesure du
+         * prototype qui peint à l'intérieur de lui-même : son cadre extérieur
+         * n'a ni fond, ni rayon, ni trait, alors que le dessin en a. Comparer
+         * la peinture ici opposerait deux couches différentes.
+         */
+        ignore: ['fontFamily', 'fontSize', 'lineHeight', 'backgroundColor',
+                 'borderRadius', 'borderWidth', 'borderColor', 'color'],
+      },
+      'légende de couverture': {
+        maquette: 'div[style*="width: 148px"] > div:last-child',
+        app: '[class*="admin_ficheCouvertureLegende"]',
+      },
+      'titre de fiche': {
+        maquette: 'h1[style*="font-size: 34px"]',
+        app: '[class*="admin_ficheTitre__"]',
+        ignore: ['w'],
+      },
+      'ligne des repères': {
+        maquette: 'div[style*="border-top: 1px solid var(--color-divider)"][style*="gap: var(--space-6)"]',
+        app: '[class*="admin_ficheReperes"]',
+        ignore: ['w'],
+      },
+      'grille des deux colonnes': {
+        maquette: 'div[style*="grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))"][style*="gap: var(--space-6)"]',
+        app: '[class*="admin_ficheColonnes"]',
+        ignore: ['h'],
+      },
+      'colonne latérale': {
+        maquette: 'div[style*="position: sticky"][style*="max-width: 360px"]',
+        app: '[class*="admin_ficheLaterale"]',
+        ignore: ['h'],
+      },
+      'titre de section': {
+        maquette: 'h3',
+        app: '[class*="admin_sectionTitre"]',
+        ignore: ['w'],
+      },
+      'carte de champs': {
+        maquette: 'h3 + div.card',
+        app: '[class*="admin_ficheColonnePrincipale"] [class*="admin_cadre"]',
+        ignore: ['h'],
+      },
+      'étiquette de champ': {
+        maquette: '.field > label',
+        app: '[class*="admin_libelle"]',
+        ignore: ['w'],
+      },
+      'saisie': {
+        maquette: '.field input.input',
+        app: '[class*="admin_saisie"]',
+        ignore: ['w'],
+      },
+      'rangée d’accès': {
+        maquette: 'div[style*="border-radius: var(--radius-md)"][style*="padding: 11px 13px"]',
+        app: '[class*="admin_levier__"]',
+        ignore: ['w'],
+      },
+      'case d’accès': {
+        maquette: 'span[style*="width: 19px"]',
+        app: '[class*="admin_levierCase__"]',
+      },
+      'carte de publication': {
+        maquette: 'div[style*="position: sticky"] div.card.elev-md',
+        app: '[class*="admin_ficheLaterale"] [class*="admin_cadre"]',
+        ignore: ['h'],
+      },
+    },
+  },
 };
 
 /* ══ Exécution ════════════════════════════════════════════════════════════ */
@@ -2097,7 +2504,7 @@ for (const nom of noms) {
 
   // Application.
   const ca = await navigateur.newContext({ viewport: scene.largeur, deviceScaleFactor: 1 });
-  if (scene.connecte) await connecter(ca);
+  if (scene.connecte) await connecter(ca, scene.connecte === 'admin' ? COMPTE_ADMIN : COMPTE);
   if (scene.panier) await remplirPanier(ca);
   const pa = await ca.newPage();
   try {

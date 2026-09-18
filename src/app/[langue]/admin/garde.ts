@@ -2,7 +2,7 @@ import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 
 import { langueValide, type LangueInterface } from '@/i18n';
-import { identifierAppelantAvecCookies } from '@/lib/auth/session';
+import { identifierAppelantAvecCookies, type Appelant } from '@/lib/auth/session';
 
 /**
  * GARDE DES ÉCRANS D'ADMINISTRATION.
@@ -32,7 +32,30 @@ import { identifierAppelantAvecCookies } from '@/lib/auth/session';
  * │ un 404 lui ferait croire que son marque-page est mort.                   │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-export async function exigerAdministrateur(langueBrute: string): Promise<LangueInterface> {
+export interface AccesAdministration {
+  langue: LangueInterface;
+  /**
+   * L'administrateur connecté, tel que la BASE le décrit.
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ POURQUOI LA GARDE LE REND, PLUTÔT QUE LE RAIL L'AILLE CHERCHER.       │
+   * │                                                                        │
+   * │ Le pied du rail porte le nom et le rôle de qui est connecté. La garde  │
+   * │ vient de les lire — deux allers-retours en base, dont un pour le       │
+   * │ profil — et les jetait. Les redemander depuis le gabarit doublerait    │
+   * │ cette lecture sur CHACUN des écrans d'administration, pour répondre à  │
+   * │ une question à laquelle on venait de répondre.                         │
+   * │                                                                        │
+   * │ Le coût du changement est réel — chaque écran déstructure désormais    │
+   * │ son retour — mais il est mécanique, et le compilateur attrape          │
+   * │ l'oubli. Une seconde lecture de session, elle, ne se serait vue nulle  │
+   * │ part.                                                                  │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  administrateur: Appelant;
+}
+
+export async function exigerAdministrateur(langueBrute: string): Promise<AccesAdministration> {
   const langue = langueValide(langueBrute);
 
   const appelant = await identifierAppelantAvecCookies(
@@ -42,5 +65,5 @@ export async function exigerAdministrateur(langueBrute: string): Promise<LangueI
   if (!appelant) redirect(`/${langue}/connexion`);
   if (appelant.role !== 'admin') notFound();
 
-  return langue;
+  return { langue, administrateur: appelant };
 }
