@@ -91,8 +91,6 @@ export function MenuMobile({
   const panneau = useRef<HTMLDivElement | null>(null);
   const minuterieFermeture = useRef<number | null>(null);
 
-  const segment = chemin.split('/')[2] ?? '';
-
   /**
    * La MÊME page dans l'autre langue — jamais l'accueil.
    *

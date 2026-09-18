@@ -25,7 +25,7 @@ export function DetailsSurvol({
         event.currentTarget.open = true;
       }}
       onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
           event.currentTarget.open = false;
         }
       }}
