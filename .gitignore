@@ -58,3 +58,69 @@ design_handoff_edition_mapoukam/
 
 # Exports du Supabase hébergé : données réelles (comptes, commandes), jamais versionnées.
 exports-supabase/
+
+# Artefacts Playwright : traces, captures d echec, contextes d erreur.
+# 76 Mo au 18 septembre 2026, entierement regeneres par `npm run rendu`.
+test-results/
+
+# Reglages locaux de l outil d assistance : propres a la machine, pas au projet.
+.claude/
+
+# ---------------------------------------------------------------------------
+# SOURCES LIVREES PAR LE CLIENT — DEJA RECOPIEES DANS public/
+#
+# Verifie octet par octet, pas suppose : les MP4 et les PNG de « New section/ »
+# et « site Image/ » sont IDENTIQUES a ceux de public/images/. Le depot portait
+# donc deux fois les memes fichiers, dont une copie que rien ne lit.
+#
+# Les trois dossiers de maquettes recoivent le meme traitement que
+# update_design/ et design_handoff_edition_mapoukam/, ignores plus haut pour la
+# meme raison : ce sont des intentions visuelles et des livrables du client,
+# jamais du code deploye.
+# ---------------------------------------------------------------------------
+New section/
+site Image/
+maquette profile/
+maquette_response/
+V2_direction_design/
+
+# Logo a la racine, reference NULLE PART dans le code (verifie). Celui qui est
+# servi vient de public/.
+logoEdition_mapoukam.png
+
+# ---------------------------------------------------------------------------
+# NE PAS IGNORER vendors/ — 34 Mo, et c'est voulu.
+#
+# `tests/helpers/epubcheck.ts` lit `vendors/epubcheck/epubcheck.jar`. Le paquet
+# npm equivalent telechargeait l'archive Java depuis GitHub a chaque execution ;
+# le jar est donc versionne, sous licence BSD a trois clauses. L'ignorer ferait
+# echouer `npm run audit:epub` avec un message qui ne parlerait pas de git.
+# ---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
+# ORPHELINS — verifies un par un, jamais supposes.
+#
+# `components.json` est la configuration de shadcn/ui. Elle est citee dans
+# AUCUN fichier, et package.json ne porte ni shadcn, ni radix, ni
+# class-variance-authority, ni tailwind-merge, ni lucide : c'est le residu
+# d'une installation que ce projet n'a jamais adoptee.
+#
+# Les quatre archives ci-dessous forment un bloc referme sur lui-meme : rien
+# ne les cite, sauf `reprise3.md` qui cite `REPRISE4.md`. CLAUDE.md n'en
+# mentionne aucune.
+#
+# CE QUI RESTE VERSIONNE, ET POURQUOI — pour qu'un futur menage ne les emporte
+# pas par ressemblance :
+#
+#   QUESTIONS.md  cite par docs/PLAN.md ET par deux fichiers de CODE
+#                 (api/orders/[id]/invoice/route.ts, lib/http/concurrence.ts).
+#                 Un commentaire de code qui renvoie a un document absent est
+#                 un commentaire qui ment.
+#   CLAUDE.md     et REPRISE.md sont VIVANTS : CLAUDE.md demande explicitement
+#                 de les lire en debut de session.
+# ---------------------------------------------------------------------------
+components.json
+PROMPT-CLAUDE-CODE.md
+REPRISE2.md
+reprise3.md
+REPRISE4.md
