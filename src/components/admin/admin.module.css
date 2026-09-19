@@ -1999,6 +1999,29 @@ textarea.saisie {
   background: color-mix(in srgb, var(--marque) 7%, transparent);
 }
 
+/*
+ * La vignette de couverture, en tête de rangée depuis la 0087.
+ *
+ * 36 × 50 px : le rapport d'une couverture portrait, assez grand pour
+ * reconnaître un titre d'un coup d'œil et assez petit pour ne pas rallonger la
+ * rangée. La cellule borne le motif de substitution, qui sinon occuperait
+ * toute la hauteur disponible.
+ */
+.grilleVignette {
+  width: 36px;
+  height: 50px;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.grilleVignetteImage {
+  width: 36px;
+  height: 50px;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+}
+
 .grilleRangee:last-child {
   border-bottom: 0;
 }
@@ -2497,21 +2520,22 @@ textarea.saisie {
 
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ L'EMPLACEMENT DE COUVERTURE NE DÉPOSE RIEN, ET C'EST VOULU.             │
+ * │ L'EMPLACEMENT AFFICHE LA COUVERTURE DEPUIS LA MIGRATION 0087.           │
  * │                                                                          │
- * │ Le prototype y pose un `image-slot` qui accepte un fichier. Deux raisons │
- * │ de ne pas le suivre ici :                                                │
+ * │ Il a longtemps été un rectangle pointillé, et ce commentaire disait      │
+ * │ pourquoi : « `admin_lire_livre` ne rend AUCUNE couverture ». C'était     │
+ * │ vrai, et c'était le seul obstacle — le jeton était en base sur la        │
+ * │ plupart des titres, et les trois tailles dans le bucket public. La 0087  │
+ * │ ajoute la colonne, en DERNIÈRE position pour ne déplacer personne.       │
  * │                                                                          │
- * │   * `admin_lire_livre` ne rend AUCUNE couverture — l'afficher demande    │
- * │     une colonne de plus à la fonction SQL, c'est-à-dire une question de  │
- * │     données, pas de design. Le dossier a déjà tranché ainsi pour les     │
- * │     vignettes du panier ;                                                │
- * │   * `covers-architecture` interdit qu'un dépôt de couverture se fasse    │
- * │     ailleurs que dans son module. La couverture vient de la page 1 du    │
- * │     PDF, par la chaîne d'ingestion — et la légende le dit.               │
+ * │ Ce qui n'a pas changé : `covers-architecture` interdit toujours qu'un    │
+ * │ dépôt de couverture se fasse ailleurs que dans son module. Cet écran ne  │
+ * │ DÉPOSE rien — il affiche. La couverture vient de la page 1 du PDF, par   │
+ * │ la chaîne d'ingestion, et la légende le dit.                             │
  * │                                                                          │
- * │ L'emplacement garde donc ses cotes exactes et reste muet : il tient la   │
- * │ place que la couverture occupera le jour où la fonction la rendra.       │
+ * │ Les cotes restent celles de l'emplacement réservé : 148 × 206. Un titre  │
+ * │ sans jeton, ou dont le fichier manque, montre le motif de substitution   │
+ * │ — jamais une image cassée.                                               │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 .ficheCouverture {
@@ -2520,6 +2544,14 @@ textarea.saisie {
   border-radius: 10px;
   background: var(--fond-doux);
   border: 1px dashed var(--bordure);
+}
+
+.ficheCouvertureImage {
+  width: 148px;
+  height: 206px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
 }
 
 .ficheCouvertureLegende {

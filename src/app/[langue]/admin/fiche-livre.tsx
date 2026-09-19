@@ -37,6 +37,17 @@ import {
 } from '@/i18n';
 import { lireLivre, type OrientationPage, type TypeDocument } from '@/lib/admin/service';
 import type { Appelant } from '@/lib/auth/session';
+/*
+ * La couverture passe par le MÊME composant que le catalogue public, et par la
+ * même fabrique d'URL. Deux raisons, et la seconde est la plus coûteuse à
+ * découvrir : `urlsCouverture` est le seul endroit qui connaisse la convention
+ * `covers/<jeton>/<taille>.webp` (migration 0049), et `Couverture` sait qu'un
+ * jeton présent ne garantit pas que le fichier existe — il bascule sur le
+ * motif quand le chargement échoue, au lieu d'afficher une image cassée.
+ */
+import { urlsCouverture } from '@/lib/storage/covers';
+import { Couverture, SubstitutCouverture } from '@/components/catalogue/couverture';
+import { teinteDepuisThemes } from '@/components/motif/teinte';
 import { Erreur } from '@/components/etats';
 import {
   GabaritAdmin,
@@ -175,6 +186,15 @@ interface Conte {
   }[];
   manques: string[];
   publiable: boolean;
+  /*
+   * Le JETON du jeu de couvertures, rendu depuis la migration 0087.
+   *
+   * Un jeton, jamais un chemin : trois tailles vivent sous `covers/<jeton>/`,
+   * et seul `src/lib/storage/covers.ts` sait les nommer. Nul tant que la
+   * chaîne d'ingestion n'a pas produit la couverture — l'écran affiche alors
+   * son substitut plutôt qu'une image cassée.
+   */
+  couverture_jeton: string | null;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -341,6 +361,22 @@ export async function FicheLivre({
 
   const conte = resultat.donnees as unknown as Conte;
 
+  /*
+   * La couverture, depuis la migration 0087.
+   *
+   * `urlsCouverture` rend `null` sur un jeton absent — un titre en cours
+   * d'ingestion, ou dont la chaîne n'a pas produit d'image. L'écran montre
+   * alors le motif, jamais une image cassée.
+   *
+   * La teinte suit le PREMIER THÈME du titre, comme partout ailleurs dans le
+   * produit depuis la migration 0071. `teinteDepuisThemes` rend `null` quand
+   * il n'y en a pas, et `Motif` traduit ce `null` en teinte neutre : on ne
+   * force donc aucune valeur ici, sous peine d'inventer une couleur que le
+   * catalogue public n'afficherait pas pour le même titre.
+   */
+  const couverture = urlsCouverture(conte.couverture_jeton);
+  const teinte = teinteDepuisThemes(conte.themes);
+
   const erreur = premier(requete['erreur']);
   const enregistre = premier(requete['enregistre']);
   const depose = premier(requete['depose']);
@@ -405,8 +441,31 @@ export async function FicheLivre({
 
       <div className={`${styles.carte} ${styles.ficheEntete}`}>
         <div className={styles.ficheCouvertureBloc}>
-          {/* Décoratif : la légende qui suit dit ce que cet emplacement tient. */}
-          <div className={styles.ficheCouverture} aria-hidden="true" />
+          {/*
+            LA VRAIE COUVERTURE DEPUIS LA MIGRATION 0087.
+
+            Cet emplacement a longtemps été un rectangle pointillé : la donnée
+            existait — le jeton en base, les trois tailles dans le bucket
+            public — mais `admin_lire_livre` ne transportait pas la colonne.
+            L'écran ne pouvait donc rien afficher, et le CSS l'expliquait.
+
+            `alt` est VIDE : le titre est dans la carte d'identité, à droite.
+            Décrire l'image ferait entendre deux fois la même chose.
+          */}
+          {couverture ? (
+            <Couverture
+              langue={langue}
+              url={couverture.fiche}
+              largeur={148}
+              hauteur={206}
+              tailles="148px"
+              teinte={teinte}
+              alt=""
+              classeImage={styles.ficheCouvertureImage}
+            />
+          ) : (
+            <SubstitutCouverture langue={langue} teinte={teinte} />
+          )}
           <p className={styles.ficheCouvertureLegende}>
             {traduire(langue, 'admin.ficheCouverture')}
           </p>

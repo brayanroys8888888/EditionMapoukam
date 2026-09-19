@@ -4,6 +4,14 @@ import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import type { TypeDocument } from '@/domain/catalog/types';
 import { listerLivres } from '@/lib/admin/service';
 import type { Appelant } from '@/lib/auth/session';
+/*
+ * La MÊME fabrique d'URL et le MÊME composant que le catalogue public.
+ * `urlsCouverture` est seul à connaître la convention `covers/<jeton>/…`
+ * (migration 0049), et `Couverture` sait qu'un jeton en base ne prouve pas
+ * que le fichier existe : il bascule sur le motif si le chargement échoue.
+ */
+import { urlsCouverture } from '@/lib/storage/covers';
+import { Couverture, SubstitutCouverture } from '@/components/catalogue/couverture';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, stylesAdmin as styles, type SectionAdmin } from '@/components/admin';
 
@@ -54,6 +62,8 @@ interface LigneLivre {
   prix: Record<string, { montant: number; devise: string }>;
   manques: string[];
   publiable: boolean;
+  /** Le jeton du jeu de couvertures, rendu depuis la migration 0087. */
+  couverture_jeton: string | null;
 }
 
 const STATUTS = ['publie', 'brouillon', 'archive'] as const;
@@ -241,11 +251,19 @@ export async function ListeLivres({
    * manques — une colonne entière pour deux valeurs possibles coûtait plus de
    * largeur qu'elle n'en informait.
    */
+  /*
+   * La VIGNETTE ouvre la rangée depuis la 0087 — 36 px, une piste FIXE.
+   *
+   * Elle vient en tête parce qu'on reconnaît un titre à sa couverture avant
+   * d'avoir lu son slug. Sa largeur ne suit pas la fenêtre : une piste `fr`
+   * agrandirait une vignette de 36 px sur grand écran, et une vignette
+   * agrandie n'est plus une vignette, c'est une image floue.
+   */
   const colonnes =
     typeImpose === null
-      ? 'minmax(0,2.2fr) minmax(0,1fr) 96px minmax(0,1.1fr) minmax(0,1.3fr) 20px'
-      : 'minmax(0,2.4fr) minmax(0,1fr) 96px minmax(0,1fr) minmax(0,1fr) 20px';
-  const largeurMin = typeImpose === null ? '700px' : '660px';
+      ? '36px minmax(0,2.2fr) minmax(0,1fr) 96px minmax(0,1.1fr) minmax(0,1.3fr) 20px'
+      : '36px minmax(0,2.4fr) minmax(0,1fr) 96px minmax(0,1fr) minmax(0,1fr) 20px';
+  const largeurMin = typeImpose === null ? '748px' : '708px';
 
   return (
     <GabaritAdmin
@@ -396,6 +414,11 @@ export async function ListeLivres({
           >
             <thead role="rowgroup">
               <tr className={styles.grilleEntete} role="row">
+                {/* La colonne de vignette : sans intitulé visible, comme celle
+                    du chevron, mais annoncée aux lecteurs d'écran. */}
+                <th scope="col" role="columnheader">
+                  <span className="sr-only">{traduire(langue, 'admin.ficheCouverture')}</span>
+                </th>
                 <th scope="col" role="columnheader">
                   {traduire(langue, cles.colonneTitre)}
                 </th>
@@ -434,8 +457,36 @@ export async function ListeLivres({
                  */
                 const prix = Object.entries(livre.prix ?? {});
 
+                const couverture = urlsCouverture(livre.couverture_jeton);
+
                 return (
                   <tr key={livre.id} className={styles.grilleRangee} role="row">
+                    <td role="cell" className={styles.grilleVignette}>
+                      {/*
+                        `alt` VIDE, délibérément : le slug est dans la cellule
+                        suivante, et décrire l'image redirait le titre — deux
+                        fois la même phrase pour un lecteur d'écran.
+
+                        La teinte du substitut est la neutre `inconnue` :
+                        `admin_lister_livres` ne rend pas `themes`, et inventer
+                        une couleur d'après le slug donnerait à cet écran une
+                        palette que le catalogue public ne partage pas.
+                      */}
+                      {couverture ? (
+                        <Couverture
+                          langue={langue}
+                          url={couverture.vignette}
+                          largeur={36}
+                          hauteur={50}
+                          tailles="36px"
+                          teinte={null}
+                          alt=""
+                          classeImage={styles.grilleVignetteImage}
+                        />
+                      ) : (
+                        <SubstitutCouverture langue={langue} teinte={null} />
+                      )}
+                    </td>
                     <td role="cell">
                       {/*
                         Le slug est le lien d'édition. Une colonne « Modifier »
