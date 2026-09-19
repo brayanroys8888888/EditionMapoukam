@@ -8,7 +8,12 @@ import { createServiceClient, type AppSupabaseClient } from '@/lib/supabase/clie
 import { getAccess } from '@/lib/access/engine';
 import { getClock, type Clock } from '@/lib/clock';
 import { signer, type UrlSignee } from '@/lib/storage/signed-url';
-import { cheminCopie, identifiantCopie, type DemandeCopie } from '@/domain/downloads/copie';
+import {
+  cheminCopie,
+  identifiantCopie,
+  nomFichierTelechargement,
+  type DemandeCopie,
+} from '@/domain/downloads/copie';
 import { filigranerPdf, type MetadonneesCopie } from '@/domain/downloads/watermark-pdf';
 import { filigranerEpub } from '@/domain/downloads/watermark-epub';
 import { Semaphore, avecDelai } from '@/lib/http/concurrence';
@@ -136,7 +141,10 @@ export async function servirTelechargement(
     // gratuit : la gratuité porte sur la lecture, pas sur le téléchargement.
     livreGratuit: false,
     client,
-    telechargement: `${traduction.titre}.${demande.format}`,
+    // Le nom vient du SLUG, jamais du titre : un titre accentué ne traverse
+    // pas le paramètre `download` de l'URL signée — voir l'encadré de
+    // `nomFichierTelechargement`.
+    telechargement: nomFichierTelechargement(traduction.slug, demande.format),
   });
 
   if (!url) {
@@ -171,6 +179,8 @@ export async function servirTelechargement(
 interface Traduction {
   titre: string;
   auteur: string;
+  /** Sert à NOMMER le fichier remis : il est ASCII, le titre non. */
+  slug: string;
   cheminSource: string;
 }
 
@@ -200,6 +210,7 @@ async function lireTraduction(
   return {
     titre: data.titre,
     auteur: data.books.auteur,
+    slug,
     // L'ingestion dépose les deux formats sous le même radical.
     cheminSource:
       demande.format === 'epub'

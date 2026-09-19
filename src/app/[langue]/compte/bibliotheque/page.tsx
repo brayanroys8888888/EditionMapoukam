@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
+import { langueValide, messageErreur, traduire } from '@/i18n';
 import { lireBibliotheque } from '@/lib/account/bibliotheque';
 import { abonnementCourant } from '@/lib/subscriptions/handlers';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
@@ -15,7 +15,6 @@ import { estV3 } from '@/design/version';
 import { BoutonTelechargement } from '@/components/espace/BoutonTelechargement';
 import espace from '@/components/espace/espace.module.css';
 import ecran from '@/components/ecran/ecran.module.css';
-import { telechargerConte } from '../actions';
 
 
 /**
@@ -332,44 +331,26 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                       </span>
                     )}
 
+                    {/*
+                      Le choix de langue vit DANS le composant, avec le
+                      formulaire : rendu ici, il était hors du formulaire et
+                      n'était donc jamais soumis — un titre bilingue ne se
+                      téléchargeait qu'en français.
+                    */}
                     {entree.peut_telecharger ? (
                       <div className={e3.telechargement}>
-                        {entree.langues.length > 1 ? (
-                          <span className={e3.choix}>
-                            <label
-                              className={e3.choixLibelle}
-                              htmlFor={`v3-langue-${entree.livre_id}`}
-                            >
-                              {traduire(langue, 'compte.choixLangue')}
-                            </label>
-                            <select
-                              className={e3.choixListe}
-                              id={`v3-langue-${entree.livre_id}`}
-                              name="langue_contenu"
-                              defaultValue={entree.langues[0]}
-                            >
-                              {entree.langues.map((codeLangue) => (
-                                <option key={codeLangue} value={codeLangue}>
-                                  {traduire(langue, `langue.${codeLangue}` as CleTraduction)}
-                                </option>
-                              ))}
-                            </select>
-                          </span>
-                        ) : (
-                          <input
-                            type="hidden"
-                            name="langue_contenu"
-                            value={entree.langues[0]}
-                          />
-                        )}
-
                         <BoutonTelechargement
                           langue={langue}
-                          livreId={entree.livre_id}
                           libelle={traduire(langue, 'compte.telecharger')}
                           className={e3.boutonContour}
                           formats={['pdf', 'epub']}
-                          actionServer={telechargerConte.bind(null, langue, entree.livre_id)}
+                          langues={entree.langues}
+                          cheminBase={`/${langue}/telechargement/${entree.livre_id}`}
+                          classesChoix={{
+                            conteneur: e3.choix,
+                            libelle: e3.choixLibelle,
+                            liste: e3.choixListe,
+                          }}
                         />
                       </div>
                     ) : null}
@@ -618,37 +599,12 @@ export default async function PageBibliotheque({ params, searchParams }: Paramet
                   */}
                   {entree.peut_telecharger ? (
                     <div className={espace.achatTelechargement}>
-                      {entree.langues.length > 1 ? (
-                        <span className={espace.achatChoix}>
-                          <label
-                            className={espace.achatChoixLibelle}
-                            htmlFor={`langue-${entree.livre_id}`}
-                          >
-                            {traduire(langue, 'compte.choixLangue')}
-                          </label>
-                          <select
-                            className={espace.achatChoixListe}
-                            id={`langue-${entree.livre_id}`}
-                            name="langue_contenu"
-                            defaultValue={entree.langues[0]}
-                          >
-                            {entree.langues.map((codeLangue) => (
-                              <option key={codeLangue} value={codeLangue}>
-                                {traduire(langue, `langue.${codeLangue}` as CleTraduction)}
-                              </option>
-                            ))}
-                          </select>
-                        </span>
-                      ) : (
-                        <input type="hidden" name="langue_contenu" value={entree.langues[0]} />
-                      )}
-
                       <BoutonTelechargement
                         langue={langue}
-                        livreId={entree.livre_id}
                         libelle={traduire(langue, 'compte.telecharger')}
                         formats={['pdf', 'epub']}
-                        actionServer={telechargerConte.bind(null, langue, entree.livre_id)}
+                        langues={entree.langues}
+                        cheminBase={`/${langue}/telechargement/${entree.livre_id}`}
                       />
                     </div>
                   ) : null}

@@ -408,6 +408,23 @@ fréquent : **annuler ne coupe pas l'accès immédiatement.**
 | `GET /api/reading/{bookId}` | session | `langue` | `{ page, langue, reprise_depuis, ramenee_a_la_fin }` |
 | `PUT /api/reading/{bookId}` | session | `langue`, `page` | `{ page, enregistree }` |
 | `GET /api/downloads/{bookId}` | session | `langue`, `format` (`pdf`\|`epub`) | `{ url, expire_le, format, langue, reference }` |
+| `GET /{langue}/telechargement/{bookId}` | session | `format`, `langue_contenu` | `303` vers l'URL signée, ou vers la bibliothèque avec `?erreur=<code>` |
+
+> **Deux adresses, un seul traitement.** La route d'API rend du **JSON** — c'est
+> son contrat, et un navigateur pointé dessus affiche donc du JSON brut. La
+> seconde est le chemin de **navigation** : elle appelle la première **en
+> mémoire**, transmet la requête telle quelle (en-tête `cookie` compris) et
+> traduit sa réponse en redirection. Le quota, la garde de session, le moteur de
+> droits, le filigrane et l'échec fermé restent écrits une seule fois.
+>
+> **Elle n'est pas une action serveur, et ce n'est pas un détail de style.** Une
+> action serveur est exécutée par le routeur côté client ; sa redirection
+> devient une navigation, et comme le stockage répond
+> `Content-Disposition: attachment`, le document ne se décharge jamais. La
+> navigation attendue n'aboutit pas, la file d'actions du routeur reste bloquée,
+> et passé deux téléchargements l'écran entier devient muet jusqu'à un
+> rechargement. C'est le défaut signalé le 19 septembre 2026. Une soumission
+> **GET native** n'implique pas le routeur — et fonctionne sans JavaScript.
 
 **La progression survit à la perte d'accès** : lire sa propre progression n'exige
 aucun droit sur le titre, seulement d'être connecté. Un réabonnement doit

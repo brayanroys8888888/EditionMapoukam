@@ -11,6 +11,7 @@ import {
   cheminCopie,
   identifiantCopie,
   mentionFiligrane,
+  nomFichierTelechargement,
 } from '@/domain/downloads/copie';
 import { assemblerEpub } from '@/domain/ingestion/epub';
 
@@ -119,6 +120,58 @@ describe('identité de la copie', () => {
 
     expect(mention).toContain('parent@exemple.test');
     expect(mention).toContain(META.copieId.slice(0, 12));
+  });
+});
+
+describe('nom du fichier remis', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE DÉFAUT RÉELLEMENT SIGNALÉ, ET IL ÉTAIT VISIBLE PAR L'ACHETEUR.    │
+   * │                                                                      │
+   * │ Le nom était le TITRE, remis tel quel au paramètre `download` de      │
+   * │ l'URL signée. Le client de stockage le sérialise en                   │
+   * │ `x-www-form-urlencoded` puis applique `encodeURI` à l'URL entière —   │
+   * │ et `encodeURI` n'échappe pas le pour-cent. Les fichiers arrivaient    │
+   * │ donc nommés « Le prince qui voulait %C3%AAtre gentil ».               │
+   * │                                                                      │
+   * │ Ces tests portent sur la SORTIE de la fonction, pas sur l'encodage :  │
+   * │ tant qu'aucun caractère à échapper n'entre dans l'URL, le problème    │
+   * │ n'a pas lieu, quelle que soit la version du client de stockage.       │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('ne rend QUE des caractères sans danger dans une URL', () => {
+    expect(nomFichierTelechargement('le-prince-qui-voulait-etre-gentil', 'pdf')).toMatch(
+      /^[a-z0-9.-]+$/,
+    );
+  });
+
+  it('réduit un titre accentué en ASCII — le cas qui a été signalé', () => {
+    // Un espace deviendrait `+` et un accent `%C3%AA` : ni l'un ni l'autre ne
+    // doit subsister, et c'est la seule assertion qui décrit le défaut vu.
+    const nom = nomFichierTelechargement('Le prince qui voulait être gentil', 'pdf');
+
+    expect(nom).toBe('le-prince-qui-voulait-etre-gentil.pdf');
+    expect(nom).not.toMatch(/[%+\s]/);
+  });
+
+  it('porte l’extension du format demandé', () => {
+    expect(nomFichierTelechargement('la-riviere-qui-parlait', 'epub')).toBe(
+      'la-riviere-qui-parlait.epub',
+    );
+  });
+
+  it('ne commence JAMAIS par un point', () => {
+    // « .pdf » est traité comme un fichier caché sans nom par plusieurs
+    // systèmes : le repli n'est pas un ornement.
+    expect(nomFichierTelechargement('', 'pdf')).toBe('exemplaire.pdf');
+    expect(nomFichierTelechargement('---', 'epub')).toBe('exemplaire.epub');
+  });
+
+  it('borne la longueur sans laisser de tiret en suspens', () => {
+    const nom = nomFichierTelechargement('a'.repeat(200), 'pdf');
+
+    expect(nom.length).toBeLessThanOrEqual(85);
+    expect(nom).not.toMatch(/-\.pdf$/);
   });
 });
 

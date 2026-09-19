@@ -5,6 +5,185 @@
 
 ---
 
+## 0 nonies. Le téléchargement — QUATRE défauts, dont deux invisibles
+
+> Écrit le 19 septembre 2026. **La porte est verte : 1971 tests, 125 fichiers (+11).**
+
+### Ce qui était signalé
+
+> « je viens de tester les telechargement et je remarque que je ne peux pas
+> lancer plus de deux telechargment, pour que je puisse lancer autre
+> telechargment je suis oliger de reharger la page. le nom des fichier
+> telecharger (Le prince qui voulait %C3%AAtre gentil, La rivière qui parlait)
+> on un bug je pense que c'est un soucis d'encodage. »
+
+Deux symptômes rapportés. Le diagnostic en a trouvé **quatre**, et les deux que
+personne n'avait vus étaient les plus sournois.
+
+### 1. Le nom encodé — la cause n'était pas dans ce dépôt
+
+Le service passait le **titre brut** au paramètre `download` de l'URL signée.
+`storage-js` (2.110.9) le sérialise avec `URLSearchParams`, c'est-à-dire en
+`x-www-form-urlencoded`, puis applique `encodeURI` à l'URL **entière** — et
+`encodeURI` n'échappe pas le caractère pour-cent. Les séquences traversent donc
+intactes jusqu'au stockage, qui les recopie dans son en-tête de disposition.
+
+**La correction ne consiste pas à encoder une fois de plus.** Ce serait parier
+sur ce que fait le serveur de stockage à l'autre bout, et le pari serait à
+refaire à chaque version publiée par le prestataire. Le nom vient désormais du
+**slug**, déjà ASCII : plus rien à échapper, donc plus rien à mal échapper.
+`nomFichierTelechargement` est une fonction **pure**, éprouvée hors ligne.
+
+### 2. « Pas plus de deux » — le mécanisme, pas le code
+
+Le bouton soumettait une **action serveur** terminée par un `redirect()` vers
+l'URL signée. Une action serveur est exécutée par le **routeur côté client** :
+sa redirection devient une navigation, et comme le stockage répond
+`Content-Disposition: attachment`, le navigateur la convertit en téléchargement.
+**Le document ne se décharge donc jamais**, la navigation attendue n'aboutit
+pas, et la file d'actions du routeur reste bloquée — c'est pourquoi c'était
+**toute la page** qui devenait muette, et pas seulement la carte cliquée.
+
+Le chemin est maintenant `GET /{langue}/telechargement/{bookId}`, atteint par une
+**soumission GET native**. Le routeur n'est pas impliqué, la page reste intacte,
+et l'on recommence sans limite — sans JavaScript, de surcroît.
+
+> **Ne pas « simplifier » en repointant le bouton sur `/api/downloads/…`.**
+> Cette route rend du JSON, et un navigateur pointé dessus affiche du JSON brut.
+> C'est le défaut n°7 du 5 août, et l'action serveur en était le correctif.
+
+### 3. La langue était ignorée — et rien ne le disait
+
+L'écran rendait la liste déroulante **à côté** du composant, donc **hors** du
+formulaire qu'il contient. Un champ hors formulaire n'est pas soumis :
+`langue_contenu` n'arrivait jamais, `langueContenuValide(null)` repliait sur le
+français, et **un titre bilingue ne pouvait être téléchargé qu'en français**.
+Aucun message, aucune erreur — la liste déroulante fonctionnait, simplement elle
+ne servait à rien. Elle vit désormais **dans** le composant.
+
+### 4. Le rotor mentait
+
+`setTimeout(() => setChargement(false), 2500)` éteignait l'indicateur au bout de
+2,5 s, quand la génération peut demander jusqu'à **60 s** derrière un sémaphore à
+trois places. Il a été **retiré**, pas reformulé : l'indicateur de
+téléchargement du navigateur dit la vérité, lui.
+
+### Les arbitrages, à ne pas rejouer
+
+| Question | Réponse | Pourquoi |
+| --- | --- | --- |
+| Encoder mieux le nom de fichier ? | **Non — ne rien envoyer à encoder** | Un encodage juste dépend du comportement du serveur distant ; un nom ASCII n'en dépend pas |
+| Le nom : titre translittéré ou slug ? | **Le slug** | Un titre translittéré garde des espaces, qui deviennent `+` dans une chaîne de requête — on retombe sur la même classe de défaut |
+| Dupliquer le quota dans la nouvelle route ? | **Non — appel EN MÉMOIRE** | Elle appelle le gestionnaire d'API et transmet la requête telle quelle. Quota, garde, droits, filigrane et échec fermé restent écrits une fois. Même montage que `deposerConte` |
+| Rendre la modale de format sans JavaScript ? | **Oui, par construction** | Les deux boutons de la modale sont des `submit` portant `name="format"` : c'est le navigateur qui navigue |
+
+### Le piège qui a failli faire conclure trop vite
+
+**Un `verify` tubé dans `tail` sort TOUJOURS en 0.** Le code d'un tube est celui
+de son dernier maillon. La notification de tâche annonçait « exit code 0 » sur
+une exécution dont il fallait encore lire le rapport — et plus tôt dans la même
+session, un `verify` avec **un test en échec** avait rendu le même 0. Lire le
+rapport, jamais le code de sortie.
+
+### Le second piège, et il n'était pas de moi
+
+**`Grep`, `Glob` et `Bash` sont tombés en cours de session** — `EUNKNOWN:
+uv_spawn`, la machine refusant de créer un processus — puis `Bash` a annoncé
+« claude native binary not installed », ce qui envoie réinstaller un paquet
+parfaitement intact (vérifié : `v2.1.275`, global, `install.cjs` présent). La
+vraie cause est l'épuisement de la machine : quatre tâches tuées pour mémoire
+dans la même séance. Tout le diagnostic a donc été mené en **lecture seule**, en
+devinant les chemins. `tests/effectif-attendu.json` s'est révélé le meilleur
+substitut à `Glob` : il liste chaque fichier de test avec son effectif.
+
+### Une trouvaille, DÉLIBÉRÉMENT LAISSÉE EN PLACE
+
+`src/domain/downloads/copie.ts` porte, **ligne 67**, un octet **NUL brut écrit
+dans la source** :
+
+```
+      ].join('<NUL>'),        ← 18 octets : 5d 2e 6a 6f 69 6e 28 27 00 27 29 2c
+```
+
+C'est le séparateur des composants de `identifiantCopie`, et l'idée est
+**bonne** : un NUL empêche `"a b" + "c"` de heurter `"a" + "b c"`. Ce qui l'est
+moins, c'est de l'écrire en octet littéral plutôt qu'en échappement. Deux
+conséquences :
+
+1. **git classe le fichier comme BINAIRE** — un seul NUL suffit. Ce fichier n'a
+   donc jamais eu de diff lisible, et n'en aura pas : `git diff` rend
+   `Bin 4840 -> 7456 bytes`, et `--numstat` rend `-	-`.
+2. **L'octet est fragile.** Tout outil qui assainit une entrée le remplacerait
+   en silence. Et le jour où il changerait, **tous les identifiants de copie
+   changeraient avec lui** : les exemplaires déjà en circulation ne
+   correspondraient plus à aucune ligne, et la référence de service
+   après-vente — celle qui figure DANS le fichier — cesserait d'être
+   retrouvable. C'est exactement la panne que le déterminisme de cette fonction
+   existe pour empêcher.
+
+**Il n'a pas été touché, et c'est un choix.** Le comportement est juste, la
+porte est verte, et c'est le fichier qui gouverne l'identité de chaque
+exemplaire vendu : le modifier n'était pas demandé. À arbitrer par le
+propriétaire.
+
+**Si l'on décide un jour de l'écrire proprement**, l'ordre compte : d'abord
+épingler l'empreinte dans un test, ensuite remplacer l'octet par
+`String.fromCharCode(0)` ou son échappement — la chaîne produite est identique,
+donc les empreintes ne bougent pas, mais cela se **prouve** avant, jamais après.
+Valeur de référence mesurée le 19 septembre 2026, pour
+`userId = 1111…1111`, `bookId = 2222…2222`, `fr`, `pdf`, `VERSION_FILIGRANE = v1` :
+
+```
+a9be838cac78ecfea6a4fe3b970d9746
+```
+
+### Le troisième piège : `\\` s'effondre dans un heredoc
+
+Une tentative de remplacer cet octet par un script a rendu
+« 1 occurrence remplacée » **sans rien changer** : dans les heredoc de cet
+environnement, une double contre-oblique devient simple, si bien que
+`Buffer.from("'\\u0000'")` est arrivé à Node comme *guillemet, NUL réel,
+guillemet* — soit les trois octets visés. Le NUL a été remplacé par un NUL.
+
+La contre-oblique **simple** passe intacte (`'\n'` fonctionne) ; seule la double
+s'effondre. Pour manipuler des octets, comparer en **numérique** (`buf[i] === 0`,
+`String.fromCharCode(0)`) et ne jamais faire confiance à une séquence
+d'échappement traversant deux couches de quoting. Et mesurer la **taille** du
+fichier avant/après : c'est elle qui a trahi le non-changement, pas le script,
+qui s'annonçait victorieux.
+
+### Ce qui a été construit
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `src/domain/downloads/copie.ts` | `nomFichierTelechargement` — pure, ASCII garanti, repli sur `exemplaire` |
+| `src/lib/downloads/service.ts` | `Traduction` porte le `slug` ; le nom du fichier en vient |
+| `src/app/[langue]/telechargement/[bookId]/route.ts` | le chemin de navigation — 303, `maxDuration = 60`, `private, no-store` |
+| `src/components/espace/BoutonTelechargement.tsx` | formulaire **GET**, la langue dedans, aucun faux indicateur |
+| `src/app/[langue]/compte/bibliotheque/page.tsx` | les deux habillages, V3 et V1 |
+| `src/app/[langue]/compte/actions.ts` | `telechargerConte` retirée, la raison consignée |
+| `tests/unit/watermark.test.ts` | +5 — dont « réduit un titre accentué en ASCII », le cas signalé |
+| `tests/integration/downloads.test.ts` | +6 — dont « NOMME le fichier sans une seule séquence encodée » |
+
+Le bloc d'intégration est placé **avant** celui du quota, et c'est écrit dans le
+fichier : le test de quota épuise les trente téléchargements de `acheteur`, et la
+clé du quota est l'utilisateur. Placé après, tout le bloc recevrait des 429 — en
+passant au vert si l'on n'assertait que « c'est une redirection ».
+
+### À savoir avant de reprendre
+
+- `maxDuration = 60` est déclaré sur la **route de navigation**, parce que c'est
+  elle qui héberge la génération. Le déclarer sur la seule route d'API ne
+  corrigerait rien — l'erreur a déjà été commise une fois (§0 bis).
+- La correction du nom de fichier **ne renomme pas les copies déjà produites** :
+  la clé de cache porte sur l'utilisateur, le titre, la langue et le format, pas
+  sur le nom remis. Les exemplaires existants sont servis sous leur nouveau nom
+  sans être régénérés.
+- Reste en attente, et ne dépend que du propriétaire : le **push** (deux commits
+  d'avance) et l'application de la migration **0087** au projet hébergé.
+
+---
+
 ## 0 octies. La connexion par Google — écrite DEUX FOIS, et un interrupteur
 
 > Écrit le 16 septembre 2026.

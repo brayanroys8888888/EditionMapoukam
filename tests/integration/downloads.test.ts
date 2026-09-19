@@ -3,8 +3,10 @@ import { PDFDocument } from 'pdf-lib';
 import JSZip from 'jszip';
 
 import { GET as telecharger } from '@/app/api/downloads/[bookId]/route';
+import { GET as telechargerParNavigation } from '@/app/[langue]/telechargement/[bookId]/route';
 import { purgerCopies } from '@/lib/downloads/service';
 import { identifiantCopie } from '@/domain/downloads/copie';
+import { ACCESS_TOKEN_COOKIE } from '@/lib/auth/cookies';
 
 import { closePool, query, queryOne } from '../helpers/db';
 import { corpsJson, get, type ReponseErreur } from '../helpers/http';
@@ -413,6 +415,94 @@ describe('purge', () => {
 
     expect(apres.reference).toBe(avant.reference);
   }, 120_000);
+});
+
+describe('le chemin de NAVIGATION mène au fichier', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ POURQUOI CE BLOC EST PLACÉ AVANT CELUI DU QUOTA.                     │
+   * │                                                                      │
+   * │ Le test de quota épuise délibérément les trente téléchargements de    │
+   * │ `acheteur`, et la clé du quota est l'utilisateur. Placé après, tout   │
+   * │ ce bloc recevrait des 429 et redirigerait vers une erreur — en        │
+   * │ passant au vert si l'on n'assertait que « c'est une redirection ».    │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  function navigation(
+    user: TestUser | null,
+    options: { format?: string; langue_contenu?: string } = {},
+  ): [Request, { params: Promise<{ langue: string; bookId: string }> }] {
+    const parametres = new URLSearchParams();
+    if (options.format) parametres.set('format', options.format);
+    if (options.langue_contenu) parametres.set('langue_contenu', options.langue_contenu);
+    const requete = parametres.toString();
+
+    return [
+      get(`/fr/telechargement/${livreId}${requete ? `?${requete}` : ''}`, {
+        // Par COOKIE, et non par en-tête d'autorisation : c'est ce qu'envoie
+        // une navigation de navigateur, donc le seul chemin qui compte ici.
+        cookie: user ? `${ACCESS_TOKEN_COOKIE}=${user.accessToken}` : '',
+      }),
+      { params: Promise.resolve({ langue: 'fr', bookId: livreId }) },
+    ];
+  }
+
+  it('redirige vers le fichier, au lieu de rendre du JSON', async () => {
+    const reponse = await telechargerParNavigation(...navigation(acheteur));
+
+    expect(reponse.status).toBe(303);
+    expect(reponse.headers.get('location') ?? '').toContain('/storage/v1/object/sign/');
+  }, 90_000);
+
+  it('NOMME le fichier sans une seule séquence encodée', async () => {
+    // Le défaut signalé par l'éditeur : « Le prince qui voulait %C3%AAtre
+    // gentil ». On lit le paramètre dans l'URL BRUTE — le lire par
+    // `URLSearchParams` le décoderait et masquerait exactement ce qu'on
+    // cherche.
+    const reponse = await telechargerParNavigation(...navigation(acheteur));
+    const brut = reponse.headers.get('location') ?? '';
+    const nom = /[?&]download=([^&]*)/.exec(brut)?.[1] ?? '';
+
+    expect(nom, 'aucun paramètre `download` dans l’URL signée').not.toBe('');
+    expect(nom).not.toMatch(/[%+]/);
+    expect(nom).toMatch(/\.pdf$/);
+  }, 90_000);
+
+  it('ne se met jamais en cache — l’URL mène à un exemplaire nominatif', async () => {
+    const reponse = await telechargerParNavigation(...navigation(acheteur));
+
+    expect(reponse.headers.get('cache-control')).toBe('private, no-store');
+  }, 90_000);
+
+  it('renvoie l’abonné à sa bibliothèque avec le CODE du refus', async () => {
+    // La règle métier centrale, vue depuis la navigation : l'abonnement ouvre
+    // la lecture, jamais le fichier. L'écran traduit le code.
+    const reponse = await telechargerParNavigation(...navigation(abonne));
+
+    expect(reponse.status).toBe(303);
+    expect(reponse.headers.get('location')).toBe(
+      '/fr/compte/bibliotheque?erreur=telechargement_non_inclus',
+    );
+  });
+
+  it('renvoie le visiteur à la connexion, et ne divulgue rien', async () => {
+    const reponse = await telechargerParNavigation(...navigation(null));
+
+    expect(reponse.status).toBe(303);
+    expect(reponse.headers.get('location')).toBe('/fr/connexion');
+  });
+
+  it('honore la langue demandée — le champ qui n’arrivait jamais', async () => {
+    // La traduction anglaise de ce titre est en brouillon : demander `en` doit
+    // donc être REFUSÉ. C'est la preuve que le paramètre est bien lu — s'il
+    // était ignoré, la demande repliait sur le français et réussissait.
+    const reponse = await telechargerParNavigation(
+      ...navigation(acheteur, { langue_contenu: 'en' }),
+    );
+
+    expect(reponse.status).toBe(303);
+    expect(reponse.headers.get('location')).toBe('/fr/compte/bibliotheque?erreur=introuvable');
+  }, 90_000);
 });
 
 describe('journal et quota', () => {
