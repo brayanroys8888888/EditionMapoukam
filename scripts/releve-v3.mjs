@@ -18,7 +18,26 @@ const SORTIE = resolve('.captures');
 mkdirSync(SORTIE, { recursive: true });
 
 const APP = 'http://localhost:3000';
-const MAQUETTE_BUREAU = `file:///${resolve('design_handoff_edition_mapoukam/Site EditionMapoukam.dc.html').replace(/\\/g, '/')}`;
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA COPIE LOCALE DU PROTOTYPE PUBLIC DATE DU 5 SEPTEMBRE.                │
+ * │                                                                          │
+ * │ Elle a servi pour les quinze premiers écrans, et elle suffit pour eux.   │
+ * │ Mais le prototype a continué de vivre dans le projet Claude Design : la  │
+ * │ page Watosonne Consulting y est arrivée le 20 septembre, et la copie du  │
+ * │ dossier de passation ne la contient PAS.                                 │
+ * │                                                                          │
+ * │ Même mécanisme que pour l'administration, et pour la même raison : on    │
+ * │ passe une URL servie, valable une heure, et RIEN n'est écrit ici — un    │
+ * │ jeton de service n'a pas sa place dans un fichier versionné. Le repli    │
+ * │ reste le chemin local, qui sert encore les écrans d'avant.               │
+ * │                                                                          │
+ * │   MAQUETTE_PUBLIQUE='<url servie>' node scripts/releve-v3.mjs watosonne  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const MAQUETTE_BUREAU =
+  process.env['MAQUETTE_PUBLIQUE'] ??
+  `file:///${resolve('design_handoff_edition_mapoukam/Site EditionMapoukam.dc.html').replace(/\\/g, '/')}`;
 const MAQUETTE_MOBILE = `file:///${resolve('design_handoff_edition_mapoukam/Site EditionMapoukam Mobile.dc.html').replace(/\\/g, '/')}`;
 
 const BUREAU = { width: 1440, height: 1000 };
@@ -2471,6 +2490,219 @@ const SCENES = {
         maquette: 'div[style*="position: sticky"] div.card.elev-md',
         app: '[class*="admin_ficheLaterale"] [class*="admin_cadre"]',
         ignore: ['h'],
+      },
+    },
+  },
+
+  /* ══ WATOSONNE CONSULTING — le second cabinet ═════════════════════════ */
+
+  watosonne: {
+    largeur: BUREAU,
+    /*
+     * PAS de pleine page : la capture défile le document, et les deux pages ne
+     * reviennent pas exactement au même point. On l'a payé une fois sur la
+     * fiche d'administration — sept cents pixels d'écart, crédibles. Ici la
+     * dérive ne valait que deux pixels, ce qui est pire : on la prend pour une
+     * cote fausse et on va corriger une feuille parfaitement juste.
+     */
+    pleinePage: false,
+    maquette: async (p) => {
+      await p.goto(MAQUETTE_BUREAU, { waitUntil: 'load' });
+      await p.waitForTimeout(1400);
+      // Le dépliant « Expertise & conseil », puis le second cabinet.
+      await p.getByRole('button', { name: /Expertise/ }).first().click();
+      await p.waitForTimeout(500);
+      await p.getByText('Watosonne Consulting', { exact: true }).first().click();
+      await p.waitForTimeout(1200);
+      /*
+       * ┌──────────────────────────────────────────────────────────────────┐
+       * │ ON DÉROULE LA PAGE AVANT DE SONDER, DES DEUX CÔTÉS.              │
+       * │                                                                  │
+       * │ Les deux versions animent l'apparition au défilement, et les deux │
+       * │ posent `translateY(16px)` tant que le bloc n'est pas entré dans   │
+       * │ le cadre. `getBoundingClientRect` VOIT cette translation : une    │
+       * │ section non révélée se mesure seize pixels trop bas.              │
+       * │                                                                  │
+       * │ Sans ce déroulé, la comparaison opposait un bloc révélé d'un côté │
+       * │ à un bloc en attente de l'autre — et l'écart ressemblait à une    │
+       * │ cote fausse, ce qui est exactement le genre de piste qu'on suit   │
+       * │ pendant une heure.                                                │
+       * └──────────────────────────────────────────────────────────────────┘
+       */
+      await p.evaluate(async () => {
+        const pas = globalThis.innerHeight * 0.8;
+        for (let y = 0; y < globalThis.document.body.scrollHeight; y += pas) {
+          globalThis.scrollTo(0, y);
+          await new Promise((r) => { globalThis.setTimeout(r, 90); });
+        }
+        globalThis.scrollTo(0, 0);
+      });
+      await p.waitForTimeout(900);
+    },
+    app: async (p) => {
+      await p.goto(`${APP}/fr/expertise/watosonne`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+      /*
+       * ┌──────────────────────────────────────────────────────────────────┐
+       * │ ON DÉROULE LA PAGE AVANT DE SONDER, DES DEUX CÔTÉS.              │
+       * │                                                                  │
+       * │ Les deux versions animent l'apparition au défilement, et les deux │
+       * │ posent `translateY(16px)` tant que le bloc n'est pas entré dans   │
+       * │ le cadre. `getBoundingClientRect` VOIT cette translation : une    │
+       * │ section non révélée se mesure seize pixels trop bas.              │
+       * │                                                                  │
+       * │ Sans ce déroulé, la comparaison opposait un bloc révélé d'un côté │
+       * │ à un bloc en attente de l'autre — et l'écart ressemblait à une    │
+       * │ cote fausse, ce qui est exactement le genre de piste qu'on suit   │
+       * │ pendant une heure.                                                │
+       * └──────────────────────────────────────────────────────────────────┘
+       */
+      await p.evaluate(async () => {
+        const pas = globalThis.innerHeight * 0.8;
+        for (let y = 0; y < globalThis.document.body.scrollHeight; y += pas) {
+          globalThis.scrollTo(0, y);
+          await new Promise((r) => { globalThis.setTimeout(r, 90); });
+        }
+        globalThis.scrollTo(0, 0);
+      });
+      await p.waitForTimeout(900);
+    },
+    sondes: {
+      héros: {
+        maquette: 'main > section:nth-of-type(1)',
+        app: '[class*="watosonne-v3_hero__"]',
+        ignore: ['h'],
+      },
+      'sur-titre': {
+        maquette: 'main > section:nth-of-type(1) span[style*="letter-spacing: 0.16em"]',
+        app: '[class*="watosonne-v3_oeil__"]',
+        ignore: ['w'],
+      },
+      titre: {
+        maquette: 'main h1',
+        app: '[class*="watosonne-v3_titre__"]',
+        ignore: ['w'],
+      },
+      accroche: {
+        maquette: 'main p[style*="font-size: 21px"]',
+        app: '[class*="watosonne-v3_accroche__"]',
+        ignore: ['w'],
+      },
+      argument: {
+        maquette: 'main p[style*="opacity: 0.72"]',
+        app: '[class*="watosonne-v3_argument__"]',
+        ignore: ['w'],
+      },
+      'bouton principal': {
+        maquette: 'main > section:nth-of-type(1) button[style*="background: var(--terra)"]',
+        app: '[class*="watosonne-v3_boutonPrincipal__"]',
+        ignore: ['w'],
+      },
+      'panneau de profil': {
+        maquette: 'div[style*="border-radius: 34px"][style*="padding: 36px"]',
+        app: '[class*="watosonne-v3_profilPanneau__"]',
+        ignore: ['h'],
+      },
+      'disque d’initiales': {
+        maquette: 'span[style*="width: 76px"]',
+        app: '[class*="watosonne-v3_profilInitiales__"]',
+      },
+      'nom du profil': {
+        maquette: 'p[style*="font-size: 26px"]',
+        app: '[class*="watosonne-v3_profilNom__"]',
+        ignore: ['w'],
+      },
+      'pastille de repère': {
+        maquette: 'span[style*="padding: 8px 15px"]',
+        app: '[class*="watosonne-v3_profilRepere__"]',
+        ignore: ['w'],
+      },
+      'rangée des promesses': {
+        maquette: 'div[style*="margin-top: 64px"]',
+        app: '[class*="watosonne-v3_promessesGrille__"]',
+        ignore: ['h'],
+      },
+      promesse: {
+        maquette: 'div[style*="padding: 26px 30px 34px 0px"]',
+        app: '[class*="watosonne-v3_promesse__"]',
+        ignore: ['w', 'h'],
+      },
+      'titre du cadre': {
+        maquette: 'main > section:nth-of-type(2) h2',
+        app: '[class*="watosonne-v3_cadreTitre__"]',
+        ignore: ['w'],
+      },
+      'section du cadre': {
+        maquette: 'main > section:nth-of-type(2)',
+        app: '[class*="watosonne-v3_sectionCadre__"]',
+      },
+      'premier paragraphe cité': {
+        maquette: 'div[style*="border-left: 2px solid var(--terra)"] p:nth-of-type(1)',
+        app: '[class*="watosonne-v3_cadreParagraphe__"]',
+        ignore: ['w'],
+      },
+      'colonne citée': {
+        maquette: 'div[style*="border-left: 2px solid var(--terra)"]',
+        app: '[class*="watosonne-v3_cadreTexte__"]',
+        ignore: ['h'],
+      },
+      'en-tête des prestations': {
+        maquette: '#offres-watosonne > div:nth-of-type(1)',
+        app: '[class*="watosonne-v3_prestationsEntete__"]',
+      },
+      'note des prestations': {
+        maquette: '#offres-watosonne > div:nth-of-type(1) > p',
+        app: '[class*="watosonne-v3_prestationsNote__"]',
+      },
+      'titre des prestations': {
+        maquette: '#offres-watosonne h2',
+        app: '[class*="watosonne-v3_prestationsTitre__"]',
+        ignore: ['w'],
+      },
+      'rangée de prestation': {
+        maquette: '#offres-watosonne article',
+        app: '[class*="watosonne-v3_prestation__"]',
+        ignore: ['h'],
+      },
+      'numéro de prestation': {
+        maquette: '#offres-watosonne span[style*="font-size: 62px"]',
+        app: '[class*="watosonne-v3_prestationRang__"]',
+        ignore: ['w'],
+      },
+      'titre de prestation': {
+        maquette: '#offres-watosonne h3',
+        app: '[class*="watosonne-v3_prestationTitre__"]',
+        ignore: ['w', 'h'],
+      },
+      'bouton de devis': {
+        maquette: '#offres-watosonne article button',
+        app: '[class*="watosonne-v3_boutonDevis__"]',
+        ignore: ['w'],
+      },
+      'grille des gains': {
+        maquette: 'div[style*="gap: 18px 26px"]',
+        app: '[class*="watosonne-v3_gains__"]',
+        ignore: ['h'],
+      },
+      'encart des livrables': {
+        maquette: 'div[style*="padding: 26px 28px"]',
+        app: '[class*="watosonne-v3_documents__"]',
+        ignore: ['h'],
+      },
+      'pastille de livrable': {
+        maquette: 'div[style*="padding: 26px 28px"] span[style*="padding: 9px 17px"]',
+        app: '[class*="watosonne-v3_document__"]',
+        ignore: ['w'],
+      },
+      'appel final': {
+        maquette: 'div[style*="border-radius: 40px"]',
+        app: '[class*="watosonne-v3_appel__"]',
+        ignore: ['h'],
+      },
+      'titre de l’appel': {
+        maquette: 'div[style*="border-radius: 40px"] h2',
+        app: '[class*="watosonne-v3_appelTitre__"]',
+        ignore: ['w'],
       },
     },
   },

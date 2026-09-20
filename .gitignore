@@ -84,6 +84,11 @@ maquette profile/
 maquette_response/
 V2_direction_design/
 
+# Les cinq .docx qui ont servi a ecrire la page Watosonne. Meme raison : ce
+# sont des sources du client, et le texte livre vit dans
+# src/content/watosonne.ts, ou le type impose les deux langues.
+Watosonne Consulting/
+
 # Logo a la racine, reference NULLE PART dans le code (verifie). Celui qui est
 # servi vient de public/.
 logoEdition_mapoukam.png

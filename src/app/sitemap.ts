@@ -33,6 +33,7 @@ const CHEMINS_FIXES = [
   '/offres',
   '/association',
   '/expertise',
+  '/expertise/watosonne',
   '/a-propos',
   '/questions-frequentes',
   '/conditions-generales',

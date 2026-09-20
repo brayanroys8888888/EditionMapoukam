@@ -1,0 +1,748 @@
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WATOSONNE CONSULTING — L'ÉCRAN ORGANIC, MESURÉ SUR LE PROTOTYPE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Source : `Site EditionMapoukam.dc.html`, lignes 940 à 1094.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PAGE SŒUR DE MAPOUKAM, ET POURTANT UNE AUTRE MISE EN PAGE.           │
+ * │                                                                          │
+ * │ Les deux cabinets ouvrent sur l'olive, pour la même raison : on ne       │
+ * │ s'adresse plus à des parents. Mais là où Mapoukam range ses trois offres │
+ * │ en CARTES COMPARABLES — trois tarifs d'appel, qu'on met côte à côte —    │
+ * │ Watosonne n'annonce aucun montant. Trois cartes sans prix alignées       │
+ * │ côte à côte ne comparent rien : elles font seulement trois colonnes de   │
+ * │ texte, et le lecteur cherche le chiffre qui n'y est pas.                 │
+ * │                                                                          │
+ * │ D'où des RANGÉES pleine largeur, séparées d'un filet, chacune avec son   │
+ * │ titre qui reste au bord pendant qu'on lit ses bénéfices. La page se      │
+ * │ parcourt alors comme un dossier, ce qu'elle est.                         │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ AUCUNE COULEUR N'EST ÉCRITE ICI, PAS MÊME EN COMMENTAIRE.               │
+ * │                                                                          │
+ * │ `design-tokens.test.ts` lit AUSSI les commentaires, et il a raison : une │
+ * │ valeur citée pour expliquer finit recopiée dans une déclaration. Les     │
+ * │ opacités du prototype sont donc rendues en `color-mix`, en pourcentage   │
+ * │ d'un jeton — jamais en teinte figée.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+/* ══ Le héros ═════════════════════════════════════════════════════════════ */
+
+.hero {
+  /*
+   * L'anneau de focus hérite de `--encre` et serait invisible sur l'olive :
+   * toute la bande sombre le redéfinit, comme sur la page Mapoukam.
+   */
+  --focus-couleur: var(--chrome-encre);
+  position: relative;
+  overflow: hidden;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+}
+
+/*
+ * DEUX disques, et non un seul comme chez Mapoukam.
+ *
+ * Le prototype en pose un vert en haut à gauche, derrière le titre, et un
+ * terre cuite en bas à droite, derrière le panneau de profil. Les deux sont
+ * décoratifs et ne reçoivent aucun clic.
+ */
+.heroCercleVert,
+.heroCercleTerre {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.heroCercleVert {
+  top: -180px;
+  left: -120px;
+  width: 520px;
+  height: 520px;
+  background: color-mix(in srgb, var(--second) 16%, transparent);
+}
+
+.heroCercleTerre {
+  bottom: -220px;
+  right: -80px;
+  width: 460px;
+  height: 460px;
+  background: color-mix(in srgb, var(--action) 16%, transparent);
+}
+
+.heroInterieur {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 60px;
+  align-items: center;
+  padding: 78px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 0;
+}
+
+/*
+ * Le sur-titre prend `--accent-sur-chrome`, et non `--action` : la terre cuite
+ * du jour sur l'olive du jour passe sous le seuil de contraste pour un texte
+ * de 11,5 px. Le jeton porte la variante claire, lisible dans les deux thèmes.
+ */
+.oeil {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-sur-chrome);
+}
+
+/* Le trait qui précède le sur-titre — ornement, donc `aria-hidden` au rendu. */
+.oeilTrait {
+  display: block;
+  width: 26px;
+  height: 1.5px;
+  flex: none;
+  background: currentcolor;
+}
+
+.titre {
+  font-size: clamp(40px, 5.2vw, 72px);
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+  margin: 18px 0 20px;
+}
+
+.accroche {
+  font-size: 21px;
+  line-height: 1.5;
+  opacity: 0.9;
+  margin: 0 0 14px;
+  max-width: 560px;
+}
+
+.argument {
+  font-size: 17px;
+  line-height: 1.7;
+  opacity: 0.72;
+  margin: 0 0 34px;
+  max-width: 540px;
+}
+
+.heroActions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.boutonPrincipal,
+.boutonSecondaire {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 17px 30px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16px;
+  /* `normal` : le prototype ne pose pas d'interligne sur ces boutons. */
+  line-height: normal;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.boutonPrincipal {
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  box-shadow: var(--ombre-m);
+}
+
+.boutonPrincipal:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+.boutonSecondaire {
+  background: transparent;
+  color: var(--chrome-encre);
+  border: 1.5px solid color-mix(in srgb, var(--chrome-encre) 40%, transparent);
+}
+
+.boutonSecondaire:hover {
+  background: color-mix(in srgb, var(--chrome-encre) 10%, transparent);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/* ── Le panneau de profil ───────────────────────────────────────────────── */
+
+.profil {
+  position: relative;
+}
+
+/*
+ * LE CADRE DÉCALÉ N'EST PAS UNE OMBRE, C'EST UN SECOND RECTANGLE.
+ *
+ * Il sort de quatorze pixels en bas à droite et rentre d'autant en haut à
+ * gauche, ce qui donne au panneau l'épaisseur d'une carte posée. Une ombre
+ * portée aurait fait la même silhouette en plus sourd — sur l'olive, elle ne
+ * se serait pas vue du tout.
+ */
+.profilCadre {
+  position: absolute;
+  inset: 14px -14px -14px 14px;
+  border: 1.5px solid color-mix(in srgb, var(--chrome-encre) 20%, transparent);
+  border-radius: 34px;
+  pointer-events: none;
+}
+
+.profilPanneau {
+  position: relative;
+  background: color-mix(in srgb, var(--chrome-encre) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 20%, transparent);
+  border-radius: 34px;
+  padding: 36px;
+  backdrop-filter: blur(2px);
+}
+
+.profilEntete {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.profilInitiales {
+  width: 76px;
+  height: 76px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--action);
+  color: var(--action-encre);
+  display: grid;
+  place-items: center;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 25px;
+}
+
+.profilOeil {
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 0 0 5px;
+}
+
+.profilNom {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 26px;
+  line-height: 1;
+  margin: 0;
+}
+
+.profilTitre {
+  font-size: 16px;
+  line-height: 1.6;
+  opacity: 0.88;
+  margin: 0 0 22px;
+}
+
+.profilReperes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.profilRepere {
+  border: 1px solid color-mix(in srgb, var(--chrome-encre) 28%, transparent);
+  border-radius: 999px;
+  padding: 8px 15px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* ── Les trois promesses, au pied du héros ──────────────────────────────── */
+
+.promesses {
+  position: relative;
+  padding: 0 max(28px, (100% - var(--largeur-page)) / 2 + 28px);
+}
+
+.promessesGrille {
+  list-style: none;
+  padding: 0;
+  margin: 64px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--chrome-encre) 18%, transparent);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+/*
+ * Le rembourrage n'est posé qu'à DROITE — `26px 30px 34px 0`. C'est ce qui
+ * aligne le premier numéro sur le bord du titre, deux blocs plus haut : une
+ * gouttière symétrique l'aurait décalé de trente pixels, et la colonne du
+ * héros aurait perdu son aplomb.
+ */
+.promesse {
+  padding: 26px 30px 34px 0;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.promesseRang {
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15px;
+  color: var(--accent-sur-chrome);
+  flex: none;
+  padding-top: 2px;
+}
+
+.promesseTexte {
+  font-size: 16px;
+  line-height: 1.5;
+  opacity: 0.88;
+}
+
+/* ══ Notre cadre ══════════════════════════════════════════════════════════ */
+
+.sectionCadre {
+  padding: 78px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 0;
+}
+
+.cadreGrille {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: 56px;
+  align-items: start;
+}
+
+.oeilClair {
+  font-size: 11.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+.cadreTitre {
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 12px 0 0;
+}
+
+/*
+ * Le filet vertical fait office de guillemet : il dit que ce qui suit est la
+ * parole du cabinet, pas la description de la page. Deux pixels, pleine
+ * terre cuite — à un pixel il se lirait comme une bordure de bloc.
+ */
+.cadreTexte {
+  border-left: 2px solid var(--action);
+  padding-left: 28px;
+}
+
+.cadreParagraphe {
+  font-size: 18.5px;
+  line-height: 1.65;
+  margin: 0 0 18px;
+}
+
+.cadreParagraphe:last-child {
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/* ══ Les trois prestations ════════════════════════════════════════════════ */
+
+.sectionPrestations {
+  padding: 72px max(28px, (100% - var(--largeur-page)) / 2 + 28px) 20px;
+}
+
+.prestationsEntete {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.prestationsIntitule {
+  max-width: 620px;
+}
+
+.prestationsTitre {
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  margin: 10px 0 0;
+}
+
+.prestationsNote {
+  color: var(--encre-douce);
+  font-size: 15.5px;
+  margin: 0;
+  max-width: 330px;
+}
+
+.prestations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.prestation {
+  border-top: 1px solid var(--bordure);
+  padding: 44px 0;
+  display: grid;
+  grid-template-columns: 0.85fr 1.15fr;
+  gap: 56px;
+  align-items: start;
+}
+
+/*
+ * LE TITRE RESTE AU BORD PENDANT QU'ON LIT SES BÉNÉFICES.
+ *
+ * 104 px : la barre supérieure collante du site, plus la respiration du
+ * prototype. Sous cette valeur, le haut du titre passe DERRIÈRE la barre au
+ * défilement — et c'est précisément le titre qui donne son sens à la colonne
+ * de droite, qui ne dit que « ce que vous gagnez ».
+ */
+.prestationIntitule {
+  position: sticky;
+  top: 104px;
+}
+
+/*
+ * Le numéro est un ORNEMENT : la liste est déjà ordonnée, et un lecteur
+ * d'écran annonce « élément 2 sur 3 ». L'énoncer une seconde fois ferait
+ * entendre « deux, deux, la formation des équipes ».
+ */
+.prestationRang {
+  display: block;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 62px;
+  line-height: 0.9;
+  color: var(--action);
+  opacity: 0.28;
+  margin-bottom: 14px;
+}
+
+.prestationTitre {
+  font-size: clamp(22px, 2.2vw, 29px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  margin: 0 0 12px;
+}
+
+/*
+ * La phrase de cadrage du devis, là où Mapoukam pose un tarif. Elle en prend
+ * la place et non la graisse : ce n'est pas un montant, et l'afficher comme
+ * tel ferait chercher un chiffre qui n'y est pas.
+ */
+.prestationCadrage {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--encre-douce);
+  margin: 0 0 22px;
+}
+
+.boutonDevis {
+  display: inline-flex;
+  align-items: center;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 26px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 15px;
+  line-height: normal;
+  text-decoration: none;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.boutonDevis:hover {
+  background: var(--chrome-clair);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+.gainsTitre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin: 0 0 18px;
+}
+
+/*
+ * Deux colonnes, et une seule sous 760 px — voir la requête en pied de
+ * fichier. Quatre bénéfices en une colonne feraient une rangée deux fois plus
+ * haute que son titre, et la colonne de gauche resterait collée dans le vide.
+ */
+.gains {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 26px;
+}
+
+.gain {
+  display: flex;
+  gap: 11px;
+  font-size: 15.5px;
+  line-height: 1.6;
+}
+
+/*
+ * La coche est posée sur la ligne de base du texte, pas centrée : à
+ * `margin-top: 5px` elle s'aligne sur la première ligne, quel que soit le
+ * nombre de lignes qui suivent.
+ */
+.coche {
+  flex: none;
+  margin-top: 5px;
+  color: var(--second);
+}
+
+/* ── Les livrables, sur la seule offre qui en porte ─────────────────────── */
+
+.documents {
+  margin-top: 28px;
+  background: var(--fond-doux);
+  border-radius: 26px;
+  padding: 26px 28px;
+}
+
+.documentsTitre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin: 0 0 14px;
+}
+
+.documentsListe {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+.document {
+  background: var(--surface);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  padding: 9px 17px;
+  font-size: 14px;
+}
+
+/* ══ L'appel final ════════════════════════════════════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CETTE SECTION NE PREND PAS LA GOUTTIÈRE DE PAGE, ET C'EST LA SEULE.     │
+ * │                                                                          │
+ * │ Partout ailleurs le rembourrage latéral centre le CONTENU dans la        │
+ * │ largeur de page. Ici, c'est le PANNEAU lui-même qui est plafonné et      │
+ * │ centré : la section ne garde que ses 28 px de garde au bord.             │
+ * │                                                                          │
+ * │ La nuance vaut 56 px de large. Avec la gouttière, le panneau tombait à   │
+ * │ 1 184 px au lieu de 1 240, et son titre passait sur deux lignes — la     │
+ * │ mesure a montré 87 px de haut au lieu de 44.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.sectionAppel {
+  padding: 50px 28px 96px;
+}
+
+.appel {
+  --focus-couleur: var(--chrome-encre);
+  position: relative;
+  overflow: hidden;
+  max-width: var(--largeur-page);
+  margin-inline: auto;
+  background: var(--chrome);
+  color: var(--chrome-encre);
+  border-radius: 40px;
+  padding: 60px 52px;
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+}
+
+.appelCercle {
+  position: absolute;
+  top: -140px;
+  right: -60px;
+  width: 380px;
+  height: 380px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--second) 18%, transparent);
+  pointer-events: none;
+}
+
+.appelTexte {
+  position: relative;
+}
+
+.appelTitre {
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  color: var(--chrome-encre);
+  margin: 0 0 14px;
+}
+
+.appelParagraphe {
+  font-size: 17px;
+  line-height: 1.7;
+  opacity: 0.78;
+  margin: 0;
+  max-width: 520px;
+}
+
+.appelActions {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.appelBouton,
+.appelLien {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 18px 28px;
+  font-family: var(--police-titre);
+  font-variation-settings: var(--titre-variations);
+  font-weight: var(--graisse-forte);
+  font-size: 16.5px;
+  line-height: normal;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    transform 0.35s var(--ease),
+    background-color 0.35s var(--ease);
+}
+
+.appelBouton {
+  background: var(--action);
+  color: var(--action-encre);
+  border: 0;
+  box-shadow: var(--ombre-m);
+}
+
+.appelBouton:hover {
+  background: var(--action-survol);
+  color: var(--action-encre);
+  transform: translateY(-4px);
+}
+
+.appelLien {
+  background: transparent;
+  color: var(--chrome-encre);
+  border: 1.5px solid color-mix(in srgb, var(--chrome-encre) 45%, transparent);
+}
+
+.appelLien:hover {
+  background: color-mix(in srgb, var(--chrome-encre) 12%, transparent);
+  color: var(--chrome-encre);
+  transform: translateY(-4px);
+}
+
+/* ══ Fenêtres étroites ════════════════════════════════════════════════════ */
+
+/*
+ * Le prototype replie à 1120 px par une règle d'attribut qui vise toutes les
+ * grilles d'un coup. Ici les grilles sont nommées, donc chacune est repliée
+ * explicitement — ce qui évite d'aplatir au passage celles qui doivent tenir.
+ */
+@media (max-width: 1120px) {
+  .heroInterieur,
+  .cadreGrille,
+  .prestation,
+  .appel {
+    grid-template-columns: 1fr;
+  }
+
+  .heroInterieur {
+    gap: 44px;
+    padding-bottom: 8px;
+  }
+
+  /* Sans hauteur de colonne à suivre, « collant » n'a plus d'objet. */
+  .prestationIntitule {
+    position: static;
+  }
+
+  .appel {
+    padding: 44px 34px;
+  }
+}
+
+@media (max-width: 760px) {
+  .gains {
+    grid-template-columns: 1fr;
+  }
+
+  .promesse {
+    padding: 20px 0 24px;
+  }
+
+  .cadreTexte {
+    padding-left: 20px;
+  }
+}
+
+/* ══ Mouvement réduit ═════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .boutonPrincipal,
+  .boutonSecondaire,
+  .boutonDevis,
+  .appelBouton,
+  .appelLien {
+    transition: none;
+  }
+
+  .boutonPrincipal:hover,
+  .boutonSecondaire:hover,
+  .boutonDevis:hover,
+  .appelBouton:hover,
+  .appelLien:hover {
+    transform: none;
+  }
+}
