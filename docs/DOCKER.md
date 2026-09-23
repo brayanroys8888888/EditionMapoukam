@@ -108,14 +108,24 @@ ss -tlnp | grep -E ':3000|:8000|:54322'   # 127.0.0.1 UNIQUEMENT, jamais 0.0.0.0
 
 Ce sont ceux qui ne se manifestent pas par un message clair.
 
-| Piège | Ce qu'on voit | Traité |
+> **Le `docker-compose.yml` ne porte aucun commentaire**, par choix. Les
+> raisons de ses réglages les moins évidents sont donc ici, et **seulement
+> ici** : c'est le document à lire avant de « simplifier » une ligne.
+
+| Piège | Ce qu'on voit | Traité par |
 | --- | --- | --- |
+| **`POSTGRES_USER` ne doit PAS être posé** | la base démarre, se déclare **saine**, et reste nue : aucun rôle de service, migrations en échec sur `supabase_admin`, `auth`/`rest`/`storage` en boucle | son **absence** du service `db`. L'image initialise son cluster avec `supabase_admin`, et c'est son `migrate.sh` qui crée `authenticator`, `anon`, `service_role`… Poser `postgres` écrase ce défaut |
+| **Les scripts d'init vont dans `init-scripts/`** | `role "authenticator" does not exist` pendant l'initialisation, puis une base sans rôles | les deux montages vers `/docker-entrypoint-initdb.d/init-scripts/`. La **racine** de ce répertoire est jouée par PostgreSQL **avant** `migrate.sh`, donc avant la création des rôles |
+| **Un `alter` sur un rôle absent arrête tout le fichier** | `storage` en boucle sur un refus d'authentification, `storage.buckets` jamais créée, migration 0020 en échec — quatre symptômes, une ligne | `docker/db-init/01-roles.sql` : chaque rôle n'est traité **que s'il existe** (`supabase_functions_admin` n'est pas dans cette pile) |
+| **Le délai de grâce du contrôle de santé** | `dependency failed to start: container ... is unhealthy`, alors que la base s'initialise normalement | `start_period: 120s` et `retries: 20`. La **première** initialisation joue une centaine de migrations internes et dure plus de 150 s |
+| **`storage.buckets` est créée par le service `storage`** | la migration 0020 échoue sur `relation "storage.buckets" does not exist`, et le site refuse de démarrer | une attente de cette table dans `docker/appliquer-migrations.sh`. `service_started` garantit que le conteneur est **lancé**, jamais qu'il a **fini** |
+| **Le quota d'emails de gotrue** | gotrue reçoit une valeur vide là où il attend un entier | `GOTRUE_RATE_LIMIT_EMAIL_SENT: "30"` **en dur** : cette variable n'existe pas dans `docker/env.exemple`, et une référence non résolue arrive vide |
+| **Plafond de stockage à 50 Mo** | un gros conte refuse de se déposer, sans parler de taille | `FILE_SIZE_LIMIT: "209715200"`. La valeur est écrite **en dur** dans la composition officielle de Supabase ; les buckets du projet acceptent 100 et 200 Mo |
+| **`NEXT_PUBLIC_*` figées au build** | une URL ou une direction visuelle changée « ne prend pas » après redémarrage — et l'écart ne se voit **que** dans un navigateur | les `args:` du service `app`. Next recopie ces valeurs dans le JavaScript envoyé au client : il faut **reconstruire**, pas redémarrer |
+| **Une URL qui ne résout que d'un côté** | l'application marche dans le navigateur et échoue côté serveur | l'alias réseau de `passerelle` (`SUPABASE_ALIAS_INTERNE`) |
 | **Docker contourne ufw** | Postgres joignable depuis Internet malgré le pare-feu | tous les `ports:` sont liés à `127.0.0.1` |
-| **`NEXT_PUBLIC_*` figées au build** | une URL changée « ne prend pas » après redémarrage | les `args:` du service `app` |
 | **La barre finale de `proxy_pass`** | gotrue répond 404, comme si la route n'existait pas | `docker/passerelle.conf` |
-| **Plafond de stockage à 50 Mo** | un gros conte refuse de se déposer, sans parler de taille | `FILE_SIZE_LIMIT=209715200` |
 | **Gabarits d'email non servis** | l'email arrive avec un lien, pas un code : l'inscription est une impasse | `GOTRUE_MAILER_TEMPLATES_*` + `/modeles-email/` |
-| **Une URL qui ne résout que d'un côté** | l'application marche dans le navigateur et échoue côté serveur | l'alias réseau de `passerelle` |
 
 À quoi s'ajoutent deux règles que la pile applique en silence :
 

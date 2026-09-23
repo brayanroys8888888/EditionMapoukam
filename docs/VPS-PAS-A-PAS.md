@@ -253,38 +253,47 @@ docker compose exec -T db psql -U postgres -tAc \
 
 ---
 
-## Étape 8 · Démarrer le reste de l'infrastructure
+## Étape 8 · Démarrer tout le reste, en une commande
 
 **Où vous êtes :** `/srv/editionmapoukam/app`
 
 ```bash
-docker compose up -d auth rest storage imgproxy passerelle
-sleep 45
+docker compose up -d --build
+```
+
+**Cinq à dix minutes** la première fois : le site est compilé sur place.
+
+Cette commande unique enchaîne tout, **dans le bon ordre** : les services
+d'authentification, d'API et de stockage, puis les 87 migrations, puis le site
+— qui ne démarre **que si les migrations ont réussi**. Il n'y a rien à
+séquencer à la main.
+
+```bash
 docker compose ps
 ```
 
-✅ **Six conteneurs**, tous en `Up`. **Aucun ne doit afficher `Restarting`.**
+✅ **Sept conteneurs.** Six en `Up`, et `migrations` en `Exited (0)` — c'est
+normal : il a fait son travail et s'est arrêté. **Aucun ne doit afficher
+`Restarting`.**
 
-Si l'un redémarre en boucle, lire sa raison avant d'aller plus loin — par
-exemple pour l'authentification :
+Si l'un redémarre en boucle, sa raison est toujours dans ses journaux :
 
 ```bash
 docker compose logs auth | tail -20
+docker compose logs storage | tail -20
 ```
 
 ---
 
-## Étape 9 · Créer les tables du site
+## Étape 9 · Vérifier que la base est complète
 
 **Où vous êtes :** `/srv/editionmapoukam/app`
 
 ```bash
-docker compose --profile migrations run --rm migrations
+docker compose logs migrations | tail -5
 ```
 
-✅ La sortie se termine par **`Migrations appliquées : 87`**.
-
-Vérifier que les quatre espaces de stockage existent :
+✅ Se termine par **`Migrations appliquées : 87`**.
 
 ```bash
 docker compose exec -T db psql -U postgres -tAc \
@@ -299,23 +308,24 @@ docker compose exec -T db psql -U postgres -tAc \
 
 ---
 
-## Étape 10 · Construire et lancer le site
+## Étape 10 · Vérifier que le site répond
 
 **Où vous êtes :** `/srv/editionmapoukam/app`
 
 ```bash
-docker compose up -d --build app
-```
-
-**Cinq à dix minutes** la première fois : l'application est compilée sur place.
-
-```bash
-docker compose ps
 curl -I http://localhost:3000/fr
 ```
 
-✅ **Sept conteneurs** en `Up`, aucun en `Restarting`.
-✅ `curl` répond **HTTP/1.1 200 OK**.
+✅ **HTTP/1.1 200 OK**
+
+Et qu'il ne sert pas une page d'erreur derrière ce 200 — une valeur manquante
+dans `.env` produirait exactement cela :
+
+```bash
+curl -s http://localhost:3000/fr | grep -c Mapoukam
+```
+
+✅ Au moins **1**.
 
 ---
 

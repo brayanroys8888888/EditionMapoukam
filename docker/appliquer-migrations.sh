@@ -14,6 +14,38 @@
 # ╚══════════════════════════════════════════════════════════════════════════╝
 set -euo pipefail
 
+# ┌──────────────────────────────────────────────────────────────────────────┐
+# │ ATTENDRE QUE `storage.buckets` EXISTE — ET C'EST UNE COURSE RÉELLE.      │
+# │                                                                          │
+# │ Cette table n'est créée par AUCUNE migration de ce dépôt : c'est le      │
+# │ service `storage` qui la crée, en jouant ses propres migrations à son    │
+# │ démarrage. Or `depends_on: service_started` garantit seulement que son   │
+# │ conteneur est LANCÉ, jamais qu'il a fini — et la migration 0020 y insère │
+# │ les quatre buckets du projet.                                            │
+# │                                                                          │
+# │ Sans cette attente, 0020 échoue sur                                      │
+# │ `relation "storage.buckets" does not exist`, les 67 migrations suivantes │
+# │ ne passent pas, et le site refuse de démarrer — à juste titre, mais sur  │
+# │ un message qui ne parle ni de `storage`, ni d'une course.                │
+# │                                                                          │
+# │ Le contrôle porte sur la PRÉCONDITION EXACTE plutôt que sur la santé     │
+# │ HTTP du service : un serveur qui répond n'a pas forcément fini de créer  │
+# │ son schéma. Mesuré le 23 septembre 2026.                                 │
+# └──────────────────────────────────────────────────────────────────────────┘
+attente=0
+until [ "$(psql --tuples-only --no-align --command \
+  "select count(*) from information_schema.tables
+    where table_schema = 'storage' and table_name = 'buckets'")" = "1" ]; do
+  if [ "$attente" -ge 120 ]; then
+    echo "storage.buckets toujours absente après 120 s." >&2
+    echo "Le service \`storage\` a-t-il démarré ? \`docker compose logs storage\`" >&2
+    exit 1
+  fi
+  [ "$attente" = 0 ] && echo "En attente de storage.buckets…"
+  sleep 3
+  attente=$((attente + 3))
+done
+
 psql --variable ON_ERROR_STOP=1 --quiet <<'SQL'
 create schema if not exists supabase_migrations;
 create table if not exists supabase_migrations.schema_migrations (
