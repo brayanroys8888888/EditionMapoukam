@@ -21,19 +21,23 @@ export const VERSIONS_DESIGN: readonly VersionDesign[] = ['v1', 'v2', 'v3'];
 /**
  * La direction visuelle courante.
  *
- * Le repli est `v2` : c'est la direction actuellement VALIDÉE. La V3, reprise
- * du dossier de passation (`docs/REFONTE-V3.md`), ne se sert que sur demande
- * explicite tant que ses treize lots ne sont pas livrés — un environnement
- * muet doit servir ce qui est fini, pas ce qui est en cours.
+ * Le repli est `v3` depuis le 23 septembre 2026 : c'est la direction
+ * VALIDÉE. La règle n'a pas changé — un environnement muet sert ce qui est
+ * fini, jamais ce qui est en cours — c'est son application qui a changé, les
+ * treize lots de `docs/REFONTE-V3.md` ayant été livrés les 5 et 6 septembre.
+ * La production sert la V3 depuis, et le repli le dit enfin.
+ *
+ * La `v2` reste servie sur demande explicite : elle n'est pas retirée, elle
+ * n'est plus le défaut.
  *
  * Une valeur inconnue — une faute de frappe dans un fichier d'environnement —
- * retombe elle aussi sur `v2` plutôt que de casser le rendu.
+ * retombe elle aussi sur la direction validée plutôt que de casser le rendu.
  */
 export function versionDesign(): VersionDesign {
   const brut = process.env.NEXT_PUBLIC_DESIGN_VERSION;
   if (brut === 'v1') return 'v1';
-  if (brut === 'v3') return 'v3';
-  return 'v2';
+  if (brut === 'v2') return 'v2';
+  return 'v3';
 }
 
 

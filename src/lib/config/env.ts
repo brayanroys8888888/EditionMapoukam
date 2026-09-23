@@ -139,9 +139,10 @@ const serverSchema = z.object({
    * │ de code, seulement de reposer la variable. Une refonte qu'on ne peut   │
    * │ pas annuler est une refonte qu'on n'ose pas montrer.                   │
    * │                                                                        │
-   * │ La valeur par défaut est la direction VALIDÉE — `v2` aujourd'hui.      │
-   * │ Un environnement qui ne dit rien sert ce qui est fini, jamais ce qui   │
-   * │ est en cours : la `v3` se demande, elle ne s'attrape pas.              │
+   * │ La valeur par défaut est la direction VALIDÉE — `v3` depuis le        │
+   * │ 23 septembre 2026, ses treize lots ayant été livrés les 5 et 6         │
+   * │ septembre. Un environnement qui ne dit rien sert ce qui est fini ;     │
+   * │ c'est désormais la V3, et la production la sert déjà.                  │
    * │                                                                        │
    * │ ⚠ Cette liste est la SECONDE, et elle doit rester alignée sur          │
    * │ `VERSIONS_DESIGN` dans `src/design/version.ts`. Les deux ne peuvent    │
@@ -151,7 +152,7 @@ const serverSchema = z.object({
    * │ elle fait REFUSER le démarrage — c'est ce qu'un test garde.            │
    * └────────────────────────────────────────────────────────────────────────┘
    */
-  NEXT_PUBLIC_DESIGN_VERSION: z.enum(['v1', 'v2', 'v3']).default('v2'),
+  NEXT_PUBLIC_DESIGN_VERSION: z.enum(['v1', 'v2', 'v3']).default('v3'),
 
   /**
    * Durée des URL signées d'un contenu payant. CLAUDE.md règle 3 : 300

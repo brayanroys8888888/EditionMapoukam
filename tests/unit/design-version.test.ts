@@ -45,19 +45,38 @@ describe('la direction servie', () => {
   /**
    * Le repli est la direction VALIDÉE, pas la plus récente.
    *
-   * Une V3 servie par défaut alors que ses lots ne sont pas finis livrerait
-   * un chantier à un visiteur, sans que personne l'ait décidé.
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LA RÈGLE N'A PAS CHANGÉ — SON APPLICATION, SI.                       │
+   * │                                                                      │
+   * │ Ce test a longtemps attendu `v2`, et il avait raison : servir par    │
+   * │ défaut une V3 dont les lots n'étaient pas finis aurait livré un      │
+   * │ chantier à un visiteur, sans que personne l'ait décidé.              │
+   * │                                                                      │
+   * │ Les treize lots de `docs/REFONTE-V3.md` ont été livrés les 5 et 6    │
+   * │ septembre 2026, et la production sert la V3 depuis. La direction     │
+   * │ VALIDÉE est donc la V3, et le repli la suit — le 23 septembre 2026.  │
+   * │                                                                      │
+   * │ Ce qui reste interdit, et que ce test garde : qu'un repli serve une  │
+   * │ direction NON livrée. Le jour où une V4 s'ouvrira, il devra rester   │
+   * │ sur la V3 jusqu'à sa livraison complète.                             │
+   * └──────────────────────────────────────────────────────────────────────┘
    */
-  it('replie sur la V2 quand rien n’est demandé', () => {
+  it('replie sur la V3 quand rien n’est demandé', () => {
     vi.stubEnv('NEXT_PUBLIC_DESIGN_VERSION', undefined);
-    expect(versionDesign()).toBe('v2');
+    expect(versionDesign()).toBe('v3');
   });
 
-  it('replie sur la V2 sur une valeur INCONNUE — la faute de frappe', () => {
+  it('replie sur la V3 sur une valeur INCONNUE — la faute de frappe', () => {
     vi.stubEnv('NEXT_PUBLIC_DESIGN_VERSION', 'V3');
-    expect(versionDesign()).toBe('v2');
+    expect(versionDesign()).toBe('v3');
 
     vi.stubEnv('NEXT_PUBLIC_DESIGN_VERSION', 'v4');
+    expect(versionDesign()).toBe('v3');
+  });
+
+  it('sert encore la V2 sur demande EXPLICITE', () => {
+    // Elle n'est pas retirée : elle n'est plus le défaut.
+    vi.stubEnv('NEXT_PUBLIC_DESIGN_VERSION', 'v2');
     expect(versionDesign()).toBe('v2');
   });
 
