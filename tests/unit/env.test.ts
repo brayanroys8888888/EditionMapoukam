@@ -186,6 +186,89 @@ describe('interrupteur de connexion par Google', () => {
   });
 });
 
+describe('une variable VIDE vaut une variable ABSENTE', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE DÉFAUT QUI A FAIT SERVIR UNE PAGE D'ERREUR, PILE DOCKER MONTÉE.   │
+   * │                                                                      │
+   * │ Tous les hébergeurs transmettent des variables vides : un `.env` qui │
+   * │ porte `CLE=` sans valeur, une console web au champ resté blanc, une  │
+   * │ composition Docker qui recopie la ligne. Or `optional()` accepte     │
+   * │ l'absence, jamais le vide — et une clé FACULTATIVE laissée vide      │
+   * │ faisait échouer le démarrage, en se plaignant d'une longueur de      │
+   * │ chaîne, alors que l'adaptateur concerné était éteint.                │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('accepte les secrets facultatifs laissés vides', () => {
+    useEnv({
+      NOTCHPAY_PUBLIC_KEY: '',
+      NOTCHPAY_PRIVATE_KEY: '',
+      NOTCHPAY_HASH_KEY: '',
+      GOOGLE_CLIENT_ID: '',
+      GOOGLE_CLIENT_SECRET: '',
+      RESEND_API_KEY: '',
+      DATABASE_URL: '',
+    });
+
+    const env = getServerEnv();
+
+    expect(env.NOTCHPAY_PUBLIC_KEY).toBeUndefined();
+    expect(env.GOOGLE_CLIENT_ID).toBeUndefined();
+    expect(env.RESEND_API_KEY).toBeUndefined();
+    expect(env.DATABASE_URL).toBeUndefined();
+  });
+
+  it('traite une valeur faite d’espaces comme une absence', () => {
+    useEnv({ NOTCHPAY_HASH_KEY: '   ' });
+
+    expect(getServerEnv().NOTCHPAY_HASH_KEY).toBeUndefined();
+  });
+
+  it('REFUSE toujours une variable obligatoire laissée vide', () => {
+    // Le contre-test : la tolérance ne vaut que pour le facultatif. Sans lui,
+    // une clé de service effacée démarrerait comme si de rien n'était.
+    useEnv({ SUPABASE_SERVICE_ROLE_KEY: '' });
+
+    expect(() => getServerEnv()).toThrow(/SUPABASE_SERVICE_ROLE_KEY/);
+  });
+
+  it('sous `better-auth`, des clés vides donnent le message qui les NOMME', () => {
+    // Avant, une clé vide produisait « Too small: expected string to have >=1
+    // characters », qui n'oriente vers rien. Le refus explicite, lui, dit quoi
+    // renseigner.
+    useEnv({
+      AUTH_GOOGLE: 'better-auth',
+      GOOGLE_CLIENT_ID: '',
+      GOOGLE_CLIENT_SECRET: '',
+      BETTER_AUTH_SECRET: '',
+    });
+
+    expect(() => getServerEnv()).toThrow(/AUTH_GOOGLE=better-auth exige/);
+  });
+
+  it('distingue un secret de signature VIDE d’un secret trop COURT', () => {
+    useEnv({
+      AUTH_GOOGLE: 'better-auth',
+      GOOGLE_CLIENT_ID: 'un-client',
+      GOOGLE_CLIENT_SECRET: 'un-secret',
+      BETTER_AUTH_SECRET: '',
+    });
+
+    // Vide : c'est le contrôle explicite qui parle, et il nomme la variable.
+    expect(() => getServerEnv()).toThrow(/AUTH_GOOGLE=better-auth exige/);
+
+    // Court mais présent : c'est le schéma qui refuse, sur la longueur.
+    useEnv({
+      AUTH_GOOGLE: 'better-auth',
+      GOOGLE_CLIENT_ID: 'un-client',
+      GOOGLE_CLIENT_SECRET: 'un-secret',
+      BETTER_AUTH_SECRET: 'trop-court',
+    });
+
+    expect(() => getServerEnv()).toThrow(/BETTER_AUTH_SECRET/);
+  });
+});
+
 describe('protection de la clé service_role (CLAUDE.md règle 2)', () => {
   it('refuse de démarrer si une variable NEXT_PUBLIC_* contient la clé de service', () => {
     useEnv({ NEXT_PUBLIC_LEAK: MINIMAL_ENV['SUPABASE_SERVICE_ROLE_KEY'] });

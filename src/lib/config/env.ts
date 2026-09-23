@@ -19,6 +19,33 @@ export const SIGNED_URL_TTL_FREE_MAX_SECONDS = 3600;
 const positiveInt = (fallback: number) =>
   z.coerce.number().int().positive().default(fallback);
 
+/**
+ * Secret FACULTATIF, où une valeur vide vaut une absence.
+ *
+ * ┌────────────────────────────────────────────────────────────────────────┐
+ * │ UNE VARIABLE VIDE N'EST PAS UNE VARIABLE RENSEIGNÉE.                   │
+ * │                                                                        │
+ * │ `z.string().min(1).optional()` accepte l'ABSENCE, jamais le VIDE. Or   │
+ * │ tous les hébergeurs transmettent des variables vides : un `.env` qui   │
+ * │ porte `NOTCHPAY_PUBLIC_KEY=` sans valeur, une console web où le champ  │
+ * │ existe mais reste blanc, une composition Docker qui recopie la ligne.  │
+ * │                                                                        │
+ * │ Sans ce traitement, une clé facultative laissée vide faisait ÉCHOUER   │
+ * │ le démarrage — alors même que l'adaptateur concerné était éteint. Le   │
+ * │ refus parlait de longueur de chaîne, ce qui n'oriente vers rien.       │
+ * │ Constaté en montant la pile Docker, le 23 septembre 2026.              │
+ * │                                                                        │
+ * │ Ce qui ne change pas : une variable OBLIGATOIRE laissée vide est       │
+ * │ toujours refusée, et les trois secrets qu'exige `better-auth` le sont  │
+ * │ toujours — par le contrôle explicite de `getServerEnv`, qui les nomme. │
+ * └────────────────────────────────────────────────────────────────────────┘
+ */
+const secretFacultatif = (longueurMinimale = 1) =>
+  z.preprocess(
+    (valeur) => (typeof valeur === 'string' && valeur.trim() === '' ? undefined : valeur),
+    z.string().min(longueurMinimale).optional(),
+  );
+
 const serverSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 
@@ -43,13 +70,13 @@ const serverSchema = z.object({
    * │ inutile est un secret à faire fuiter : on le retire.                    │
    * └────────────────────────────────────────────────────────────────────────┘
    */
-  DATABASE_URL: z.string().min(1).optional(),
+  DATABASE_URL: secretFacultatif(),
 
   // ---- Adaptateurs ----
   PAYMENT_PROVIDER: z.enum(['fake', 'stripe', 'notchpay']).default('fake'),
   MAILER: z.enum(['file', 'resend']).default('file'),
-  RESEND_API_KEY: z.string().optional(),
-  RESEND_FROM_EMAIL: z.string().optional(),
+  RESEND_API_KEY: secretFacultatif(),
+  RESEND_FROM_EMAIL: secretFacultatif(),
   MAIL_OUTPUT_DIR: z.string().min(1).default('.mails'),
   FAKE_WEBHOOK_SECRET: z.string().min(8),
 
@@ -76,9 +103,9 @@ const serverSchema = z.object({
    * │ serveur, et une clé exposée est une clé à faire tourner.               │
    * └────────────────────────────────────────────────────────────────────────┘
    */
-  NOTCHPAY_PUBLIC_KEY: z.string().min(1).optional(),
-  NOTCHPAY_PRIVATE_KEY: z.string().min(1).optional(),
-  NOTCHPAY_HASH_KEY: z.string().min(1).optional(),
+  NOTCHPAY_PUBLIC_KEY: secretFacultatif(),
+  NOTCHPAY_PRIVATE_KEY: secretFacultatif(),
+  NOTCHPAY_HASH_KEY: secretFacultatif(),
 
   /**
    * Autorise-t-on les clés de PRODUCTION ?
@@ -240,8 +267,8 @@ const serverSchema = z.object({
    * `superRefine` ci-dessous les rend obligatoires sous `better-auth`, où c'est
    * bien ce processus qui parle à Google.
    */
-  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
-  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  GOOGLE_CLIENT_ID: secretFacultatif(),
+  GOOGLE_CLIENT_SECRET: secretFacultatif(),
 
   /**
    * Secret de signature de Better Auth.
@@ -250,7 +277,7 @@ const serverSchema = z.object({
    * un cookie SIGNÉ par ce secret. Il n'y a donc rien à deviner côté serveur,
    * mais tout à falsifier si le secret est court : 32 caractères au minimum.
    */
-  BETTER_AUTH_SECRET: z.string().min(32).optional(),
+  BETTER_AUTH_SECRET: secretFacultatif(32),
 });
 
 /** Les trois secrets que `AUTH_GOOGLE=better-auth` rend obligatoires. */
