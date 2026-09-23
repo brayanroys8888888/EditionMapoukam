@@ -1,0 +1,53 @@
+# Ce que le contexte de build ne doit PAS emporter.
+#
+# Le premier bloc est une règle de sécurité, pas une optimisation : un `.env*`
+# recopié dans une couche d'image y reste, même effacé par une couche
+# suivante, et l'image est distribuable.
+
+.env
+.env.*
+!.env.example
+.env.local
+.env.production.local
+.env.admin.local
+.env.migration.local
+
+.git
+.gitignore
+node_modules
+.next
+out
+dist
+
+# Sorties de développement et d'essai
+.mails
+.captures
+captures
+coverage
+test-results
+playwright-report
+exports-supabase
+.devclock.json
+
+# Documents et maquettes : aucun n'entre dans l'image
+docs
+*.md
+!package.json
+V2_direction_design
+design_handoff_edition_mapoukam
+maquette*
+"conte d'afrique"
+"Watosonne Consulting"
+"New section"
+
+# Docker lui-même
+Dockerfile
+.dockerignore
+docker-compose*.yml
+
+# Bruit de plateforme
+.vercel
+.claude
+desktop.ini
+Thumbs.db
+.DS_Store
