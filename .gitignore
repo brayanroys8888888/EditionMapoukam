@@ -129,3 +129,17 @@ PROMPT-CLAUDE-CODE.md
 REPRISE2.md
 reprise3.md
 REPRISE4.md
+
+# Notes de travail gardees en LOCAL, hors du depot public.
+# Retirees du suivi le 23 septembre 2026 par le proprietaire ; elles restent
+# sur le disque et continuent de servir en session.
+CLAUDE.md
+QUESTIONS.md
+
+# Composition ENTIEREMENT RESOLUE : elle contient les secrets en clair
+# (mot de passe Postgres, JWT, service_role, cles de paiement et d email).
+# Generee a la demande, transmise hors de git, JAMAIS versionnee.
+compose-resolu.yml
+
+# Configuration de l installateur : contient les cles Notch Pay, Resend et Google.
+installation/mapoukam.conf

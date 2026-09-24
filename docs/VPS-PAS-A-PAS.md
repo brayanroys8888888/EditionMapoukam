@@ -195,7 +195,7 @@ remplacer par **exactement** ceci :
 ```
 APP_PUBLIC_URL=https://editionsmapoukam.com
 SUPABASE_PUBLIC_URL=https://api.editionsmapoukam.com
-SUPABASE_ALIAS_INTERNE=api.editionsmapoukam.com
+SUPABASE_ALIAS_INTERNE=passerelle.interne
 SMTP_ADMIN_EMAIL=noreply@editionsmapoukam.com
 AUTH_REDIRECTIONS_AUTORISEES=https://editionsmapoukam.com/api/auth/google/retour,https://editionsmapoukam.com/api/better-auth/callback/google
 ```
@@ -209,7 +209,7 @@ Enregistrer avec `Ctrl+O`, `Entrée`, puis `Ctrl+X`.
 > corriger après coup oblige à refaire cette étape-là. C'est pour cela qu'on
 > les renseigne maintenant.
 
-✅ `grep -c 'editionsmapoukam.com' .env` répond **au moins 5**.
+✅ `grep -c 'editionsmapoukam.com' .env` répond **au moins 4**.
 ✅ `grep -c 'localhost' .env` répond **0**.
 
 ---
