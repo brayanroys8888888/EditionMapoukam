@@ -5,6 +5,77 @@
 
 ---
 
+## 0 duodecies. Un conte de 25 Mo refusé en ligne — le dépôt depuis le poste — 24 septembre 2026
+
+> **Résolu.** « RAISSATA FALL » (export Canva, 33 pages, 24,9 Mo) est en base
+> de production, **en brouillon** : couverture, 33 pages, PDF et EPUB. Reste à
+> l'éditeur : auteur, âge, thèmes, prix, publication.
+
+### Ce qui était signalé
+
+Le dépôt par `/admin/contes/nouveau`, **sur Vercel**, échouait. Aucune trace
+en base : pas même un brouillon.
+
+### Les deux plafonds de Vercel, et aucun ne se règle dans le code
+
+| Plafond | Valeur | Ce fichier |
+| --- | --- | --- |
+| Corps d'une requête vers une fonction | **4,5 Mo**, fixe | 24,9 Mo — refusé **avant** que le code ne s'exécute |
+| Durée d'une fonction (palier Hobby) | **60 s** (`maxDuration`) | 155 s de traitement en local |
+
+Les réglages à 100 Mo (`TAILLE_MAX_OCTETS`, `bodySizeLimit`,
+`proxyClientMaxBodySize`) **ne servent à rien sur Vercel** : le plafond de
+4,5 Mo passe avant. Le dépôt n'avait jamais connu ce plafond, parce que les
+contes déposés jusque-là étaient plus légers. **Tout PDF de plus de 4,5 Mo
+échouera en ligne tant que le site est sur Vercel.** Sur le VPS, ce plafond
+n'existe pas, mais le `proxy_read_timeout 180s` du nginx public
+(`installation/installer.sh`) devra être relevé : ce même conte dépasse
+180 s.
+
+### Le contournement : `scripts/deposer-conte-distant.mjs`
+
+```bash
+node scripts/deposer-conte-distant.mjs "<fichier.pdf>" --distant   # production
+node scripts/deposer-conte-distant.mjs "<fichier.pdf>"             # pile locale
+# TYPE_DOCUMENT=livret_pedagogique  ORIENTATION=paysage  LANGUE=en  --titre "…"
+```
+
+Il exécute **la même** chaîne `ingerer` sur le poste (chargée par `jiti`, avec
+l'alias `@`), puis écrit dans la base désignée. Il lit `.env.local`, puis
+`.env.production.local` **par-dessus** avec `--distant` : l'URL et la clé de
+service distantes l'emportent, les autres variables exigées par le schéma
+viennent du local. `NODE_ENV=production` en distant, pour que l'horloge ne
+lise pas le décalage de `DevClock`. Le conte naît brouillon.
+
+### Le piège : le délai de 300 s de `fetch`
+
+Les deux premiers dépôts en production ont échoué **à la dernière étape**,
+`depot_telechargeables` : `Dépôt impossible (book-downloads/…/livre.pdf) :
+fetch failed`, après dix minutes de travail.
+
+- La connexion montante du poste, mesurée : **~90 Ko/s**.
+- `deposerTelechargeables` envoie le PDF (25 Mo) **et** l'EPUB en parallèle,
+  soit environ 29 Mo et plus de 300 s.
+- Le `fetch` de Node (undici) abandonne au bout de **300 s**. Le même PDF
+  envoyé **seul**, à `depot_source`, tenait tout juste dans ce délai : d'où un
+  échec toujours au même endroit, qui ressemblait à une panne du stockage.
+
+Correctif, **dans le script seulement** : il reconstruit le répartiteur global
+de Node (`Symbol.for('undici.globalDispatcher.1')`) avec des délais d'une
+heure. Aucune dépendance ajoutée. Troisième essai : 904 s, terminé.
+
+Un échec en cours de route laisse un **brouillon vide** (le nettoyage retire
+les fichiers, pas la ligne `books`). Le redépôt créerait alors
+`raissata-fall-2` : supprimer d'abord le brouillon par
+`admin_supprimer_livre`, qui n'accepte qu'un brouillon et trace un motif.
+
+### Essais locaux
+
+Deux contes d'essai déposés sur la pile locale, **tous deux supprimés** : la
+base locale est revenue à son jeu de démonstration.
+
+---
+
 ## 0 nonies. Le téléchargement — QUATRE défauts, dont deux invisibles
 
 > Écrit le 19 septembre 2026. **La porte est verte : 1971 tests, 125 fichiers (+11).**
