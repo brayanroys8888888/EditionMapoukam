@@ -55,6 +55,12 @@ export class FakePaymentProvider implements PaymentProvider {
   /** C'est tout l'objet de cette classe : le dire plutôt que le laisser deviner. */
   readonly simule = true;
 
+  /**
+   * Le faux prestataire CONNAÎT le pays du moyen de paiement (`simulerPays`) :
+   * il n'a pas besoin qu'on le lui déclare, et un pays déclaré est ignoré.
+   */
+  readonly verrouillePays = false;
+
   readonly enteteSignature = SIGNATURE_HEADER;
 
   readonly #clock: Clock;

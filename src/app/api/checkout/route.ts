@@ -42,7 +42,7 @@ export async function POST(request: Request): Promise<Response> {
   // jamais chargée, et répond donc 404 comme un identifiant inconnu.
   const { data: commande } = await client
     .from('orders')
-    .select('id, user_id, montant_total, devise, zone, statut')
+    .select('id, user_id, montant_total, devise, zone, statut, pays_paiement')
     .eq('id', corps.data.commande_id)
     .eq('user_id', garde.appelant.id)
     .maybeSingle();
@@ -67,6 +67,10 @@ export async function POST(request: Request): Promise<Response> {
     orderId: commande.id,
     montant: { montant: commande.montant_total, devise: commande.devise },
     zone: commande.zone,
+    // Lu sur la COMMANDE, jamais sur cette requête : il a été écrit avec le
+    // montant, et un pays choisi ici ouvrirait un tarif Afrique à une carte
+    // européenne. Voir la migration 0088.
+    paysVerrouille: commande.pays_paiement,
     client: { userId: garde.appelant.id, email: garde.appelant.email },
     urlRetourSucces: `${env.NEXT_PUBLIC_APP_URL}/${langue}/paiement/${commande.id}`,
     urlRetourAbandon: `${env.NEXT_PUBLIC_APP_URL}/${langue}/panier`,

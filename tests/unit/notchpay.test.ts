@@ -147,6 +147,7 @@ describe('l’ouverture d’un paiement', () => {
       orderId: 'cmd-42',
       montant: { montant: 1697, devise: 'XAF' },
       zone: 'afrique',
+      paysVerrouille: 'CM',
       client: { userId: 'u1', email: 'parent@example.test' },
       urlRetourSucces: 'http://localhost:3000/fr/paiement/cmd-42',
       urlRetourAbandon: 'http://localhost:3000/fr/panier',
@@ -178,6 +179,7 @@ describe('l’ouverture d’un paiement', () => {
       orderId: 'cmd-1',
       montant: { montant: 500, devise: 'XAF' },
       zone: 'afrique',
+      paysVerrouille: 'CM',
       client: { userId: 'u', email: 'a@b.test' },
       urlRetourSucces: 'x',
       urlRetourAbandon: 'y',
@@ -197,11 +199,89 @@ describe('l’ouverture d’un paiement', () => {
         orderId: 'cmd-1',
         montant: { montant: 0, devise: 'XAF' },
         zone: 'afrique',
+        paysVerrouille: 'CM',
         client: { userId: 'u', email: 'a@b.test' },
         urlRetourSucces: 'x',
         urlRetourAbandon: 'y',
       }),
     ).rejects.toThrow(/amount required/);
+  });
+});
+
+describe('le verrou du pays — la zone Afrique ne se paie que depuis l’Afrique', () => {
+  const OUVERTURE = {
+    orderId: 'cmd-7',
+    client: { userId: 'u', email: 'a@b.test' },
+    urlRetourSucces: 'x',
+    urlRetourAbandon: 'y',
+  };
+
+  function transportOk() {
+    return transportSimule({
+      statut: 201,
+      corps: { transaction: 't', authorization_url: 'https://pay.notchpay.co/t' },
+    });
+  }
+
+  it('verrouille le paiement sur le pays que porte la commande', async () => {
+    const { appels, transport } = transportOk();
+
+    await provider({ transport }).ouvrirCheckout({
+      ...OUVERTURE,
+      montant: { montant: 1500, devise: 'XAF' },
+      zone: 'afrique',
+      paysVerrouille: 'CM',
+    });
+
+    // Sans ce verrou, le tarif Afrique se réglerait avec une carte
+    // européenne : le pays déclaré ne serait qu'une affirmation.
+    expect(corpsEnvoye(appels[0])['locked_country']).toBe('CM');
+  });
+
+  it('REFUSE une commande en zone Afrique sans pays, sans rien envoyer', async () => {
+    const { appels, transport } = transportOk();
+
+    await expect(
+      provider({ transport }).ouvrirCheckout({
+        ...OUVERTURE,
+        montant: { montant: 1500, devise: 'XAF' },
+        zone: 'afrique',
+      }),
+    ).rejects.toThrow(/zone afrique/);
+    expect(appels).toHaveLength(0);
+  });
+
+  it('REFUSE un pays verrouillé qui ne mène pas à la zone de la commande', async () => {
+    const { appels, transport } = transportOk();
+
+    // Une commande à 1 500 FCFA dont le paiement s'ouvrirait « en France ».
+    await expect(
+      provider({ transport }).ouvrirCheckout({
+        ...OUVERTURE,
+        montant: { montant: 1500, devise: 'XAF' },
+        zone: 'afrique',
+        paysVerrouille: 'FR',
+      }),
+    ).rejects.toThrow(/n'y mène pas/);
+    expect(appels).toHaveLength(0);
+  });
+
+  it('ne verrouille AUCUN pays en zone internationale — la grille la plus chère', async () => {
+    const { appels, transport } = transportOk();
+
+    await provider({ transport }).ouvrirCheckout({
+      ...OUVERTURE,
+      montant: { montant: 499, devise: 'EUR' },
+      zone: 'international',
+    });
+
+    // Verrouiller « France » refuserait la carte belge d'un client français,
+    // sans empêcher aucun abus.
+    expect(corpsEnvoye(appels[0])).not.toHaveProperty('locked_country');
+  });
+
+  it('se déclare capable de verrouiller — c’est ce qui ouvre le choix du pays', () => {
+    expect(provider().verrouillePays).toBe(true);
   });
 });
 

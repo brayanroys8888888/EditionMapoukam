@@ -1190,6 +1190,10 @@
     "sansExpedition": "No postal address is required: these tales are files, there is nothing to ship.",
     "modifier": "Edit my basket",
     "payer": "Confirm and pay",
+    "paysTitre": "Country of your payment method",
+    "paysAide": "The price depends on the country of your payment method. Only a payment method from this country will be accepted at the next step.",
+    "paysAutre": "Another country",
+    "paysAppliquer": "Update the price",
     "videRedirection": "Your basket is empty."
   },
   "moyens": {

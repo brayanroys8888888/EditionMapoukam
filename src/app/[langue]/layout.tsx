@@ -14,6 +14,7 @@ import { Toaster } from '@/components/toast';
 import { SynchronisationPanier } from '@/components/panier/synchronisation';
 import { DefilementSousHero } from '@/components/v2/defilement-sous-hero';
 import { apercu } from '@/lib/orders/orders';
+import { paysDuVisiteur, zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import type { Utilisateur } from '@/domain/api/contract';
@@ -125,7 +126,12 @@ export default async function EnveloppeLangue({
   const panier = await (async () => {
     if (!appelant || !structureRefondue()) return { nombre: 0, affichage: null };
 
-    const vue = await apercu(appelant, { zoneAffichee: 'international' }).catch(() => null);
+    // Le pays de l'adresse IP, comme au récapitulatif avant tout choix : le
+    // montant de l'en-tête est celui que le récapitulatif montrera d'abord.
+    const vue = await apercu(appelant, {
+      zoneAffichee: zoneDuVisiteur(entetes),
+      paysDeclare: paysDuVisiteur(entetes),
+    }).catch(() => null);
     if (!vue || vue.total.lignes.length === 0) return { nombre: 0, affichage: null };
 
     const formater = formateur(await lireDevise(vue.total.devise));

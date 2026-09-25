@@ -1197,6 +1197,10 @@
     "sansExpedition": "Aucune adresse postale n'est demandée : ces contes sont des fichiers, il n'y a rien à expédier.",
     "modifier": "Modifier mon panier",
     "payer": "Confirmer et payer",
+    "paysTitre": "Pays de votre moyen de paiement",
+    "paysAide": "Le prix dépend du pays de votre moyen de paiement. Seul un moyen de paiement de ce pays sera accepté à l'étape suivante.",
+    "paysAutre": "Autre pays",
+    "paysAppliquer": "Mettre à jour le prix",
     "videRedirection": "Votre panier est vide."
   },
   "moyens": {

@@ -1227,6 +1227,7 @@ export type Database = {
           maj_le: string
           montant_total: number
           paye_le: string | null
+          pays_paiement: string | null
           prestataire: string
           promo_code_id: string | null
           reference_paiement: string | null
@@ -1242,6 +1243,7 @@ export type Database = {
           maj_le?: string
           montant_total: number
           paye_le?: string | null
+          pays_paiement?: string | null
           prestataire?: string
           promo_code_id?: string | null
           reference_paiement?: string | null
@@ -1257,6 +1259,7 @@ export type Database = {
           maj_le?: string
           montant_total?: number
           paye_le?: string | null
+          pays_paiement?: string | null
           prestataire?: string
           promo_code_id?: string | null
           reference_paiement?: string | null
@@ -2123,6 +2126,7 @@ export type Database = {
           age_max: number
           age_min: number
           auteur: string
+          couverture_jeton: string
           disponible_achat: boolean
           gratuit: boolean
           id: string
@@ -2254,6 +2258,7 @@ export type Database = {
         }
         Returns: {
           auteur: string
+          couverture_jeton: string
           disponible_achat: boolean
           gratuit: boolean
           id: string
@@ -2816,6 +2821,7 @@ export type Database = {
           p_devise: string
           p_lignes: Json
           p_montant_total: number
+          p_pays_paiement?: string
           p_promo_code_id: string
           p_remise: number
           p_user_id: string

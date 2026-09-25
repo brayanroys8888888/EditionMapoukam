@@ -8,6 +8,7 @@ import { apercu, creerCommande, type ApercuCommande } from '@/lib/orders/orders'
 import { ZONES } from '@/domain/orders/types';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { urlsCouverture } from '@/lib/storage/covers';
+import { paysDuVisiteur, zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 
 /**
  * Commandes — §4.2 F9, docs/PLAN.md D4.
@@ -39,13 +40,35 @@ import { urlsCouverture } from '@/lib/storage/covers';
  * │ schéma. Sans lui, un acheteur européen réclamerait le tarif Afrique et   │
  * │ paierait 1 500 FCFA au lieu de 4,99 €.                                  │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ `pays_paiement` N'EST PAS UNE ZONE, ET IL NE SUFFIT PAS À EN FIXER UNE. │
+ * │                                                                          │
+ * │ C'est le pays que le client DÉCLARE au récapitulatif. `orders.ts` ne     │
+ * │ l'honore que face à un prestataire qui `verrouillePays` — le paiement    │
+ * │ est alors ouvert verrouillé sur ce pays, et un moyen de paiement d'un    │
+ * │ autre pays est refusé par le prestataire. Ailleurs, il est ignoré.       │
+ * │                                                                          │
+ * │ Absent, il est lu dans l'en-tête de géolocalisation de la requête — le   │
+ * │ tiroir du panier appelle cette route depuis le navigateur. Vide ou nul,  │
+ * │ il veut dire « autre pays » : aucun verrou, grille internationale.       │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 const commandeSchema = z.object({
-  /** Zone servie à l'affichage — provisoire, sans effet financier. */
-  zone_affichee: z.enum(ZONES).default('international'),
+  /**
+   * Zone servie à l'affichage — provisoire, sans effet financier. Absente,
+   * c'est celle du visiteur, lue dans l'en-tête de géolocalisation.
+   */
+  zone_affichee: z.enum(ZONES).optional(),
   code_promo: z.string().trim().min(3).max(32).optional(),
   total_confirme: z.int().nonnegative().optional(),
+  pays_paiement: z.string().trim().max(8).nullable().optional(),
 });
+
+/** Le pays déclaré, ou à défaut celui de la requête. */
+function paysDeclare(request: Request, brut: string | null | undefined): string | null {
+  return brut === undefined ? paysDuVisiteur(request.headers) : brut;
+}
 
 /**
  * Titre et slug de chaque (livre, langue) commandé.
@@ -196,6 +219,7 @@ async function corpsApercu(vue: ApercuCommande): Promise<Record<string, unknown>
     // comprendre pourquoi la remise attendue n'apparaît pas.
     refus_promo: vue.refusPromo,
     zone_divergente: vue.zoneDivergente,
+    pays_paiement: vue.paysPaiement,
   };
 }
 
@@ -207,9 +231,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!corps.ok) return corps.response;
 
   const resultat = await creerCommande(garde.appelant, {
-    zoneAffichee: corps.data.zone_affichee,
+    zoneAffichee: corps.data.zone_affichee ?? zoneDuVisiteur(request.headers),
     codePromo: corps.data.code_promo ?? null,
     totalConfirme: corps.data.total_confirme ?? null,
+    paysDeclare: paysDeclare(request, corps.data.pays_paiement),
   });
 
   if (!resultat.ok) {
@@ -308,8 +333,9 @@ export async function PUT(request: Request): Promise<Response> {
   if (!corps.ok) return corps.response;
 
   const vue = await apercu(garde.appelant, {
-    zoneAffichee: corps.data.zone_affichee,
+    zoneAffichee: corps.data.zone_affichee ?? zoneDuVisiteur(request.headers),
     codePromo: corps.data.code_promo ?? null,
+    paysDeclare: paysDeclare(request, corps.data.pays_paiement),
   });
 
   if (!vue) {

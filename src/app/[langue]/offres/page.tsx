@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { headers } from 'next/headers';
 
 import { langueValide, traduire } from '@/i18n';
 import { lireOffres } from '@/lib/offers/service';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { Erreur } from '@/components/etats';
 import { OffresV3 } from '@/components/v2/offres-v3';
 import { estV3 } from '@/design/version';
@@ -74,10 +76,10 @@ export default async function PageOffres({ params }: Parametres) {
 
   let offres;
   try {
-    // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
-    // paiement, depuis le pays réel du moyen de paiement, et elle seule est
-    // enregistrée sur la commande.
-    offres = await lireOffres('international');
+    // Zone d'AFFICHAGE : celle du pays du visiteur, sans effet financier. La
+    // zone d'encaissement est déterminée au paiement, par le pays du moyen de
+    // paiement, et elle seule est enregistrée sur la commande.
+    offres = await lireOffres(zoneDuVisiteur(await headers()));
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;
   }

@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { langueValide, traduire } from '@/i18n';
 import { catalogQuerySchema, trancheAgeCoherente } from '@/domain/catalog/schemas';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Pagination } from '@/components/base';
 import { Erreur } from '@/components/etats';
@@ -86,14 +87,18 @@ export default async function PageCatalogue({ params, searchParams }: Parametres
   // La langue d'INTERFACE fixe par défaut la langue du CONTENU listé, sans la
   // lier définitivement : `?langue=` reste possible, et les deux réglages
   // demeurent distincts (voir l'encadré de `src/i18n/index.ts`).
-  const analyse = catalogQuerySchema.safeParse({ langue, ...brut });
+  // Zone d'AFFICHAGE par défaut : celle du pays du visiteur, sans effet
+  // financier. `?zone=` reste possible (D4 point 5 : « modifiable par
+  // l'utilisateur ») ; le prix payé se fixe au récapitulatif.
+  const zone = zoneDuVisiteur(await headers());
+  const analyse = catalogQuerySchema.safeParse({ langue, zone, ...brut });
 
   // Une URL malformée n'est pas une panne : on retombe sur le catalogue par
   // défaut plutôt que d'opposer une erreur à qui a simplement suivi un vieux
   // lien. Le catalogue est la vitrine — elle doit s'afficher.
   const query = analyse.success
     ? analyse.data
-    : catalogQuerySchema.parse({ langue });
+    : catalogQuerySchema.parse({ langue, zone });
 
   const parametres = trancheAgeCoherente(query)
     ? query

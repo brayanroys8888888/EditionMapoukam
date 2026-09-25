@@ -86,9 +86,10 @@ export function TiroirPanier({
     const reponse = await fetch('/api/orders', {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
-      // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
-      // paiement, depuis le pays réel du moyen de paiement.
-      body: JSON.stringify({ zone_affichee: 'international' }),
+      // Aucune zone ni aucun pays : la route lit ceux du visiteur dans
+      // l'en-tête de géolocalisation de CETTE requête, qui part du navigateur.
+      // Le pays définitif se choisit au récapitulatif.
+      body: JSON.stringify({}),
       cache: 'no-store',
     }).catch(() => null);
 

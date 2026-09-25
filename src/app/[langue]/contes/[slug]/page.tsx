@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { LANGUES_INTERFACE, langueValide, traduire } from '@/i18n';
 import { ficheQuerySchema } from '@/domain/catalog/schemas';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { lireFiche } from '@/lib/catalog/repository';
 import { lireAvis } from '@/lib/catalog/avis';
 import { lirePlanches } from '@/lib/content/planches';
@@ -34,9 +35,11 @@ async function charger(langueBrute: string, slug: string) {
   const langue = langueValide(langueBrute);
   if (!SLUG_VALIDE.test(slug)) return null;
 
-  const query = ficheQuerySchema.parse({ langue });
+  // Zone d'AFFICHAGE : celle du pays du visiteur, sans effet financier.
+  const entetes = await headers();
+  const query = ficheQuerySchema.parse({ langue, zone: zoneDuVisiteur(entetes) });
   const appelant = await identifierAppelantAvecCookies(
-    new Request('http://interne/', { headers: await headers() }),
+    new Request('http://interne/', { headers: entetes }),
   );
 
   const fiche = await lireFiche(appelant?.id ?? null, slug, query);

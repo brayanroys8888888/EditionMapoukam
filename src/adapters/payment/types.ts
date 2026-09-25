@@ -30,6 +30,15 @@ export interface DemandeCheckout {
   client: ClientPaiement;
   urlRetourSucces: string;
   urlRetourAbandon: string;
+  /**
+   * Pays auquel le paiement doit être VERROUILLÉ, lu sur la commande.
+   *
+   * Renseigné seulement face à un prestataire qui `verrouillePays`. Le
+   * prestataire refuse alors tout moyen de paiement d'un autre pays : c'est ce
+   * qui fait du pays déclaré au récapitulatif le pays du moyen de paiement
+   * (§3.3), et non une simple déclaration.
+   */
+  paysVerrouille?: string | null;
   /** Repris tel quel dans les événements qui suivront. */
   metadonnees?: Record<string, string>;
 }
@@ -223,6 +232,26 @@ export interface PaymentProvider {
    * remise.
    */
   paysDuMoyenDePaiement(client: ClientPaiement): Promise<string | null>;
+
+  /**
+   * Le prestataire sait-il VERROUILLER un paiement sur un pays ?
+   *
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ L'AUTRE MOYEN DE CONNAÎTRE LE PAYS DU MOYEN DE PAIEMENT.              │
+   * │                                                                        │
+   * │ Un prestataire qui ne révèle le pays qu'APRÈS le règlement — Notch Pay │
+   * │ — ne peut pas répondre à `paysDuMoyenDePaiement`. S'il sait en        │
+   * │ revanche restreindre un paiement à un pays, le client DÉCLARE son pays │
+   * │ au récapitulatif, la zone s'en déduit, et le paiement est ouvert       │
+   * │ verrouillé sur ce pays : un moyen d'un autre pays est refusé par le    │
+   * │ prestataire lui-même.                                                  │
+   * │                                                                        │
+   * │ Face à un prestataire qui ne verrouille pas, le pays déclaré est       │
+   * │ IGNORÉ : sans verrou, il ne serait qu'une affirmation du client, et    │
+   * │ un Européen se déclarerait camerounais pour payer 1 500 FCFA.          │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  readonly verrouillePays: boolean;
 
   ouvrirCheckout(demande: DemandeCheckout): Promise<SessionCheckout>;
 

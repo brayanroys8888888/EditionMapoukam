@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 import { langueValide, traduire } from '@/i18n';
 import { catalogQuerySchema } from '@/domain/catalog/schemas';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { lireOffres } from '@/lib/offers/service';
 import { lireTemoignages } from '@/lib/site/temoignages';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
@@ -76,8 +77,12 @@ const NOMBRE_THEMES_VITRINE = 5;
 export default async function Accueil({ params }: { params: Promise<{ langue: string }> }) {
   const langue = langueValide((await params).langue);
 
+  const entetes = await headers();
+  // Zone d'AFFICHAGE : celle du pays du visiteur, sans effet financier. Le
+  // prix payé est fixé au récapitulatif, par le pays du moyen de paiement.
+  const zone = zoneDuVisiteur(entetes);
   const appelant = await identifierAppelantAvecCookies(
-    new Request('http://interne/', { headers: await headers() }),
+    new Request('http://interne/', { headers: entetes }),
   );
 
   // ┌────────────────────────────────────────────────────────────────────────┐
@@ -99,12 +104,11 @@ export default async function Accueil({ params }: { params: Promise<{ langue: st
         tri: 'nouveautes',
         taille: NOMBRE_NOUVEAUTES,
         type: SUPPORT_NOUVEAUTES,
+        zone,
       }),
     ).catch(() => null),
     lireFacettes(langue).catch(() => null),
-    // Zone d'AFFICHAGE seulement. La zone d'encaissement est déterminée au
-    // paiement, depuis le pays réel du moyen de paiement.
-    lireOffres('international').catch(() => null),
+    lireOffres(zone).catch(() => null),
     // `lireTemoignages` ne lève jamais : elle rend un tableau vide, et la
     // section disparaît d'elle-même.
     lireTemoignages(langue),

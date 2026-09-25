@@ -5,7 +5,7 @@ import { calculerTotal } from '@/domain/orders/total';
 import type { CodePromo, RefusPromo } from '@/domain/orders/promo';
 import type { LigneRefusee, TotalCommande, Zone } from '@/domain/orders/types';
 import { titresDuPanier, viderPanier } from './cart';
-import { zonePourPays } from '@/domain/orders/zones';
+import { normaliserPays, zonePourPays } from '@/domain/orders/zones';
 import { getPaymentProvider } from '@/adapters/registry';
 import { logger } from '@/lib/logger';
 
@@ -54,6 +54,13 @@ export interface ApercuCommande {
    * avant confirmation. Aucun montant n'est jamais modifié silencieusement. »
    */
   zoneDivergente: boolean;
+  /**
+   * Pays auquel le paiement sera verrouillé, ou `null`.
+   *
+   * Écrit sur la commande avec le montant, et relu par le tunnel : c'est lui
+   * qui rend le tarif de zone opposable chez le prestataire.
+   */
+  paysPaiement: string | null;
 }
 
 export type RefusCommande = 'panier_vide' | 'confirmation_requise';
@@ -99,23 +106,55 @@ export interface DemandeApercu {
   /** Zone servie à l'affichage — provisoire, sans effet financier (D4 point 5). */
   zoneAffichee: Zone;
   codePromo?: string | null;
+  /**
+   * Pays que le client DÉCLARE au récapitulatif — prérempli depuis son
+   * adresse IP, modifiable.
+   *
+   * N'a d'effet que face à un prestataire qui `verrouillePays` : voir
+   * `zoneEncaissementDe`. Ailleurs, il est ignoré.
+   */
+  paysDeclare?: string | null;
 }
 
 /**
- * Zone d'encaissement de l'appelant.
+ * Zone d'encaissement de l'appelant, et le pays qui la fonde.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ DEMANDÉE AU PRESTATAIRE, JAMAIS REÇUE DU CLIENT.                        │
+ * │ LE PAYS DU MOYEN DE PAIEMENT, PAR L'UNE DE DEUX VOIES.                  │
  * │                                                                          │
  * │ §3.3 : « déterminée par le pays de paiement (et non par l'adresse IP,   │
- * │ plus facilement contournable) ». Un pays inconnu retombe sur             │
- * │ `international`, la grille la plus chère : une donnée manquante ne doit  │
- * │ jamais valoir remise.                                                    │
+ * │ plus facilement contournable) ».                                         │
+ * │                                                                          │
+ * │  · Le prestataire CONNAÎT le pays : on le lui demande                    │
+ * │    (`paysDuMoyenDePaiement`), et une déclaration du client est ignorée.  │
+ * │  · Le prestataire ne le connaît qu'après coup mais sait VERROUILLER un   │
+ * │    paiement sur un pays (Notch Pay) : le pays déclaré fixe la zone, et   │
+ * │    il est rendu pour être écrit sur la commande — le tunnel l'impose     │
+ * │    ensuite au prestataire, qui refuse tout moyen d'un autre pays.        │
+ * │                                                                          │
+ * │ Un pays inconnu retombe sur `international`, la grille la plus chère :  │
+ * │ une donnée manquante ne doit jamais valoir remise.                       │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
-async function zoneEncaissementDe(userId: string, email: string): Promise<Zone> {
-  const pays = await getPaymentProvider().paysDuMoyenDePaiement({ userId, email });
-  return zonePourPays(pays);
+async function zoneEncaissementDe(
+  userId: string,
+  email: string,
+  paysDeclare: string | null | undefined,
+): Promise<{ zone: Zone; paysVerrouille: string | null }> {
+  const prestataire = getPaymentProvider();
+
+  if (prestataire.verrouillePays) {
+    const pays = normaliserPays(paysDeclare);
+    const zone = zonePourPays(pays);
+    // Verrouiller n'a de sens que pour la grille RÉDUITE. La grille
+    // internationale est déjà la plus chère : y verrouiller « France »
+    // n'empêcherait aucun abus, et refuserait la carte belge d'un client
+    // français.
+    return { zone, paysVerrouille: zone === 'afrique' ? pays : null };
+  }
+
+  const pays = await prestataire.paysDuMoyenDePaiement({ userId, email });
+  return { zone: zonePourPays(pays), paysVerrouille: null };
 }
 
 /**
@@ -133,9 +172,13 @@ export async function apercu(
   const client = options.client ?? createServiceClient();
   const clock = options.clock ?? getClock();
 
-  const zoneEncaissement = await zoneEncaissementDe(appelant.id, appelant.email);
+  const encaissement = await zoneEncaissementDe(
+    appelant.id,
+    appelant.email,
+    demande.paysDeclare,
+  );
   const titres = await titresDuPanier(appelant.id, { client });
-  const tarification = tarifer(titres, zoneEncaissement);
+  const tarification = tarifer(titres, encaissement.zone);
 
   const promo = await lirePromo(client, demande.codePromo ?? null);
   const calcul = calculerTotal(tarification.lignes, tarification.zone, {
@@ -157,6 +200,7 @@ export async function apercu(
     // technique : un panier affiché en zone afrique et encaissé en zone
     // internationale doit être reconfirmé, même si le repli l'aurait imposé.
     zoneDivergente: demande.zoneAffichee !== tarification.zone,
+    paysPaiement: encaissement.paysVerrouille,
   };
 }
 
@@ -203,6 +247,7 @@ export async function creerCommande(
     p_montant_total: chiffrage.total.total,
     p_remise: chiffrage.total.remise,
     p_promo_code_id: chiffrage.promoRetenuId,
+    p_pays_paiement: chiffrage.paysPaiement,
     p_lignes: chiffrage.total.lignes.map((ligne) => ({
       book_id: ligne.bookId,
       langue: ligne.langue,
@@ -224,6 +269,7 @@ export async function creerCommande(
     montant: chiffrage.total.total,
     devise: chiffrage.total.devise,
     zone: chiffrage.total.zone,
+    paysPaiement: chiffrage.paysPaiement,
     nbLignes: chiffrage.total.lignes.length,
   });
 

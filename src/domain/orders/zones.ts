@@ -54,6 +54,21 @@ export function zonePourPays(codePays: string | null | undefined): Zone {
   return PAYS_ZONE_AFRIQUE.has(codePays.trim().toUpperCase()) ? 'afrique' : 'international';
 }
 
+/**
+ * Code pays normalisé (ISO 3166-1 alpha-2), ou `null`.
+ *
+ * Les en-têtes de géolocalisation et les formulaires rendent du texte libre :
+ * `cm`, ` CM `, `XX` (pays inconnu chez Cloudflare), une chaîne vide. Seules
+ * deux lettres majuscules passent ; tout le reste vaut « pays inconnu », qui
+ * retombe sur la grille internationale dans `zonePourPays`.
+ */
+export function normaliserPays(brut: unknown): string | null {
+  if (typeof brut !== 'string') return null;
+  const code = brut.trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(code) || code === 'XX') return null;
+  return code;
+}
+
 /** Les pays de la zone Afrique, pour l'affichage et les tests. */
 export function paysZoneAfrique(): readonly string[] {
   return [...PAYS_ZONE_AFRIQUE].sort();

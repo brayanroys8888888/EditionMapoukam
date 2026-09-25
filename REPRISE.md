@@ -5,6 +5,84 @@
 
 ---
 
+## 0 terdecies. Le prix selon le pays — l'affichage par l'IP, le paiement verrouillé — 25 septembre 2026
+
+> **Fait, porte verte : 2005 tests, 128 fichiers.** Commit non poussé.
+> **Migration `0088` à appliquer en production AVANT de déployer le code.**
+
+### Ce qui était signalé
+
+« Je suis au Cameroun, le prix affiché est celui que j'ai mis pour l'Europe. »
+Deux défauts distincts :
+
+1. **À l'affichage**, la zone était `'international'` écrite en dur partout
+   (en-tête, panier, offres, accueil), et le catalogue retombait sur le même
+   défaut. D4 point 5 prévoyait une zone d'affichage « depuis l'adresse IP ou
+   un choix utilisateur » : jamais construite.
+2. **À l'encaissement**, Notch Pay ne révèle le pays du moyen de paiement
+   qu'après le règlement : `paysDuMoyenDePaiement` rend `null`, donc la
+   grille internationale pour tous. `docs/NOTCHPAY.md` §4.2 le laissait « à
+   arbitrer ».
+
+### La décision du propriétaire (solution « 1 »)
+
+L'IP **préremplit**, le pays **déclaré** fixe la zone, Notch Pay
+**verrouille**. §3.3 tient sans modification : c'est toujours le pays du
+moyen de paiement qui décide, puisque le prestataire refuse un moyen d'un
+autre pays. Écartée : l'IP qui déciderait seule du prix payé (contournable par
+VPN, contraire à §3.3).
+
+| Étape | Où | Ce qui se passe |
+| --- | --- | --- |
+| Affichage | `src/lib/http/pays-visiteur.ts` | `x-vercel-ip-country` → `zonePourPays` ; absent (local, VPS) → `international` |
+| Récapitulatif | `src/components/tunnel/choix-pays.tsx` | pays prérempli, liste = pays de la grille Afrique + « Autre pays » ; `?pays=` vide = autre |
+| Commande | `orders.ts`, `create_order` (0088) | zone déduite du pays déclaré, pays écrit sur `orders.pays_paiement` **avec le montant** |
+| Paiement | `api/checkout` → Notch Pay | pays relu sur la **commande**, envoyé en `locked_country` |
+
+Le contrat `PaymentProvider` gagne `verrouillePays` (Notch Pay : oui ; faux
+prestataire : non, il connaît le pays et un pays déclaré est ignoré) et
+`DemandeCheckout.paysVerrouille`.
+
+### Les trois garde-fous, chacun testé
+
+- **Le pays vit sur la commande, jamais dans la requête de paiement.** Sinon :
+  commande à 1 500 FCFA « depuis le Cameroun », paiement ouvert « en
+  France », carte européenne. `commande-pays-verrouille.test.ts` glisse un
+  pays dans `/api/checkout` et vérifie qu'il est ignoré.
+- **Verrou pour la zone Afrique seulement.** Verrouiller « France »
+  refuserait la carte belge d'un client français sans empêcher aucun abus.
+- **L'adaptateur refuse d'ouvrir** une commande Afrique sans pays, ou avec un
+  pays qui n'y mène pas (`notchpay.test.ts`).
+
+### Les pièges rencontrés
+
+- **Une Server Action qui appelle sa propre API porte l'IP de l'HÉBERGEUR.**
+  `commander` fait un `fetch` vers `/api/orders` : l'en-tête de
+  géolocalisation y serait celui de Vercel, pas du client. L'action transmet
+  donc `zone_affichee` et `pays_paiement` explicitement ; la route ne lit
+  l'en-tête que si le champ est ABSENT (le tiroir du panier, qui appelle
+  depuis le navigateur).
+- **`'afrique' : 'international'` est une chaîne interdite** hors de
+  `zones.ts` (`zone-encaissement-architecture`), même dans un ternaire de
+  validation. Écrire `ZONES.find(...) ?? ZONES[0]`.
+- **`npm run db:types` avec Docker arrêté VIDE `database.types.ts`** (une
+  ligne, 3414 supprimées) sans échouer. Restauré par `git checkout`, puis
+  régénéré après `supabase start`. Toujours vérifier `docker ps` avant.
+- `sed -i` sous Git Bash convertit un fichier CRLF en LF : le diff couvre
+  alors tout le fichier.
+
+### Reste à éprouver — aucun test ne peut le faire d'ici
+
+Un **vrai paiement de test** verrouillé sur `CM`, puis une tentative avec un
+moyen de paiement étranger. Notch Pay décrit `locked_country` en une ligne et
+ne rend pas le pays employé. Si le verrou laissait passer une carte
+étrangère : ajouter `locked_channel` (Mobile Money), dont les identifiants ne
+sont pas publiés. Sur le VPS, poser le même en-tête par un module GeoIP de
+nginx, sinon tout visiteur verra la grille internationale jusqu'au
+récapitulatif.
+
+---
+
 ## 0 duodecies. Un conte de 25 Mo refusé en ligne — le dépôt depuis le poste — 24 septembre 2026
 
 > **Résolu.** « RAISSATA FALL » (export Canva, 33 pages, 24,9 Mo) est en base

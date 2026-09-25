@@ -16,6 +16,10 @@ import {
 import { estV3 } from '@/design/version';
 import ecran from '@/components/ecran/ecran.module.css';
 import { commander, retirerDuPanier } from '../actions';
+import { getPaymentProvider } from '@/adapters/registry';
+import { normaliserPays } from '@/domain/orders/zones';
+import { paysDuVisiteur, zoneDuVisiteur } from '@/lib/http/pays-visiteur';
+import { ChoixPays } from '@/components/tunnel/choix-pays';
 
 /**
  * RÉCAPITULATIF — le dernier écran avant qu'une commande existe.
@@ -64,17 +68,44 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
   const langue = langueValide((await params).langue);
   const requete = await searchParams;
 
+  const entetes = await headers();
   const appelant = await identifierAppelantAvecCookies(
-    new Request('http://interne/', { headers: await headers() }),
+    new Request('http://interne/', { headers: entetes }),
   );
   if (!appelant) redirect(`/${langue}/connexion`);
 
   const codePromo = premier(requete['promo']) ?? null;
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE PAYS DU MOYEN DE PAIEMENT SE CHOISIT ICI — S'IL PEUT ÊTRE        │
+   * │ VERROUILLÉ.                                                         │
+   * │                                                                      │
+   * │ Face à un prestataire qui `verrouillePays` (Notch Pay), le client    │
+   * │ déclare son pays, prérempli depuis son adresse IP ; le total suit,   │
+   * │ et le paiement sera ouvert verrouillé sur ce pays. `?pays=` vide     │
+   * │ veut dire « autre pays » — il ne faut donc pas retomber sur l'IP.    │
+   * │                                                                      │
+   * │ Face au faux prestataire, qui connaît le pays lui-même, aucun choix  │
+   * │ n'est proposé : il serait ignoré.                                    │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const verrouille = getPaymentProvider().verrouillePays;
+  const paysRequete = requete['pays'];
+  const pays = verrouille
+    ? paysRequete !== undefined
+      ? normaliserPays(premier(paysRequete))
+      : paysDuVisiteur(entetes)
+    : null;
+
   let vue;
   let formater;
   try {
-    vue = await apercu(appelant, { zoneAffichee: 'international', codePromo });
+    vue = await apercu(appelant, {
+      zoneAffichee: zoneDuVisiteur(entetes),
+      codePromo,
+      paysDeclare: pays,
+    });
     if (vue) formater = formateur(await lireDevise(vue.total.devise));
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;
@@ -88,6 +119,23 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
   const afficher = formater ?? ((montant: number) => String(montant));
   const erreur = premier(requete['erreur']);
   const aConfirmer = premier(requete['a_confirmer']);
+
+  // Ce que le formulaire de commande transmet du pays. Avec le verrou, la zone
+  // AFFICHÉE est celle du pays choisi sur cet écran même : le total montré est
+  // déjà le bon, il n'y a rien à faire reconfirmer. Sans verrou, c'est celle
+  // de l'adresse IP, et une divergence avec le prestataire reste confirmée.
+  const champsPays = (
+    <>
+      <input
+        type="hidden"
+        name="zone_affichee"
+        value={verrouille ? vue.total.zone : zoneDuVisiteur(entetes)}
+      />
+      {verrouille ? (
+        <input type="hidden" name="pays_paiement" value={vue.paysPaiement ?? ''} />
+      ) : null}
+    </>
+  );
 
   /*
    * Sous Organic, l'étape 2 prend la coquille du règlement — même fil, mêmes
@@ -137,6 +185,7 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
 
             <form action={commander.bind(null, langue)}>
               {codePromo ? <input type="hidden" name="code_promo" value={codePromo} /> : null}
+              {champsPays}
 
               {/*
                 `total_confirme` ne sert QU'À COMPARER, jamais à facturer : un
@@ -181,11 +230,30 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
               }
             />
 
+            {/* ── Pays du moyen de paiement ───────────────────────────── */}
+            {verrouille ? (
+              <CarteTunnelV3
+                titre={traduire(langue, 'recapitulatif.paysTitre')}
+                enfants={
+                  <ChoixPays
+                    langue={langue}
+                    action={`/${langue}/panier/confirmation`}
+                    pays={pays}
+                    codePromo={codePromo}
+                    classeSaisie={t3.saisie}
+                    classeBouton={t3.boutonSecondaire}
+                    classeAide={t3.recapMention}
+                  />
+                }
+              />
+            ) : null}
+
             {/* ── Code promo ──────────────────────────────────────────── */}
             <CarteTunnelV3
               titre={traduire(langue, 'panier.codePromo')}
               enfants={
                 <form method="get" action={`/${langue}/panier/confirmation`}>
+                  {verrouille ? <input type="hidden" name="pays" value={pays ?? ''} /> : null}
                   <input
                     className={t3.saisie}
                     id="code-promo"
@@ -268,6 +336,22 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
         ))}
       </ul>
 
+      {/* ── Pays du moyen de paiement ────────────────────────────────────── */}
+      {verrouille ? (
+        <section className={`${ecran.panneau} ${ecran.section}`}>
+          <h2 className={ecran.panneauTitre}>{traduire(langue, 'recapitulatif.paysTitre')}</h2>
+          <ChoixPays
+            langue={langue}
+            action={`/${langue}/panier/confirmation`}
+            pays={pays}
+            codePromo={codePromo}
+            classeSaisie={ecran.saisie}
+            classeBouton={ecran.boutonSecondaire}
+            classeAide={ecran.intro}
+          />
+        </section>
+      ) : null}
+
       {/* ── Totaux ───────────────────────────────────────────────────────── */}
       <dl className={ecran.totaux}>
         <div className={ecran.totalLigne}>
@@ -329,6 +413,7 @@ export default async function PageConfirmationPanier({ params, searchParams }: P
       <div className={tunnel.actions}>
         <form action={commander.bind(null, langue)}>
           {codePromo ? <input type="hidden" name="code_promo" value={codePromo} /> : null}
+          {champsPays}
 
           {/*
             `total_confirme` ne sert QU'À COMPARER, jamais à facturer : un total

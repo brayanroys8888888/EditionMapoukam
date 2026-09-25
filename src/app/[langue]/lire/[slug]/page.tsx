@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 
 import { langueValide, traduire } from '@/i18n';
 import { ficheQuerySchema } from '@/domain/catalog/schemas';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { lireFiche } from '@/lib/catalog/repository';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Lecteur } from '@/components/lecteur';
@@ -51,14 +52,16 @@ export default async function PageLecture({ params, searchParams }: Parametres) 
 
   if (!SLUG_VALIDE.test(slug)) notFound();
 
+  const entetes = await headers();
   const appelant = await identifierAppelantAvecCookies(
-    new Request('http://interne/', { headers: await headers() }),
+    new Request('http://interne/', { headers: entetes }),
   );
 
   const fiche = await lireFiche(
     appelant?.id ?? null,
     slug,
-    ficheQuerySchema.parse({ langue }),
+    // Zone d'AFFICHAGE : celle du pays du visiteur, sans effet financier.
+    ficheQuerySchema.parse({ langue, zone: zoneDuVisiteur(entetes) }),
   ).catch(() => null);
 
   if (!fiche) notFound();

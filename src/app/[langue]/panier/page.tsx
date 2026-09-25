@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
 import { apercu } from '@/lib/orders/orders';
+import { paysDuVisiteur, zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { Erreur } from '@/components/etats';
@@ -49,8 +50,9 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
   const langue = langueValide((await params).langue);
   const requete = await searchParams;
 
+  const entetes = await headers();
   const appelant = await identifierAppelantAvecCookies(
-    new Request('http://interne/', { headers: await headers() }),
+    new Request('http://interne/', { headers: entetes }),
   );
   if (!appelant) redirect(`/${langue}/connexion`);
 
@@ -60,7 +62,11 @@ export default async function PagePanier({ params, searchParams }: Parametres) {
   let vue;
   let formater;
   try {
-    vue = await apercu(appelant, { zoneAffichee: 'international', codePromo });
+    vue = await apercu(appelant, {
+      zoneAffichee: zoneDuVisiteur(entetes),
+      codePromo,
+      paysDeclare: paysDuVisiteur(entetes),
+    });
     if (vue) formater = formateur(await lireDevise(vue.total.devise));
   } catch {
     return <Erreur langue={langue} code="erreur_interne" />;

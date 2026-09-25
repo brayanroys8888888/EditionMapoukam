@@ -5,6 +5,7 @@ import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { catalogQuerySchema, trancheAgeCoherente } from '@/domain/catalog/schemas';
 import type { EntreeCatalogue, TypeDocument } from '@/domain/catalog/types';
 import { lireFacettes, listerCatalogue } from '@/lib/catalog/repository';
+import { zoneDuVisiteur } from '@/lib/http/pays-visiteur';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Pagination } from '@/components/base';
 import { Erreur } from '@/components/etats';
@@ -144,11 +145,15 @@ export async function Rayon({
   const brut = { ...requete };
   delete brut['type'];
 
-  const analyse = catalogQuerySchema.safeParse({ langue, ...brut, type });
+  // Zone d'AFFICHAGE par défaut : celle du pays du visiteur, sans effet
+  // financier. `?zone=` reste possible (D4 point 5 : « modifiable par
+  // l'utilisateur ») ; le prix payé se fixe au récapitulatif.
+  const zone = zoneDuVisiteur(await headers());
+  const analyse = catalogQuerySchema.safeParse({ langue, zone, ...brut, type });
 
   // Une URL malformée n'est pas une panne : on retombe sur le rayon par défaut
   // plutôt que d'opposer une erreur à qui a simplement suivi un vieux lien.
-  const query = analyse.success ? analyse.data : catalogQuerySchema.parse({ langue, type });
+  const query = analyse.success ? analyse.data : catalogQuerySchema.parse({ langue, zone, type });
 
   const parametres = trancheAgeCoherente(query)
     ? query

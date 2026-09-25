@@ -8,6 +8,7 @@ import { getServerEnv } from '@/lib/config/env';
 import { estMoyenPaiement } from '@/domain/payments/moyens';
 import { verifierCoordonnees } from '@/lib/tunnel/coordonnees';
 import { getPaymentProvider } from '@/adapters/registry';
+import { ZONES } from '@/domain/orders/types';
 
 /**
  * ACTIONS DU TUNNEL D'ACHAT.
@@ -152,9 +153,15 @@ export async function commander(langueBrute: string, donnees: FormData): Promise
 
   const promo = donnees.get('code_promo');
   const confirme = donnees.get('total_confirme');
+  const zoneAffichee = donnees.get('zone_affichee');
+  const pays = donnees.get('pays_paiement');
 
   const reponse = await appeler('/api/orders', 'POST', {
-    zone_affichee: 'international',
+    // TOUJOURS explicites : cette requête part du SERVEUR, et l'en-tête de
+    // géolocalisation qu'elle porterait serait celui de l'hébergeur, pas
+    // celui du client. La route ne doit rien avoir à deviner.
+    zone_affichee: ZONES.find((zone) => zone === zoneAffichee) ?? ZONES[0],
+    pays_paiement: typeof pays === 'string' ? pays : null,
     ...(typeof promo === 'string' && promo.trim() ? { code_promo: promo.trim() } : {}),
     ...(typeof confirme === 'string' && confirme ? { total_confirme: Number(confirme) } : {}),
   });
@@ -164,6 +171,9 @@ export async function commander(langueBrute: string, donnees: FormData): Promise
   if (reponse.statut !== 201) {
     const parametres = new URLSearchParams({ erreur: codeErreur(reponse.corps) });
     if (typeof promo === 'string' && promo.trim()) parametres.set('promo', promo.trim());
+    // Le pays choisi survit à l'aller-retour : sinon le récapitulatif
+    // retomberait sur l'adresse IP, et le total changerait sous les yeux.
+    if (typeof pays === 'string') parametres.set('pays', pays);
 
     const total = reponse.corps?.['total'];
     if (typeof total === 'number') parametres.set('a_confirmer', String(total));

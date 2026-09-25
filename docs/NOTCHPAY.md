@@ -151,17 +151,53 @@ En attendant, **les achats à l'unité fonctionnent entièrement**, et
 l'abonnement reste servi par le faux prestataire tant que
 `PAYMENT_PROVIDER=fake`.
 
-### 4.2 La zone d'encaissement
+### 4.2 La zone d'encaissement — ARBITRÉ le 25 septembre 2026
 
 §3.3 : la zone vient du **pays du moyen de paiement**, jamais de l'adresse IP.
-Notch Pay ne le révèle qu'**après** le règlement.
-`paysDuMoyenDePaiement` rend donc `null`, et l'appelant retombe sur la zone
-**internationale** — la plus chère. C'est ce que l'interface prescrit : « une
-donnée manquante ne doit jamais valoir remise. »
+Notch Pay ne le révèle qu'**après** le règlement : `paysDuMoyenDePaiement`
+rend toujours `null`.
 
-Conséquence pratique : un client camerounais se voit proposer le tarif
-international. À reprendre le jour où l'on saura lire le pays avant le paiement
-— `locked_country` à l'ouverture est la piste.
+**Jusqu'au 25 septembre 2026, un client camerounais payait donc le tarif
+international.** Décision du propriétaire : le pays se **déclare**, et le
+paiement se **verrouille**.
+
+1. **Affichage** — le catalogue, les fiches, les offres et l'en-tête montrent
+   la grille du pays du visiteur, lu dans `x-vercel-ip-country`
+   (`src/lib/http/pays-visiteur.ts`). Sans effet financier (D4 point 5).
+2. **Récapitulatif** — le client choisit le pays de son moyen de paiement,
+   **prérempli** depuis son adresse IP : les pays de la grille Afrique, ou
+   « Autre pays ». Le total suit.
+3. **Commande** — `zonePourPays(pays déclaré)` fixe la zone, et le pays est
+   écrit sur la commande **avec le montant** (`orders.pays_paiement`,
+   migration `0088`).
+4. **Paiement** — `POST /api/checkout` relit ce pays sur la **commande** et
+   ouvre le paiement avec `locked_country`. Notch Pay refuse alors tout
+   moyen de paiement d'un autre pays.
+
+Trois garde-fous :
+
+- le pays n'est **verrouillé que pour la zone Afrique** — verrouiller
+  « France » refuserait la carte belge d'un client français sans empêcher
+  aucun abus, la grille internationale étant la plus chère ;
+- l'adaptateur **refuse d'ouvrir** une commande en zone Afrique sans pays, ou
+  avec un pays qui n'y mène pas ;
+- face à un prestataire qui connaît lui-même le pays (le faux prestataire), un
+  pays déclaré est **ignoré** : c'est `verrouillePays`, sur le contrat
+  `PaymentProvider`, qui ouvre cette voie.
+
+**⚠️ À éprouver par un vrai paiement de test** — la seule chose qu'aucun test
+ne peut prouver d'ici : qu'un paiement ouvert avec `locked_country: 'CM'`
+**refuse** bien un moyen de paiement d'un autre pays (une carte européenne,
+un Mobile Money sénégalais). La documentation de Notch Pay décrit le champ en
+une ligne (« Restrict to a specific country ») et ne rend pas, dans sa
+réponse, le pays réellement employé. Si le verrou laissait passer une carte
+étrangère, il faudrait ajouter `locked_channel` sur le Mobile Money — dont
+la liste des identifiants n'est pas publiée.
+
+Hors Vercel (pile locale, VPS derrière nginx), l'en-tête n'existe pas : tout
+visiteur voit la grille internationale jusqu'à ce qu'il choisisse son pays au
+récapitulatif. Sur le VPS, un module GeoIP de nginx pourra poser le même
+en-tête.
 
 ### 4.3 L'unité des montants
 

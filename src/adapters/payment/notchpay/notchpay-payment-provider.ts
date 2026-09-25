@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 
+import { zonePourPays } from '@/domain/orders/zones';
 import { logger } from '@/lib/logger';
 import type {
   AbonnementPrestataire,
@@ -214,6 +215,9 @@ export class NotchPayPaymentProvider implements PaymentProvider {
   /** Faux : c'est un vrai prestataire, et la console de simulation disparaît. */
   readonly simule = false;
 
+  /** `locked_country` — voir `ouvrirCheckout`. */
+  readonly verrouillePays = true;
+
   readonly enteteSignature = ENTETE_SIGNATURE_NOTCHPAY;
 
   readonly #clePublique: string;
@@ -282,6 +286,25 @@ export class NotchPayPaymentProvider implements PaymentProvider {
    * webhook n'est pas encore arrivé.
    */
   async ouvrirCheckout(demande: DemandeCheckout): Promise<SessionCheckout> {
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ UNE COMMANDE EN ZONE AFRIQUE NE S'OUVRE QUE VERROUILLÉE.            │
+     * │                                                                      │
+     * │ Son montant n'est juste que si le moyen de paiement vient d'un pays  │
+     * │ de cette zone, et `locked_country` est ce qui le garantit. Sans     │
+     * │ pays, ou avec un pays qui ne mène pas à la zone de la commande,      │
+     * │ ouvrir le paiement laisserait régler 1 500 FCFA depuis n'importe     │
+     * │ où. On refuse plutôt que d'encaisser un tarif que rien ne justifie.  │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    const pays = demande.paysVerrouille ?? null;
+    if (pays !== null ? zonePourPays(pays) !== demande.zone : demande.zone === 'afrique') {
+      throw new Error(
+        `Paiement refusé : la commande ${demande.orderId} est en zone ${demande.zone}, ` +
+          `mais son pays verrouillé (${pays ?? 'aucun'}) n'y mène pas.`,
+      );
+    }
+
     const corps = {
       amount: demande.montant.montant,
       currency: demande.montant.devise,
@@ -295,6 +318,12 @@ export class NotchPayPaymentProvider implements PaymentProvider {
        * une monnaie qui n'est pas celle qui l'engage.
        */
       locked_currency: demande.montant.devise,
+      /*
+       * Le pays est VERROUILLÉ sur celui que la commande porte : c'est ce qui
+       * rend le tarif de zone opposable. Un client qui se déclare camerounais
+       * ne peut régler qu'avec un moyen de paiement camerounais.
+       */
+      ...(pays !== null ? { locked_country: pays } : {}),
     };
 
     const reponse = await this.#appeler('POST', '/payments', corps);

@@ -259,6 +259,28 @@ describe('total et grille tarifaire', () => {
     });
   });
 
+  it('IGNORE un pays déclaré face à un prestataire qui connaît lui-même le pays', async () => {
+    // Le faux prestataire rapporte le pays du moyen de paiement : il ne
+    // verrouille rien, et un pays déclaré n'y serait qu'une affirmation du
+    // client. Se dire camerounais ne doit pas ouvrir le tarif Afrique.
+    await enPayant('FR', async () => {
+      await ajouterAuPanier(acheteur, 'le-lion-et-la-souris');
+
+      const corps = await corpsJson<CorpsCommande & { pays_paiement: string | null }>(
+        await apercuCommande(
+          postJson(
+            '/api/orders',
+            { pays_paiement: 'CM' },
+            { jeton: acheteur.accessToken, headers: { 'x-vercel-ip-country': 'CM' } },
+          ),
+        ),
+      );
+
+      expect(corps.zone).toBe('international');
+      expect(corps.pays_paiement).toBeNull();
+    });
+  });
+
   it('REFUSE un titre sans prix dans la zone, sans jamais changer la devise', async () => {
     // Ancien comportement : toute la commande basculait en euros. Un panier
     // dont le total change de devise sans explication fait abandonner
