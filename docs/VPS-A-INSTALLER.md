@@ -9,7 +9,7 @@
 | | Valeur |
 | --- | --- |
 | Système | **Ubuntu 24.04 LTS** |
-| Mémoire | **8 Go** de RAM (4 Go ne suffisent pas : un dépôt de conte consomme ~3 Go) |
+| Mémoire | **8 Go** de RAM conseillés ; 4 Go possibles si les contes se déposent depuis l'administration locale (un dépôt coûte ~0,2 Go, mesuré le 26 septembre 2026) |
 | Processeur | 4 cœurs (2 au minimum) |
 | Disque | 80 Go SSD (40 au minimum) |
 | Swap | 4 Go |

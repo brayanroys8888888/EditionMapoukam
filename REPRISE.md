@@ -5,6 +5,88 @@
 
 ---
 
+## 0 quaterdecies. L'administration locale, installable sur un autre poste — 26 septembre 2026
+
+> **Livré.** `admin-local/` : double-clic sur `Installer.cmd`, puis sur le
+> raccourci « Administration Mapoukam ». Mode d'emploi :
+> `admin-local/LISEZMOI.md`. **Pas encore éprouvé sur une machine neuve**
+> (voir la fin de la section).
+
+### La demande
+
+Déposer les contes de plus de 4,5 Mo par l'**écran** d'administration habituel,
+et non par le script de §0 duodecies, depuis n'importe quel poste Windows.
+
+### Ce que fait `admin-local/lanceur.mjs`
+
+Construit (`next build`) puis démarre (`next start`) le site sur
+`127.0.0.1:3700`, relié à la base de PRODUCTION. Le poste fait le rendu ;
+Vercel n'intervient pas.
+
+| Imposé | Pourquoi |
+| --- | --- |
+| mode production | `/dev` y est fermée — reliée à la vraie base, elle toucherait de vrais clients |
+| `PAYMENT_PROVIDER=notchpay`, clés **factices** `*_test.admin-local-…` | **jamais `fake`** : `/api/paiement-simule` offrirait sinon des contes, dans la base réelle, à tout compte connecté sur le poste |
+| `-H 127.0.0.1` | le réseau du bureau n'y accède pas |
+| `MAILER=file`, `AUTH_GOOGLE=desactive` | aucun service hors Supabase |
+| `NODE_OPTIONS=--require admin-local/delai-fetch.cjs` | le délai de 300 s de `fetch` (§0 duodecies), désormais partagé avec le script |
+| chaque variable posée explicitement | sur un poste de dev, Next compléterait avec `.env.local` |
+
+Il éprouve les deux clés auprès de Supabase **avant** de construire, et
+reconstruit tout seul quand le code, la cible ou le port changent (empreinte :
+commit git, ou dates des sources pour une copie ZIP).
+
+`tests/unit/admin-local.test.ts` (9 tests) tient le tableau ci-dessus.
+
+### Les pièges
+
+- **`next build` réécrit `tsconfig.json`** pour y ajouter son dossier de types.
+  D'où `tsconfig.admin-local.json` et `typescript.tsconfigPath` dans
+  `next.config.ts`, conditionnés par `ADMIN_LOCAL_DIST_DIR` — comme `distDir`.
+  Un test vérifie que `tsconfig.json` ne mentionne jamais `admin-local`.
+- **`NODE_OPTIONS` avale les barres inverses** : `C:\projets\x.cjs` y devient
+  `C:projetsx.cjs`. Chemin passé avec des `/`.
+- **Une reconstruction a échoué une fois** sur « failed to create junction
+  point … Accès refusé », puis les deux suivantes ont réussi sans rien changer.
+  Turbopack pose des JONCTIONS vers `node_modules` dans le dossier de
+  construction. Le lanceur retente une fois sur un dossier vidé —
+  **en retirant chaque jonction pour elle-même** : un effacement récursif qui
+  les suivrait détruirait les vraies dépendances (vérifié : 83 fichiers avant,
+  83 après).
+- Windows PowerShell 5.1 lit un `.ps1` sans BOM en ANSI : `installer.ps1` est
+  en UTF-8 **avec** BOM, et écrit `admin-local/.env` **sans** BOM (sinon le nom
+  de la première variable prend trois octets de trop).
+- eslint ne déclare pas les globales de Node hors de `src/` : écrire
+  `globalThis.fetch`, `globalThis.setTimeout`, etc.
+
+### La mesure : les « 3 Go » d'un dépôt n'existent pas
+
+Mesuré le 26 septembre 2026, conte de 25 Mo et 33 pages :
+
+| Chemin | Pic |
+| --- | --- |
+| script `deposer-conte-distant.mjs` (Node seul) | ~400 Mo + poppler ~50 Mo |
+| serveur `next start` (l'administration locale) | 270 Mo au repos → **432 Mo** pendant le dépôt, + poppler 53 Mo |
+
+Le chiffre de 3 Go venait du serveur de DÉVELOPPEMENT. `docs/HEBERGEMENT-VPS.md`,
+`docs/VPS-A-INSTALLER.md` et `docs/VPS-PAS-A-PAS.md` sont corrigés : 8 Go
+conseillés, 4 Go possibles, d'autant plus si les dépôts se font depuis
+l'administration locale. CLAUDE.md garde « ~3 Go » dans son tableau de pannes :
+il y parle du serveur de développement, non remesuré.
+
+### Reste à faire
+
+- **Éprouver l'installation sur une machine NEUVE.** L'installateur a tourné
+  de bout en bout sur ce poste (Node et poppler déjà présents, configuration
+  pointée sur la pile locale), et un conte y a été déposé par
+  `http://localhost:3700`. Les branches « winget installe Node » et « winget
+  installe poppler » n'ont pas tourné.
+- Première utilisation réelle : l'installateur demande l'URL, la clé anon et
+  la clé service_role du projet **hébergé** ; `.env.production.local` n'a pas
+  la clé anon.
+
+---
+
 ## 0 terdecies. Le prix selon le pays — l'affichage par l'IP, le paiement verrouillé — 25 septembre 2026
 
 > **Fait, porte verte : 2005 tests, 128 fichiers.** Commit non poussé.

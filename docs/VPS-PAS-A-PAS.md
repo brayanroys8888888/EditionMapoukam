@@ -36,10 +36,14 @@ Internet ──► Nginx (443)
 | Accès | SSH, avec un compte capable de `sudo` |
 | Domaine | `editionsmapoukam.com`, avec accès à sa zone DNS |
 
-> ⚠️ **8 Go, pas 4.** Le dépôt d'un conte illustré occupe environ 3 Go de
-> mémoire le temps de sa conversion. Avec 4 Go, c'est PostgreSQL que le
-> système arrête pour faire de la place — et la panne ne ressemble pas du tout
-> à un manque de mémoire.
+> **8 Go conseillés, 4 Go possibles.** Mesuré le 26 septembre 2026 en mode
+> production : le site occupe ~270 Mo, et le dépôt d'un conte de 25 Mo
+> (33 pages) en ajoute ~0,2 Go, plus ~50 Mo pour poppler. L'ancien chiffre de
+> 3 Go venait du serveur de développement. Supabase prend 2 à 3 Go au repos :
+> à 4 Go, la marge est mince, et si la mémoire manque c'est PostgreSQL que le
+> système arrête — une panne qui ne ressemble pas du tout à un manque de
+> mémoire. Déposer les gros contes depuis l'administration locale
+> (`admin-local/LISEZMOI.md`) retire tout rendu au serveur.
 
 ---
 

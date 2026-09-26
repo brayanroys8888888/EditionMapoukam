@@ -23,10 +23,29 @@ const MOTEUR_DE_RENDU = ['./node_modules/@hyzyla/pdfium/dist/**'];
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ L'ADMINISTRATION LOCALE A SON PROPRE DOSSIER DE CONSTRUCTION.        │
+   * │                                                                      │
+   * │ `admin-local/lanceur.mjs` construit le site relié à la base de       │
+   * │ PRODUCTION, et Next grave les variables `NEXT_PUBLIC_*` dans le      │
+   * │ résultat. Construit dans `.next`, ce paquet serait repris par un     │
+   * │ `next start` ordinaire — un site local qui parlerait à la vraie base │
+   * │ sans que rien ne le dise. Il vit donc sous `.next/admin-local`,      │
+   * │ ignoré par git, eslint et tsc comme le reste de `.next`.             │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  distDir: process.env['ADMIN_LOCAL_DIST_DIR'] || '.next',
   // Ce chantier est backend : les erreurs de type sont traitées par
   // `npm run verify`, jamais contournées au build. (Next 16 a retiré
   // l'intégration ESLint du build ; `npm run lint` s'en charge.)
-  typescript: { ignoreBuildErrors: false },
+  typescript: {
+    ignoreBuildErrors: false,
+    // Son propre tsconfig, pour la même raison que `distDir` : `next build`
+    // ajoute ses dossiers de types à la configuration qu'il lit, et
+    // `tsconfig.json` doit rester celle de `npm run typecheck`.
+    tsconfigPath: process.env['ADMIN_LOCAL_DIST_DIR'] ? 'tsconfig.admin-local.json' : 'tsconfig.json',
+  },
   /*
    * ┌──────────────────────────────────────────────────────────────────────┐
    * │ DEUX PAQUETS QUE LE GROUPEUR NE DOIT PAS TOUCHER.                    │

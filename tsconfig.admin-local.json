@@ -1,0 +1,18 @@
+{
+  "//": "Construction de l'administration locale (admin-local/lanceur.mjs) : next build y ajouterait sinon ses dossiers de types à tsconfig.json. Voir next.config.ts, distDir.",
+  "extends": "./tsconfig.json",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "next-env.d.ts",
+    ".next/admin-local/types/**/*.ts",
+    ".next/admin-local/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next/types",
+    ".next/dev",
+    "conte d'afrique",
+    "supabase/.temp"
+  ]
+}

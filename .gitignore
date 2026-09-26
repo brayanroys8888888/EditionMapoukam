@@ -143,3 +143,6 @@ compose-resolu.yml
 
 # Configuration de l installateur : contient les cles Notch Pay, Resend et Google.
 installation/mapoukam.conf
+
+# administration locale (admin-local/) — emails écrits sur le disque
+.mails-admin-local/

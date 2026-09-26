@@ -56,7 +56,7 @@ l'application.
 
 | | Minimum | Recommandé | Pourquoi |
 | --- | --- | --- | --- |
-| RAM | 8 Go | 8 Go et + | Supabase occupe 2 à 3 Go au repos ; **le dépôt d'un conte en consomme environ 3 de plus** ; Next.js quelques centaines de Mo. À 4 Go, un dépôt peut faire tuer Postgres par le système. |
+| RAM | 4 Go | 8 Go | Supabase occupe 2 à 3 Go au repos ; Next.js ~270 Mo. **Le dépôt d'un conte coûte ~0,2 Go de plus**, poppler ~50 Mo (mesuré le 26 septembre 2026 en mode production, conte de 25 Mo et 33 pages — l'ancien chiffre de 3 Go venait du serveur de DÉVELOPPEMENT). À 4 Go, déposer les gros contes depuis l'administration locale (`admin-local/LISEZMOI.md`) : le serveur n'a alors plus aucun rendu à faire. |
 | Processeur | 2 cœurs | 4 cœurs | rendu des pages PDF, filigranes |
 | Disque | 40 Go SSD | 80 Go SSD | la base est petite ; le **stockage croît** (pages rendues, copies filigranées par acheteur) |
 | Système | Ubuntu 24.04 LTS | — | les commandes ci-dessous le supposent |

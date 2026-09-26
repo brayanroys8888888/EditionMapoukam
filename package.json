@@ -32,6 +32,7 @@
     "rendu": "playwright test",
     "rendu:ui": "playwright test --ui",
     "admin:creer": "node scripts/creer-admin.mjs",
+    "admin:local": "node admin-local/lanceur.mjs",
     "compte:creer": "node scripts/creer-admin.mjs",
     "email:apercu": "email dev --dir src/emails --port 3030"
   },

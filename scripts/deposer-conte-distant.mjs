@@ -32,6 +32,7 @@
 import { copyFile, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 import { config } from 'dotenv';
@@ -93,33 +94,10 @@ if (distant && /localhost|127\.0\.0\.1/.test(cible)) {
   process.exit(1);
 }
 
-/*
- * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ LE DÉLAI DE 300 s DE `fetch` — CE QUI A FAIT ÉCHOUER DEUX DÉPÔTS.       │
- * │                                                                          │
- * │ Le `fetch` de Node abandonne une requête au bout de 300 secondes. Sur    │
- * │ une connexion montante de 90 Ko/s, le PDF (25 Mo) et l'EPUB, envoyés en  │
- * │ parallèle, en demandent davantage : « fetch failed », à la dernière      │
- * │ étape, après dix minutes de travail. Le même PDF seul, au début, tenait  │
- * │ tout juste dans le délai.                                                │
- * │                                                                          │
- * │ Node n'exporte pas la classe de son répartiteur, mais l'installe sous un │
- * │ symbole connu après le premier appel. On en reconstruit un aux délais    │
- * │ relevés, pour ce processus seulement. Aucune dépendance ajoutée.         │
- * └──────────────────────────────────────────────────────────────────────────┘
- */
-const DELAI_ENVOI_MS = 60 * 60 * 1000;
-const SYMBOLE_REPARTITEUR = Symbol.for('undici.globalDispatcher.1');
-await fetch('http://127.0.0.1:1').catch(() => undefined);
-const Repartiteur = globalThis[SYMBOLE_REPARTITEUR]?.constructor;
-if (!Repartiteur) {
-  console.error('Répartiteur de fetch introuvable : délai d’envoi non relevé, dépôt annulé.');
-  process.exit(1);
-}
-globalThis[SYMBOLE_REPARTITEUR] = new Repartiteur({
-  headersTimeout: DELAI_ENVOI_MS,
-  bodyTimeout: DELAI_ENVOI_MS,
-});
+// Le délai de 300 s de `fetch` faisait échouer l'envoi d'un conte de 25 Mo
+// sur une connexion lente : voir `admin-local/delai-fetch.cjs`, partagé avec
+// l'administration locale.
+await createRequire(import.meta.url)('../admin-local/delai-fetch.cjs').pret;
 
 console.log(`cible : ${distant ? 'PROJET HÉBERGÉ' : 'pile locale'} — ${cible}`);
 console.log(`dépôt : ${typeDocument}, ${orientation}, ${langue}${titre ? `, « ${titre} »` : ''}`);
