@@ -89,6 +89,12 @@ V2_direction_design/
 # src/content/watosonne.ts, ou le type impose les deux langues.
 Watosonne Consulting/
 
+# Le moteur PDF du navigateur, recopie depuis node_modules par
+# scripts/copier-wasm.mjs (postinstall et prebuild). Quatre megaoctets de
+# binaire n'ont rien a faire dans l'histoire du depot, et une copie regeneree
+# ne peut pas diverger du paquet qui la pilote.
+public/wasm/
+
 # Logo a la racine, reference NULLE PART dans le code (verifie). Celui qui est
 # servi vient de public/.
 logoEdition_mapoukam.png

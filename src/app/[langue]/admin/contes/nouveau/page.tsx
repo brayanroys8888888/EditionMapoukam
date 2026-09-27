@@ -1,10 +1,15 @@
-import type { Metadata } from 'next';
+import type { Metadata } from "next";
 
-import { langueValide, messageErreur, traduire } from '@/i18n';
-import { GabaritAdmin, BoutonSoumission, stylesAdmin as styles } from '@/components/admin';
+import { langueValide, messageErreur, traduire } from "@/i18n";
+import {
+  GabaritAdmin,
+  BoutonSoumission,
+  stylesAdmin as styles,
+} from "@/components/admin";
+import { ApercuCouverture } from "@/components/admin/apercu-couverture";
 
-import { exigerAdministrateur } from '../../garde';
-import { deposerConte } from '../actions';
+import { exigerAdministrateur } from "../../garde";
+import { deposerConte } from "../actions";
 
 /**
  * AJOUT D'UN CONTE — le dépôt d'un PDF, et rien d'autre.
@@ -58,29 +63,36 @@ function premier(valeur: string | string[] | undefined): string | undefined {
   return Array.isArray(valeur) ? valeur[0] : valeur;
 }
 
-export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
-    title: traduire(langue, 'admin.conteNouveau'),
+    title: traduire(langue, "admin.conteNouveau"),
     robots: { index: false, follow: false },
   };
 }
 
-export default async function PageAdminConteNouveau({ params, searchParams }: Parametres) {
-  const { langue, administrateur } = await exigerAdministrateur((await params).langue);
+export default async function PageAdminConteNouveau({
+  params,
+  searchParams,
+}: Parametres) {
+  const { langue, administrateur } = await exigerAdministrateur(
+    (await params).langue,
+  );
   const requete = await searchParams;
-  const erreur = premier(requete['erreur']);
+  const erreur = premier(requete["erreur"]);
 
   return (
     <GabaritAdmin
       langue={langue}
       administrateur={administrateur}
       section="/contes"
-      titre={traduire(langue, 'admin.conteNouveau')}
-      sousTitre={traduire(langue, 'admin.conteNouveauSousTitre')}
+      titre={traduire(langue, "admin.conteNouveau")}
+      sousTitre={traduire(langue, "admin.conteNouveauSousTitre")}
       actions={
         <a className={styles.boutonDiscret} href={`/${langue}/admin/contes`}>
-          {traduire(langue, 'admin.conteRetourListe')}
+          {traduire(langue, "admin.conteRetourListe")}
         </a>
       }
     >
@@ -90,8 +102,22 @@ export default async function PageAdminConteNouveau({ params, searchParams }: Pa
         </p>
       ) : null}
 
-      <div className={styles.cadre}>
-        {/*
+      {/*
+        ┌────────────────────────────────────────────────────────────────────┐
+        │ DEUX COLONNES : CE QU'ON SAISIT, ET CE QU'ON VERRA.                │
+        │                                                                    │
+        │ Le formulaire tient dans six cents pixels, la page en fait mille    │
+        │ cent. La colonne de droite ne portait rien — sur l'écran par lequel │
+        │ un titre ENTRE au catalogue. L'aperçu y montre la première page du  │
+        │ PDF choisi, c'est-à-dire la couverture que l'ingestion déposera.    │
+        │                                                                    │
+        │ Il ne dépose rien lui-même, ne bloque pas l'envoi, et son échec     │
+        │ n'empêche pas le dépôt : voir son en-tête.                          │
+        └────────────────────────────────────────────────────────────────────┘
+      */}
+      <div className={styles.depotColonnes}>
+        <div className={styles.cadre}>
+          {/*
           ┌────────────────────────────────────────────────────────────────────┐
           │ AUCUN ENCODAGE POSÉ ICI — REACT LE CHOISIT, ET ÉCRASE LE NÔTRE.  │
           │                                                                    │
@@ -106,69 +132,86 @@ export default async function PageAdminConteNouveau({ params, searchParams }: Pa
           │ aligné sur `TAILLE_MAX_OCTETS` de la route d'ingestion.             │
           └────────────────────────────────────────────────────────────────────┘
         */}
-        <form className={styles.formulaire} action={deposerConte.bind(null, langue)}>
-          <div className={styles.champ}>
-            <label className={styles.libelle} htmlFor="conte-fichier">
-              {traduire(langue, 'admin.conteFichier')}
-            </label>
-            <input
-              className={styles.saisie}
-              id="conte-fichier"
-              name="fichier"
-              type="file"
-              accept="application/pdf,.pdf"
-              required
-              aria-describedby="conte-fichier-aide"
-            />
-            <p className={styles.aide} id="conte-fichier-aide">
-              {traduire(langue, 'admin.conteFichierAide')}
-            </p>
-          </div>
+          <form
+            className={styles.formulaire}
+            action={deposerConte.bind(null, langue)}
+          >
+            <div className={styles.champ}>
+              <label className={styles.libelle} htmlFor="conte-fichier">
+                {traduire(langue, "admin.conteFichier")}
+              </label>
+              <input
+                className={styles.saisie}
+                id="conte-fichier"
+                name="fichier"
+                type="file"
+                accept="application/pdf,.pdf"
+                required
+                aria-describedby="conte-fichier-aide"
+              />
+              <p className={styles.aide} id="conte-fichier-aide">
+                {traduire(langue, "admin.conteFichierAide")}
+              </p>
+            </div>
 
-          <div className={styles.champ}>
-            <label className={styles.libelle} htmlFor="conte-langue">
-              {traduire(langue, 'admin.conteLangue')}
-            </label>
-            <select className={styles.saisie} id="conte-langue" name="langue" defaultValue="fr">
-              <option value="fr">{traduire(langue, 'langue.fr')}</option>
-              <option value="en">{traduire(langue, 'langue.en')}</option>
-            </select>
-          </div>
+            <div className={styles.champ}>
+              <label className={styles.libelle} htmlFor="conte-langue">
+                {traduire(langue, "admin.conteLangue")}
+              </label>
+              <select
+                className={styles.saisie}
+                id="conte-langue"
+                name="langue"
+                defaultValue="fr"
+              >
+                <option value="fr">{traduire(langue, "langue.fr")}</option>
+                <option value="en">{traduire(langue, "langue.en")}</option>
+              </select>
+            </div>
 
-          {/*
+            {/*
             Titre et auteur sont FACULTATIFS : la chaîne d'ingestion les lit
             dans le PDF. Les champs existent pour les documents qui n'en
             portent pas, ou qui en portent un mauvais — pas pour obliger à
             retaper ce que le fichier sait déjà.
           */}
-          <div className={styles.champ}>
-            <label className={styles.libelle} htmlFor="conte-titre">
-              {traduire(langue, 'admin.conteTitreImpose')}
-            </label>
-            <input
-              className={styles.saisie}
-              id="conte-titre"
-              name="titre"
-              maxLength={300}
-              aria-describedby="conte-titre-aide"
-            />
-            <p className={styles.aide} id="conte-titre-aide">
-              {traduire(langue, 'admin.conteTitreImposeAide')}
-            </p>
-          </div>
+            <div className={styles.champ}>
+              <label className={styles.libelle} htmlFor="conte-titre">
+                {traduire(langue, "admin.conteTitreImpose")}
+              </label>
+              <input
+                className={styles.saisie}
+                id="conte-titre"
+                name="titre"
+                maxLength={300}
+                aria-describedby="conte-titre-aide"
+              />
+              <p className={styles.aide} id="conte-titre-aide">
+                {traduire(langue, "admin.conteTitreImposeAide")}
+              </p>
+            </div>
 
-          <div className={styles.champ}>
-            <label className={styles.libelle} htmlFor="conte-auteur">
-              {traduire(langue, 'admin.conteAuteurDepot')}
-            </label>
-            <input className={styles.saisie} id="conte-auteur" name="auteur" maxLength={200} />
-          </div>
+            <div className={styles.champ}>
+              <label className={styles.libelle} htmlFor="conte-auteur">
+                {traduire(langue, "admin.conteAuteurDepot")}
+              </label>
+              <input
+                className={styles.saisie}
+                id="conte-auteur"
+                name="auteur"
+                maxLength={200}
+              />
+            </div>
 
-          <BoutonSoumission libelleChargement={traduire(langue, 'etats.chargement')}>
-            {traduire(langue, 'admin.conteDeposer')}
-          </BoutonSoumission>
+            <BoutonSoumission
+              libelleChargement={traduire(langue, "etats.chargement")}
+            >
+              {traduire(langue, "admin.conteDeposer")}
+            </BoutonSoumission>
+          </form>
+        </div>
 
-        </form>
+        <ApercuCouverture langue={langue} />
       </div>
     </GabaritAdmin>
   );

@@ -34,7 +34,9 @@
     "admin:creer": "node scripts/creer-admin.mjs",
     "admin:local": "node admin-local/lanceur.mjs",
     "compte:creer": "node scripts/creer-admin.mjs",
-    "email:apercu": "email dev --dir src/emails --port 3030"
+    "email:apercu": "email dev --dir src/emails --port 3030",
+    "postinstall": "node scripts/copier-wasm.mjs",
+    "prebuild": "node scripts/copier-wasm.mjs"
   },
   "dependencies": {
     "@hyzyla/pdfium": "^2.1.13",

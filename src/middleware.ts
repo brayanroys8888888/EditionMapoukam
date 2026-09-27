@@ -58,6 +58,16 @@ const HORS_PERIMETRE = [
   '/_next',
   '/fonts',
   '/images',
+  /*
+   * Le moteur de rendu PDF du navigateur, 4 Mo de WebAssembly.
+   *
+   * Il ne sert qu'a l'apercu de couverture de l'ecran d'ajout, et il n'est
+   * demande qu'au moment ou l'editeur choisit un fichier. Redirige comme une
+   * page, il arriverait en HTML : `WebAssembly.instantiateStreaming` refuse
+   * alors le type MIME, et l'apercu reste vide sans qu'aucune erreur ne parle
+   * de middleware.
+   */
+  '/wasm',
   '/favicon.ico',
   '/favicon.png',
   '/robots.txt',
@@ -234,5 +244,5 @@ export const config = {
    * du middleware, la fonction épargne un traitement erroné si le motif change.
    * Deux gardes valent mieux qu'une quand l'une est une expression régulière.
    */
-  matcher: ['/((?!api|dev|_next/static|_next/image|fonts|images|favicon).*)'],
+  matcher: ['/((?!api|dev|_next/static|_next/image|fonts|images|wasm|favicon).*)'],
 };

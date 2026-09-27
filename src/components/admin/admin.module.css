@@ -2931,3 +2931,118 @@ textarea.saisie {
 .ficheLaterale .section:first-child .cadre {
   box-shadow: var(--ombre-m);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   L'APERÇU DE COUVERTURE — écran d'ajout d'un titre.
+
+   ┌──────────────────────────────────────────────────────────────────────────┐
+   │ LA COLONNE DE DROITE ÉTAIT VIDE, ET ELLE L'ÉTAIT DEPUIS LE DÉBUT.       │
+   │                                                                          │
+   │ Le formulaire de dépôt tient dans 620 px ; la page en fait 1 100. Le     │
+   │ reste ne portait rien, ce qui donnait à l'écran le plus engageant du     │
+   │ back-office — celui par lequel un titre entre au catalogue — l'allure    │
+   │ d'un formulaire administratif interrompu.                                │
+   │                                                                          │
+   │ L'aperçu occupe cette place, et il ne l'occupe pas pour meubler : il     │
+   │ montre CE QUE L'INGESTION VA PRODUIRE, avant qu'un brouillon existe.     │
+   └──────────────────────────────────────────────────────────────────────────┘
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.depotColonnes {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: var(--pas-6);
+  align-items: start;
+}
+
+.apercu {
+  position: sticky;
+  top: 104px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  max-width: 420px;
+}
+
+.apercuTitre {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--encre-douce);
+  margin: 0;
+}
+
+/*
+ * Le cadre garde le RAPPORT D'UNE PAGE A4 tant qu'il est vide.
+ *
+ * Sans lui, la colonne mesurerait la hauteur de son message — deux lignes —
+ * puis bondirait à six cents pixels dès le premier fichier choisi, en
+ * poussant tout ce qui suit. La place est donc réservée d'avance, comme pour
+ * les couvertures du catalogue.
+ */
+.apercuCadre {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1 / 1.414;
+  border-radius: var(--rayon-md);
+  border: 1px dashed var(--bordure);
+  background: var(--fond-doux);
+  overflow: hidden;
+}
+
+/* Le rapport cesse de s'imposer dès qu'une vraie page le porte. */
+.apercuCadre[data-etat='pret'] {
+  aspect-ratio: auto;
+  border-style: solid;
+  background: var(--surface);
+}
+
+.apercuToile {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.apercuMessage,
+.apercuEchec {
+  margin: 0;
+  padding: 0 var(--pas-4);
+  text-align: center;
+  font-size: var(--taille-s);
+  line-height: 1.55;
+}
+
+.apercuMessage {
+  color: var(--encre-douce);
+}
+
+/*
+ * L'échec n'est pas une alerte : il n'empêche pas le dépôt.
+ *
+ * Un PDF que le moteur du navigateur refuse peut très bien passer côté
+ * serveur — versions différentes, mémoire différente. Le dire en rouge ferait
+ * renoncer un éditeur devant un fichier parfaitement valable.
+ */
+.apercuEchec {
+  color: var(--encre);
+}
+
+.apercuLegende {
+  margin: 0;
+  font-size: var(--taille-xs);
+  color: var(--encre-douce);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 1100px) {
+  .depotColonnes {
+    grid-template-columns: 1fr;
+  }
+
+  /* Sans colonne à suivre, « collant » n'a plus d'objet. */
+  .apercu {
+    position: static;
+    max-width: none;
+  }
+}
