@@ -273,6 +273,7 @@ async function appliquer(
     case 'abonnement.renouvele':
     case 'abonnement.prelevement_echoue':
     case 'abonnement.annule':
+    case 'abonnement.repris':
     case 'abonnement.expire': {
       const { userId } = evenement.donnees;
       if (!userId) throw new Error(`${evenement.type} sans identifiant d'utilisateur.`);
@@ -301,6 +302,27 @@ async function appliquer(
               }
             : {}),
           ...(evenement.donnees.zone ? { zone: evenement.donnees.zone } : {}),
+          /*
+           * ┌──────────────────────────────────────────────────────────────┐
+           * │ L'IDENTIFIANT CHEZ LE PRESTATAIRE — il ne passait pas.       │
+           * │                                                              │
+           * │ `subscriptionId` existe dans l'événement depuis l'origine et │
+           * │ n'était transmis à personne : `subscriptions.id_prestataire` │
+           * │ restait donc NUL sur tous les abonnements.                    │
+           * │                                                              │
+           * │ Conséquence, invisible jusqu'ici : `DELETE /api/subscriptions`│
+           * │ n'appelle le prestataire QUE si l'identifiant existe. Un      │
+           * │ client qui résiliait obtenait un 200, et le prestataire       │
+           * │ n'était jamais prévenu — il aurait continué de prélever.      │
+           * │                                                              │
+           * │ Rien ne le signalait : la route répond pareil dans les deux   │
+           * │ cas, et aucun abonnement local n'avait d'identifiant à        │
+           * │ comparer.                                                     │
+           * └──────────────────────────────────────────────────────────────┘
+           */
+          ...(evenement.donnees.subscriptionId
+            ? { idPrestataire: evenement.donnees.subscriptionId }
+            : {}),
           ...(evenement.donnees.joursEssai !== undefined
             ? { joursEssai: evenement.donnees.joursEssai }
             : {}),

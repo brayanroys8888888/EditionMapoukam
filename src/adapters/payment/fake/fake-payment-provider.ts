@@ -137,6 +137,14 @@ export class FakePaymentProvider implements PaymentProvider {
     return Promise.resolve();
   }
 
+  reprendreAbonnement(idPrestataire: string): Promise<void> {
+    // Même règle que l'annulation : ce faux prestataire ne décide de rien tout
+    // seul, sans quoi il porterait de la logique métier. C'est la console qui
+    // émet l'événement.
+    logger.info('Reprise demandée au faux prestataire', { idPrestataire });
+    return Promise.resolve();
+  }
+
   rembourser(demande: DemandeRemboursement): Promise<void> {
     logger.info('Remboursement demandé au faux prestataire', {
       reference: demande.referencePaiement,

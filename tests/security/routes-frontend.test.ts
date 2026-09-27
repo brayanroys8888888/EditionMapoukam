@@ -8,7 +8,7 @@ import { GET as offres } from '@/app/api/offers/route';
 import { GET as facettes } from '@/app/api/catalog/facets/route';
 import { GET as instant } from '@/app/api/time/route';
 
-import { closePool, query } from '../helpers/db';
+import { closePool, query, supprimerCommandes } from '../helpers/db';
 import { corpsJson, get, postJson, type ReponseErreur } from '../helpers/http';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
 
@@ -88,7 +88,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await query(`delete from public.invoices where order_id = $1`, [commandeAlice]);
-  await query(`delete from public.orders where id = $1`, [commandeAlice]);
+  await supprimerCommandes({ ids: [commandeAlice] });
   await deleteTestUser(alice);
   await deleteTestUser(bob);
   await closePool();

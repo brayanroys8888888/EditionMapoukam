@@ -303,7 +303,7 @@ async function mettreAJour(
     debut_periode?: string;
     fin_periode?: string;
     impaye_depuis?: string | null;
-    annule_le?: string;
+    annule_le?: string | null;
   } = { statut, maj_le: maintenant.toISOString() };
 
   if (ouvreNouvellePeriode(demande.evenement)) {
@@ -330,6 +330,18 @@ async function mettreAJour(
     // La date d'annulation est conservée, et `fin_periode` reste intacte :
     // l'accès est maintenu jusqu'au terme de la période payée (§9.1).
     valeurs.annule_le = maintenant.toISOString();
+  }
+
+  if (demande.evenement === 'repris') {
+    /*
+     * La date d'annulation est EFFACÉE.
+     *
+     * La laisser ferait porter à un abonnement actif la trace d'une
+     * résiliation qui n'a plus lieu — et l'écran d'administration afficherait
+     * « Fin programmée le … » sous une étiquette « Actif ». `fin_periode`,
+     * elle, ne bouge pas : reprendre n'est pas racheter.
+     */
+    valeurs.annule_le = null;
   }
 
   const { error } = await client.from('subscriptions').update(valeurs).eq('id', courant.id);

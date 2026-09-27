@@ -61,6 +61,8 @@
  *   node scripts/demo-ventes.mjs --vider   # efface, AVANT `npm run verify`
  */
 
+import { randomUUID } from 'node:crypto';
+
 const APP = process.env['APP_URL'] ?? 'http://localhost:3000';
 
 /*
@@ -440,6 +442,16 @@ async function main() {
         type: 'abonnement.souscrit',
         donnees: {
           userId: identites[abonnement.compte],
+          /*
+           * L'IDENTIFIANT CHEZ LE PRESTATAIRE.
+           *
+           * Un prestataire réel le rapporte dans son événement ; le
+           * gestionnaire l'enregistre, et c'est lui qu'on lui redonnera pour
+           * résilier ou reprendre. Sans lui, l'administration refuse les deux
+           * gestes — et le jeu de démonstration ne permettrait pas de les
+           * essayer.
+           */
+          subscriptionId: randomUUID(),
           domaine: abonnement.domaine,
           offre: abonnement.offre,
           zone,

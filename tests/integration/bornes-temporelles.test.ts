@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
 
 /**
@@ -245,7 +245,7 @@ describe('DROIT À DURÉE LIMITÉE', () => {
       expect(pile?.can_read).toBe(false);
     } finally {
       await query(`delete from public.entitlements where id = $1`, [droit!.id]);
-      await query(`delete from public.orders where id = $1`, [commande!.id]);
+      await supprimerCommandes({ ids: [commande!.id] });
     }
   });
 });

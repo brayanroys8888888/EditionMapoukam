@@ -56,16 +56,11 @@ export function PanneauPromo({
           ┌────────────────────────────────────────────────────────────────┐
           │ LE MOTIF DU CHAMP EST CELUI DE LA ROUTE, NI PLUS NI MOINS.     │
           │                                                                │
-          │ Lettres et chiffres, sans tiret : c'est la règle du serveur, et │
-          │ elle a sa raison — « un code se dicte au téléphone et se        │
-          │ recopie à la main ». Un motif plus PERMISSIF que le serveur est │
-          │ un piège : le formulaire accepte, la route refuse, et l'éditeur │
-          │ reçoit une erreur pour une saisie que l'écran lui a laissé      │
-          │ faire. Le client doit toujours céder.                           │
-          │                                                                │
-          │ Le prototype montre « DAVE-ATELIER » : ses codes portent des    │
-          │ tirets. Les autoriser est une décision, pas un détail d'écran,  │
-          │ et elle appartient au propriétaire.                             │
+          │ Lettres, chiffres et tirets — ni en tête, ni en queue, ni       │
+          │ doublé. C'est mot pour mot l'expression de la route. Un motif   │
+          │ plus PERMISSIF que le serveur est un piège : le formulaire      │
+          │ accepte, la route refuse, et l'éditeur reçoit une erreur pour   │
+          │ une saisie que l'écran lui a laissé faire.                      │
           │                                                                │
           │ Le tiret NU dans une classe est par ailleurs interdit : les     │
           │ navigateurs compilent `pattern` avec l'indicateur `v`, et un    │
@@ -82,7 +77,7 @@ export function PanneauPromo({
             required
             minLength={3}
             maxLength={32}
-            pattern="[A-Za-z0-9]+"
+            pattern="[A-Za-z0-9]+(-[A-Za-z0-9]+)*"
             autoComplete="off"
           />
           <p className={styles.aide}>{t('admin.promoCodeAide')}</p>

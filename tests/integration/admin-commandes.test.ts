@@ -1,6 +1,6 @@
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
 
 /**
@@ -50,7 +50,7 @@ const comptes: TestUser[] = [];
 afterEach(async () => {
   if (aEffacer.length > 0) {
     await query(`delete from public.order_items where order_id = any($1::uuid[])`, [aEffacer]);
-    await query(`delete from public.orders where id = any($1::uuid[])`, [aEffacer]);
+    await supprimerCommandes({ ids: aEffacer });
     aEffacer.length = 0;
   }
   while (comptes.length > 0) {

@@ -36,6 +36,9 @@
     "abonnement_deja_actif": "You already have an active subscription.",
     "offre_indisponible": "This plan is no longer offered. Please choose another one on the offers page.",
     "aucun_abonnement_actif": "You don’t have an active subscription.",
+    "resiliation_impossible": "This subscription is not running: there is no cancellation to request.",
+    "rien_a_reprendre": "This subscription has no cancellation to undo.",
+    "abonnement_sans_prestataire": "This subscription is not linked to any provider: the request cannot be passed on.",
     "commande_non_payable": "This order can no longer be paid.",
     "confirmation_requise": "The country of your payment method changes the applicable price list. Please confirm the new amount.",
     "panier_vide": "Your basket contains no orderable title.",
@@ -873,7 +876,7 @@
     "promoInactif": "Inactive",
     "promoCreerTitre": "Create a code",
     "promoCode": "Code",
-    "promoCodeAide": "3 to 32 characters, letters and digits only: a code gets dictated on the phone and copied by hand.",
+    "promoCodeAide": "3 to 32 characters: letters, digits and hyphens. A code gets dictated on the phone and copied by hand.",
     "promoType": "Discount type",
     "promoType_pourcentage": "Percentage",
     "promoType_montant": "Fixed amount",
@@ -1319,7 +1322,13 @@
     "promoPortee": "Applies to",
     "promoPorteeTout": "The whole shop",
     "promoDeviseZone": "Currency and zone",
-    "promoDeviseAide": "These two fields only matter for a fixed amount: a percentage applies in every zone."
+    "promoDeviseAide": "These two fields only matter for a fixed amount: a percentage applies in every zone.",
+    "aboResilier": "Cancel",
+    "aboReprendre": "Undo cancellation",
+    "aboResilieTitre": "Cancellation requested",
+    "aboResilieTexte": "The request went to the provider. The status will change on confirmation; access runs until the end of the paid period.",
+    "aboReprisTitre": "Resumption requested",
+    "aboReprisTexte": "The request went to the provider. The status will change on confirmation."
   },
   "tunnel": {
     "progressionAchat": "Order progress",

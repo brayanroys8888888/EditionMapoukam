@@ -115,6 +115,8 @@ export type TypeEvenementPaiement =
   | 'abonnement.renouvele'
   | 'abonnement.prelevement_echoue'
   | 'abonnement.annule'
+  /** L'abonné revient sur sa résiliation avant le terme de la période payée. */
+  | 'abonnement.repris'
   | 'abonnement.expire';
 
 export interface DonneesEvenement {
@@ -258,6 +260,16 @@ export interface PaymentProvider {
   souscrireAbonnement(demande: DemandeAbonnement): Promise<AbonnementPrestataire>;
 
   annulerAbonnement(idPrestataire: string): Promise<void>;
+
+  /**
+   * Demande la REPRISE d'un abonnement résilié, avant son terme.
+   *
+   * Comme l'annulation, elle ne décide de rien : c'est l'événement signé qui
+   * fera foi. Un prestataire qui ne saurait pas reprendre lèvera ici, et
+   * l'écran l'apprendra — plutôt que de laisser croire à une reprise qui
+   * n'aurait lieu que chez nous.
+   */
+  reprendreAbonnement(idPrestataire: string): Promise<void>;
 
   rembourser(demande: DemandeRemboursement): Promise<void>;
 

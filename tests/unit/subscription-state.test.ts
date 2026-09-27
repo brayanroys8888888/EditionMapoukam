@@ -164,6 +164,76 @@ describe('annulation', () => {
   });
 });
 
+describe('reprise', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ ELLE DÉFAIT UNE RÉSILIATION, ET RIEN D'AUTRE.                        │
+   * │                                                                      │
+   * │ Un RENOUVELLEMENT arrivant sur un abonnement annulé est refusé, et   │
+   * │ doit le rester : ce serait un prélèvement que l'abonné a justement   │
+   * │ demandé d'arrêter. La reprise est l'inverse — une décision explicite │
+   * │ de continuer, prise avant le terme de la période payée.              │
+   * │                                                                      │
+   * │ Ces tests fixent la frontière entre les deux, parce que c'est elle   │
+   * │ qui empêche « reprendre » de devenir une porte dérobée vers          │
+   * │ « renouveler ».                                                      │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('ramène un abonnement résilié en actif', () => {
+    expect(transitionner('annule', 'repris')).toEqual({
+      ok: true,
+      statut: 'actif',
+      inchange: false,
+    });
+  });
+
+  it('est SANS EFFET sur un abonnement déjà actif, plutôt qu’une erreur', () => {
+    // Un prestataire peut confirmer deux fois ; un rejeu ne doit pas lever.
+    expect(transitionner('actif', 'repris')).toEqual({
+      ok: true,
+      statut: 'actif',
+      inchange: true,
+    });
+  });
+
+  it('REFUSE depuis un état qui n’a rien à reprendre', () => {
+    /*
+     * Depuis `essai` ou `impaye`, « reprendre » ne voudrait rien dire : ces
+     * états n'ont pas de résiliation à défaire, et basculer en `actif`
+     * effacerait un essai en cours ou une période de grâce.
+     */
+    for (const statut of ['essai', 'impaye'] as const) {
+      expect(transitionner(statut, 'repris'), `depuis ${statut}`).toEqual({
+        ok: false,
+        raison: 'rien_a_reprendre',
+      });
+    }
+  });
+
+  it('REFUSE sur un abonnement terminé — on ne ressuscite pas', () => {
+    expect(transitionner('expire', 'repris')).toEqual({
+      ok: false,
+      raison: 'abonnement_termine',
+    });
+  });
+
+  it('REFUSE sans abonnement du tout', () => {
+    expect(transitionner(null, 'repris').ok).toBe(false);
+  });
+
+  it('N’OUVRE PAS de nouvelle période — reprendre n’est pas racheter', () => {
+    /*
+     * La période payée reste celle qui courait. L'ouvrir déplacerait
+     * `fin_periode` et offrirait un mois à qui revient sur sa résiliation.
+     */
+    expect(ouvreNouvellePeriode('repris')).toBe(false);
+  });
+
+  it('ne fait pas courir de période de grâce', () => {
+    expect(demarreGrace('annule', 'actif')).toBe(false);
+  });
+});
+
 describe('expiration', () => {
   it('est toujours recevable', () => {
     for (const statut of STATUTS) {

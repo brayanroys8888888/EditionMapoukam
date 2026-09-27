@@ -60,9 +60,25 @@ const promoSchema = z
       .trim()
       .min(3)
       .max(32)
-      // Lettres et chiffres seulement : un code se dicte au téléphone et se
-      // recopie à la main.
-      .regex(/^[A-Za-z0-9]+$/, 'Le code ne peut contenir que des lettres et des chiffres.'),
+      /*
+       * ┌──────────────────────────────────────────────────────────────────┐
+       * │ LETTRES, CHIFFRES ET TIRETS — le tiret AIDE à dicter.            │
+       * │                                                                  │
+       * │ La règle d'origine excluait le tiret, au nom d'un code « qui se  │
+       * │ dicte au téléphone et se recopie à la main ». Décision du         │
+       * │ propriétaire du 27 septembre 2026 : l'argument plaide contre      │
+       * │ elle. « DAVE-ATELIER » se dicte et se relit mieux que             │
+       * │ « DAVEATELIER », et c'est la forme que le prototype emploie.      │
+       * │                                                                  │
+       * │ Ni en tête, ni en queue, ni doublé : un code ne commence pas par  │
+       * │ un tiret, et « A--B » se recopie mal. Les codes existants, qui    │
+       * │ n'en portent aucun, restent valables.                            │
+       * └──────────────────────────────────────────────────────────────────┘
+       */
+      .regex(
+        /^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/,
+        'Le code ne peut contenir que des lettres, des chiffres et des tirets.',
+      ),
     type: z.enum(['montant', 'pourcentage']),
     valeur: z.int().positive(),
     devise: z.enum(['EUR', 'XAF', 'XOF']).optional(),

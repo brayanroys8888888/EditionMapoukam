@@ -1,5 +1,8 @@
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { closePool, query, queryOne } from '../helpers/db';
 
 /**
@@ -127,6 +130,50 @@ describe('la fenêtre de validité', () => {
 
     await code('TESTDEBUT', { debutDansJours: -1 });
     expect(await statut('TESTDEBUT')).toBe('actif');
+  });
+});
+
+describe('la forme d’un code', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ LE TIRET EST ADMIS, MAIS PAS N'IMPORTE OÙ.                           │
+   * │                                                                      │
+   * │ Décision du propriétaire du 27 septembre 2026 : « DAVE-ATELIER » se  │
+   * │ dicte et se relit mieux que « DAVEATELIER ». Mais ni en tête, ni en  │
+   * │ queue, ni doublé — un code ne commence pas par un tiret, et « A--B » │
+   * │ se recopie mal.                                                      │
+   * │                                                                      │
+   * │ L'expression vit dans la ROUTE ; ce test la lit à la source plutôt   │
+   * │ que d'en recopier une seconde, qui finirait par en diverger.          │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const SOURCE = 'src/app/api/admin/promos/route.ts';
+
+  function motifDeLaRoute(): RegExp {
+    const source = readFileSync(join(process.cwd(), SOURCE), 'utf8');
+    const trouve = /\.regex\(\s*(\/\^[^/]+\$\/)/.exec(source)?.[1];
+    expect(trouve, 'expression du code introuvable dans la route').toBeTruthy();
+    // Reconstruite depuis le TEXTE de la route : pas d'évaluation de code.
+    return new RegExp((trouve ?? '').slice(1, -1));
+  }
+
+  it('accepte un tiret entre deux groupes, et le refuse ailleurs', () => {
+    const motif = motifDeLaRoute();
+
+    for (const bon of ['BIENVENUE', 'DAVE-ATELIER', 'NOEL26', 'A-B-C', 'EM-2026-01']) {
+      expect(motif.test(bon), `${bon} devrait être accepté`).toBe(true);
+    }
+    for (const mauvais of ['-DEBUT', 'FIN-', 'A--B', 'AVEC ESPACE', 'ACCENTÉ', 'PONCTU.ATION']) {
+      expect(motif.test(mauvais), `${mauvais} devrait être refusé`).toBe(false);
+    }
+  });
+
+  it('est acceptée par la BASE, qui n’impose que la casse et la longueur', async () => {
+    aEffacer.push('TESTAVEC-TIRET');
+    await query(
+      `insert into public.promo_codes (code, type, valeur) values ('TESTAVEC-TIRET', 'pourcentage', 10)`,
+    );
+    expect(await statut('TESTAVEC-TIRET')).toBe('actif');
   });
 });
 

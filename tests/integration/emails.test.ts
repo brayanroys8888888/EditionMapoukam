@@ -6,7 +6,7 @@ import { viderFile } from '@/lib/emails/file';
 import { MODELES_CONNUS, rendre } from '@/domain/emails/templates';
 import type { Mailer, MessageMail, ResultatEnvoi } from '@/adapters/mail/types';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
 
 /**
@@ -78,7 +78,7 @@ afterEach(async () => {
   }
   await query(`delete from public.email_outbox where user_id = $1`, [acheteur.id]);
   await query(`delete from public.entitlements where user_id = $1`, [acheteur.id]);
-  await query(`delete from public.orders where user_id = $1`, [acheteur.id]);
+  await supprimerCommandes({ userId: acheteur.id });
 });
 
 afterAll(async () => {
@@ -446,7 +446,7 @@ describe('(e) EMAILS BILINGUES, avec repli sur le français', () => {
     } finally {
       await query(`delete from public.email_outbox where user_id = $1`, [anglophone.id]);
       await query(`delete from public.entitlements where user_id = $1`, [anglophone.id]);
-      await query(`delete from public.orders where user_id = $1`, [anglophone.id]);
+      await supprimerCommandes({ userId: anglophone.id });
       await deleteTestUser(anglophone);
     }
   });

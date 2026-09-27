@@ -44,3 +44,40 @@ export async function queryOne<T extends pg.QueryResultRow = pg.QueryResultRow>(
   const rows = await query<T>(text, values);
   return rows[0];
 }
+
+/**
+ * Supprime des commandes de test, et la PIÈCE COMPTABLE qui les retient.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ POURQUOI CE DÉTOUR PLUTÔT QU'UN `on delete cascade`.                     │
+ * │                                                                          │
+ * │ `invoices.order_id` est en `on delete restrict`, et c'est voulu : une     │
+ * │ facture est une pièce comptable immuable, son existence interdit          │
+ * │ d'effacer son origine (migration 0013). Passer la clé en `cascade` pour   │
+ * │ simplifier un nettoyage de test donnerait à toute suppression de          │
+ * │ commande le pouvoir d'effacer une facture.                               │
+ * │                                                                          │
+ * │ Depuis la migration 0094, TOUTE commande payée porte une facture. Un     │
+ * │ `delete from orders` écrit avant cette migration échoue donc — non par    │
+ * │ défaut du test, mais parce que le monde a changé sous lui.               │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * Les autres références à `orders` — `order_items`, `payment_events`,
+ * `entitlements`, `promo_redemptions` — cascadent, et n'ont rien à faire ici.
+ */
+export async function supprimerCommandes(
+  cible: { ids: readonly string[] } | { userId: string },
+): Promise<void> {
+  if ('ids' in cible) {
+    if (cible.ids.length === 0) return;
+    await query(`delete from public.invoices where order_id = any($1::uuid[])`, [cible.ids]);
+    await query(`delete from public.orders where id = any($1::uuid[])`, [cible.ids]);
+    return;
+  }
+  await query(
+    `delete from public.invoices
+      where order_id in (select id from public.orders where user_id = $1)`,
+    [cible.userId],
+  );
+  await query(`delete from public.orders where user_id = $1`, [cible.userId]);
+}

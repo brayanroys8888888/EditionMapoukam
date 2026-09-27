@@ -8,7 +8,7 @@ import { purgerCopies } from '@/lib/downloads/service';
 import { identifiantCopie } from '@/domain/downloads/copie';
 import { ACCESS_TOKEN_COOKIE } from '@/lib/auth/cookies';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { corpsJson, get, type ReponseErreur } from '../helpers/http';
 import { createTestUser, deleteTestUser, serviceClient, type TestUser } from '../helpers/users';
 
@@ -249,7 +249,7 @@ describe('le fichier servi porte la trace de son acheteur', () => {
       expect(fichier.toString('latin1')).not.toContain(acheteur.email);
     } finally {
       await query(`delete from public.entitlements where user_id = $1`, [autre.id]);
-      await query(`delete from public.orders where user_id = $1`, [autre.id]);
+      await supprimerCommandes({ userId: autre.id });
     }
   }, 90_000);
 });

@@ -2110,74 +2110,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      admin_enregistrer_promo:
-        | {
-            Args: {
-              p_acteur: string
-              p_actif?: boolean
-              p_code: string
-              p_devise?: string
-              p_expire_le?: string
-              p_type: Database["public"]["Enums"]["promo_type"]
-              p_usage_max?: number
-              p_valeur: number
-              p_zone?: Database["public"]["Enums"]["price_zone"]
-            }
-            Returns: {
-              actif: boolean
-              code: string
-              cree_le: string
-              debut_le: string | null
-              devise: string | null
-              expire_le: string | null
-              id: string
-              type: Database["public"]["Enums"]["promo_type"]
-              usage_count: number
-              usage_max: number | null
-              valeur: number
-              zone: Database["public"]["Enums"]["price_zone"] | null
-            }
-            SetofOptions: {
-              from: "*"
-              to: "promo_codes"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              p_acteur: string
-              p_actif?: boolean
-              p_code: string
-              p_debut_le?: string
-              p_devise?: string
-              p_expire_le?: string
-              p_type: Database["public"]["Enums"]["promo_type"]
-              p_usage_max?: number
-              p_valeur: number
-              p_zone?: Database["public"]["Enums"]["price_zone"]
-            }
-            Returns: {
-              actif: boolean
-              code: string
-              cree_le: string
-              debut_le: string | null
-              devise: string | null
-              expire_le: string | null
-              id: string
-              type: Database["public"]["Enums"]["promo_type"]
-              usage_count: number
-              usage_max: number | null
-              valeur: number
-              zone: Database["public"]["Enums"]["price_zone"] | null
-            }
-            SetofOptions: {
-              from: "*"
-              to: "promo_codes"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      admin_enregistrer_promo: {
+        Args: {
+          p_acteur: string
+          p_actif?: boolean
+          p_code: string
+          p_debut_le?: string
+          p_devise?: string
+          p_expire_le?: string
+          p_type: Database["public"]["Enums"]["promo_type"]
+          p_usage_max?: number
+          p_valeur: number
+          p_zone?: Database["public"]["Enums"]["price_zone"]
+        }
+        Returns: {
+          actif: boolean
+          code: string
+          cree_le: string
+          debut_le: string | null
+          devise: string | null
+          expire_le: string | null
+          id: string
+          type: Database["public"]["Enums"]["promo_type"]
+          usage_count: number
+          usage_max: number | null
+          valeur: number
+          zone: Database["public"]["Enums"]["price_zone"] | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "promo_codes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_enregistrer_temoignage: {
         Args: {
           p_acteur: string

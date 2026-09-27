@@ -380,6 +380,23 @@ export class NotchPayPaymentProvider implements PaymentProvider {
   }
 
   /**
+   * Même refus, pour la même raison : sans prélèvement récurrent, il n'y a rien
+   * à reprendre. `docs/NOTCHPAY.md` le consigne — l'abonnement reste servi par
+   * le faux prestataire tant que Notch Pay n'aura pas de récurrence.
+   *
+   * Le refus est EXPLICITE plutôt que silencieux : laisser croire à une reprise
+   * qui n'aurait lieu que chez nous désynchroniserait la base du prestataire,
+   * et personne ne le verrait avant la prochaine échéance.
+   */
+  reprendreAbonnement(idPrestataire: string): Promise<void> {
+    return Promise.reject(
+      new Error(
+        `Notch Pay n'expose pas de prélèvement récurrent : rien à reprendre pour ${idPrestataire}.`,
+      ),
+    );
+  }
+
+  /**
    * Rembourse, totalement ou partiellement.
    *
    * C'est la seule opération qui exige la clé PRIVÉE : `X-Grant`. Le

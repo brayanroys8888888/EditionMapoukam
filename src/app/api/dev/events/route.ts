@@ -25,6 +25,7 @@ const evenementSchema = z.object({
     'abonnement.renouvele',
     'abonnement.prelevement_echoue',
     'abonnement.annule',
+    'abonnement.repris',
     'abonnement.expire',
   ]),
   donnees: z

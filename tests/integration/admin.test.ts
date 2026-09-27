@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { reinitialiserQuotaAdmin } from '@/lib/admin/route-helpers';
 import * as admin from '@/lib/admin/service';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { createTestUser, deleteTestUser, serviceClient, type TestUser } from '../helpers/users';
 
 /**
@@ -241,7 +241,7 @@ describe('OCTROI MANUEL — le levier qui donne du contenu gratuitement', () => 
       .toHaveLength(1);
 
     await query(`delete from public.entitlements where id = $1`, [droit!.id]);
-    await query(`delete from public.orders where id = $1`, [commande!.id]);
+    await supprimerCommandes({ ids: [commande!.id] });
   });
 });
 

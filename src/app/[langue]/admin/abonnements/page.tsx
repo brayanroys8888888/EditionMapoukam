@@ -548,6 +548,7 @@ export default async function PageAdminAbonnements({ params, searchParams }: Par
           formater={(montant) => afficher(montant, abonnementOuvert.devise)}
           libelleStatut={t(LIBELLE_STATUT[abonnementOuvert.statut_observe])}
           teinteStatut={ETAT_STATUT[abonnementOuvert.statut_observe]}
+          filtres={{ statut, domaine, q }}
         />
       ) : null}
     </GabaritAdmin>

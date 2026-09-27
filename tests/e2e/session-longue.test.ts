@@ -10,7 +10,7 @@ import { POST as creerCommande } from '@/app/api/orders/route';
 import { POST as ouvrirCheckout } from '@/app/api/checkout/route';
 import { loginRateLimiter } from '@/lib/http/rate-limit';
 
-import { closePool, query } from '../helpers/db';
+import { closePool, query, supprimerCommandes } from '../helpers/db';
 import { corpsJson, get, postJson, type ReponseErreur } from '../helpers/http';
 import { createTestUser, deleteTestUser, serviceClient, type TestUser } from '../helpers/users';
 import { deposerFichiersDeDemonstration } from '../helpers/storage';
@@ -305,7 +305,7 @@ describe('expiration ENTRE LE PANIER ET LE PAIEMENT', () => {
     // Rien n'est acquis : le droit naît du webhook signé, jamais d'ici.
     expect(tunnel.statut_commande).toBe('en_attente');
 
-    await query(`delete from public.orders where id = $1`, [creee.commande_id]);
+    await supprimerCommandes({ ids: [creee.commande_id] });
   });
 
   it('une reprise NE RESSUSCITE PAS une session révoquée', async () => {

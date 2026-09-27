@@ -1,31 +1,36 @@
 import type { ReactNode } from 'react';
 
 import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
-import { BlocPanneau, Panneau, stylesAdmin as styles } from '@/components/admin';
+import {
+  BlocPanneau,
+  BoutonSoumission,
+  Panneau,
+  stylesAdmin as styles,
+} from '@/components/admin';
+import { resilier } from './actions';
 
 /**
  * LE PANNEAU D'UN ABONNEMENT.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ IL NE PORTE AUCUNE ACTION, ET CE N'EST PAS UN OUBLI.                    │
+ * │ DEUX ACTIONS SUR LES QUATRE DU PROTOTYPE. DÉCISION DU 27 SEPTEMBRE 2026.│
  * │                                                                          │
- * │ Le prototype propose « Offrir un mois », « Résilier » — à la fin de la   │
- * │ période ou immédiatement AVEC REMBOURSEMENT AU PRORATA —, « Relancer     │
- * │ maintenant » et « Annuler la résiliation ». Aucune n'existe côté         │
- * │ serveur, et trois d'entre elles touchent à des règles que la             │
- * │ spécification ne porte pas :                                             │
+ * │ RETENUES : résilier à la fin de la période payée, et revenir sur cette   │
+ * │ résiliation avant le terme. Toutes deux passent par le PRESTATAIRE, et   │
+ * │ le statut ne change qu'à l'arrivée de l'événement signé — règle 5 de     │
+ * │ CLAUDE.md, qui vaut pour l'administration comme pour le client.          │
  * │                                                                          │
- * │  · offrir un mois, c'est accorder un accès gratuit — une décision        │
- * │    commerciale, pas un bouton ;                                          │
- * │  · le remboursement au PRORATA contredit l'arbitrage inscrit sur la      │
- * │    route de remboursement : « rembourser partiellement supposerait de    │
- * │    décider quels titres restent accessibles, ce que la spécification ne  │
- * │    prévoit pas » ;                                                       │
- * │  · la résiliation doit passer par le prestataire, et n'être constatée    │
- * │    qu'à l'arrivée du webhook — CLAUDE.md, règle 5.                       │
+ * │ ÉCARTÉES :                                                               │
  * │                                                                          │
- * │ Dessiner ces boutons sans eux aurait produit un écran qui promet ce      │
- * │ qu'il ne tient pas. Ils attendent la décision du propriétaire.           │
+ * │  · « Offrir un mois » allongerait la période chez NOUS pendant que le    │
+ * │    prestataire continue de prélever selon son calendrier. On se          │
+ * │    désynchronise, et personne ne le voit avant la prochaine échéance ;   │
+ * │  · « Résilier au prorata » contredit l'arbitrage de la route de          │
+ * │    remboursement : rembourser partiellement supposerait de décider       │
+ * │    quels titres restent accessibles ;                                    │
+ * │  · « Relancer » suppose un système de relance qui n'existe pas — c'est   │
+ * │    d'ailleurs pourquoi le bandeau des impayés ne promet plus de relance  │
+ * │    automatique.                                                          │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
@@ -80,6 +85,7 @@ export function PanneauAbonnement({
   formater,
   libelleStatut,
   teinteStatut,
+  filtres,
 }: {
   langue: LangueInterface;
   abonnement: DetailAbonnement;
@@ -89,6 +95,8 @@ export function PanneauAbonnement({
   /** Libellé et teinte de l'étiquette : EXACTEMENT ceux de la ligne cliquée. */
   libelleStatut: string;
   teinteStatut: string | undefined;
+  /** Les filtres courants, reportés pour que l'éditeur ne perde pas sa place. */
+  filtres: { statut?: string; domaine?: string; q?: string };
 }): ReactNode {
   const t = (cle: CleTraduction): string => traduire(langue, cle);
   const anonyme = t('admin.nonPublie');
@@ -96,6 +104,24 @@ export function PanneauAbonnement({
     iso
       ? new Date(iso).toLocaleDateString(langue, { day: 'numeric', month: 'long', year: 'numeric' })
       : '—';
+
+  /*
+   * QUEL GESTE EST OFFERT, ET SUR QUEL ÉTAT.
+   *
+   * Un abonnement en cours se résilie ; un abonnement résilié se reprend —
+   * tant que sa période court encore. Un impayé, un essai échu, un abonnement
+   * terminé : rien à faire ici, et le pied ne porte que « Fermer ».
+   */
+  const geste: {
+    valeur: string;
+    libelle: CleTraduction;
+    variante: 'primaire' | 'secondaire';
+  } | null =
+    abonnement.statut_observe === 'actif' || abonnement.statut_observe === 'essai'
+      ? { valeur: 'resilier', libelle: 'admin.aboResilier', variante: 'secondaire' }
+      : abonnement.statut_observe === 'annule'
+        ? { valeur: 'reprendre', libelle: 'admin.aboReprendre', variante: 'primaire' }
+        : null;
 
   const formule = t(
     abonnement.domaine === 'association'
@@ -126,9 +152,32 @@ export function PanneauAbonnement({
       titre={abonnement.acheteur_anonymise ? anonyme : (abonnement.nom ?? anonyme)}
       fermeture={fermeture}
       pied={
-        <a className={styles.boutonDiscret} href={fermeture}>
-          {t('admin.panneauFermer')}
-        </a>
+        /*
+         * Le formulaire est DANS le pied : `BoutonSoumission` lit
+         * `useFormStatus`, qui n'existe que sous un `<form>`. Une demande part
+         * vers le prestataire, elle peut prendre une seconde, et l'éditeur
+         * doit voir qu'elle est en cours plutôt que de presser deux fois.
+         */
+        geste ? (
+          <form action={resilier.bind(null, langue)} className={styles.tiroirActions}>
+            <input type="hidden" name="abonnement" value={abonnement.id} />
+            <input type="hidden" name="geste" value={geste.valeur} />
+            {filtres.statut ? <input type="hidden" name="statut" value={filtres.statut} /> : null}
+            {filtres.domaine ? (
+              <input type="hidden" name="domaine" value={filtres.domaine} />
+            ) : null}
+            {filtres.q ? <input type="hidden" name="q" value={filtres.q} /> : null}
+
+            <a className={styles.boutonDiscret} href={fermeture}>
+              {t('admin.panneauFermer')}
+            </a>
+            <BoutonSoumission variante={geste.variante}>{t(geste.libelle)}</BoutonSoumission>
+          </form>
+        ) : (
+          <a className={styles.boutonDiscret} href={fermeture}>
+            {t('admin.panneauFermer')}
+          </a>
+        )
       }
     >
       {/* ── 1. L'état, et qui ───────────────────────────────────────────── */}

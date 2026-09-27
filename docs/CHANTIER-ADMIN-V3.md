@@ -133,11 +133,15 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
         ligne de santé — relevé `admin-abonnements`, **écart nul**
   - [x] tiroir en lecture seule, historique tiré de `payment_events` —
         relevé `admin-abonnement-panneau`, **écart nul**
-  - [ ] **actions du tiroir — en attente d'une décision du propriétaire** :
-        « Offrir un mois » (accès gratuit), « Résilier » à la fin de la
-        période ou IMMÉDIATEMENT AVEC REMBOURSEMENT AU PRORATA, « Relancer »,
-        « Annuler la résiliation ». Aucune n'existe côté serveur, et le
-        prorata contredit l'arbitrage de la route de remboursement.
+  - [x] **deux actions sur quatre** — décision du propriétaire du 27 sept.
+        « Résilier à la fin de la période » et « Annuler la résiliation »
+        passent par le prestataire, puis par l'événement signé. Nouvel
+        événement `abonnement.repris` dans la machine à états.
+  - — **écartées, et pourquoi** (décision prise, pas un reste à faire) : « Offrir un mois » allongerait la période
+        chez nous pendant que le prestataire prélève selon son calendrier —
+        on se désynchronise sans que rien ne le signale. « Résilier au
+        prorata » contredit l'arbitrage de la route de remboursement.
+        « Relancer » suppose un système de relance qui n'existe pas.
 
 > **Ce que le prototype affirmait et qui était faux ici.** Le bandeau des
 > impayés dit « Une relance part automatiquement à J+1 et J+4 ». Aucune relance
@@ -259,6 +263,71 @@ il faut le rejouer après.
 ---
 
 ## Trouvé en chemin, hors chantier
+
+- ✅ **`npm run diff:sql` ne voyait pas toutes les redéclarations.** Il cherchait
+  la fin d'un corps de fonction au premier `$$;`. Une fonction reprise depuis la
+  base — `pg_get_functiondef` — est délimitée par `$function$`, et n'en contient
+  aucun : la déclaration était **sautée sans un mot**. Cinq migrations du dépôt
+  sont dans ce cas, dont la `0094`.
+
+  C'est le défaut que l'en-tête du script décrit, retourné contre l'outil
+  lui-même : il rapportait « 2 déclarations » de `fulfill_order` au lieu de
+  trois, et l'absence d'alerte se lisait comme une absence d'écart. Corrigé —
+  l'étiquette entre dollars se lit désormais au lieu d'être supposée.
+
+  **Pas de test ajouté sur le script, et c'est délibéré** : `allowJs` est à
+  `false`, l'importer depuis un test TypeScript ne compilerait pas, et l'invariant
+  qu'il sert à révéler est déjà tenu par le comportement — une redéclaration qui
+  perdrait l'e-mail ferait tomber `emails.test.ts`, une qui perdrait la facture
+  ferait tomber `facture-a-l-octroi.test.ts`. Le script aide la relecture ; il
+  n'est pas le filet.
+
+- ✅ **Trois codes d'erreur du nouveau geste n'avaient pas de traduction** —
+  `resiliation_impossible`, `rien_a_reprendre`, `abonnement_sans_prestataire`.
+  L'éditeur aurait lu « Une erreur est survenue » au lieu de la raison du refus.
+  Même famille que les trois refus de promotion trouvés plus tôt, et attrapée par
+  le même test, qui énumère les codes dans les sources au lieu de les
+  échantillonner.
+
+- ✅ **Le nettoyage des tests ne savait pas qu'une commande porte une facture.**
+  `invoices.order_id` est en `on delete restrict` — délibéré : une pièce
+  comptable interdit d'effacer son origine. Depuis la `0094`, toute commande
+  payée en porte une, et huit fixtures écrites avant échouaient. La règle est
+  passée à UN endroit — `supprimerCommandes`, dans `tests/helpers/db.ts` —
+  plutôt que recopiée huit fois. La clé n'a **pas** été passée en `cascade` :
+  ce serait donner à toute suppression de commande le pouvoir d'effacer une
+  facture.
+
+- ✅ **Les factures sont enfin émises** — migration `0094`. `emettre_facture`
+  existait depuis l'étape des factures et **personne ne l'appelait** : quatre
+  commandes payées, zéro facture. Rien ne le signalait — la route de lecture
+  répond 404 pour une facture absente exactement comme pour une commande
+  impayée, et la liste d'administration rend simplement un numéro nul. Les
+  tests de la fonction passaient tous : ils l'appelaient eux-mêmes. C'est le
+  CHAÎNON qui manquait, et un chaînon ne se teste pas en testant ses deux bouts.
+
+  Elle est appelée là où l'e-mail est programmé, dans la même transaction, et
+  elle est devenue idempotente : un rejeu ne consomme pas un numéro d'une
+  séquence comptable sans trou. Un index unique partiel monte la garde.
+
+  **La migration ne rattrape pas le passé** : antidater une facture lui
+  donnerait une date d'émission fausse et des numéros pris dans la séquence de
+  l'année courante. Les commandes déjà payées restent sans facture ; leur
+  régularisation sera une décision comptable, pas une migration.
+
+- ✅ **`subscriptions.id_prestataire` était toujours NUL.** `subscriptionId`
+  existe dans l'événement depuis l'origine et n'était transmis à personne.
+  Conséquence invisible : `DELETE /api/subscriptions` n'appelle le prestataire
+  QUE si l'identifiant existe — un client qui résiliait obtenait un 200, et le
+  prestataire n'était jamais prévenu. Il aurait continué de prélever. Corrigé
+  dans le gestionnaire de webhooks, et le script de peuplement le rapporte
+  désormais comme le ferait un vrai prestataire.
+
+- ✅ **Les codes promotionnels acceptent le tiret** — décision du 27 sept.
+  `DAVE-ATELIER` se dicte et se relit mieux que `DAVEATELIER`, et l'argument de
+  la règle d'origine plaidait contre elle. Ni en tête, ni en queue, ni doublé,
+  des deux côtés — route et champ.
+
 
 - **Aucune facture n'est jamais émise.** `emettre_facture` existe en base
   depuis l'origine et **personne ne l'appelle** — aucun appel dans `src/`. La

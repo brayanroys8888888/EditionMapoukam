@@ -36,6 +36,9 @@
     "abonnement_deja_actif": "Vous avez déjà un abonnement en cours.",
     "offre_indisponible": "Cette formule n'est plus proposée. Choisissez-en une autre sur la page des offres.",
     "aucun_abonnement_actif": "Vous n’avez pas d’abonnement en cours.",
+    "resiliation_impossible": "Cet abonnement n’est pas en cours : il n’y a pas de résiliation à demander.",
+    "rien_a_reprendre": "Cet abonnement n’a pas de résiliation à annuler.",
+    "abonnement_sans_prestataire": "Cet abonnement n’est rattaché à aucun prestataire : la demande ne peut pas lui être transmise.",
     "commande_non_payable": "Cette commande ne peut plus être réglée.",
     "confirmation_requise": "Le pays de votre moyen de paiement change la grille tarifaire applicable. Confirmez le nouveau montant.",
     "panier_vide": "Votre panier ne contient aucun titre commandable.",
@@ -878,7 +881,7 @@
     "promoInactif": "Inactif",
     "promoCreerTitre": "Créer un code",
     "promoCode": "Code",
-    "promoCodeAide": "De 3 à 32 caractères, lettres et chiffres seulement : un code se dicte au téléphone et se recopie à la main.",
+    "promoCodeAide": "De 3 à 32 caractères : lettres, chiffres et tirets. Un code se dicte au téléphone et se recopie à la main.",
     "promoType": "Type de remise",
     "promoType_pourcentage": "Pourcentage",
     "promoType_montant": "Montant fixe",
@@ -1324,7 +1327,13 @@
     "promoPortee": "S'applique à",
     "promoPorteeTout": "Toute la boutique",
     "promoDeviseZone": "Devise et zone",
-    "promoDeviseAide": "Ces deux champs ne comptent QUE pour un montant fixe : un pourcentage vaut dans toutes les zones."
+    "promoDeviseAide": "Ces deux champs ne comptent QUE pour un montant fixe : un pourcentage vaut dans toutes les zones.",
+    "aboResilier": "Résilier",
+    "aboReprendre": "Annuler la résiliation",
+    "aboResilieTitre": "Résiliation demandée",
+    "aboResilieTexte": "La demande est partie chez le prestataire. Le statut changera à la confirmation ; l'accès court jusqu'au terme de la période payée.",
+    "aboReprisTitre": "Reprise demandée",
+    "aboReprisTexte": "La demande est partie chez le prestataire. Le statut changera à la confirmation."
   },
   "tunnel": {
     "_commentaire": "Le fil d'étapes est un REPÈRE, jamais une navigation : on ne revient pas sur une étape franchie en cliquant dessus, parce qu'une commande créée ne se dé-crée pas. Les étapes passées sont donc annoncées comme telles aux lecteurs d'écran, sans être des liens.",

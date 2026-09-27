@@ -12,7 +12,7 @@ import {
 import * as stats from '@/lib/admin/stats';
 import { FixedClock } from '@/lib/clock';
 
-import { closePool, query, queryOne } from '../helpers/db';
+import { closePool, query, queryOne, supprimerCommandes } from '../helpers/db';
 import { createTestUser, deleteTestUser, type TestUser } from '../helpers/users';
 
 /**
@@ -721,7 +721,7 @@ describe('LE RÉSUMÉ COMPTABLE NE FRANCHIT JAMAIS LA FRONTIÈRE DE DEVISE', () 
   afterAll(async () => {
     for (const commande of commandes) {
       await query(`delete from public.order_items where order_id = $1`, [commande]);
-      await query(`delete from public.orders where id = $1`, [commande]);
+      await supprimerCommandes({ ids: [commande] });
     }
   });
 

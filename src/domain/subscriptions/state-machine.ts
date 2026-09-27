@@ -46,6 +46,22 @@ export const EVENEMENTS = [
   'renouvele',
   'prelevement_echoue',
   'annule',
+  /**
+   * La reprise : l'abonné revient sur sa résiliation avant le terme.
+   *
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ POURQUOI UN ÉVÉNEMENT À PART, ET NON « renouvele ».                  │
+   * │                                                                      │
+   * │ Un renouvellement arrivant sur un abonnement annulé est REFUSÉ, et   │
+   * │ doit le rester : ce serait un prélèvement que l'abonné a justement   │
+   * │ demandé d'arrêter. La reprise est l'inverse — une décision EXPLICITE │
+   * │ de continuer, prise avant que la période payée s'achève.             │
+   * │                                                                      │
+   * │ Elle ne déplace AUCUNE borne : la période payée reste celle qui      │
+   * │ était en cours. Reprendre n'est pas racheter.                        │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  'repris',
   'expire',
 ] as const;
 export type EvenementAbonnement = (typeof EVENEMENTS)[number];
@@ -54,7 +70,9 @@ export type RefusTransition =
   | 'deja_souscrit'
   | 'souscription_requise'
   | 'abonnement_termine'
-  | 'annulation_definitive';
+  | 'annulation_definitive'
+  /** Rien à reprendre : l'abonnement n'a jamais été résilié. */
+  | 'rien_a_reprendre';
 
 export type Transition =
   | { ok: true; statut: StatutAbonnement; inchange: boolean }
@@ -144,6 +162,20 @@ export function transitionner(
 
     case 'annule':
       return { ok: true, statut: 'annule', inchange: courant === 'annule' };
+
+    case 'repris':
+      /*
+       * On ne reprend que ce qui a été résilié. Depuis `impaye` ou `essai`,
+       * « reprendre » ne voudrait rien dire : ces états n'ont pas de
+       * résiliation à défaire, et les faire basculer en `actif` effacerait
+       * une période de grâce ou un essai en cours.
+       *
+       * Depuis `actif`, c'est sans effet plutôt qu'une erreur : un
+       * prestataire peut confirmer deux fois, et un rejeu ne doit pas lever.
+       */
+      if (courant === 'actif') return { ok: true, statut: 'actif', inchange: true };
+      if (courant !== 'annule') return { ok: false, raison: 'rien_a_reprendre' };
+      return { ok: true, statut: 'actif', inchange: false };
   }
 }
 

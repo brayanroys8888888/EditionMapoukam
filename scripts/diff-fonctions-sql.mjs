@@ -38,10 +38,37 @@ function definitions(source, fichier) {
   for (const entree of source.matchAll(motif)) {
     const nom = entree[1];
     const debut = entree.index;
-    // Le corps s'achève au `$$;` qui referme le bloc entre dollars.
-    const fin = source.indexOf('$$;', debut);
-    if (fin === -1) continue;
-    trouvees.push({ nom, fichier, corps: source.slice(debut, fin + 3) });
+
+    /*
+     * ┌──────────────────────────────────────────────────────────────────────┐
+     * │ L'ÉTIQUETTE ENTRE DOLLARS SE LIT, ELLE NE SE SUPPOSE PAS.            │
+     * │                                                                      │
+     * │ Ce script a longtemps cherché la fin d'un corps au premier `$$;`.     │
+     * │ Une fonction reprise depuis la base — `pg_get_functiondef` — est      │
+     * │ délimitée par `$function$`, et ne contient donc aucun `$$;` : la      │
+     * │ déclaration était SAUTÉE, sans un mot. Cinq migrations du dépôt sont  │
+     * │ dans ce cas, et la redéclaration de `fulfill_order` qui ajoute        │
+     * │ l'émission de la facture en faisait partie.                           │
+     * │                                                                      │
+     * │ C'est le défaut que l'en-tête de ce fichier décrit, retourné contre   │
+     * │ l'outil lui-même : un contrôle qui cesse de contrôler ne proteste     │
+     * │ pas. Il rapportait « 2 déclarations » au lieu de trois, et l'absence  │
+     * │ d'alerte se lisait comme une absence d'écart.                        │
+     * └──────────────────────────────────────────────────────────────────────┘
+     */
+    const ouverture = /\bas\s+(\$[A-Za-z_]*\$)/i.exec(source.slice(debut));
+    if (!ouverture) continue;
+    const etiquette = ouverture[1];
+    const apresOuverture = debut + ouverture.index + ouverture[0].length;
+
+    const fermeture = source.indexOf(etiquette, apresOuverture);
+    if (fermeture === -1) continue;
+
+    trouvees.push({
+      nom,
+      fichier,
+      corps: source.slice(debut, fermeture + etiquette.length + 1),
+    });
   }
   return trouvees;
 }

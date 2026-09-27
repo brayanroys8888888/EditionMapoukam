@@ -485,6 +485,7 @@ plafonnée**, indissociables.
 | `POST /api/admin/orders/{id}/refund` | `{ motif }` — l'un de `demande_client`, `paiement_double`, `fichier_defectueux`, `geste_commercial` | `{ order_id, statut: 'rembourse' }` |
 | `GET /api/admin/subscriptions` | `statut?` (dont `anomalie`), `page`, `taille` | `{ abonnements[], page }` |
 | `PUT /api/admin/subscriptions/{id}/zone` | `zone`, `motif?` | Abonnement modifié |
+| `POST /api/admin/subscriptions/{id}/resiliation` | `geste` : `resilier` \| `reprendre` | `{ demande, geste, acces_maintenu_jusqu_au, statut }` — ne change AUCUN statut : le prestataire est prévenu, l'événement signé fera foi |
 | `GET /api/admin/promos` | `page`, `taille` | `{ codes[], page }` |
 | `POST /api/admin/promos` | `code`, `type`, `valeur`, `devise?`, `zone?`, **`debut_le?`**, `expire_le?`, `usage_max?`, `actif?` | `201` |
 | `PATCH /api/admin/settings` | 5 paramètres métier, tous optionnels | Réglages |

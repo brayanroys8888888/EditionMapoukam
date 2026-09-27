@@ -78,6 +78,17 @@ const ECRIVAINS_ADMIS: readonly { fichier: string; role: string }[] = [
       'plus rien ne dirait pourquoi cet avis avait pu être écrit.',
   },
   {
+    fichier: 'supabase/migrations/20260927000094_facture_a_l_octroi.sql',
+    role:
+      'ACHAT (reprise) — `fulfill_order` est redéclarée pour y ajouter l’émission de la ' +
+      'facture, dans la même transaction que l’octroi — exactement ce que la 0041 a fait ' +
+      'pour l’email. L’octroi lui-même est INCHANGÉ : `npm run diff:sql fulfill_order` ne ' +
+      'montre, dans le corps, que les lignes ajoutées ; les 8 lignes rapportées comme ' +
+      'retirées sont l’en-tête reformaté par `pg_get_functiondef`, dont la migration ' +
+      'reprend la définition vivante (signature sur une ligne, mots-clés en capitales, ' +
+      '`$function$` au lieu de `$$`).',
+  },
+  {
     fichier: 'supabase/migrations/20260802000043_refus_explicite_et_reset.sql',
     role:
       'CONSOLE /dev — troisième déclaration de la remise à zéro, étendue aux lignées de ' +
