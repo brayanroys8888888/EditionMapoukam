@@ -2258,10 +2258,31 @@ const SCENES = {
         maquette:
           'div[style*="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))"] > div:first-child',
         app: '[class*="admin_bandeauCellule"]',
-        ignore: ['y', 'h'],
+        /*
+         * La LARGEUR suit le nombre de cellules, pas une cote.
+         *
+         * `repeat(auto-fit, minmax(240px, 1fr))` partage la ligne : le
+         * prototype a une seule devise et quatre cellules de 284 px, nous en
+         * rendons trois par devise rencontrée, donc 379 px sur une devise.
+         * C'est la grille qui fonctionne, pas un écart à corriger — et la
+         * borne de 240 px, elle, se compare.
+         */
+        ignore: ['y', 'h', 'w'],
       },
       'sur-titre de cellule': {
-        maquette: 'div[style*="letter-spacing: 0.12em"][style*="font-size: 10px"]',
+        /*
+         * BORNÉ AU BANDEAU, et ce n'est pas un détail de style.
+         *
+         * Sans le préfixe de grille, le sélecteur attrapait le premier
+         * sur-titre de la page — un compteur de la carte d'alerte OLIVE, écrit
+         * en pêche pâle sur fond sombre. La sonde comparait donc une étiquette
+         * sur chrome à une étiquette sur carte claire, et rapportait un écart
+         * de couleur parfaitement réel entre deux éléments qui n'ont rien à
+         * voir. Le dossier de passation tranche : les kickers valent
+         * `accent-700`, ce que nous posons déjà.
+         */
+        maquette:
+          'div[style*="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))"] div[style*="letter-spacing: 0.12em"]',
         app: '[class*="admin_bandeauIntitule"]',
         ignore: ['x', 'y', 'w'],
       },

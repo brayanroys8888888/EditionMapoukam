@@ -62,9 +62,12 @@ with toasts »*. Le backend existe, terminé en seize étapes.
    Les deux sont sous **OFL-1.1**, permissive.
 5. **`lang="fr"` en dur — abandonné.** Le segment `[langue]` existe, et
    `<html lang>` vient du middleware.
-6. **Les écrans d'administration sont absents du dossier.** Douze écrans, plus
-   les avis, les témoignages et les deux abonnements étanches. Ils prennent les
-   jetons V3 et rien d'autre : le dossier n'a rien à en dire.
+6. **Les écrans d'administration sont absents du dossier.** ⚠️ **PÉRIMÉ depuis
+   le 17 septembre 2026** — le dossier a gagné `Admin EditionMapoukam v2`, et
+   il a beaucoup à en dire. Voir « Le prototype d'administration » en fin de
+   §9. Ce qui suit vaut pour la période où cette phrase était vraie : douze
+   écrans, plus les avis, les témoignages et les deux abonnements étanches,
+   prenant les jetons V3 et rien d'autre.
 
 Le sélecteur de moyen de paiement (CB / Orange Money / MTN MoMo) n'est **pas**
 une règle inventée : le cahier des charges le porte (§ zone Afrique, Lot 5).
@@ -116,7 +119,7 @@ Repris de `08-build-plan.md`, réécrit contre le dépôt réel.
 | **7** | Panier, paiement, confirmation | idem |
 | **8** | Authentification, espace personnel | idem |
 | **9** | Pages éditoriales, association, expertise, offres, à propos, contact | idem |
-| **10** | Administration : jetons seulement, aucune refonte structurelle | idem |
+| **10** | Administration : jetons seulement, aucune refonte structurelle — ⚠️ **rouvert** le 17 septembre, voir fin de §9 | idem |
 | **11** | Passe mouvement — les quinze effets de `10`, tous sous `prefers-reduced-motion` | idem |
 | **12** | Passe vivante — `11` : panier optimiste, synchronisation inter-onglets, recherche vivante, reprise de lecture | idem |
 | **13** | Passe accessibilité et performance, puis la liste d'acceptation de `08` | `npm run verify` + `npm run rendu` |
@@ -427,6 +430,10 @@ lecteur d'écran ne peut pas désambiguïser — il annonce deux fois le même t
 pour deux valeurs différentes. Deux clés ont été ajoutées.
 
 ### Lot 10 — administration
+
+⚠️ **Ce lot a été ROUVERT le 17 septembre 2026**, quand le dossier a gagné un
+prototype d'administration. Ce qui suit reste vrai de la passe de septembre ;
+la refonte structurelle est décrite en fin de §9.
 
 Jetons seulement, comme prévu. `--focus-couleur` a été posé sur `.rail` et
 `.barre` : les deux surfaces sombres de l'administration, où l'anneau de focus
@@ -1772,3 +1779,112 @@ Le relevé automatique n'a **pas** pu être joué sur ces deux écrans : les pag
 de démonstration ont été remplacées par des fichiers de 44 octets par la suite
 d'intégration, et le lecteur affiche donc un plateau vide. Les mesures ci-dessus
 viennent du prototype et des captures ; à confirmer au premier relevé possible.
+
+---
+
+### Le prototype d'administration — mesuré le 27 septembre 2026
+
+Le dossier Claude Design a gagné deux fichiers que ce document ne pouvait pas
+connaître quand il a été écrit : `Admin EditionMapoukam.dc.html` le 16
+septembre, puis **`Admin EditionMapoukam v2.dc.html` le 17**, qui le remplace.
+Un dossier de passation de dix documents l'a rejoint le 26.
+
+Deux affirmations de ce document sont donc devenues fausses, et elles ont été
+marquées là où elles se trouvaient : **§2 point 6** (« le dossier n'a rien à en
+dire ») et le **lot 10** (« jetons seulement, aucune refonte structurelle »).
+
+#### Ce que le propriétaire a décidé
+
+| Question | Décision |
+| --- | --- |
+| Tableau de bord | Adopter la structure du prototype, pas seulement le repeindre |
+| Pied du rail | Carte d'identité et vraie déconnexion |
+| Rail | Groupes oui, pastilles de comptage non |
+| Portée | Toutes les directions — **pas de garde `estV3()`** |
+
+La portée mérite son argument, parce qu'elle s'écarte des lots 1 à 13 :
+l'administration est un outil interne, et aucune direction V1 ou V2 n'y a jamais
+été validée devant un client. C'est le raisonnement que le lot 7 avait déjà tenu
+pour le tunnel de paiement. Un seul chemin de code, une seule surface de test.
+
+#### Le périmètre, et ce qui en est resté dehors
+
+Trois onglets : `Tableau de bord`, `Contes`, `Livrets pédagogiques`. Les quatre
+autres écrans du prototype — ajout et détail, conte et livret — sont hors
+périmètre et n'ont pas été construits sur ce modèle.
+
+#### Ce que la mesure a donné
+
+**Zéro écart de dimension sur les trois écrans.** La seule cote qui bouge est
+un dixième de pixel sur la largeur du champ de recherche, un arrondi
+sous-pixellaire. Tout le reste des écarts est chromatique, et se range en
+quatre familles — toutes assumées, décision du propriétaire du 27 septembre.
+
+**1. Les cartes sont plus claires chez nous, et c'est voulu.** Le prototype
+d'administration pose ses cartes en `#EBDDC5`, plus sombre que la page, avec le
+champ de recherche ramené à la couleur du fond. Nous faisons l'inverse : carte
+`#F9F4ED`, champ légèrement creusé en `#EFE3CD`.
+
+En cherchant d'où venait l'écart, la passe a trouvé la réponse : **notre palette
+vient du prototype PUBLIC, pas du système Organic.** `#EFE3CD` figure dans
+`Site EditionMapoukam.dc.html` et **nulle part** dans le système de design.
+L'auteur du prototype public avait délibérément éclairci les cartes ; celui de
+l'administration a repris le `.card` brut sans cette surcharge. C'est une
+omission, pas une intention — et une administration dont les cartes diffèrent de
+celles du site coûterait de la cohérence pour rien.
+
+**2. Trois jetons de chrome sombre divergent, et ils sont globaux.**
+
+| Rôle | Prototype | Nous |
+| --- | --- | --- |
+| Encre pâle sur chrome | `#F9F4ED` | `#F2EAD9` (`--v3-sur-profond`) |
+| Accent sur chrome | `#FFC6A5` | `#E39560` (`--v3-nuit-terre`) |
+| Filet sur clair | 16 % | 14 % (`--v3-ligne`) |
+
+Les deux premiers sont nos valeurs V3, employées partout où le site pose du
+chrome sombre — en-tête public et pied de page compris — et validées par les
+contrôles de contraste de `design-tokens.test.ts`. Le troisième est un écart de
+deux centièmes d'opacité, invisible à l'œil. Les changer pour l'administration
+les changerait sur tout le site : on ne les touche pas.
+
+**3. L'encre sur le terracotta reste sombre.** Boutons primaires, segment coché,
+pastille d'identité : le prototype y écrit en pâle, nous en sombre. Du blanc sur
+terracotta donne 3,2:1, et `design-tokens` le refuse. C'est la divergence déjà
+inscrite pour les boutons du lot Watosonne, pour la même raison.
+
+**4. L'étiquette de statut porte une bordure, et le prototype non.** Le
+prototype écrit « Publié » en pastille verte douce ; nous écrivons « PUBLIÉ » en
+capitales cerclées. L'état se lit à la **forme** autant qu'à la couleur — un
+daltonien distingue « publié » de « brouillon » par le texte, pas par le vert.
+§5.3 du cahier des charges vise WCAG 2.1 AA ; la règle l'emporte sur le dessin.
+
+#### Une sonde qui mentait, et pourquoi ça compte
+
+`sur-titre de cellule` rapportait un écart de couleur franc sur le bandeau de
+chiffres — pêche pâle contre terre brûlée. Le sélecteur
+`div[style*="letter-spacing: 0.12em"][style*="font-size: 10px"]` n'était **pas
+borné au bandeau** : il attrapait le premier sur-titre de la page, un compteur
+de la carte d'alerte olive, écrit en pâle sur fond sombre. La sonde comparait
+donc une étiquette sur chrome à une étiquette sur carte claire, et son écart
+était réel entre deux éléments qui n'ont rien à voir.
+
+Le dossier de passation tranche — « petites étiquettes (kickers) :
+`accent-700` » — et c'est exactement ce que nous posons. Sonde bornée à la
+grille du bandeau, l'écart disparaît.
+
+La leçon vaut au-delà du cas : une sonde dont le sélecteur n'est pas ancré
+mesure ce qu'elle trouve, pas ce qu'elle nomme. Les sondes qui ignorent `x` et
+`y` — nécessaire quand la position dépend du contenu — perdent du même coup le
+moyen de s'apercevoir qu'elles ont changé d'élément.
+
+#### Ce que la mesure ne peut pas comparer
+
+Le bandeau de chiffres **ne se rend pas sur la base locale** : il lit les
+recettes, et le jeu de démonstration n'a aucune commande. Il a été mesuré le 27
+septembre contre une commande payée fabriquée pour l'occasion, puis retirée —
+la table est revenue à zéro ligne, vérifié.
+
+Sa largeur de cellule diverge par construction : `repeat(auto-fit, minmax(240px,
+1fr))` partage la ligne, le prototype a une devise et quatre cellules de 284 px,
+nous en rendons trois par devise rencontrée, donc 379 px sur une devise. La
+sonde ignore désormais `w` et le dit. La borne de 240 px, elle, se compare.

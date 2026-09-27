@@ -62,6 +62,11 @@ export default tseslint.config(
       // déploie — le soumettre aux règles du projet fait échouer la porte sur
       // 99 erreurs qui ne parlent d'aucun code de l'application.
       'design_handoff_edition_mapoukam/**',
+      // Son jumeau d'administration, arrivé le 27 septembre 2026 : mêmes
+      // fichiers de prototype — `support.js`, `image-slot.js`, le bundle du
+      // système de design — et donc 151 erreurs sur du code que personne ne
+      // déploie et que personne ne corrigera.
+      'design_handoff_admin_mapoukam/**',
       'next-env.d.ts',
       // Artefacts générés par `supabase start` (fonctions edge de démonstration).
       'supabase/.temp/**',

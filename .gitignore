@@ -51,6 +51,13 @@ captures/
 # b41ce6a2-73cb-4d17-bb4f-8582be43d7e0. La decision, elle, est versionnee
 # dans docs/REFONTE-V3.md.
 design_handoff_edition_mapoukam/
+
+# Le jumeau d administration, arrive le 27 septembre 2026 : meme raison, et une
+# de plus. Non ignore, eslint lit le support.js et l image-slot.js du prototype
+# et sort 151 erreurs sur du code qui n est pas le notre et qu on ne corrigera
+# jamais — `npm run lint` tombe sans qu aucune ligne du depot ait bouge.
+design_handoff_admin_mapoukam/
+
 .captures/
 
 .vercel
