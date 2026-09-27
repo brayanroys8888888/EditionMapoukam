@@ -1226,6 +1226,8 @@ export type Database = {
           id: string
           maj_le: string
           montant_total: number
+          moyen_paiement: Database["public"]["Enums"]["moyen_paiement"] | null
+          numero: number
           paye_le: string | null
           pays_paiement: string | null
           prestataire: string
@@ -1242,6 +1244,8 @@ export type Database = {
           id?: string
           maj_le?: string
           montant_total: number
+          moyen_paiement?: Database["public"]["Enums"]["moyen_paiement"] | null
+          numero?: number
           paye_le?: string | null
           pays_paiement?: string | null
           prestataire?: string
@@ -1258,6 +1262,8 @@ export type Database = {
           id?: string
           maj_le?: string
           montant_total?: number
+          moyen_paiement?: Database["public"]["Enums"]["moyen_paiement"] | null
+          numero?: number
           paye_le?: string | null
           pays_paiement?: string | null
           prestataire?: string
@@ -1951,6 +1957,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_compter_commandes_par_statut: {
+        Args: { p_devise?: string; p_recherche?: string }
+        Returns: {
+          nb: number
+          statut: Database["public"]["Enums"]["order_status"]
+        }[]
+      }
       admin_creer_contenu_association: {
         Args: {
           p_acces?: Database["public"]["Enums"]["association_access"]
@@ -2212,7 +2225,9 @@ export type Database = {
       }
       admin_lister_commandes: {
         Args: {
+          p_devise?: string
           p_page?: number
+          p_recherche?: string
           p_statut?: string
           p_taille?: number
           p_user_id?: string
@@ -2224,9 +2239,14 @@ export type Database = {
           email: string
           id: string
           montant_total: number
+          moyen_paiement: Database["public"]["Enums"]["moyen_paiement"]
           nb_lignes: number
+          nom: string
+          numero: number
           numero_facture: string
           paye_le: string
+          premier_titre: string
+          premier_type: Database["public"]["Enums"]["document_type"]
           remise: number
           statut: Database["public"]["Enums"]["order_status"]
           total_lignes: number
@@ -2662,6 +2682,16 @@ export type Database = {
       admin_retirer_droit: {
         Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
         Returns: undefined
+      }
+      admin_stats_commandes: {
+        Args: { p_at?: string }
+        Returns: {
+          devise: string
+          nb_en_attente: number
+          nb_payees: number
+          nb_remboursees_30j: number
+          net_encaisse: number
+        }[]
       }
       admin_supprimer_avis: {
         Args: { p_acteur: string; p_avis: string }
@@ -3197,6 +3227,7 @@ export type Database = {
       email_statut: "en_attente" | "envoye" | "echoue"
       entitlement_type: "achat" | "offert"
       ingestion_status: "en_attente" | "en_cours" | "termine" | "echoue"
+      moyen_paiement: "carte" | "orange_money" | "mtn_momo" | "autre"
       order_status: "en_attente" | "paye" | "rembourse" | "echoue"
       page_orientation: "paysage" | "portrait"
       price_zone: "international" | "afrique"
@@ -3389,6 +3420,7 @@ export const Constants = {
       email_statut: ["en_attente", "envoye", "echoue"],
       entitlement_type: ["achat", "offert"],
       ingestion_status: ["en_attente", "en_cours", "termine", "echoue"],
+      moyen_paiement: ["carte", "orange_money", "mtn_momo", "autre"],
       order_status: ["en_attente", "paye", "rembourse", "echoue"],
       page_orientation: ["paysage", "portrait"],
       price_zone: ["international", "afrique"],

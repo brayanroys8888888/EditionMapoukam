@@ -48,24 +48,30 @@ const COMPTE_ADMIN = { email: 'admin@editionmapoukam.test', motDePasse: 'Adm-Map
 
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ LE PROTOTYPE D'ADMINISTRATION N'EST PAS DANS LE DOSSIER DE PASSATION.   │
+ * │ LE PROTOTYPE D'ADMINISTRATION EST SUR LE DISQUE DEPUIS LE 27 SEPTEMBRE.  │
  * │                                                                          │
- * │ Les deux prototypes du site public ont été déposés sous                  │
+ * │ Les deux prototypes du site public ont ete deposes sous                  │
  * │ `design_handoff_edition_mapoukam/` le 5 septembre 2026. Celui de         │
- * │ l'administration est arrivé le 17, et il vit dans le projet Claude       │
- * │ Design — pas sur ce disque.                                             │
+ * │ l'administration est arrive le 17 dans le projet Claude Design, et il a  │
+ * │ ete exporte le 27 sous `design_handoff_admin_mapoukam/` — son propre     │
+ * │ dossier, parce qu'il porte aussi ses dix documents de passation.         │
  * │                                                                          │
- * │ D'où cette variable : on lui passe une URL servie, valable une heure, et │
- * │ RIEN n'est écrit ici — un jeton de service n'a pas sa place dans un      │
- * │ fichier versionné. Le repli reste le chemin local, pour le jour où le    │
- * │ fichier descendra dans le dossier comme les deux autres.                 │
+ * │ Le chemin local est donc redevenu le DEFAUT. Il pointe le dossier        │
+ * │ d'administration et pas le dossier public : le prototype charge quatre   │
+ * │ voisins — `image-slot.js`, `support.js`, `_ds/` et `assets/` — et une    │
+ * │ copie du seul HTML ailleurs donnerait une maquette amputee, mesuree      │
+ * │ sans qu'aucune sonde ne proteste.                                        │
+ * │                                                                          │
+ * │ La variable reste, pour mesurer contre une version servie sans rien      │
+ * │ ecrire ici — un jeton de service n'a pas sa place dans un fichier        │
+ * │ versionne :                                                              │
  * │                                                                          │
  * │   MAQUETTE_ADMIN='<url servie>' node scripts/releve-v3.mjs admin-contes  │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 const MAQUETTE_ADMIN =
   process.env['MAQUETTE_ADMIN'] ??
-  `file:///${resolve('design_handoff_edition_mapoukam/Admin EditionMapoukam v2.dc.html').replace(/\\/g, '/')}`;
+  `file:///${resolve('design_handoff_admin_mapoukam/Admin EditionMapoukam v2.dc.html').replace(/\\/g, '/')}`;
 
 /**
  * Ouvre le prototype d'administration sur l'écran voulu.
@@ -2352,6 +2358,68 @@ const SCENES = {
         maquette: 'div[style*="min-width: 700px"][style*="cursor: pointer"]',
         app: '[class*="admin_grilleRangee"]',
         // La hauteur suit le contenu : 76 px avec des manques, 72 sans.
+        ignore: ['h'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — commandes ═══════════════════════════════════════ */
+
+  'admin-commandes': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Commandes'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/commandes`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'bouton secondaire': {
+        maquette: 'div[style*="backdrop-filter: blur(10px)"] button',
+        app: '[class*="admin_barreActions"] a',
+      },
+      'bandeau': {
+        maquette: 'div[style*="padding: 0px"][style*="overflow: hidden"]',
+        app: '[class*="admin_bandeau"]:not([class*="Grille"]):not([class*="Cellule"])',
+        ignore: ['h'],
+      },
+      'carte de filtres': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"]',
+        app: '[class*="admin_filtresCarte"]',
+      },
+      'champ de recherche': {
+        maquette: 'input[class*="input"]',
+        app: '[class*="admin_rechercheSaisieOrganic"]',
+      },
+      'décompte': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"] div[style*="white-space: nowrap"]',
+        app: '[class*="admin_decompte"]',
+        ignore: ['x', 'w'],
+      },
+      'segmenté': { maquette: '.seg', app: '[class*="admin_seg"]', ignore: ['w'] },
+      'segment': { maquette: '.seg-opt', app: '[class*="admin_segOpt"]', ignore: ['w'] },
+      'cadre du tableau': {
+        maquette: 'div[style*="overflow-x: auto"]',
+        app: '[class*="admin_grilleCadre"]',
+        ignore: ['h', 'gap'],
+      },
+      'en-tête de colonnes': {
+        maquette: 'div[style*="min-width: 820px"]',
+        app: '[class*="admin_grilleEntete"]',
+      },
+      'première rangée': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        // La hauteur suit le contenu : deux lignes dans la cellule principale.
+        ignore: ['h'],
+      },
+      'note de bas': {
+        maquette: 'p[style*="max-width: 720px"]',
+        app: '[class*="admin_note"]',
+        // Le texte est plus long chez nous : la hauteur suit le retour à la ligne.
         ignore: ['h'],
       },
     },

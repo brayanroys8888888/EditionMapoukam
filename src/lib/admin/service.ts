@@ -126,7 +126,12 @@ export async function listerUtilisateurs(
 }
 
 export async function listerCommandes(
-  filtres: { statut?: string | null; userId?: string | null } & Pagination,
+  filtres: {
+    statut?: string | null;
+    userId?: string | null;
+    devise?: string | null;
+    recherche?: string | null;
+  } & Pagination,
   options: { client?: AppSupabaseClient } = {},
 ) {
   const client = options.client ?? createServiceClient();
@@ -135,7 +140,32 @@ export async function listerCommandes(
     p_user_id: filtres.userId ?? null,
     p_page: filtres.page,
     p_taille: filtres.taille,
+    p_devise: filtres.devise ?? null,
+    p_recherche: filtres.recherche ?? null,
   });
+}
+
+/**
+ * Nombre de commandes par statut, pour les compteurs des segments.
+ *
+ * Prend les AUTRES filtres actifs, jamais le statut : un compteur doit dire
+ * ce qu'on trouverait en cliquant, pas ce qu'on voit déjà.
+ */
+export async function compterCommandesParStatut(
+  filtres: { devise?: string | null; recherche?: string | null } = {},
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_compter_commandes_par_statut', {
+    p_devise: filtres.devise ?? null,
+    p_recherche: filtres.recherche ?? null,
+  });
+}
+
+/** Les quatre chiffres de la bande de l'écran Commandes. */
+export async function statsCommandes(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_stats_commandes', {});
 }
 
 export async function listerLivres(

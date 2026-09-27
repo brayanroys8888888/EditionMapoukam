@@ -5,6 +5,7 @@ import { GET as horlogeLire, POST as horlogeAvancer, DELETE as horlogeReset } fr
 import { GET as emails } from '@/app/api/dev/emails/route';
 import { POST as evenements } from '@/app/api/dev/events/route';
 import { POST as remiseAZero } from '@/app/api/dev/reset/route';
+import { GET as paysLire, POST as paysPoser } from '@/app/api/dev/pays/route';
 import PageDev from '@/app/dev/page';
 import { consoleDisponible } from '@/lib/dev/guard';
 
@@ -53,9 +54,13 @@ describe('en production', () => {
       Promise.resolve(emails()),
       evenements(postJson('/api/dev/events', { type: 'paiement.reussi', donnees: {} })),
       remiseAZero(),
+      Promise.resolve(paysLire()),
+      paysPoser(postJson('/api/dev/pays', { pays: 'CM' })),
     ]);
 
-    expect(reponses.map((r) => r.status)).toEqual([404, 404, 404, 404, 404, 404, 404]);
+    expect(reponses.map((r) => r.status)).toEqual([
+      404, 404, 404, 404, 404, 404, 404, 404, 404,
+    ]);
   });
 
   it('ne divulgue rien dans le corps du refus', async () => {

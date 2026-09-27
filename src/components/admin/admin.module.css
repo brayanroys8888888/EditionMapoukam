@@ -581,14 +581,21 @@
  * marge écrite en dur dans le JSX était déjà la seconde définition de ce
  * paragraphe, et la troisième aurait divergé.
  */
+/*
+ * LA NOTE SOUS UN TABLEAU — 13 px, 720 px, mesures du prototype.
+ *
+ * `margin-top: 0` et non 18 px : la colonne d'administration espace deja ses
+ * enfants de `--pas-4`, et la marge s'y ajoutait. Le prototype pose zero et
+ * laisse la colonne faire, ce qui donne le meme ecart partout plutot qu'un
+ * ecart de plus sous les seuls blocs qui portent une note.
+ */
 .note {
-  font-size: var(--taille-m);
+  font-size: 13px;
   line-height: 1.55;
-  color: var(--encre-douce);
-  margin-top: 18px;
-  max-width: var(--largeur-texte);
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+  margin-top: 0;
+  max-width: 720px;
 }
-
 .section {
   margin-bottom: 38px;
 }
@@ -2039,6 +2046,18 @@ textarea.saisie {
   overflow-wrap: anywhere;
 }
 
+/*
+ * Le numéro d'une commande : chiffres à chasse fixe, mais aligné à GAUCHE.
+ *
+ * `.numerique` porte les deux — chasse fixe ET alignement à droite — parce
+ * qu'il sert aux colonnes de montants, où comparer deux nombres suppose qu'ils
+ * partagent leur bord droit. Ici le numéro coiffe une date, et deux lignes
+ * d'un même bloc alignées chacune de son côté se lisent comme deux colonnes.
+ */
+.grilleNumero {
+  font-variant-numeric: tabular-nums;
+}
+
 .grilleSousLigne {
   display: flex;
   gap: 5px;
@@ -2182,6 +2201,7 @@ textarea.saisie {
  */
 .bandeau {
   padding: 0;
+  gap: 0;
   overflow: hidden;
 }
 
@@ -2214,6 +2234,27 @@ textarea.saisie {
   font-family: var(--police-titre);
   font-size: 30px;
   line-height: 1;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE CHIFFRE DES VENTES EST PLUS PETIT QUE CELUI DU TABLEAU DE BORD.      │
+ * │                                                                          │
+ * │ 28 px sur 1,05 aux ecrans de Ventes et de Communaute ; 30 px sur 1 au    │
+ * │ tableau de bord et a l'association. Le dossier de passation le cote      │
+ * │ ainsi (`01-tokens.md` § 4), et la raison se devine : le tableau de bord  │
+ * │ montre QUATRE chiffres qu'on vient lire, une liste en montre quatre      │
+ * │ qu'on survole avant de descendre au tableau.                             │
+ * │                                                                          │
+ * │ L'ecart fait 0,6 px — 30 moins 28 × 1,05 — et il ne se voit pas. Il se   │
+ * │ MESURE : sans lui, toute la page glissait de six dixiemes sous le        │
+ * │ bandeau, et chaque sonde en dessous rapportait un ecart que rien         │
+ * │ n'expliquait.                                                            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.bandeauValeurVentes {
+  font-size: 28px;
+  line-height: 1.05;
 }
 
 .bandeauNote {
@@ -3045,4 +3086,30 @@ textarea.saisie {
     position: static;
     max-width: none;
   }
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │
+ * │                                                                          │
+ * │ Le texte attenue vaut 55 % sur les ecrans de CATALOGUE et 58 % sur ceux  │
+ * │ de VENTES, de COMMUNAUTE et de l'association. Le dossier de passation    │
+ * │ le porte noir sur blanc (`01-tokens.md` § 3), et la mesure le confirme   │
+ * │ sur quatre ecrans.                                                       │
+ * │                                                                          │
+ * │ Trois centiemes d'opacite ne se voient pas a l'oeil ; ils se voient au   │
+ * │ releve, et une valeur unique ferait echouer la moitie des ecrans a       │
+ * │ chaque passe. D'ou ces modificateurs, explicites plutot qu'une variable  │
+ * │ posee trois niveaux plus haut — ils se lisent la ou ils s'appliquent.    │
+ * │                                                                          │
+ * │ CE BLOC DOIT RESTER EN DERNIER. Il modifie trois regles definies plus    │
+ * │ haut A SPECIFICITE EGALE : place avant elles, il serait ecrase sans      │
+ * │ qu'aucun outil ne proteste, et les trois ecrans de Ventes garderaient    │
+ * │ 55 % en croyant porter 58 %.                                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.noteVentes,
+.decompteVentes,
+.grilleEnteteVentes {
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
 }
