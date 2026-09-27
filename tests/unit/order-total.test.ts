@@ -221,6 +221,73 @@ describe('total', () => {
   });
 });
 
+describe('la fenêtre de validité d’un code', () => {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ `[début, fin[` — FERMÉE À GAUCHE, OUVERTE À DROITE.                  │
+   * │                                                                      │
+   * │ Un code qui commence à midi est accepté à midi ; un code qui expire à │
+   * │ midi est refusé à midi. C'est la convention du dépôt, celle que       │
+   * │ `bornes-temporelles.test.ts` recense dans tout le schéma, et les deux │
+   * │ bornes doivent la suivre DANS LE MÊME SENS — sans quoi un code d'une  │
+   * │ seconde serait soit jamais valable, soit valable deux fois.           │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const codeAvecFenetre = (debutLe: Date | null, expireLe: Date | null): CodePromo => ({
+    id: 'p1',
+    code: 'RENTREE',
+    type: 'pourcentage',
+    valeur: 20,
+    devise: null,
+    zone: null,
+    debutLe,
+    expireLe,
+    actif: true,
+    usageMax: null,
+    usageCount: 0,
+  });
+
+  const AVANT = new Date('2026-07-29T11:59:59Z');
+  const APRES = new Date('2026-07-29T12:00:01Z');
+
+  it('refuse une seconde AVANT son début', () => {
+    const resultat = calculerRemise(codeAvecFenetre(MAINTENANT, null), 1000, 'EUR', AVANT, 'international');
+    expect(resultat).toEqual({ ok: false, raison: 'pas_encore' });
+  });
+
+  it('accepte À L’INSTANT MÊME de son début — la borne est inclusive', () => {
+    const resultat = calculerRemise(codeAvecFenetre(MAINTENANT, null), 1000, 'EUR', MAINTENANT, 'international');
+    expect(resultat.ok).toBe(true);
+  });
+
+  it('accepte une seconde après son début', () => {
+    const resultat = calculerRemise(codeAvecFenetre(MAINTENANT, null), 1000, 'EUR', APRES, 'international');
+    expect(resultat.ok).toBe(true);
+  });
+
+  it('refuse À L’INSTANT MÊME de son expiration — la borne est exclusive', () => {
+    const resultat = calculerRemise(codeAvecFenetre(null, MAINTENANT), 1000, 'EUR', MAINTENANT, 'international');
+    expect(resultat).toEqual({ ok: false, raison: 'expire' });
+  });
+
+  it('dit « pas encore » plutôt qu’« expiré » quand les deux pourraient répondre', () => {
+    /*
+     * La base interdit une fenêtre à l'envers, mais le domaine ne dépend pas
+     * de la base : si une telle donnée lui arrivait, il doit répondre la
+     * raison qui se lit — on ne dit pas « expiré » d'un code jamais ouvert.
+     */
+    const bancal = codeAvecFenetre(APRES, AVANT);
+    expect(calculerRemise(bancal, 1000, 'EUR', MAINTENANT, 'international')).toEqual({
+      ok: false,
+      raison: 'pas_encore',
+    });
+  });
+
+  it('accepte sans aucune borne — une fenêtre vide n’enferme rien', () => {
+    expect(calculerRemise(codeAvecFenetre(null, null), 1000, 'EUR', MAINTENANT, 'international').ok).toBe(true);
+  });
+});
+
 describe('codes promotionnels', () => {
   const promo = (partiel: Partial<CodePromo>): CodePromo => ({
     id: 'p1',
@@ -229,6 +296,7 @@ describe('codes promotionnels', () => {
     valeur: 20,
     devise: null,
     zone: null,
+    debutLe: null,
     expireLe: null,
     actif: true,
     usageMax: null,

@@ -2637,6 +2637,63 @@ const SCENES = {
     },
   },
 
+  /* ══ ADMINISTRATION — codes promotionnels ═════════════════════════════ */
+
+  'admin-promos': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Codes promo'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/promos`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'bouton principal': {
+        maquette: 'div[style*="backdrop-filter: blur(10px)"] button',
+        app: '[class*="admin_barreActions"] a',
+      },
+      'carte de filtres': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"]',
+        app: '[class*="admin_filtresCarte"]',
+      },
+      'champ de recherche': {
+        maquette: 'input[class*="input"]',
+        app: '[class*="admin_rechercheSaisieOrganic"]',
+        // Sa largeur est ce que laisse le décompte : « 6 codes » ici.
+        ignore: ['w'],
+      },
+      'segmenté': { maquette: '.seg', app: '[class*="admin_seg"]', ignore: ['w'] },
+      'segment': { maquette: '.seg-opt', app: '[class*="admin_segOpt"]', ignore: ['w'] },
+      'cadre du tableau': {
+        maquette: 'div[style*="overflow-x: auto"]',
+        app: '[class*="admin_grilleCadre"]',
+        ignore: ['h', 'gap'],
+      },
+      'en-tête de colonnes': {
+        maquette: 'div[style*="min-width: 820px"]',
+        app: '[class*="admin_grilleEntete"]',
+      },
+      'première rangée': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        ignore: ['h'],
+      },
+      'pastille du code': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"] span[style*="ui-monospace"]',
+        app: '[class*="admin_promoCode"]',
+        // La largeur suit le code : « BIENVENUE » n'a pas la longueur du leur.
+        ignore: ['w'],
+      },
+      'jauge d’utilisations': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"] span[style*="height: 6px"]',
+        app: '[class*="admin_promoJauge"]:not([class*="Remplissage"])',
+      },
+    },
+  },
+
   /* ══ ADMINISTRATION — livrets pédagogiques ════════════════════════════ */
 
   'admin-livrets': {

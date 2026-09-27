@@ -3647,6 +3647,106 @@ textarea.saisie {
   font-weight: var(--graisse-forte);
 }
 
+/* ══ LES CODES PROMOTIONNELS ═══════════════════════════════════════════════ */
+
+/*
+ * Le code lui-même : une pastille à chasse fixe.
+ *
+ * Un code promotionnel se DICTE et se RECOPIE — « zéro ou O », « un ou l ».
+ * La chasse fixe les distingue, et la pastille dit que c'est une valeur à
+ * saisir, pas une phrase à lire.
+ */
+.promoCode {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  font-weight: var(--graisse-forte);
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--action) 12%, var(--surface));
+  color: var(--action-texte);
+}
+
+/* ── La barre d'utilisations ────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ ELLE EST DÉCORATIVE, ET LE CHIFFRE EST AU-DESSUS.                       │
+ * │                                                                          │
+ * │ « 37 / 100 » est écrit en toutes lettres juste au-dessus de la barre.    │
+ * │ La barre ne répète donc rien qu'un lecteur d'écran doive entendre deux   │
+ * │ fois : elle porte `aria-hidden`, et c'est le texte qui informe.          │
+ * │                                                                          │
+ * │ Un code ILLIMITÉ a une piste pleine en teinte douce : ni vide — qui      │
+ * │ dirait « jamais utilisé » — ni pleine en sauge — qui dirait « au         │
+ * │ plafond ». Il n'a pas de plafond, et la barre doit le montrer sans       │
+ * │ mentir dans un sens ni dans l'autre.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.promoJauge {
+  display: block;
+  height: 6px;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--encre) 10%, var(--surface));
+  overflow: hidden;
+}
+
+.promoJaugeRemplissage {
+  display: block;
+  height: 100%;
+  border-radius: var(--rayon-pastille);
+  background: var(--second);
+}
+
+.promoJaugeEpuise {
+  background: var(--action);
+}
+
+.promoJaugeIllimite {
+  background: color-mix(in srgb, var(--second) 35%, var(--surface));
+}
+
+.promoUtilisations {
+  margin: 0 0 5px;
+  font-size: 12.5px;
+}
+
+.promoValidite {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/*
+ * La carte « En clair » : la phrase que le code produit, en français.
+ *
+ * Un code se décrit par six champs dispersés — type, valeur, zone, plafond,
+ * début, fin. Personne ne les relit tous avant d'enregistrer. La phrase les
+ * assemble, et c'est là qu'on voit qu'on a écrit 20 FCFA au lieu de 20 %.
+ */
+.enClair {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+  padding: var(--pas-3);
+  border-radius: var(--carte-rayon);
+  background: color-mix(in srgb, var(--second) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--second) 40%, var(--surface));
+}
+
+.enClairTitre {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--second-encre);
+}
+
+.enClairTexte {
+  margin: 0;
+  font-size: 14.5px;
+}
+
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │

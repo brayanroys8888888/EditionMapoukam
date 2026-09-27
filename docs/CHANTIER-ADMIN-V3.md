@@ -17,9 +17,9 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | --- | --- | --- | --- |
 | Coquille partagée | 1 | 1 | 0 |
 | Catalogue | 6 | 3 | 3 |
-| Ventes | 4 | 2 | 2 |
+| Ventes | 4 | 3 | 1 |
 | Communauté | 5 | 0 | 5 |
-| **Total** | **16** | **6** | **10** |
+| **Total** | **16** | **7** | **9** |
 
 ---
 
@@ -157,7 +157,52 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 > de `--action` par `color-mix` — proches, pas identiques. Même famille que les
 > cartes, déjà tranchée le 27 septembre.
 - [ ] **`offres` — Offres d'abonnement**
-- [ ] **`promos` — Codes promo**
+- [x] **`promos` — Codes promo**
+  - [x] migration `0093` — `promo_codes.debut_le`, `statut_promo` (unique
+        implémentation), liste filtrable, compteurs par statut
+  - [x] **règle métier nouvelle** : un code peut être PROGRAMMÉ. C'est le
+        miroir exact d'`expire_le`, et le prototype l'exige — son statut
+        « Programmé » n'a pas de sens sans date de début. Fenêtre
+        `[début, fin[`, comme partout ailleurs dans le schéma.
+  - [x] barre d'outils sur UNE rangée, tableau à sept colonnes, pastille de
+        code à chasse fixe, jauge d'utilisations — relevé `admin-promos`,
+        **écart nul**
+  - [x] tiroir de création, avec la date de début et la portée dite en clair
+  - [ ] **portée, limite par client, « première commande » — en attente d'une
+        décision du propriétaire.** Ces trois-là changent ce qu'un code
+        COUVRE, donc le calcul de la remise, donc ce qui est facturé. Le
+        cahier des charges ne les porte pas.
+  - [ ] codes à TIRET (`DAVE-ATELIER` au prototype) : la route impose lettres
+        et chiffres, règle délibérée — « un code se dicte au téléphone ».
+
+> **Deux défauts silencieux trouvés en construisant cet écran.**
+>
+> 1. **`pattern="[A-Za-z0-9-]+"` empêchait tout envoi du formulaire.** Les
+>    navigateurs compilent l'attribut avec l'indicateur `v`, où un tiret nu en
+>    fin de classe est ambigu : le motif est refusé, `checkValidity` LÈVE, et
+>    le formulaire ne part jamais — sans message, sans erreur visible, sans
+>    rien dans le journal du serveur. Introduit par moi en voulant autoriser
+>    les codes à tiret du prototype. `tests/unit/motifs-html.test.ts` compile
+>    désormais chaque `pattern` comme le navigateur le fait.
+>
+>    Leçon plus large : mon motif était plus PERMISSIF que la route. Un client
+>    plus permissif que le serveur est un piège — le formulaire accepte, la
+>    route refuse, et l'éditeur reçoit une erreur pour une saisie que l'écran
+>    lui a laissé faire.
+>
+> 2. **`create or replace` avec un paramètre de plus crée une SURCHARGE.** Les
+>    deux fonctions ont coexisté, et un appel à quatre arguments est devenu
+>    ambigu — « function is not unique », sur un chemin qui marchait la veille.
+>    C'est le piège que la migration 0088 avait déjà consigné pour
+>    `create_order` ; il s'est reproduit, et le test l'a attrapé.
+>
+> **Trois refus de code promotionnel n'avaient aucune traduction** —
+> `inactif`, `devise_incompatible`, `zone_incompatible`. Les écrans du panier
+> composent la clé à la volée et `traduire` replie sur la clé BRUTE : un client
+> qui saisissait un code désactivé lisait « panier.refus_promo_inactif » sur la
+> page de son panier. Défaut préexistant, comblé, et
+> `tests/unit/refus-promo-traduits.test.ts` lit désormais les raisons dans le
+> TYPE pour qu'une huitième ne puisse pas passer sans sa phrase.
 
 ---
 
@@ -183,6 +228,7 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | Trois jetons de chrome sombre | Inchangés — ils sont globaux | 27 sept. |
 | Encre sur terracotta | Sombre — le blanc y donne 3,2:1 | 27 sept. |
 | Libellés des statuts d'abonnement | Ceux du prototype à l'admin, ceux du lecteur côté lecteur | 27 sept. |
+| Code promotionnel programmable | Oui — miroir d'`expire_le`, exigé par le statut « Programmé » | 27 sept. |
 | Étiquette de statut | Garde sa bordure — WCAG 2.1 AA | 27 sept. |
 | Moyen de paiement | Colonne ajoutée, remplie par le webhook | 27 sept. |
 | Numéro de commande | Séquence lisible, « EM-1048 » | 27 sept. |

@@ -486,7 +486,7 @@ plafonnée**, indissociables.
 | `GET /api/admin/subscriptions` | `statut?` (dont `anomalie`), `page`, `taille` | `{ abonnements[], page }` |
 | `PUT /api/admin/subscriptions/{id}/zone` | `zone`, `motif?` | Abonnement modifié |
 | `GET /api/admin/promos` | `page`, `taille` | `{ codes[], page }` |
-| `POST /api/admin/promos` | `code`, `type`, `valeur`, `devise?`, `zone?`, `expire_le?`, `usage_max?`, `actif?` | `201` |
+| `POST /api/admin/promos` | `code`, `type`, `valeur`, `devise?`, `zone?`, **`debut_le?`**, `expire_le?`, `usage_max?`, `actif?` | `201` |
 | `PATCH /api/admin/settings` | 5 paramètres métier, tous optionnels | Réglages |
 | `GET /api/admin/offers` | — | `{ offres[] }`, chacune avec ses prix par zone, son nombre d'abonnés et ses `manques[]` |
 | `POST /api/admin/offers` | `code`, `domaine` (`lecture`\|`association`), `periode` (`mensuel`\|`annuel`), `libelle_fr`, `libelle_en`, `descriptif_fr?`, `descriptif_en?`, `ordre?` | `201` — offre **inactive** |

@@ -91,6 +91,21 @@ function finDeJour(donnees: FormData, nom: string): string | undefined {
   return `${jour}T23:59:59Z`;
 }
 
+/**
+ * Un jour de DÉBUT, pris à son premier instant.
+ *
+ * Symétrique de `finDeJour`, et il faut les deux : une date de fin saisie
+ * « 31 octobre » veut dire « jusqu'au bout du 31 », une date de début saisie
+ * « 1er septembre » veut dire « dès le premier instant du 1er ». Prendre les
+ * deux au même bout aurait amputé le code d'une journée à l'une ou l'autre
+ * extrémité.
+ */
+function debutDeJour(donnees: FormData, nom: string): string | undefined {
+  const jour = texte(donnees, nom);
+  if (jour === undefined) return undefined;
+  return `${jour}T00:00:00Z`;
+}
+
 export async function creerPromo(langueBrute: string, donnees: FormData): Promise<void> {
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/promos`;
@@ -112,6 +127,9 @@ export async function creerPromo(langueBrute: string, donnees: FormData): Promis
       // la route rejetterait un pourcentage qui les porte.
       ...(type === 'montant'
         ? { devise: texte(donnees, 'devise'), zone: texte(donnees, 'zone') }
+        : {}),
+      ...(debutDeJour(donnees, 'debut_le') !== undefined
+        ? { debut_le: debutDeJour(donnees, 'debut_le') }
         : {}),
       ...(finDeJour(donnees, 'expire_le') !== undefined
         ? { expire_le: finDeJour(donnees, 'expire_le') }

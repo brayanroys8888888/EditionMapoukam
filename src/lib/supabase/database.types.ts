@@ -1426,6 +1426,7 @@ export type Database = {
           actif: boolean
           code: string
           cree_le: string
+          debut_le: string | null
           devise: string | null
           expire_le: string | null
           id: string
@@ -1439,6 +1440,7 @@ export type Database = {
           actif?: boolean
           code: string
           cree_le?: string
+          debut_le?: string | null
           devise?: string | null
           expire_le?: string | null
           id?: string
@@ -1452,6 +1454,7 @@ export type Database = {
           actif?: boolean
           code?: string
           cree_le?: string
+          debut_le?: string | null
           devise?: string | null
           expire_le?: string | null
           id?: string
@@ -1987,6 +1990,13 @@ export type Database = {
           statut: Database["public"]["Enums"]["order_status"]
         }[]
       }
+      admin_compter_promos_par_statut: {
+        Args: { p_recherche?: string }
+        Returns: {
+          nb: number
+          statut: Database["public"]["Enums"]["statut_promo"]
+        }[]
+      }
       admin_creer_contenu_association: {
         Args: {
           p_acces?: Database["public"]["Enums"]["association_access"]
@@ -2100,38 +2110,74 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      admin_enregistrer_promo: {
-        Args: {
-          p_acteur: string
-          p_actif?: boolean
-          p_code: string
-          p_devise?: string
-          p_expire_le?: string
-          p_type: Database["public"]["Enums"]["promo_type"]
-          p_usage_max?: number
-          p_valeur: number
-          p_zone?: Database["public"]["Enums"]["price_zone"]
-        }
-        Returns: {
-          actif: boolean
-          code: string
-          cree_le: string
-          devise: string | null
-          expire_le: string | null
-          id: string
-          type: Database["public"]["Enums"]["promo_type"]
-          usage_count: number
-          usage_max: number | null
-          valeur: number
-          zone: Database["public"]["Enums"]["price_zone"] | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "promo_codes"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      admin_enregistrer_promo:
+        | {
+            Args: {
+              p_acteur: string
+              p_actif?: boolean
+              p_code: string
+              p_devise?: string
+              p_expire_le?: string
+              p_type: Database["public"]["Enums"]["promo_type"]
+              p_usage_max?: number
+              p_valeur: number
+              p_zone?: Database["public"]["Enums"]["price_zone"]
+            }
+            Returns: {
+              actif: boolean
+              code: string
+              cree_le: string
+              debut_le: string | null
+              devise: string | null
+              expire_le: string | null
+              id: string
+              type: Database["public"]["Enums"]["promo_type"]
+              usage_count: number
+              usage_max: number | null
+              valeur: number
+              zone: Database["public"]["Enums"]["price_zone"] | null
+            }
+            SetofOptions: {
+              from: "*"
+              to: "promo_codes"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_acteur: string
+              p_actif?: boolean
+              p_code: string
+              p_debut_le?: string
+              p_devise?: string
+              p_expire_le?: string
+              p_type: Database["public"]["Enums"]["promo_type"]
+              p_usage_max?: number
+              p_valeur: number
+              p_zone?: Database["public"]["Enums"]["price_zone"]
+            }
+            Returns: {
+              actif: boolean
+              code: string
+              cree_le: string
+              debut_le: string | null
+              devise: string | null
+              expire_le: string | null
+              id: string
+              type: Database["public"]["Enums"]["promo_type"]
+              usage_count: number
+              usage_max: number | null
+              valeur: number
+              zone: Database["public"]["Enums"]["price_zone"] | null
+            }
+            SetofOptions: {
+              from: "*"
+              to: "promo_codes"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       admin_enregistrer_temoignage: {
         Args: {
           p_acteur: string
@@ -2391,13 +2437,20 @@ export type Database = {
         }[]
       }
       admin_lister_promos: {
-        Args: { p_page?: number; p_taille?: number }
+        Args: {
+          p_page?: number
+          p_recherche?: string
+          p_statut?: string
+          p_taille?: number
+        }
         Returns: {
           actif: boolean
           code: string
+          debut_le: string
           devise: string
           expire_le: string
           id: string
+          statut: Database["public"]["Enums"]["statut_promo"]
           total_lignes: number
           type: Database["public"]["Enums"]["promo_type"]
           usage_count: number
@@ -3289,6 +3342,17 @@ export type Database = {
             Args: { s: Database["public"]["Tables"]["subscriptions"]["Row"] }
             Returns: Database["public"]["Enums"]["subscription_status_effectif"]
           }
+      statut_promo: {
+        Args: {
+          p_actif: boolean
+          p_at?: string
+          p_debut_le: string
+          p_expire_le: string
+          p_usage_count: number
+          p_usage_max: number
+        }
+        Returns: Database["public"]["Enums"]["statut_promo"]
+      }
       taille_page_admin: { Args: { p_demandee: number }; Returns: number }
       temoignages: {
         Args: { p_langue?: string; p_limite?: number }
@@ -3341,6 +3405,7 @@ export type Database = {
         | "afrique_australe"
         | "afrique_est"
       review_status: "en_attente" | "publie" | "rejete"
+      statut_promo: "inactif" | "programme" | "expire" | "epuise" | "actif"
       subscription_domain: "lecture" | "association"
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
       subscription_status_effectif:
@@ -3541,6 +3606,7 @@ export const Constants = {
         "afrique_est",
       ],
       review_status: ["en_attente", "publie", "rejete"],
+      statut_promo: ["inactif", "programme", "expire", "epuise", "actif"],
       subscription_domain: ["lecture", "association"],
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
       subscription_status_effectif: [

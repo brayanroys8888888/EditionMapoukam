@@ -270,14 +270,27 @@ export async function lireAbonnement(
   });
 }
 
+/** Nombre de codes par statut, pour les compteurs des segments (0093). */
+export async function compterPromosParStatut(
+  filtres: { recherche?: string | null } = {},
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_compter_promos_par_statut', {
+    p_recherche: filtres.recherche ?? null,
+  });
+}
+
 export async function listerPromos(
-  pagination: Pagination,
+  filtres: { statut?: string | null; recherche?: string | null } & Pagination,
   options: { client?: AppSupabaseClient } = {},
 ) {
   const client = options.client ?? createServiceClient();
   return await appeler<unknown[]>(client, 'admin_lister_promos', {
-    p_page: pagination.page,
-    p_taille: pagination.taille,
+    p_page: filtres.page,
+    p_taille: filtres.taille,
+    p_statut: filtres.statut ?? null,
+    p_recherche: filtres.recherche ?? null,
   });
 }
 
@@ -601,6 +614,7 @@ export async function enregistrerPromo(
     valeur: number;
     devise?: string | null;
     zone?: 'international' | 'afrique' | null;
+    debutLe?: string | null;
     expireLe?: string | null;
     usageMax?: number | null;
     actif?: boolean;
@@ -615,6 +629,7 @@ export async function enregistrerPromo(
     p_valeur: code.valeur,
     p_devise: code.devise ?? null,
     p_zone: code.zone ?? null,
+    p_debut_le: code.debutLe ?? null,
     p_expire_le: code.expireLe ?? null,
     p_usage_max: code.usageMax ?? null,
     p_actif: code.actif ?? true,

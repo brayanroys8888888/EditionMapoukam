@@ -1,38 +1,38 @@
+import type { CSSProperties } from 'react';
 import type { Metadata } from 'next';
 
 import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
-import { listerPromos } from '@/lib/admin/service';
+import { compterPromosParStatut, listerPromos } from '@/lib/admin/service';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
 import { exigerAdministrateur } from '../garde';
-import { creerPromo } from './actions';
+import { PanneauPromo } from './panneau-promo';
 
 /**
- * LES CODES PROMO.
+ * LES CODES PROMOTIONNELS.
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ « ACTIF » EST UNE COLONNE, PAS UNE DÉDUCTION.                           │
+ * │ LE STATUT EST CALCULÉ EN BASE, ET UNE SEULE FOIS.                       │
  * │                                                                          │
- * │ Un code peut être marqué actif tout en étant échu, ou épuisé. Cet écran  │
- * │ montre les trois faits SÉPARÉMENT — le drapeau, l'échéance, le compteur  │
- * │ d'usage — et n'en fabrique pas un quatrième qui les résumerait.          │
+ * │ Actif, programmé, expiré, épuisé, désactivé : `statut_promo` (migration  │
+ * │ 0093) répond, contre `app_now()` — la même horloge injectable que le     │
+ * │ reste du projet. La liste l'appelle, les compteurs de segments           │
+ * │ l'appellent, le filtre l'appelle.                                        │
  * │                                                                          │
- * │ Parce que ce quatrième-là serait une règle métier, et que la règle qui   │
- * │ décide si un code s'applique vit dans la fonction d'encaissement. Deux   │
- * │ définitions du mot « utilisable » divergeraient le jour où l'une des     │
- * │ deux change, et c'est l'écran qui a l'air d'avoir raison.                │
+ * │ Le recalculer ici donnerait une seconde définition, et c'est toujours la │
+ * │ copie qui a l'air d'avoir raison. Pire : les compteurs annonceraient un  │
+ * │ nombre que le clic ne montrerait pas.                                    │
  * └──────────────────────────────────────────────────────────────────────────┘
  *
  * ┌──────────────────────────────────────────────────────────────────────────┐
- * │ UNE REMISE EN MONTANT SE FORMATE DANS SA DEVISE, PAS EN CENTIMES.       │
+ * │ « S'APPLIQUE À » DIT LA VÉRITÉ, ET ELLE EST COURTE.                     │
  * │                                                                          │
- * │ Le franc CFA n'a pas de sous-unité : diviser par cent afficherait des    │
- * │ remises fausses d'un facteur cent. Le formateur est donc résolu devise   │
- * │ par devise, comme sur les commandes et les abonnements.                  │
- * │                                                                          │
- * │ Une remise en POURCENTAGE, elle, n'a pas de devise — la base rend        │
- * │ `valeur` en points de pourcentage, et il n'y a rien à convertir.         │
+ * │ Le prototype y liste des produits — contes, livrets, abonnement,         │
+ * │ adhésion. Aucune portée n'existe en base : un code porte sur TOUT le     │
+ * │ panier. La colonne l'écrit plutôt que d'afficher une liste inventée, et  │
+ * │ la seconde ligne porte la seule condition réelle — la zone tarifaire     │
+ * │ d'un code à montant fixe.                                                │
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 interface Parametres {
@@ -40,26 +40,60 @@ interface Parametres {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const TYPES = ['pourcentage', 'montant'] as const;
-const DEVISES = ['EUR', 'XAF', 'XOF'] as const;
-const ZONES = ['international', 'afrique'] as const;
+type StatutPromo = 'actif' | 'programme' | 'epuise' | 'expire' | 'inactif';
 
-function premier(valeur: string | string[] | undefined): string | undefined {
-  return Array.isArray(valeur) ? valeur[0] : valeur;
-}
-
-/** Une ligne rendue par `admin_lister_promos`. */
+/** Une ligne rendue par `admin_lister_promos` (migration 0093). */
 interface LignePromo {
   id: string;
   code: string;
   type: 'montant' | 'pourcentage';
   valeur: number;
   devise: string | null;
-  zone: string;
+  zone: 'international' | 'afrique' | null;
+  debut_le: string | null;
   expire_le: string | null;
-  actif: boolean;
   usage_max: number | null;
   usage_count: number;
+  statut: StatutPromo;
+}
+
+/** L'ordre du prototype, puis « désactivé » qu'il ne connaît pas. */
+const STATUTS: readonly StatutPromo[] = ['actif', 'programme', 'epuise', 'expire', 'inactif'];
+
+/*
+ * `inactif` est A NOUS : le prototype ne connaît pas de code désactivé à la
+ * main. Son segment n'apparaît donc que s'il a des lignes — un filtre
+ * toujours vide encombrerait la barre, un filtre caché masquerait des codes.
+ * Même règle que `essai` et `anomalie` sur l'écran des abonnements.
+ */
+const HORS_PROTOTYPE: readonly StatutPromo[] = ['inactif'];
+
+const LIBELLE_STATUT: Record<StatutPromo, CleTraduction> = {
+  actif: 'admin.promoStatutActif',
+  programme: 'admin.promoStatutProgramme',
+  epuise: 'admin.promoStatutEpuise',
+  expire: 'admin.promoStatutExpire',
+  inactif: 'admin.promoStatutInactif',
+};
+
+const ETAT_STATUT: Record<StatutPromo, string | undefined> = {
+  actif: styles.etatPublie,
+  programme: styles.etatAccent,
+  epuise: styles.etatAlerte,
+  expire: styles.etatBrouillon,
+  inactif: styles.etatBrouillon,
+};
+
+/** La jauge d'utilisations se remplit en pour-cent — ce n'est pas un montant. */
+const POUR_CENT = 100;
+
+/** Les cotes du tableau, reprises du prototype d'administration. */
+const COLONNES = 'minmax(0, 1.1fr) 120px minmax(0, 1.3fr) 150px minmax(0, 1fr) 100px 16px';
+const LARGEUR_MIN = '820px';
+
+function premier(brut: string | string[] | undefined): string | undefined {
+  const valeur = Array.isArray(brut) ? brut[0] : brut;
+  return valeur && valeur.length > 0 ? valeur : undefined;
 }
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
@@ -73,42 +107,111 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 export default async function PageAdminPromos({ params, searchParams }: Parametres) {
   const { langue, administrateur } = await exigerAdministrateur((await params).langue);
   const requete = await searchParams;
+  const t = (cle: CleTraduction): string => traduire(langue, cle);
+
+  const demande = premier(requete['statut']);
+  const statut = STATUTS.includes(demande as StatutPromo) ? (demande as StatutPromo) : undefined;
+  const q = premier(requete['q']);
+  const nouveau = premier(requete['nouveau']) === '1';
   const erreur = premier(requete['erreur']);
 
-  const resultat = await listerPromos({ page: 1, taille: 50 }).catch(() => null);
+  const [resultat, comptes] = await Promise.all([
+    listerPromos({ statut: statut ?? null, recherche: q ?? null, page: 1, taille: 50 }).catch(
+      () => null,
+    ),
+    compterPromosParStatut({ recherche: q ?? null }).catch(() => null),
+  ]);
+
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
 
   const promos = resultat.donnees as unknown as LignePromo[];
-
-  const devises = [
-    ...new Set(
-      promos
-        .filter((promo) => promo.type === 'montant' && promo.devise !== null)
-        .map((promo) => promo.devise as string),
-    ),
-  ];
-  const formateurs = new Map(
-    await Promise.all(
-      devises.map(async (code) => [code, formateur(await lireDevise(code))] as const),
-    ),
+  const parStatut = new Map(
+    ((comptes?.ok ? comptes.donnees : []) as { statut: string; nb: number }[]).map((l) => [
+      l.statut,
+      Number(l.nb),
+    ]),
   );
 
+  /* UN formateur par devise présente, résolu une seule fois. */
+  const devises = [...new Set(promos.map((p) => p.devise).filter((d): d is string => d !== null))];
+  const monnaies = new Map(
+    await Promise.all(devises.map(async (c) => [c, await lireDevise(c)] as const)),
+  );
+
+  /*
+   * La remise, dite comme le prototype l'écrit : « \u221220 % » ou « \u22121 000 FCFA ».
+   * Le signe est un MOINS typographique, pas un trait d'union : c'est un
+   * nombre négatif, et le trait d'union se lit comme une césure.
+   */
   const remise = (promo: LignePromo): string => {
-    if (promo.type === 'pourcentage') return `${String(promo.valeur)} %`;
-    if (!promo.devise) return String(promo.valeur);
-    return (
-      formateurs.get(promo.devise)?.(promo.valeur) ??
-      `${String(promo.valeur)} ${promo.devise}`
-    );
+    if (promo.type === 'pourcentage') return `\u2212${String(promo.valeur)}\u00a0%`;
+    const monnaie = promo.devise ? monnaies.get(promo.devise) : undefined;
+    return `\u2212${
+      monnaie ? formateur(monnaie)(promo.valeur) : `${String(promo.valeur)} ${promo.devise ?? ''}`
+    }`;
   };
+
+  const jour = (iso: string): string =>
+    new Date(iso).toLocaleDateString(langue, { day: 'numeric', month: 'short', year: 'numeric' });
+
+  /*
+   * La validité en une ligne : une fenêtre, une borne, ou rien. Écrire
+   * « depuis toujours \u2192 31 oct. » serait plus long ET moins clair que
+   * « jusqu'au 31 oct. ».
+   */
+  const validite = (promo: LignePromo): string => {
+    if (promo.debut_le && promo.expire_le) {
+      return `${jour(promo.debut_le)} \u2192 ${jour(promo.expire_le)}`;
+    }
+    if (promo.debut_le) return `${t('admin.promoDepuisLe')} ${jour(promo.debut_le)}`;
+    if (promo.expire_le) return `${t('admin.promoJusquAu')} ${jour(promo.expire_le)}`;
+    return t('admin.promoToujours');
+  };
+
+  const base = `/${langue}/admin/promos`;
+  const lien = (modif: { statut?: string; nouveau?: boolean }): string => {
+    const params = new URLSearchParams();
+    const s = 'statut' in modif ? modif.statut : statut;
+    if (s) params.set('statut', s);
+    if (q) params.set('q', q);
+    if (modif.nouveau) params.set('nouveau', '1');
+    const chaine = params.toString();
+    return chaine ? `${base}?${chaine}` : base;
+  };
+
+  const total = [...parStatut.values()].reduce((somme, n) => somme + n, 0);
+
+  const segments = STATUTS.filter(
+    (valeur) =>
+      !HORS_PROTOTYPE.includes(valeur) || (parStatut.get(valeur) ?? 0) > 0 || statut === valeur,
+  );
 
   return (
     <GabaritAdmin
       langue={langue}
       administrateur={administrateur}
       section="/promos"
-      titre={traduire(langue, 'admin.promos')}
-      sousTitre={traduire(langue, 'admin.promosSousTitre')}
+      titre={t('admin.promos')}
+      sousTitre={t('admin.promosSousTitreV3')}
+      actions={
+        <a className={styles.boutonPrimaire} href={lien({ nouveau: true })}>
+          {/* Le « + » des boutons de création, comme sur les deux catalogues. */}
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {t('admin.promoNouveau')}
+        </a>
+      }
     >
       {erreur ? (
         <p className={styles.alerte} role="alert">
@@ -116,255 +219,221 @@ export default async function PageAdminPromos({ params, searchParams }: Parametr
         </p>
       ) : null}
 
-      {requete['cree'] ? (
-        <p className={styles.succes}>{traduire(langue, 'admin.promoCree')}</p>
-      ) : null}
+      {requete['cree'] ? <p className={styles.succes}>{t('admin.promoCree')}</p> : null}
 
-      <div className={styles.cadre}>
+      {/*
+        ── Recherche et filtres, SUR UNE SEULE RANGÉE ───────────────────────
+
+        Le prototype range les deux côte à côte ici, alors qu'il les empile sur
+        les écrans des commandes et des abonnements. La différence n'est pas
+        gratuite : ces deux-là ont DEUX segmentés et un décompte, celui-ci n'a
+        qu'un segmenté et pas de décompte — « Tous » porte le total.
+
+        Les empiler quand même coûtait quarante-neuf pixels, et tout l'écran en
+        dessous les prenait.
+      */}
+      <div className={`${styles.carte} ${styles.filtresCarte}`}>
+        <div className={styles.filtresLigne}>
+          <form method="get" action={base} className={styles.rechercheChamp} role="search">
+            {statut ? <input type="hidden" name="statut" value={statut} /> : null}
+
+            <button
+              type="submit"
+              className={styles.rechercheEnvoi}
+              aria-label={t('catalogue.rechercheAction')}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
+            <input
+              type="search"
+              name="q"
+              defaultValue={q ?? ''}
+              placeholder={t('admin.promoRecherche')}
+              className={styles.rechercheSaisieOrganic}
+              aria-label={t('catalogue.recherche')}
+            />
+          </form>
+
+          <nav className={styles.seg} aria-label={t('admin.colStatut')}>
+            <a
+              className={statut ? styles.segOpt : `${styles.segOpt} ${styles.segActif}`}
+              href={lien({ statut: undefined })}
+              aria-current={statut ? undefined : 'true'}
+            >
+              {t('admin.promoTous')}
+              {/* Le TOTAL : faute de décompte à côté du champ, il vit ici. */}
+              <span className={styles.segCompte}>{total}</span>
+            </a>
+            {segments.map((valeur) => {
+              const actif = statut === valeur;
+              return (
+                <a
+                  key={valeur}
+                  className={actif ? `${styles.segOpt} ${styles.segActif}` : styles.segOpt}
+                  href={lien({ statut: valeur })}
+                  aria-current={actif ? 'true' : undefined}
+                >
+                  {t(LIBELLE_STATUT[valeur])}
+                  <span className={styles.segCompte}>{parStatut.get(valeur) ?? 0}</span>
+                </a>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* ── Le tableau ───────────────────────────────────────────────────── */}
+      <div className={`${styles.carte} ${styles.grilleCadre}`}>
         {promos.length === 0 ? (
-          <p className={styles.vide}>{traduire(langue, 'admin.aucunePromo')}</p>
+          <p className={styles.grilleVide}>{t('admin.promoVide')}</p>
         ) : (
-          <table className={styles.tableau}>
-            <thead>
-              <tr>
-                <th scope="col">{traduire(langue, 'admin.colCode')}</th>
-                <th scope="col">{traduire(langue, 'admin.colStatut')}</th>
-                <th scope="col" className={styles.numerique}>
-                  {traduire(langue, 'admin.colRemise')}
+          <table
+            className={styles.grille}
+            role="table"
+            style={{ '--grille-colonnes': COLONNES, '--grille-min': LARGEUR_MIN } as CSSProperties}
+          >
+            <thead role="rowgroup">
+              <tr className={`${styles.grilleEntete} ${styles.grilleEnteteVentes}`} role="row">
+                <th scope="col" role="columnheader">
+                  {t('admin.colCode')}
                 </th>
-                <th scope="col" className={styles.numerique}>
-                  {traduire(langue, 'admin.colUsage')}
+                <th scope="col" role="columnheader">
+                  {t('admin.colReduction')}
                 </th>
-                <th scope="col" className={styles.numerique}>
-                  {traduire(langue, 'admin.colExpire')}
+                <th scope="col" role="columnheader">
+                  {t('admin.promoPortee')}
+                </th>
+                <th scope="col" role="columnheader">
+                  {t('admin.colUtilisations')}
+                </th>
+                <th scope="col" role="columnheader">
+                  {t('admin.colValidite')}
+                </th>
+                <th scope="col" role="columnheader">
+                  {t('admin.colStatut')}
+                </th>
+                <th scope="col" role="columnheader">
+                  <span className="sr-only">{t('admin.colOuvrir')}</span>
                 </th>
               </tr>
             </thead>
 
-            <tbody>
-              {promos.map((promo) => (
-                <tr key={promo.id}>
-                  <td className={styles.cellulePrincipale}>{promo.code}</td>
+            <tbody role="rowgroup">
+              {promos.map((promo) => {
+                const illimite = promo.usage_max === null;
+                /*
+                 * `POUR_CENT` plutot qu'un 100 nu : la regle de lint interdit
+                 * la multiplication par cent, parce qu'un montant se convertit
+                 * par `src/domain/money` — toutes les devises n'ont pas deux
+                 * decimales. Ici, ce n'est PAS de l'argent : c'est la part
+                 * d'une jauge, et cent pour cent valent cent partout.
+                 */
+                const part = illimite
+                  ? POUR_CENT
+                  : Math.min(
+                      POUR_CENT,
+                      Math.round((promo.usage_count / (promo.usage_max || 1)) * POUR_CENT),
+                    );
 
-                  <td>
-                    <span
-                      className={`${styles.etat} ${
-                        promo.actif ? styles.etatPublie : styles.etatBrouillon
-                      }`}
-                    >
-                      {traduire(langue, promo.actif ? 'admin.promoActif' : 'admin.promoInactif')}
-                    </span>
-                  </td>
+                return (
+                  <tr key={promo.id} className={styles.grilleRangee} role="row">
+                    <td role="cell">
+                      <span className={styles.promoCode}>{promo.code}</span>
+                    </td>
 
-                  <td className={styles.numerique}>{remise(promo)}</td>
+                    <td role="cell" className={styles.venteFort}>
+                      {remise(promo)}
+                    </td>
 
-                  <td className={styles.numerique}>
-                    {promo.usage_count} /{' '}
-                    {promo.usage_max ?? traduire(langue, 'admin.usageIllimite')}
-                  </td>
+                    <td role="cell">
+                      <p className={styles.venteTexte}>{t('admin.promoPorteeTout')}</p>
+                      {/*
+                        La seule condition qui existe vraiment : un code à
+                        montant fixe est cantonné à une grille tarifaire.
+                      */}
+                      {promo.zone ? (
+                        <p className={styles.venteLigne2}>
+                          {t(`admin.conteZone_${promo.zone}` as CleTraduction)}
+                        </p>
+                      ) : null}
+                    </td>
 
-                  <td className={styles.numerique}>
-                    {promo.expire_le
-                      ? new Date(promo.expire_le).toLocaleDateString(langue)
-                      : traduire(langue, 'admin.sansExpiration')}
-                  </td>
-                </tr>
-              ))}
+                    <td role="cell">
+                      <p className={styles.promoUtilisations}>
+                        {promo.usage_count}
+                        {illimite
+                          ? ` \u00b7 ${t('admin.promoIllimite')}`
+                          : ` / ${String(promo.usage_max)}`}
+                      </p>
+                      {/*
+                        Décorative : le compte est écrit juste au-dessus, et le
+                        répéter à un lecteur d'écran n'apprendrait rien.
+                      */}
+                      <span className={styles.promoJauge} aria-hidden="true">
+                        <span
+                          className={`${styles.promoJaugeRemplissage} ${
+                            illimite
+                              ? styles.promoJaugeIllimite
+                              : promo.statut === 'epuise'
+                                ? styles.promoJaugeEpuise
+                                : ''
+                          }`}
+                          style={{ width: `${String(part)}%` }}
+                        />
+                      </span>
+                    </td>
+
+                    <td role="cell">
+                      <p className={styles.promoValidite}>{validite(promo)}</p>
+                    </td>
+
+                    <td role="cell">
+                      <span className={`${styles.etat} ${ETAT_STATUT[promo.statut]}`}>
+                        {t(LIBELLE_STATUT[promo.statut])}
+                      </span>
+                    </td>
+
+                    <td role="cell">
+                      {/*
+                        Le chevron est rendu mais ÉTEINT : un code ne s'ouvre
+                        pas, parce qu'il ne se modifie pas. Le prototype le
+                        dessine à 35 % d'opacité, et la colonne existe pour que
+                        la grille garde ses sept pistes.
+                      */}
+                      <svg
+                        className={styles.grilleChevron}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.75"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                      >
+                        <polyline points="9 18 15 12 9 6" />
+                      </svg>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
-      {/* ── Créer un code ────────────────────────────────────────────────── */}
-      {/*
-        ┌────────────────────────────────────────────────────────────────────┐
-        │ UN CODE SE CRÉE, IL NE SE MODIFIE PAS DEPUIS CET ÉCRAN.            │
-        │                                                                     │
-        │ `admin_enregistrer_promo` sait faire les deux — elle écrit ou       │
-        │ remplace la ligne du code donné. Mais un code déjà distribué a été   │
-        │ imprimé, dicté, promis : en changer la valeur ferait varier une      │
-        │ remise que des clients tiennent pour acquise, sans que rien ne le    │
-        │ dise. Le désactiver est le geste honnête, et il reste à écrire.      │
-        └────────────────────────────────────────────────────────────────────┘
-      */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.promoCreerTitre')}</h2>
-
-        <div className={styles.cadre}>
-          <form className={styles.formulaire} action={creerPromo.bind(null, langue)}>
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-code">
-                  {traduire(langue, 'admin.promoCode')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="promo-code"
-                  name="code"
-                  minLength={3}
-                  maxLength={32}
-                  // Le même motif que le schéma Zod de la route, qui reste seul
-                  // juge : celui-ci évite un aller-retour, il ne décide rien.
-                  pattern="[A-Za-z0-9]+"
-                  required
-                  aria-describedby="promo-code-aide"
-                />
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-type">
-                  {traduire(langue, 'admin.promoType')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="promo-type"
-                  name="type"
-                  defaultValue="pourcentage"
-                >
-                  {TYPES.map((type) => (
-                    <option key={type} value={type}>
-                      {traduire(langue, `admin.promoType_${type}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-valeur">
-                  {traduire(langue, 'admin.promoValeur')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="promo-valeur"
-                  name="valeur"
-                  type="number"
-                  min={1}
-                  step={1}
-                  required
-                  aria-describedby="promo-valeur-aide"
-                />
-              </div>
-            </div>
-
-            <p className={styles.aide} id="promo-code-aide">
-              {traduire(langue, 'admin.promoCodeAide')}
-            </p>
-            <p className={styles.aide} id="promo-valeur-aide">
-              {traduire(langue, 'admin.promoValeurAide')}
-            </p>
-
-            {/*
-              ┌──────────────────────────────────────────────────────────────┐
-              │ DEVISE ET ZONE SONT LÀ POUR LE MONTANT FIXE, ET LUI SEUL.   │
-              │                                                              │
-              │ La base les exige toutes DEUX pour un montant, et les refuse │
-              │ toutes deux pour un pourcentage. Les masquer selon le type    │
-              │ aurait demandé du JavaScript client — ce back-office n'en a   │
-              │ aucun — et un champ masqué reste un champ rempli : c'est      │
-              │ l'action serveur qui ne les envoie pas pour un pourcentage.   │
-              │                                                              │
-              │ Ils restent donc visibles, avec la phrase qui dit quand ils   │
-              │ comptent. Un champ qui disparaît sans explication apprend     │
-              │ moins qu'un champ qui dit à quoi il sert.                     │
-              └──────────────────────────────────────────────────────────────┘
-            */}
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-devise">
-                  {traduire(langue, 'admin.promoDevise')}
-                </label>
-                <select className={styles.saisie} id="promo-devise" name="devise" defaultValue="EUR">
-                  {DEVISES.map((devise) => (
-                    <option key={devise} value={devise}>
-                      {devise}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-zone">
-                  {traduire(langue, 'admin.promoZone')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="promo-zone"
-                  name="zone"
-                  defaultValue="international"
-                >
-                  {ZONES.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {traduire(langue, `admin.conteZone_${zone}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <p className={styles.aide}>{traduire(langue, 'admin.promoPorteeAide')}</p>
-
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-expire">
-                  {traduire(langue, 'admin.promoExpire')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="promo-expire"
-                  name="expire_le"
-                  type="date"
-                  aria-describedby="promo-expire-aide"
-                />
-                <p className={styles.aide} id="promo-expire-aide">
-                  {traduire(langue, 'admin.promoExpireAide')}
-                </p>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="promo-usage">
-                  {traduire(langue, 'admin.promoUsageMax')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="promo-usage"
-                  name="usage_max"
-                  type="number"
-                  min={1}
-                  step={1}
-                  aria-describedby="promo-usage-aide"
-                />
-                <p className={styles.aide} id="promo-usage-aide">
-                  {traduire(langue, 'admin.promoUsageMaxAide')}
-                </p>
-              </div>
-            </div>
-
-            <ul className={styles.interrupteurs}>
-              <li className={styles.interrupteur}>
-                {/* Le témoin de MÊME NOM, posé avant la case : une case décochée
-                    n'est pas envoyée par le navigateur, et le serveur lirait
-                    « actif » là où l'éditeur a décoché. */}
-                <input type="hidden" name="actif" value="non" />
-                <input
-                  className={styles.interrupteurCase}
-                  id="promo-actif"
-                  name="actif"
-                  type="checkbox"
-                  value="oui"
-                  defaultChecked
-                />
-                <label className={styles.interrupteurNom} htmlFor="promo-actif">
-                  {traduire(langue, 'admin.promoActifCreation')}
-                </label>
-              </li>
-            </ul>
-
-            <button type="submit" className={styles.boutonPrimaire}>
-              {traduire(langue, 'admin.promoCreer')}
-            </button>
-          </form>
-        </div>
-      </section>
+      {nouveau ? <PanneauPromo langue={langue} fermeture={lien({})} /> : null}
     </GabaritAdmin>
   );
 }

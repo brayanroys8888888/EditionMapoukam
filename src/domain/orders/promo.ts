@@ -32,6 +32,14 @@ export interface CodePromo {
    * transpose pas à l'autre.
    */
   zone: 'international' | 'afrique' | null;
+  /**
+   * Instant à partir duquel le code est acceptable. Nul : depuis toujours.
+   *
+   * Miroir exact d'`expireLe`, ajouté par la migration 0093 : le prototype
+   * d'administration affiche un statut « Programmé », qui n'a de sens que si
+   * un code peut exister avant d'être acceptable.
+   */
+  debutLe: Date | null;
   expireLe: Date | null;
   actif: boolean;
   usageMax: number | null;
@@ -41,6 +49,7 @@ export interface CodePromo {
 export type RefusPromo =
   | 'inconnu'
   | 'inactif'
+  | 'pas_encore'
   | 'expire'
   | 'epuise'
   | 'devise_incompatible'
@@ -66,7 +75,23 @@ export function calculerRemise(
   if (!promo) return { ok: false, raison: 'inconnu' };
   if (!promo.actif) return { ok: false, raison: 'inactif' };
 
-  // Comparaison stricte : un code qui expire à 12 h 00 est refusé à 12 h 00.
+  /*
+   * LA FENÊTRE EST FERMÉE À DROITE, OUVERTE À GAUCHE.
+   *
+   * Un code qui commence à 12 h 00 est accepté à 12 h 00 ; un code qui expire
+   * à 12 h 00 est refusé à 12 h 00. Les deux bornes sont donc strictes dans le
+   * même sens — `[début, fin[` — et c'est la convention que
+   * `bornes-temporelles.test.ts` recense dans tout le schéma.
+   *
+   * Le « pas encore » est refusé AVANT l'expiration : un code dont la fenêtre
+   * serait à l'envers n'existe pas en base, la contrainte de la 0093 l'interdit,
+   * mais l'ordre reste celui de la lecture — on ne dit pas « expiré » d'un code
+   * qui n'a pas commencé.
+   */
+  if (promo.debutLe && maintenant.getTime() < promo.debutLe.getTime()) {
+    return { ok: false, raison: 'pas_encore' };
+  }
+
   if (promo.expireLe && promo.expireLe.getTime() <= maintenant.getTime()) {
     return { ok: false, raison: 'expire' };
   }

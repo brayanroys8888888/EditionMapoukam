@@ -67,6 +67,7 @@ const promoSchema = z
     valeur: z.int().positive(),
     devise: z.enum(['EUR', 'XAF', 'XOF']).optional(),
     zone: z.enum(['international', 'afrique']).optional(),
+    debut_le: z.iso.datetime({ offset: true }).optional(),
     expire_le: z.iso.datetime({ offset: true }).optional(),
     usage_max: z.int().positive().max(1_000_000).optional(),
     actif: z.boolean().default(true),
@@ -74,6 +75,17 @@ const promoSchema = z
   .refine((v) => v.type !== 'pourcentage' || v.valeur <= 100, {
     message: 'Un pourcentage ne peut pas dépasser 100.',
     path: ['valeur'],
+  })
+  /*
+   * La fenetre a l'endroit, ou pas de fenetre.
+   *
+   * La contrainte existe aussi en base (0093) : elle est la garde de dernier
+   * recours, valable pour toutes les portes d'entree. Ici, elle rend une
+   * erreur de validation lisible plutot qu'une violation de contrainte.
+   */
+  .refine((v) => v.debut_le === undefined || v.expire_le === undefined || v.debut_le < v.expire_le, {
+    message: 'La fin doit venir apres le debut.',
+    path: ['expire_le'],
   })
   .refine((v) => v.type !== 'pourcentage' || (v.devise === undefined && v.zone === undefined), {
     message: 'Un code en pourcentage ne porte ni devise ni zone : il vaut dans toutes les zones.',
@@ -95,6 +107,7 @@ export async function POST(request: Request): Promise<Response> {
     code: corps.data.code,
     type: corps.data.type,
     valeur: corps.data.valeur,
+    debutLe: corps.data.debut_le ?? null,
     devise: corps.data.devise ?? null,
     zone: corps.data.zone ?? null,
     expireLe: corps.data.expire_le ?? null,
