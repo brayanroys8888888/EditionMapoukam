@@ -2425,6 +2425,73 @@ const SCENES = {
     },
   },
 
+  /* ══ ADMINISTRATION — le panneau d'une commande ═══════════════════════ */
+
+  'admin-commande-panneau': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    maquette: async (p) => {
+      await maquetteAdmin(p, 'Commandes');
+      await p.locator('div[style*="min-width: 820px"][style*="cursor: pointer"]').first().click();
+      await p.waitForTimeout(900);
+    },
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/commandes`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+      /*
+       * On CLIQUE, comme sur la maquette, plutôt que de poser l'identifiant
+       * dans l'adresse : la sonde éprouve alors le chemin que l'éditeur
+       * emprunte, y compris le lien qui porte le numéro.
+       */
+      await p.locator('[class*="admin_grilleRangee"] a').first().click();
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      'voile': {
+        maquette: 'div[style*="z-index: 40"]',
+        app: '[class*="admin_tiroirVoile"]',
+      },
+      'panneau': {
+        maquette: '[style*="z-index: 41"]',
+        app: 'aside[class*="admin_tiroir"]',
+        // La hauteur suit le contenu : nos commandes ont moins de lignes.
+        ignore: ['h'],
+      },
+      'en-tête du panneau': {
+        maquette: '[style*="z-index: 41"] > div:nth-child(1)',
+        app: '[class*="admin_tiroirEntete"]',
+      },
+      'œil du panneau': {
+        maquette: '[style*="z-index: 41"] div[style*="letter-spacing: 0.12em"]',
+        app: '[class*="admin_tiroirOeil"]',
+        ignore: ['w'],
+      },
+      'titre du panneau': {
+        // Le prototype n'emploie pas de `h2` : il pose la cote en clair. Nous
+        // rendons un vrai titre de niveau 2 — un tiroir est une region, et son
+        // nom doit apparaitre dans le plan du document.
+        maquette: '[style*="z-index: 41"] [style*="font-size: 22px"]',
+        app: '[class*="admin_tiroirTitre"]',
+        ignore: ['w'],
+      },
+      'corps du panneau': {
+        maquette: '[style*="z-index: 41"] > div:nth-child(2)',
+        app: '[class*="admin_tiroirCorps"]',
+        ignore: ['h'],
+      },
+      'pied du panneau': {
+        maquette: '[style*="z-index: 41"] > div:nth-child(3)',
+        app: '[class*="admin_tiroirPied"]',
+      },
+      'étape de frise': {
+        maquette: '[style*="z-index: 41"] div[style*="width: 14px"]',
+        app: '[class*="admin_suiviColonne"]',
+        // La position verticale depend du nombre de lignes au-dessus.
+        ignore: ['y', 'h'],
+      },
+    },
+  },
+
   /* ══ ADMINISTRATION — livrets pédagogiques ════════════════════════════ */
 
   'admin-livrets': {

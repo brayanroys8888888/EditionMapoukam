@@ -4,9 +4,11 @@ import type { Metadata } from 'next';
 import { langueValide, traduire, type CleTraduction } from '@/i18n';
 import {
   compterCommandesParStatut,
+  lireCommande,
   listerCommandes,
   statsCommandes,
 } from '@/lib/admin/service';
+import { PanneauCommande, type DetailCommande } from './panneau-commande';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { Erreur } from '@/components/etats';
 import { GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
@@ -143,6 +145,8 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
   const statut = STATUTS.includes(demande as Statut) ? (demande as Statut) : undefined;
   const devise = premier(requete['devise']);
   const q = premier(requete['q']);
+  const ouverte = premier(requete['commande']);
+  const confirmeRemboursement = premier(requete['rembourser']) === '1';
 
   /*
    * La bande de chiffres n'est PAS filtrée.
@@ -152,7 +156,7 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
    * afficher zéro en attente dès qu'on coche « Payée » — et un tableau de bord
    * qui s'annule quand on l'interroge n'en est plus un.
    */
-  const [resultat, stats, comptes] = await Promise.all([
+  const [resultat, stats, comptes, detail] = await Promise.all([
     listerCommandes({
       statut: statut ?? null,
       devise: devise ?? null,
@@ -162,6 +166,12 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
     }).catch(() => null),
     statsCommandes().catch(() => null),
     compterCommandesParStatut({ devise: devise ?? null, recherche: q ?? null }).catch(() => null),
+    /*
+     * Le détail n'est lu QUE si le panneau est ouvert. Une liste de cinquante
+     * commandes qui chargerait cinquante détails paierait, à chaque
+     * affichage, le coût d'un écran que personne n'a demandé.
+     */
+    ouverte ? lireCommande(ouverte).catch(() => null) : Promise.resolve(null),
   ]);
 
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
@@ -200,6 +210,11 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
     return symbole.length > 1 ? symbole : code;
   };
 
+  const commandeOuverte =
+    detail?.ok && Array.isArray(detail.donnees) && detail.donnees.length > 0
+      ? (detail.donnees[0] as DetailCommande)
+      : null;
+
   const base = `/${langue}/admin/commandes`;
   const lien = (modif: { statut?: string; devise?: string }): string => {
     const params = new URLSearchParams();
@@ -210,6 +225,17 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
     if (q) params.set('q', q);
     const chaine = params.toString();
     return chaine ? `${base}?${chaine}` : base;
+  };
+
+  /** L'écran, avec une commande ouverte — et les filtres conservés. */
+  const lienPanneau = (id: string, rembourser = false): string => {
+    const params = new URLSearchParams();
+    if (statut) params.set('statut', statut);
+    if (devise) params.set('devise', devise);
+    if (q) params.set('q', q);
+    params.set('commande', id);
+    if (rembourser) params.set('rembourser', '1');
+    return `${base}?${params.toString()}`;
   };
 
   const decompte = `${String(commandes.length)} ${traduire(
@@ -431,7 +457,15 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
                         chacune de son côté se lisent comme deux colonnes.
                       */}
                       <p className={`${styles.grilleTitre} ${styles.grilleNumero}`}>
-                        EM-{commande.numero}
+                        {/*
+                          Le numéro EST le lien : partout ailleurs dans le
+                          produit, on ouvre une ligne en cliquant ce qui la
+                          nomme. Une colonne « Ouvrir » de plus aurait ajouté
+                          une cible à viser sur une ligne qui en a déjà une.
+                        */}
+                        <a className={styles.grilleTitre} href={lienPanneau(commande.id)}>
+                          EM-{commande.numero}
+                        </a>
                       </p>
                       <p className={styles.grilleSousLigne}>
                         {new Date(commande.cree_le).toLocaleDateString(langue, {
@@ -517,6 +551,18 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
       </div>
 
       <p className={`${styles.note} ${styles.noteVentes}`}>{traduire(langue, 'admin.cmdAide')}</p>
+
+      {commandeOuverte ? (
+        <PanneauCommande
+          langue={langue}
+          commande={commandeOuverte}
+          fermeture={lien({})}
+          filtres={{ statut, devise, q }}
+          confirmeRemboursement={confirmeRemboursement}
+          urlConfirmer={lienPanneau(commandeOuverte.id, true)}
+          formater={(montant) => afficher(montant, commandeOuverte.devise)}
+        />
+      ) : null}
     </GabaritAdmin>
   );
 }

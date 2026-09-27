@@ -17,9 +17,9 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | --- | --- | --- | --- |
 | Coquille partagée | 1 | 1 | 0 |
 | Catalogue | 6 | 3 | 3 |
-| Ventes | 4 | 0 | 4 (Commandes : liste faite, panneau à venir) |
+| Ventes | 4 | 1 | 3 |
 | Communauté | 5 | 0 | 5 |
-| **Total** | **16** | **4** | **12** |
+| **Total** | **16** | **5** | **11** |
 
 ---
 
@@ -50,7 +50,7 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 
 ## Ventes
 
-- [ ] **`commandes` — Commandes** ← *en cours*
+- [x] **`commandes` — Commandes**
   - [x] migration `0089` — `orders.numero`, `orders.moyen_paiement`,
         `admin_lister_commandes` étendue (recherche + filtre devise),
         `admin_stats_commandes` pour la bande
@@ -63,9 +63,31 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
   - [x] tableau en grille, 7 colonnes, `min-width: 820px`
   - [x] export CSV — `/api/admin/orders/export`, sur la liste filtrée
   - [x] scène de relevé `admin-commandes` — **zéro écart de dimension**
+  - [x] migration `0091` — détail d'une commande, et motif de remboursement
+  - [x] **panneau latéral** — piloté par l'URL, frise de suivi à trois états,
+        confirmation de remboursement avec motif, mesuré à **écart nul**
   - [ ] adaptateur de paiement : normaliser le canal du prestataire
         (la colonne PAIEMENT affiche un tiret tant que rien ne l'écrit)
-  - [ ] panneau latéral — frise de suivi, remboursement, actions par statut
+  - [ ] actions absentes du serveur : « Renvoyer l'e-mail », « Interroger le
+        prestataire », « Envoyer un nouveau lien ». Le prototype les montre ;
+        rien ne les implémente. Non simulées — un bouton qui ne fait rien est
+        pire qu'un bouton absent.
+
+> **Une collision de classes CSS, et le test qui la rattrapera.** Le tableau de
+> bord possédait déjà `.panneau`, `.panneauEntete`, `.panneauTitre` et
+> `.panneauCorps`. Le tiroir latéral a repris les quatre noms : un module CSS
+> n'y voit pas de conflit, il émet les deux règles sous le même nom généré et
+> **les propriétés fusionnent**. Le tiroir héritait d'un rembourrage ; surtout,
+> les panneaux du tableau de bord recevaient son `position: fixed`.
+>
+> Ni le build, ni `tsc`, ni le test des classes `undefined` ne le voyaient —
+> les deux noms existent. Seule la mesure l'a montré, et seulement sur le
+> tiroir : le tableau de bord serait resté cassé jusqu'à ce qu'on l'ouvre.
+>
+> Classes renommées en `tiroir*`, et `tests/unit/classes-css-doublons.test.ts`
+> refuse désormais qu'une classe redéclarée reprenne `position` ou `display` —
+> les deux propriétés qui arrachent un élément au flux d'un autre. Le test a
+> été éprouvé en rejouant la collision avant d'être gardé.
 
 > **Trois cotes que la mesure a révélées, et qui valent pour tout le groupe.**
 >

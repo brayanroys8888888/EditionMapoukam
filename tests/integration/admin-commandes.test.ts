@@ -290,3 +290,108 @@ describe('les compteurs de segments', () => {
     expect(toutes.get('echoue')).toBe(1);
   });
 });
+
+describe('le détail que le panneau latéral affiche', () => {
+  async function detail(orderId: string) {
+    return await queryOne<{
+      numero: string;
+      nom: string | null;
+      email: string | null;
+      lignes: { slug: string; type_document: string; prix_unitaire: number }[];
+      motif_remboursement: string | null;
+      statut: string;
+    }>(`select * from public.admin_lire_commande($1)`, [orderId]);
+  }
+
+  it('rend TOUTES les lignes, avec leur slug et leur support', async () => {
+    const acheteur = await createTestUser();
+    comptes.push(acheteur);
+
+    const livres = await query<{ id: string; slug: string }>(
+      `select id, slug from public.books order by slug limit 2`,
+    );
+    expect(livres.length).toBe(2);
+
+    const id = await commande(acheteur.id, { bookId: livres[0]?.id });
+    await query(
+      `insert into public.order_items (order_id, book_id, langue, prix_unitaire, devise, zone)
+       values ($1, $2, 'fr', 1500, 'EUR', 'international')`,
+      [id, livres[1]?.id],
+    );
+
+    const vue = await detail(id);
+    /*
+     * La LISTE ne rend que le premier titre et un décompte — c'est ce qu'une
+     * ligne de tableau montre. Le panneau les montre toutes : deux formes,
+     * deux fonctions, et ce test garde la seconde de retomber sur la première.
+     */
+    expect(vue?.lignes).toHaveLength(2);
+    expect(vue?.lignes.map((l) => l.slug).sort()).toEqual(
+      livres.map((l) => l.slug).sort(),
+    );
+    expect(vue?.lignes[0]?.type_document).toBeTruthy();
+  });
+
+  it('tait le nom ET le courriel d’un acheteur anonymisé', async () => {
+    const acheteur = await createTestUser();
+    comptes.push(acheteur);
+    await query(`update public.users set nom_complet = 'Sophie Ngo Bell' where id = $1`, [
+      acheteur.id,
+    ]);
+    const id = await commande(acheteur.id);
+
+    expect((await detail(id))?.nom).toBe('Sophie Ngo Bell');
+
+    await query(`select public.anonymize_user($1)`, [acheteur.id]);
+
+    /*
+     * Le panneau est à UN CLIC de la liste. S'il rendait ce que la liste tait,
+     * le droit à l'oubli tiendrait le temps d'un survol.
+     */
+    const apres = await detail(id);
+    expect(apres, 'la commande survit').toBeDefined();
+    expect(apres?.nom).toBeNull();
+    expect(apres?.email).toBeNull();
+  });
+});
+
+describe('le remboursement décidé par l’administration', () => {
+  it('REFUSE sans motif — le client doit lire une explication', async () => {
+    const acheteur = await createTestUser();
+    comptes.push(acheteur);
+    const id = await commande(acheteur.id, { statut: 'paye' });
+
+    await expect(
+      query(`select public.admin_rembourser_commande($1, null)`, [id]),
+    ).rejects.toThrow();
+
+    // Et la commande n'a pas bougé : le refus est total, pas partiel.
+    const apres = await queryOne<{ statut: string }>(
+      `select statut::text from public.orders where id = $1`,
+      [id],
+    );
+    expect(apres?.statut).toBe('paye');
+  });
+
+  it('écrit le motif ET rembourse, par la même fonction que le webhook', async () => {
+    const acheteur = await createTestUser();
+    comptes.push(acheteur);
+
+    const livre = await queryOne<{ id: string }>(`select id from public.books limit 1`);
+    const id = await commande(acheteur.id, { statut: 'paye', bookId: livre?.id });
+
+    await query(`select public.admin_rembourser_commande($1, 'fichier_defectueux')`, [id]);
+
+    const apres = await queryOne<{ statut: string; motif: string | null }>(
+      `select statut::text, motif_remboursement::text as motif from public.orders where id = $1`,
+      [id],
+    );
+    /*
+     * Les deux d'un seul geste : le motif seul laisserait une commande payée
+     * portant une explication de remboursement, et le remboursement seul
+     * priverait le client de la phrase qu'il doit lire.
+     */
+    expect(apres?.statut).toBe('rembourse');
+    expect(apres?.motif).toBe('fichier_defectueux');
+  });
+});

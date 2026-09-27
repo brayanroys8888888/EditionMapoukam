@@ -581,10 +581,19 @@ export async function enregistrerPromo(
  * remboursement : le retrait des droits par ligne (arbitrage Q9.1) ne doit pas
  * exister deux fois.
  */
+/** Le detail d'une commande, pour le panneau lateral (migration 0091). */
+export async function lireCommande(
+  orderId: string,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lire_commande', { p_order_id: orderId });
+}
+
 export async function rembourserCommande(
   acteur: ActeurId,
   orderId: string,
-  options: { client?: AppSupabaseClient } = {},
+  options: { client?: AppSupabaseClient; motif?: string | null } = {},
 ): Promise<ResultatAdmin<unknown>> {
   const client = options.client ?? createServiceClient();
 
@@ -598,6 +607,27 @@ export async function rembourserCommande(
     p_motif: null,
   });
   if (!verification.ok) return verification;
+
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ AVEC MOTIF, C'EST L'ADMINISTRATION ; SANS, C'EST LE PRESTATAIRE.     │
+   * │                                                                      │
+   * │ `admin_rembourser_commande` ecrit le motif — que le CLIENT lira — et  │
+   * │ delegue ensuite a `refund_order`, qui reste l'unique implementation   │
+   * │ du remboursement. Elle ne la recopie pas : deux retraits de droits    │
+   * │ finiraient par diverger, et c'est le chemin le moins emprunte qui     │
+   * │ deviendrait faux.                                                     │
+   * │                                                                      │
+   * │ Le chemin sans motif reste ouvert pour l'appelant qui n'en a pas —    │
+   * │ un remboursement rapporte par le prestataire n'a pas ete decide ici.  │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  if (options.motif) {
+    return await appeler<unknown>(client, 'admin_rembourser_commande', {
+      p_order_id: orderId,
+      p_motif: options.motif,
+    });
+  }
 
   return await appeler<unknown>(client, 'refund_order', { p_order_id: orderId });
 }

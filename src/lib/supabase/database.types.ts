@@ -1226,6 +1226,9 @@ export type Database = {
           id: string
           maj_le: string
           montant_total: number
+          motif_remboursement:
+            | Database["public"]["Enums"]["motif_remboursement"]
+            | null
           moyen_paiement: Database["public"]["Enums"]["moyen_paiement"] | null
           numero: number
           paye_le: string | null
@@ -1244,6 +1247,9 @@ export type Database = {
           id?: string
           maj_le?: string
           montant_total: number
+          motif_remboursement?:
+            | Database["public"]["Enums"]["motif_remboursement"]
+            | null
           moyen_paiement?: Database["public"]["Enums"]["moyen_paiement"] | null
           numero?: number
           paye_le?: string | null
@@ -1262,6 +1268,9 @@ export type Database = {
           id?: string
           maj_le?: string
           montant_total?: number
+          motif_remboursement?:
+            | Database["public"]["Enums"]["motif_remboursement"]
+            | null
           moyen_paiement?: Database["public"]["Enums"]["moyen_paiement"] | null
           numero?: number
           paye_le?: string | null
@@ -2132,6 +2141,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_lire_commande: {
+        Args: { p_order_id: string }
+        Returns: {
+          acheteur_anonymise: boolean
+          code_promo: string
+          cree_le: string
+          devise: string
+          email: string
+          id: string
+          lignes: Json
+          maj_le: string
+          montant_total: number
+          motif_remboursement: Database["public"]["Enums"]["motif_remboursement"]
+          moyen_paiement: Database["public"]["Enums"]["moyen_paiement"]
+          nom: string
+          numero: number
+          paye_le: string
+          pays_paiement: string
+          remise: number
+          statut: Database["public"]["Enums"]["order_status"]
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
       admin_lire_contenu_association: { Args: { p_id: string }; Returns: Json }
       admin_lire_livre: {
         Args: { p_book_id: string }
@@ -2678,6 +2710,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_rembourser_commande: {
+        Args: {
+          p_motif: Database["public"]["Enums"]["motif_remboursement"]
+          p_order_id: string
+        }
+        Returns: Json
       }
       admin_retirer_droit: {
         Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
@@ -3227,6 +3266,11 @@ export type Database = {
       email_statut: "en_attente" | "envoye" | "echoue"
       entitlement_type: "achat" | "offert"
       ingestion_status: "en_attente" | "en_cours" | "termine" | "echoue"
+      motif_remboursement:
+        | "demande_client"
+        | "paiement_double"
+        | "fichier_defectueux"
+        | "geste_commercial"
       moyen_paiement: "carte" | "orange_money" | "mtn_momo" | "autre"
       order_status: "en_attente" | "paye" | "rembourse" | "echoue"
       page_orientation: "paysage" | "portrait"
@@ -3420,6 +3464,12 @@ export const Constants = {
       email_statut: ["en_attente", "envoye", "echoue"],
       entitlement_type: ["achat", "offert"],
       ingestion_status: ["en_attente", "en_cours", "termine", "echoue"],
+      motif_remboursement: [
+        "demande_client",
+        "paiement_double",
+        "fichier_defectueux",
+        "geste_commercial",
+      ],
       moyen_paiement: ["carte", "orange_money", "mtn_momo", "autre"],
       order_status: ["en_attente", "paye", "rembourse", "echoue"],
       page_orientation: ["paysage", "portrait"],

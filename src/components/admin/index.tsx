@@ -476,4 +476,5 @@ export function GraphiqueBarres({
 export { styles as stylesAdmin };
 export { BoutonSoumission } from './BoutonSoumission';
 export { Rafraichissement } from './rafraichissement';
+export { Panneau, BlocPanneau, EtapeSuivi } from './panneau';
 

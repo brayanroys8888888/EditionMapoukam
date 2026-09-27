@@ -3088,6 +3088,298 @@ textarea.saisie {
   }
 }
 
+/* ══ LE PANNEAU LATÉRAL ═══════════════════════════════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE VOILE EST UN LIEN QUI COUVRE L'ÉCRAN.                                │
+ * │                                                                          │
+ * │ Donc il n'a ni texte ni hauteur propre : `inset: 0` lui donne les deux   │
+ * │ dimensions, et son intitulé accessible vit dans `aria-label`. Un lien    │
+ * │ vide sans dimensions serait invisible au clavier comme à la souris.      │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.tiroirVoile {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--encre) 30%, transparent);
+}
+
+.tiroir {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  /* `100vw` en repli : sur un téléphone, un tiroir de 540 px déborderait. */
+  width: min(540px, 100vw);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--surface);
+  box-shadow: var(--ombre-l);
+}
+
+/*
+ * En-tête et pied COLLANTS, et c'est ce qui fait la valeur du tiroir.
+ *
+ * Le corps d'une commande de huit titres défile ; le titre doit rester lisible
+ * et le bouton « Rembourser » atteignable sans remonter. Un en-tête qui
+ * défilerait avec le contenu ferait perdre de vue ce qu'on est en train de
+ * regarder — sur un écran qui sert justement à trancher.
+ */
+.tiroirEntete {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--pas-3);
+  padding: var(--pas-4) var(--pas-6);
+  background: var(--surface);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.tiroirIdentite {
+  flex: 1;
+  min-width: 0;
+}
+
+.tiroirOeil {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.tiroirTitre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 22px;
+  line-height: 1.15;
+  /*
+   * La graisse et l'interlettrage sont REPRIS a `h2`, qui porte les siens.
+   *
+   * Le dossier cote ce titre sans interlettrage, la ou `h2` resserre de
+   * -0,015 em — soit -0,33 px a 22 px. Ce n'est pas rien sur un numero de
+   * commande a chasse fixe : les chiffres s'y touchent.
+   *
+   * La graisse 400 est celle de Caprasimo, qui n'existe qu'en 400. Le 700
+   * herite ne dessinait rien de plus — `font-synthesis-weight: none` est pose
+   * globalement — mais il se mesurait, et une valeur qui ment au releve finit
+   * par faire chercher un ecart ailleurs.
+   */
+  font-weight: 400;
+  letter-spacing: normal;
+  /* Un slug sans espace ne doit pas pousser le tiroir : il se coupe. */
+  overflow-wrap: anywhere;
+}
+
+.tiroirCroix {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--rayon-pastille);
+  color: var(--encre);
+}
+
+.tiroirCroix:hover {
+  background: color-mix(in srgb, var(--action) 10%, transparent);
+}
+
+.tiroirCorps {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-6);
+  padding: var(--pas-6);
+}
+
+.tiroirPied {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--pas-2);
+  padding: var(--pas-4) var(--pas-6);
+  background: var(--surface);
+  border-top: 1px solid var(--bordure);
+}
+
+.tiroirBloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+}
+
+.tiroirBlocTitre {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--action-texte);
+}
+
+/* ── La frise de suivi ─────────────────────────────────────────────────── */
+
+.suivi {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suiviEtape {
+  display: flex;
+  gap: var(--pas-3);
+}
+
+.suiviColonne {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: none;
+  width: 14px;
+}
+
+.suiviPastille {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 3px;
+}
+
+.suiviPastilleFaite {
+  background: var(--second);
+}
+
+/*
+ * EN ATTENTE : une pastille CREUSE, et pas seulement d'une autre couleur.
+ *
+ * Ce qu'on attend n'est pas ce qui est arrivé ; un disque plein le dirait
+ * faussement. Le creux se voit sans distinguer les teintes — c'est la même
+ * règle que les étiquettes de statut, qui portent toutes leur bordure.
+ *
+ * La teinte est DÉRIVÉE de l'action plutôt que posée : le prototype éclaircit
+ * son terracotta d'un cran, et un mélange suit le jeton si la palette bouge.
+ */
+.suiviPastilleAttente {
+  background: var(--surface);
+  border: 2px solid color-mix(in srgb, var(--action) 70%, var(--surface));
+}
+
+.suiviPastilleIncident {
+  background: var(--action);
+}
+
+.suiviTrait {
+  flex: 1;
+  width: 2px;
+  min-height: 18px;
+  background: var(--bordure);
+}
+
+.suiviTexte {
+  padding-bottom: 14px;
+}
+
+.suiviLibelle {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: var(--graisse-forte);
+}
+
+.suiviLibelleAttente {
+  color: var(--action-texte);
+}
+
+.suiviDetail {
+  margin: 0;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+/* ── Le contenu d'une commande ─────────────────────────────────────────── */
+
+.tiroirLigne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pas-3);
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--encre) 8%, transparent);
+}
+
+.tiroirLigneNom {
+  font-size: var(--taille-m);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.tiroirLigneType {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.tiroirLignePrix {
+  font-size: var(--taille-m);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tiroirTotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pas-3);
+  padding-top: 12px;
+  font-size: 16px;
+  font-weight: var(--graisse-forte);
+}
+
+.tiroirRemise {
+  color: var(--second-encre);
+}
+
+/* L'etiquette de statut et la date, sur une ligne qui se replie si besoin. */
+.tiroirEtat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-2);
+}
+
+.tiroirMeta {
+  margin: 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.tiroirNom {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--graisse-forte);
+}
+
+/*
+ * Les deux boutons d'une confirmation, poussés à droite.
+ *
+ * « Annuler » à gauche du bouton qui agit : c'est l'ordre du prototype, et
+ * c'est aussi celui qui met l'action irréversible le plus loin du bord d'où
+ * vient le pouce. Un remboursement ne se déclenche pas par inadvertance.
+ */
+.tiroirActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--pas-2);
+  margin-top: var(--pas-3);
+}
+
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │

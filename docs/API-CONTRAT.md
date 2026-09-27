@@ -482,7 +482,7 @@ plafonnée**, indissociables.
 | `POST /api/admin/users/{id}/entitlements` | `book_id`, **`motif`**, `peut_telecharger?`, `expire_le?` | `201` |
 | `DELETE /api/admin/users/{id}/entitlements` | `entitlement_id`, `motif?` (query) | `204` |
 | `GET /api/admin/orders` | `statut?`, `user_id?`, `page`, `taille` | `{ commandes[], page }` |
-| `POST /api/admin/orders/{id}/refund` | — | `{ order_id, statut: 'rembourse' }` |
+| `POST /api/admin/orders/{id}/refund` | `{ motif }` — l'un de `demande_client`, `paiement_double`, `fichier_defectueux`, `geste_commercial` | `{ order_id, statut: 'rembourse' }` |
 | `GET /api/admin/subscriptions` | `statut?` (dont `anomalie`), `page`, `taille` | `{ abonnements[], page }` |
 | `PUT /api/admin/subscriptions/{id}/zone` | `zone`, `motif?` | Abonnement modifié |
 | `GET /api/admin/promos` | `page`, `taille` | `{ codes[], page }` |
