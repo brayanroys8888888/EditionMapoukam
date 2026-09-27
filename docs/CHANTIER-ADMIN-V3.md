@@ -17,9 +17,9 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | --- | --- | --- | --- |
 | Coquille partagée | 1 | 1 | 0 |
 | Catalogue | 6 | 3 | 3 |
-| Ventes | 4 | 1 | 3 |
+| Ventes | 4 | 2 | 2 |
 | Communauté | 5 | 0 | 5 |
-| **Total** | **16** | **5** | **11** |
+| **Total** | **16** | **6** | **10** |
 
 ---
 
@@ -124,7 +124,38 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 >
 > **Résultat** : 7 commandes couvrant les quatre statuts et LES DEUX DEVISES,
 > 3 abonnements sur les deux domaines dont un impayé, 6 droits accordés.
-- [ ] **`abonnements` — Abonnements**
+- [x] **`abonnements` — Abonnements**
+  - [x] migration `0092` — liste étendue (nom, domaine, fin d'accès),
+        compteurs par statut ET par formule, bande de chiffres, détail
+  - [x] `fin_grace_impaye` EXTRAITE de `statut_effectif`, qui l'appelle —
+        « Terminé le » et la bascule en échu viennent du même calcul
+  - [x] bande de chiffres, bandeau des impayés, barre d'outils, tableau,
+        ligne de santé — relevé `admin-abonnements`, **écart nul**
+  - [x] tiroir en lecture seule, historique tiré de `payment_events` —
+        relevé `admin-abonnement-panneau`, **écart nul**
+  - [ ] **actions du tiroir — en attente d'une décision du propriétaire** :
+        « Offrir un mois » (accès gratuit), « Résilier » à la fin de la
+        période ou IMMÉDIATEMENT AVEC REMBOURSEMENT AU PRORATA, « Relancer »,
+        « Annuler la résiliation ». Aucune n'existe côté serveur, et le
+        prorata contredit l'arbitrage de la route de remboursement.
+
+> **Ce que le prototype affirmait et qui était faux ici.** Le bandeau des
+> impayés dit « Une relance part automatiquement à J+1 et J+4 ». Aucune relance
+> n'existe dans ce dépôt : la phrase n'est pas reprise, sans quoi l'éditeur
+> attendrait un règlement que personne n'a demandé. La durée de grâce, elle,
+> est LUE dans les réglages au lieu d'être écrite « 7 jours ».
+>
+> **Deux défauts de Commandes, trouvés en mesurant Abonnements.** La colonne
+> des montants reprenait la cote des prix du catalogue — 12,5 px normal au lieu
+> de 14 px gras — et la seconde ligne des cellules était décollée de 5 px au
+> lieu de 0, ce qui grandissait chaque rangée de deux pixels. Aucune sonde de
+> Commandes ne visait ces endroits : l'écart nul annoncé ne l'était que sur ce
+> qu'on mesurait. Corrigé, et trois sondes permanentes ajoutées.
+>
+> **Deux teintes absentes de notre palette** : le pêche `accent-100` des cartes
+> d'avertissement et le brun `accent-800` de leurs chiffres. Elles sont dérivées
+> de `--action` par `color-mix` — proches, pas identiques. Même famille que les
+> cartes, déjà tranchée le 27 septembre.
 - [ ] **`offres` — Offres d'abonnement**
 - [ ] **`promos` — Codes promo**
 
@@ -151,6 +182,7 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | Fond des cartes | Le nôtre (clair), pas celui du prototype | 27 sept. |
 | Trois jetons de chrome sombre | Inchangés — ils sont globaux | 27 sept. |
 | Encre sur terracotta | Sombre — le blanc y donne 3,2:1 | 27 sept. |
+| Libellés des statuts d'abonnement | Ceux du prototype à l'admin, ceux du lecteur côté lecteur | 27 sept. |
 | Étiquette de statut | Garde sa bordure — WCAG 2.1 AA | 27 sept. |
 | Moyen de paiement | Colonne ajoutée, remplie par le webhook | 27 sept. |
 | Numéro de commande | Séquence lisible, « EM-1048 » | 27 sept. |

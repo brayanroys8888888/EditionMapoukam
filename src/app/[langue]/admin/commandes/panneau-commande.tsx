@@ -126,9 +126,11 @@ export function PanneauCommande({
   const etatPastille =
     commande.statut === 'paye'
       ? styles.etatPublie
-      : commande.statut === 'echoue'
-        ? styles.etatAlerte
-        : styles.etatBrouillon;
+      : commande.statut === 'en_attente'
+        ? styles.etatAccent
+        : commande.statut === 'echoue'
+          ? styles.etatAlerte
+          : styles.etatBrouillon;
 
   const intitule =
     commande.statut === 'paye'
@@ -289,7 +291,7 @@ export function PanneauCommande({
 
       {/* ── 6. L'attente, dite pour ce qu'elle est ──────────────────────── */}
       {commande.statut === 'en_attente' ? (
-        <div className={styles.alerte}>
+        <div className={styles.avertissement}>
           <p className={styles.tiroirNom}>{t('admin.cmdAttenteTitre')}</p>
           <p className={styles.tiroirMeta}>{t('admin.cmdAttenteTexte')}</p>
         </div>
@@ -297,7 +299,7 @@ export function PanneauCommande({
 
       {/* ── 7. La confirmation de remboursement ─────────────────────────── */}
       {confirmeRemboursement ? (
-        <form action={rembourser.bind(null, langue)} className={styles.alerte}>
+        <form action={rembourser.bind(null, langue)} className={styles.confirmation}>
           <input type="hidden" name="commande" value={commande.id} />
           {filtres.statut ? <input type="hidden" name="statut" value={filtres.statut} /> : null}
           {filtres.devise ? <input type="hidden" name="devise" value={filtres.devise} /> : null}

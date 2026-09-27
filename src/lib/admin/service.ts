@@ -212,7 +212,11 @@ export async function lireLivre(
 }
 
 export async function listerAbonnements(
-  filtres: { statut?: string | null } & Pagination,
+  filtres: {
+    statut?: string | null;
+    domaine?: string | null;
+    recherche?: string | null;
+  } & Pagination,
   options: { client?: AppSupabaseClient } = {},
 ) {
   const client = options.client ?? createServiceClient();
@@ -220,6 +224,49 @@ export async function listerAbonnements(
     p_statut: filtres.statut ?? null,
     p_page: filtres.page,
     p_taille: filtres.taille,
+    p_domaine: filtres.domaine ?? null,
+    p_recherche: filtres.recherche ?? null,
+  });
+}
+
+/** Nombre d'abonnements par statut OBSERVÉ, pour les segments (0092). */
+export async function compterAbonnementsParStatut(
+  filtres: { domaine?: string | null; recherche?: string | null } = {},
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_compter_abonnements_par_statut', {
+    p_domaine: filtres.domaine ?? null,
+    p_recherche: filtres.recherche ?? null,
+  });
+}
+
+/** Nombre d'abonnements par domaine, pour le segmenté des formules (0092). */
+export async function compterAbonnementsParDomaine(
+  filtres: { statut?: string | null; recherche?: string | null } = {},
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_compter_abonnements_par_domaine', {
+    p_statut: filtres.statut ?? null,
+    p_recherche: filtres.recherche ?? null,
+  });
+}
+
+/** La bande de chiffres de l'écran Abonnements (0092). */
+export async function statsAbonnements(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_stats_abonnements', {});
+}
+
+/** Le détail d'un abonnement, pour le panneau latéral (0092). */
+export async function lireAbonnement(
+  subscriptionId: string,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lire_abonnement', {
+    p_subscription_id: subscriptionId,
   });
 }
 

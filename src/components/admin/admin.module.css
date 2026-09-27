@@ -825,6 +825,29 @@
 }
 
 /*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA QUATRIÈME TEINTE — CE QUI ATTEND UNE SUITE.                          │
+ * │                                                                          │
+ * │ Le prototype a quatre étiquettes, nous en avions trois. Celle qui        │
+ * │ manquait est la pêche : « En attente », « Impayé », « Programmé »,       │
+ * │ « Suspendu ». Ni un succès, ni un échec, ni un état clos — une affaire   │
+ * │ en cours, qui peut encore tourner dans un sens ou dans l'autre.          │
+ * │                                                                          │
+ * │ Faute d'elle, une commande en attente prenait le gris d'un état clos,    │
+ * │ et se confondait à l'œil avec une commande remboursée.                   │
+ * │                                                                          │
+ * │ Elle garde la bordure de ses trois sœurs : l'état se lit à la forme et   │
+ * │ au mot, pas à la seule couleur. Les teintes sont DÉRIVÉES de l'action,   │
+ * │ comme celles de la frise : un mélange suit le jeton si la palette bouge. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.etatAccent {
+  background: color-mix(in srgb, var(--action) 12%, var(--surface));
+  border: 1.5px solid color-mix(in srgb, var(--action) 55%, var(--surface));
+  color: var(--action-texte);
+}
+
+/*
  * LES MANQUES, ÉNUMÉRÉS.
  *
  * La base rend `manques` — la liste exacte des champs qui empêchent la
@@ -2089,6 +2112,133 @@ textarea.saisie {
  * rangée d'en-tête grandissait de deux pixels et demi, et tout le tableau
  * descendait avec elle. Le relevé l'a vu ; l'œil, non.
  */
+/* ══ LES CELLULES DES TABLEAUX DE VENTES ═══════════════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE CATALOGUE ET LES VENTES NE COTENT PAS LEURS CELLULES PAREIL.         │
+ * │                                                                          │
+ * │ Le catalogue décolle sa seconde ligne de 5 px et l'écrit à 55 % ; les    │
+ * │ Ventes la collent à la première — 3 px sous un numéro, 0 ailleurs — et   │
+ * │ l'écrivent à 58 %. Le nom d'un client est en demi-gras 13,5 px, celui    │
+ * │ d'un abonné en gras 14 px, une date en 13 px à l'encre pleine.           │
+ * │                                                                          │
+ * │ Les deux premiers écrans de Ventes reprenaient les classes du catalogue. │
+ * │ La rangée d'une commande en sortait plus haute de deux pixels, poussée   │
+ * │ par la cellule « contenu » — 43 px contre 38 — et toutes les cellules    │
+ * │ centrées dessous glissaient d'un pixel.                                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.venteFort,
+.venteNom,
+.venteDemi,
+.venteTexte,
+.venteLigne2 {
+  margin: 0;
+  color: var(--encre);
+}
+
+.venteFort {
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+}
+
+.venteNom {
+  font-size: 13.5px;
+  font-weight: var(--graisse-demi);
+}
+
+.venteDemi {
+  font-size: 13px;
+  font-weight: var(--graisse-demi);
+}
+
+.venteTexte {
+  font-size: 13px;
+}
+
+.venteLigne2 {
+  font-size: 11.5px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+/* La date sous un numéro de commande : le seul décollement de la famille. */
+.venteLigne2Numero {
+  margin-top: 3px;
+}
+
+/* Une adresse ou un slug trop long se coupe, il ne pousse pas la colonne. */
+.venteCoupe {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA RANGÉE ENTIÈRE SE CLIQUE, ET LE CLAVIER Y ARRIVE PAR UN SEUL LIEN.   │
+ * │                                                                          │
+ * │ Le prototype rend toute la ligne cliquable. Un `<tr>` ne peut pas être   │
+ * │ un lien ; un gestionnaire de clic sur la rangée ne serait atteignable ni │
+ * │ au clavier ni par un lecteur d'écran. Le lien reste donc sur ce qui      │
+ * │ nomme la ligne — numéro, nom — et un pseudo-élément l'étend à toute la   │
+ * │ rangée. Une seule cible dans l'ordre de tabulation, toute la surface à   │
+ * │ la souris.                                                               │
+ * │                                                                          │
+ * │ L'encre est celle du texte, comme au prototype : c'est le fond de        │
+ * │ survol de la rangée qui dit qu'on peut cliquer, et un soulignement au    │
+ * │ focus qui dit où l'on est au clavier.                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.venteRangee {
+  position: relative;
+  cursor: pointer;
+}
+
+.venteLien {
+  color: inherit;
+  text-decoration: none;
+}
+
+.venteLien::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.venteLien:hover,
+.venteLien:focus-visible {
+  text-decoration: underline;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE MONTANT D'UNE VENTE N'EST PAS LE PRIX D'UN TITRE.                    │
+ * │                                                                          │
+ * │ `.grillePrix` cote la colonne des prix du CATALOGUE : 12,5 px, graisse   │
+ * │ normale, une ligne par zone — une information parmi d'autres. Aux        │
+ * │ Ventes, le montant est ce qu'on vient lire, et le prototype le met en    │
+ * │ gras : 14 px aux commandes, 13,5 px aux abonnements.                     │
+ * │                                                                          │
+ * │ Les deux premiers écrans de Ventes reprenaient `.grillePrix`, et la      │
+ * │ mesure n'en disait rien — aucune sonde ne visait la colonne. C'est la    │
+ * │ sonde ajoutée aux abonnements qui l'a fait voir, puis la même, posée     │
+ * │ après coup sur les commandes, qui l'a confirmé là aussi.                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.grilleMontant {
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Placée APRÈS `.grilleMontant` : à spécificité égale, l'ordre décide. */
+.grilleMontantAbonnement {
+  font-size: 13.5px;
+}
+
 .grilleColPrix {
   text-align: right;
 }
@@ -3378,6 +3528,123 @@ textarea.saisie {
   justify-content: flex-end;
   gap: var(--pas-2);
   margin-top: var(--pas-3);
+}
+
+/* ══ LES CARTES D'AVERTISSEMENT ET DE CONFIRMATION ═════════════════════════ */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX CARTES, ET PAS LE BANDEAU DE RETOUR.                               │
+ * │                                                                          │
+ * │ `.alerte` est le bandeau qui répond à un formulaire — « enregistré »,    │
+ * │ « refusé ». Il a sa marge basse et sa largeur de texte. Le prototype     │
+ * │ cote à part deux CARTES : l'avertissement (fond pêche, filet d'un pixel) │
+ * │ qui dit un état — un impayé, une commande sans confirmation — et la      │
+ * │ confirmation (filet d'un pixel et demi) qui demande une décision.        │
+ * │                                                                          │
+ * │ La première passe du tiroir des commandes employait `.alerte` pour les   │
+ * │ deux. Aucune sonde ne la visait ; c'est l'écran des abonnements, qui en  │
+ * │ porte une en pleine page, qui l'a fait voir.                             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.avertissement,
+.confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+  padding: var(--pas-3);
+  border-radius: var(--carte-rayon);
+}
+
+.avertissement {
+  background: color-mix(in srgb, var(--action) 7%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--action) 40%, var(--surface));
+}
+
+.confirmation {
+  gap: var(--pas-3);
+  background: var(--surface);
+  border: 1.5px solid color-mix(in srgb, var(--action) 40%, var(--surface));
+}
+
+/* Le bandeau des impayés : un avertissement couché, qui se replie au besoin. */
+.avertissementLigne {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-4);
+}
+
+.avertissementChiffre {
+  font-family: var(--police-titre);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--action-texte);
+}
+
+.avertissementBloc {
+  flex: 1;
+  min-width: 220px;
+}
+
+.avertissementTitre {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: var(--graisse-forte);
+}
+
+.avertissementTexte {
+  margin: 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+/* ── La ligne de santé sous le tableau des abonnements ──────────────────── */
+
+/*
+ * Elle existe même quand tout va bien, et c'est son intérêt : un écran qui ne
+ * parle des anomalies que lorsqu'il y en a ne permet pas de distinguer « rien
+ * à signaler » de « le contrôle n'a pas tourné ».
+ */
+.sante {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.santePastille {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--rayon-pastille);
+  background: var(--second);
+}
+
+.santePastilleAlerte {
+  background: var(--action);
+}
+
+/* ── Le tiroir d'un abonnement : sa grille de faits ─────────────────────── */
+
+.tiroirGrille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pas-4);
+}
+
+.tiroirFait {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tiroirFaitValeur {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: var(--graisse-forte);
 }
 
 /*

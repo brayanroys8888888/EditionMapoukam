@@ -414,6 +414,26 @@ async function main() {
       continue;
     }
 
+    /*
+     * LE PRIX DE LA FORMULE, DANS LA ZONE DU CLIENT.
+     *
+     * Un prestataire réel rapporte le montant prélevé dans son événement ; le
+     * gestionnaire l'enregistre tel quel. La première version de ce script
+     * n'en envoyait aucun, et les abonnements naissaient à ZÉRO euro — même
+     * en zone Afrique. La bande « récurrent mensuel » affichait donc 0 €, et
+     * rien ne disait que c'était le jeu de démonstration qui mentait.
+     */
+    const catalogue = await appeler(null, `/api/offers?zone=${String(zone)}`);
+    const formules = [
+      ...(catalogue.corps?.abonnement?.offres ?? []),
+      ...(catalogue.corps?.association?.offres ?? []),
+    ];
+    const formule = formules.find((f) => f.code === abonnement.code);
+    if (!formule) {
+      console.warn(`  abonnement ${abonnement.code} : aucun prix en zone ${String(zone)} — ignoré.`);
+      continue;
+    }
+
     const emission = await appeler(admin, '/api/dev/events', {
       method: 'POST',
       body: JSON.stringify({
@@ -423,6 +443,7 @@ async function main() {
           domaine: abonnement.domaine,
           offre: abonnement.offre,
           zone,
+          montant: { montant: formule.montant, devise: formule.devise },
         },
       }),
     });

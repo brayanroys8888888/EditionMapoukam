@@ -98,7 +98,7 @@ const LIBELLE_STATUT: Record<Statut, CleTraduction> = {
 };
 
 /**
- * La teinte de la pastille. Trois états visuels pour quatre statuts.
+ * La teinte de la pastille : une par statut, comme le prototype.
  *
  * `string | undefined` parce qu'un module CSS est typé ainsi : une classe
  * absente de la feuille rend `undefined`, et le compilateur refuse qu'on
@@ -107,7 +107,7 @@ const LIBELLE_STATUT: Record<Statut, CleTraduction> = {
  */
 const ETAT_STATUT: Record<Statut, string | undefined> = {
   paye: styles.etatPublie,
-  en_attente: styles.etatBrouillon,
+  en_attente: styles.etatAccent,
   echoue: styles.etatAlerte,
   rembourse: styles.etatBrouillon,
 };
@@ -447,7 +447,7 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
                 const anonyme = traduire(langue, 'admin.nonPublie');
 
                 return (
-                  <tr key={commande.id} className={styles.grilleRangee} role="row">
+                  <tr key={commande.id} className={`${styles.grilleRangee} ${styles.venteRangee}`} role="row">
                     <td role="cell">
                       {/*
                         `tabular-nums` SANS l'alignement à droite : `.numerique`
@@ -456,18 +456,18 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
                         reste à gauche. Deux lignes d'un même bloc alignées
                         chacune de son côté se lisent comme deux colonnes.
                       */}
-                      <p className={`${styles.grilleTitre} ${styles.grilleNumero}`}>
+                      <p className={`${styles.venteFort} ${styles.grilleNumero}`}>
                         {/*
                           Le numéro EST le lien : partout ailleurs dans le
                           produit, on ouvre une ligne en cliquant ce qui la
                           nomme. Une colonne « Ouvrir » de plus aurait ajouté
                           une cible à viser sur une ligne qui en a déjà une.
                         */}
-                        <a className={styles.grilleTitre} href={lienPanneau(commande.id)}>
+                        <a className={styles.venteLien} href={lienPanneau(commande.id)}>
                           EM-{commande.numero}
                         </a>
                       </p>
-                      <p className={styles.grilleSousLigne}>
+                      <p className={`${styles.venteLigne2} ${styles.venteLigne2Numero}`}>
                         {new Date(commande.cree_le).toLocaleDateString(langue, {
                           day: 'numeric',
                           month: 'short',
@@ -482,17 +482,19 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
                       personne non.
                     */}
                     <td role="cell">
-                      <p className={styles.grilleAuteur}>
+                      <p className={`${styles.venteNom} ${styles.venteCoupe}`}>
                         {commande.acheteur_anonymise ? anonyme : (commande.nom ?? anonyme)}
                       </p>
                       {commande.acheteur_anonymise ? null : (
-                        <p className={styles.grilleSousLigne}>{commande.email ?? ''}</p>
+                        <p className={`${styles.venteLigne2} ${styles.venteCoupe}`}>{commande.email ?? ''}</p>
                       )}
                     </td>
 
                     <td role="cell">
-                      <p className={styles.grilleAuteur}>{commande.premier_titre ?? '—'}</p>
-                      <p className={styles.grilleSousLigne}>
+                      <p className={`${styles.venteTexte} ${styles.venteCoupe}`}>
+                        {commande.premier_titre ?? '—'}
+                      </p>
+                      <p className={styles.venteLigne2}>
                         {autres > 0
                           ? `+ ${String(autres)} ${traduire(
                               langue,
@@ -510,13 +512,13 @@ export default async function PageAdminCommandes({ params, searchParams }: Param
                       migration 0089 : le prestataire ne l'a jamais rapporté, et
                       le déduire après coup serait inventer.
                     */}
-                    <td role="cell" className={styles.grilleAuteur}>
+                    <td role="cell" className={styles.venteTexte}>
                       {commande.moyen_paiement
                         ? traduire(langue, MOYENS[commande.moyen_paiement])
                         : traduire(langue, 'admin.moyenInconnu')}
                     </td>
 
-                    <td role="cell" className={`${styles.grillePrix} ${styles.numerique}`}>
+                    <td role="cell" className={styles.grilleMontant}>
                       {afficher(commande.montant_total, commande.devise)}
                     </td>
 

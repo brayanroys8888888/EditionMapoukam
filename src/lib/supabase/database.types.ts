@@ -1966,6 +1966,20 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_compter_abonnements_par_domaine: {
+        Args: { p_recherche?: string; p_statut?: string }
+        Returns: {
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          nb: number
+        }[]
+      }
+      admin_compter_abonnements_par_statut: {
+        Args: { p_domaine?: string; p_recherche?: string }
+        Returns: {
+          nb: number
+          statut: Database["public"]["Enums"]["subscription_status_effectif"]
+        }[]
+      }
       admin_compter_commandes_par_statut: {
         Args: { p_devise?: string; p_recherche?: string }
         Returns: {
@@ -2141,6 +2155,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_lire_abonnement: {
+        Args: { p_subscription_id: string }
+        Returns: {
+          acheteur_anonymise: boolean
+          annule_le: string
+          cree_le: string
+          debut_periode: string
+          devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
+          email: string
+          fin_acces: string
+          fin_periode: string
+          historique: Json
+          id: string
+          impaye_depuis: string
+          montant: number
+          nom: string
+          offre: string
+          statut: Database["public"]["Enums"]["subscription_status"]
+          statut_observe: Database["public"]["Enums"]["subscription_status_effectif"]
+          zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
       admin_lire_commande: {
         Args: { p_order_id: string }
         Returns: {
@@ -2196,14 +2233,24 @@ export type Database = {
       }
       admin_lire_temoignage: { Args: { p_id: string }; Returns: Json }
       admin_lister_abonnements: {
-        Args: { p_page?: number; p_statut?: string; p_taille?: number }
+        Args: {
+          p_domaine?: string
+          p_page?: number
+          p_recherche?: string
+          p_statut?: string
+          p_taille?: number
+        }
         Returns: {
+          cree_le: string
           debut_periode: string
           devise: string
+          domaine: Database["public"]["Enums"]["subscription_domain"]
           email: string
+          fin_acces: string
           fin_periode: string
           id: string
           montant: number
+          nom: string
           offre: string
           statut: Database["public"]["Enums"]["subscription_status"]
           statut_observe: Database["public"]["Enums"]["subscription_status_effectif"]
@@ -2722,6 +2769,16 @@ export type Database = {
         Args: { p_acteur: string; p_entitlement_id: string; p_motif?: string }
         Returns: undefined
       }
+      admin_stats_abonnements: {
+        Args: { p_at?: string }
+        Returns: {
+          abonnes_lecture: number
+          adherents_association: number
+          nb_anomalies: number
+          nb_impayes: number
+          recurrent_par_devise: Json
+        }[]
+      }
       admin_stats_commandes: {
         Args: { p_at?: string }
         Returns: {
@@ -2971,6 +3028,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      fin_grace_impaye: { Args: { p_impaye_depuis: string }; Returns: string }
       fulfill_order: {
         Args: {
           p_order_id: string

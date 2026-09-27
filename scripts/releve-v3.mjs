@@ -2416,6 +2416,33 @@ const SCENES = {
         // La hauteur suit le contenu : deux lignes dans la cellule principale.
         ignore: ['h'],
       },
+      /*
+       * Sondé APRÈS coup, et c'est la leçon : l'écran des abonnements a montré
+       * que la colonne des montants reprenait la cote des prix du catalogue.
+       * Aucune sonde ne la visait ici, et l'écart était donc invisible.
+       */
+      /*
+       * La hauteur d'une rangée ET de ses cellules : c'est ainsi qu'on a vu la
+       * seconde ligne décollée de 5 px au lieu de 0, qui poussait la rangée de
+       * deux pixels et toutes les cellules centrées d'un.
+       */
+      'hauteur de rangée': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+      },
+      'cellule principale': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"] > div:nth-child(1)',
+        app: '[class*="admin_grilleRangee"] td:nth-child(1)',
+      },
+      'cellule contenu': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"] > div:nth-child(3)',
+        app: '[class*="admin_grilleRangee"] td:nth-child(3)',
+      },
+      'montant de rangée': {
+        maquette: 'div[style*="min-width: 820px"][style*="cursor: pointer"] > div:nth-child(5)',
+        app: '[class*="admin_grilleRangee"] td:nth-child(5)',
+        ignore: ['h'],
+      },
       'note de bas': {
         maquette: 'p[style*="max-width: 720px"]',
         app: '[class*="admin_note"]',
@@ -2487,6 +2514,124 @@ const SCENES = {
         maquette: '[style*="z-index: 41"] div[style*="width: 14px"]',
         app: '[class*="admin_suiviColonne"]',
         // La position verticale depend du nombre de lignes au-dessus.
+        ignore: ['y', 'h'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — abonnements ═════════════════════════════════════ */
+
+  'admin-abonnements': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Abonnements'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/abonnements`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'bandeau': {
+        maquette: 'div[style*="padding: 0px"][style*="overflow: hidden"]',
+        app: '[class*="admin_bandeau"]:not([class*="Grille"]):not([class*="Cellule"])',
+        ignore: ['h'],
+      },
+      'carte des impayés': {
+        maquette: 'div.card[style*="var(--color-accent-100)"]',
+        app: '[class*="admin_avertissementLigne"]',
+        // La hauteur suit la phrase : la nôtre a perdu sa seconde moitié,
+        // celle qui annonçait des relances que rien n'envoie.
+        ignore: ['h'],
+      },
+      'chiffre des impayés': {
+        maquette: 'div.card[style*="var(--color-accent-100)"] span[style*="font-size: 30px"]',
+        app: '[class*="admin_avertissementChiffre"]',
+        ignore: ['y'],
+      },
+      'carte de filtres': {
+        maquette: 'div[style*="padding: var(--space-3) var(--space-4)"]',
+        app: '[class*="admin_filtresCarte"]',
+        // Le prototype a une carte d'impayés plus haute de deux lignes.
+        ignore: ['y'],
+      },
+      'champ de recherche': {
+        maquette: 'input[class*="input"]',
+        app: '[class*="admin_rechercheSaisieOrganic"]',
+        // Sa largeur est ce que laisse le décompte à sa droite : « 10
+        // abonnements » au prototype, « 3 abonnements » ici.
+        ignore: ['y', 'w'],
+      },
+      'segmenté': { maquette: '.seg', app: '[class*="admin_seg"]', ignore: ['y', 'w'] },
+      'segment': { maquette: '.seg-opt', app: '[class*="admin_segOpt"]', ignore: ['y', 'w'] },
+      'cadre du tableau': {
+        maquette: 'div[style*="overflow-x: auto"]',
+        app: '[class*="admin_grilleCadre"]',
+        ignore: ['y', 'h', 'gap'],
+      },
+      'en-tête de colonnes': {
+        maquette: 'div[style*="min-width: 800px"]',
+        app: '[class*="admin_grilleEntete"]',
+        ignore: ['y'],
+      },
+      'première rangée': {
+        maquette: 'div[style*="min-width: 800px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        ignore: ['y', 'h'],
+      },
+      'montant de rangée': {
+        maquette: 'div[style*="min-width: 800px"][style*="cursor: pointer"] > div:nth-child(5)',
+        app: '[class*="admin_grilleRangee"] td:nth-child(5)',
+        ignore: ['y', 'h'],
+      },
+      'ligne de santé': {
+        maquette: 'div[style*="gap: 10px"][style*="font-size: 13px"]',
+        app: 'p[class*="admin_sante"]',
+        ignore: ['y'],
+      },
+    },
+  },
+
+  /* ══ ADMINISTRATION — le panneau d'un abonnement ══════════════════════ */
+
+  'admin-abonnement-panneau': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    maquette: async (p) => {
+      await maquetteAdmin(p, 'Abonnements');
+      await p.locator('div[style*="min-width: 800px"][style*="cursor: pointer"]').first().click();
+      await p.waitForTimeout(900);
+    },
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/abonnements`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+      await p.locator('[class*="admin_grilleRangee"] a').first().click();
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      'panneau': {
+        maquette: '[style*="z-index: 41"]',
+        app: 'aside[class*="admin_tiroir"]',
+        ignore: ['h'],
+      },
+      'en-tête du panneau': {
+        maquette: '[style*="z-index: 41"] > div:nth-child(1)',
+        app: '[class*="admin_tiroirEntete"]',
+      },
+      'titre du panneau': {
+        maquette: '[style*="z-index: 41"] [style*="font-size: 22px"]',
+        app: '[class*="admin_tiroirTitre"]',
+        ignore: ['w'],
+      },
+      'corps du panneau': {
+        maquette: '[style*="z-index: 41"] > div:nth-child(2)',
+        app: '[class*="admin_tiroirCorps"]',
+        ignore: ['h'],
+      },
+      'grille des faits': {
+        maquette: '[style*="z-index: 41"] div[style*="grid-template-columns: 1fr 1fr"]',
+        app: '[class*="admin_tiroirGrille"]',
         ignore: ['y', 'h'],
       },
     },
