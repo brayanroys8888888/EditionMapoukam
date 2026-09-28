@@ -4365,6 +4365,353 @@ textarea.saisie {
   color: var(--accent-encre);
 }
 
+/* ── Les cinq onglets de l'Association DAVE ─────────────────────────────── */
+
+/*
+ * La liste prend la place, la colonne de droite son minimum. Sous 900 px
+ * elles s'empilent, et le rythme hebdomadaire passe SOUS la liste — à
+ * l'endroit où on le cherche quand on vient de voir ce qui est publié.
+ */
+.publicationsColonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pas-4);
+}
+
+.publicationsListe {
+  flex: 999 1 560px;
+}
+
+.publicationsCote {
+  display: flex;
+  flex: 1 1 300px;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+/* ── Le rythme hebdomadaire ─────────────────────────────────────────────── */
+
+.rythmeLigne {
+  display: flex;
+  align-items: center;
+  gap: var(--pas-3);
+  padding: 10px 0;
+  border-top: 1px solid var(--bordure);
+}
+
+.rythmeDate {
+  flex: none;
+  width: 58px;
+  font-size: 13px;
+  font-weight: var(--graisse-forte);
+}
+
+.rythmePrise {
+  padding: 6px 12px;
+  border-radius: var(--rayon-pastille);
+  background: color-mix(in srgb, var(--action) 12%, var(--surface));
+  color: var(--accent-encre);
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * LE VIDE EST DESSINÉ, pas laissé blanc.
+ *
+ * C'est l'information que ce planning porte : un jeudi sans contenu est une
+ * promesse qui va manquer. Un blanc se lirait comme une ligne en attente de
+ * chargement ; un pointillé se lit comme un emplacement libre.
+ */
+.rythmeLibre {
+  padding: 6px 12px;
+  border: 1.5px dashed var(--bordure-forte);
+  border-radius: var(--rayon-pastille);
+  color: color-mix(in srgb, var(--encre) 50%, transparent);
+  font-size: 13px;
+}
+
+/* ── La file de modération ──────────────────────────────────────────────── */
+
+.fileModeration {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  max-width: 860px;
+}
+
+.messageCarte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-4);
+  padding: var(--pas-4);
+}
+
+/*
+ * L'INITIALE, et non un visage : l'espace ne collecte aucune photo, et un
+ * cadre vide à la place se lirait comme une image qui n'a pas chargé.
+ */
+.messageAvatar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--region-afrique_ouest-fond);
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-forte);
+}
+
+.messageCorps {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+.messageEntete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--pas-2);
+  margin: 0;
+}
+
+.messageNom {
+  font-weight: var(--graisse-forte);
+}
+
+.messageDate,
+.messageSur {
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.messageSur {
+  margin: 2px 0 8px;
+}
+
+.messageTexte {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/*
+ * Les deux gestes n'ont pas le même poids : « Approuver » est primaire parce
+ * qu'il est le geste courant, « Masquer » reste discret. Un refus qui se
+ * clique aussi facilement qu'une approbation se clique par erreur.
+ */
+.messageGestes {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--pas-2);
+}
+
+/* ── L'agenda ───────────────────────────────────────────────────────────── */
+
+.agenda {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.agendaGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: var(--pas-4);
+  align-items: stretch;
+}
+
+.evenementCarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-4);
+}
+
+/*
+ * Un événement PASSÉ s'atténue sans disparaître : il reste proposable comme
+ * « atelier concerné » dans l'éditeur, et c'est souvent après coup qu'on
+ * écrit son compte rendu.
+ */
+.evenementPasse {
+  opacity: 0.55;
+}
+
+.evenementType {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.evenementTitre {
+  margin: 0;
+  font-size: 15px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+}
+
+.evenementQuand {
+  margin: 0;
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.evenementPlaces {
+  margin: 0;
+  font-size: 13px;
+}
+
+.evenementInscrits {
+  font-weight: var(--graisse-forte);
+}
+
+.jauge {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--encre) 8%, transparent);
+  overflow: hidden;
+}
+
+.jaugeRemplie {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--action);
+}
+
+/*
+ * LA CASE D'AJOUT EST DANS LA GRILLE, à la place où l'atelier apparaîtra.
+ * Pointillée : c'est un emplacement, pas un objet.
+ */
+.evenementAjout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pas-2);
+  min-height: 200px;
+  padding: var(--pas-4);
+  border: 1.5px dashed var(--action-bordure, var(--bordure-forte));
+  background: transparent;
+  color: var(--accent-encre);
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+  transition: background var(--transition-couleur);
+}
+
+.evenementAjout:hover {
+  background: color-mix(in srgb, var(--action) 7%, transparent);
+}
+
+.evenementAjoutSigne {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ── La campagne ────────────────────────────────────────────────────────── */
+
+.campagne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pas-4);
+}
+
+.campagne > section:first-child {
+  flex: 999 1 420px;
+}
+
+.campagneApercu {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-6);
+  border-radius: 28px;
+  /*
+   * La sauge EN APLAT, et l'encre de la crème par-dessus. C'est la carte que
+   * l'adhérent voit dans son espace ; la montrer dans ses vraies couleurs est
+   * tout l'objet d'un aperçu.
+   */
+  background: var(--v3-sauge, var(--chrome));
+  color: var(--fond);
+}
+
+.campagneApercuOeil {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.campagneApercuTitre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 20px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+}
+
+.campagneApercuTotal {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.campagneApercuObjectif {
+  font-family: var(--police-interface);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.campagneApercuJauge {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 25%);
+  overflow: hidden;
+}
+
+.campagneApercuJaugeRemplie {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fond);
+}
+
+.campagneApercuRegions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--pas-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campagneApercuRegionNom {
+  display: block;
+  font-size: 11.5px;
+  opacity: 0.8;
+}
+
+.campagneApercuRegionKits {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 18px;
+}
+
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │

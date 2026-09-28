@@ -3,14 +3,24 @@ import type { Metadata } from 'next';
 
 import { langueValide, messageErreur, traduire, LANGUES_INTERFACE, type CleTraduction } from '@/i18n';
 import {
+  lireCampagne,
+  lireMotDuMois,
   listerAbonnements,
+  listerCommentairesAssociation,
   listerContenusAssociation,
+  listerEvenementsAssociation,
+  listerPublicationsAssociation,
+  prochainsJeudis,
   statsAssociation,
 } from '@/lib/admin/service';
 import { CATEGORIES_ASSOCIATION } from '@/lib/association/service';
 import { Erreur } from '@/components/etats';
 import { BoutonSoumission, GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
 import { exigerAdministrateur } from '../garde';
+import { OngletAgenda, type LigneEvenement } from './onglet-agenda';
+import { OngletCampagne, type Campagne } from './onglet-campagne';
+import { OngletCommentaires, type LigneCommentaire } from './onglet-commentaires';
+import { OngletPublications, type LignePublication } from './onglet-publications';
 import {
   changerPublication,
   creerContenu,
@@ -51,37 +61,18 @@ interface Parametres {
 
 const ACCES = ['libre', 'abonnes'] as const;
 
-/*
- * Les colonnes, telles que le prototype les pose.
- *
- * PUBLICATION | STATUT 100 | DATE 64 | LANGUES 52 | À LA UNE 40 | chevron 16.
- * Le prototype met VUES et COMMENTAIRES dans les deux colonnes étroites ;
- * nous n'avons ni l'un ni l'autre, et la raison est écrite plus bas. Les
- * largeurs, elles, ne bougent pas.
- */
-const COLONNES_PUBLICATIONS = 'minmax(0, 1fr) 100px 64px 52px 40px 16px';
-const LARGEUR_MIN_PUBLICATIONS = '500px';
-
 const COLONNES_ADHERENTS = 'minmax(0, 1.6fr) minmax(0, 1fr) 130px 130px 130px';
 const LARGEUR_MIN_ADHERENTS = '680px';
 
 /** Les onglets que nous pouvons tenir. Voir le bloc « CINQ ONGLETS ». */
-const ONGLETS = ['publications', 'adherents'] as const;
+const ONGLETS = [
+  'publications',
+  'agenda',
+  'commentaires',
+  'adherents',
+  'campagne',
+] as const;
 type Onglet = (typeof ONGLETS)[number];
-
-/**
- * L'abréviation d'une catégorie, pour la pastille de 38 px.
- *
- * Deux lettres, tirées du nom et non d'un compteur : « VA » pour
- * vie-associative, « BS » pour besoins-spécifiques. Un rang numérique
- * changerait de sens le jour où une catégorie serait ajoutée au milieu.
- */
-function abreger(categorie: string): string {
-  const mots = categorie.split('-');
-  const premiere = mots[0]?.[0] ?? '?';
-  const seconde = mots[1]?.[0] ?? mots[0]?.[1] ?? '';
-  return `${premiere}${seconde}`.toUpperCase();
-}
 
 function premier(valeur: string | string[] | undefined): string | undefined {
   return Array.isArray(valeur) ? valeur[0] : valeur;
@@ -105,6 +96,8 @@ interface LigneContenu {
 interface StatsAssociation {
   adherents: number | string;
   a_renouveler: number | string;
+  a_moderer: number | string;
+  prochaine_publication: string | null;
   brouillons: number | string;
   derniere_publication: string | null;
 }
@@ -139,31 +132,87 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
     : 'publications';
   const ouvert = premier(requete['contenu']);
   const nouvelle = premier(requete['nouvelle']) === '1';
+  const nouvelEvenement = premier(requete['evenement']) === '1';
 
   /*
-   * Trois lectures en parallèle. Les adhérents ne sont demandés que sur leur
-   * onglet : une liste d'abonnements coûte une jointure et une pagination, et
-   * la payer pour un onglet qu'on n'affiche pas serait la payer à chaque visite.
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ CHAQUE ONGLET NE PAIE QUE SA LECTURE.                                  │
+   * │                                                                        │
+   * │ Cinq onglets, sept lectures possibles. Les charger toutes à chaque     │
+   * │ visite ferait payer la file de modération, l'agenda et la campagne à   │
+   * │ qui vient seulement relire sa liste de publications.                    │
+   * │                                                                        │
+   * │ Les deux premières, elles, sont toujours là : les chiffres de la bande │
+   * │ et les compteurs des onglets s'affichent quel que soit l'onglet ouvert.│
+   * └────────────────────────────────────────────────────────────────────────┘
    */
-  const [resultat, stats, adherents] = await Promise.all([
-    listerContenusAssociation().catch(() => null),
-    statsAssociation().catch(() => null),
-    onglet === 'adherents'
-      ? listerAbonnements({ domaine: 'association', page: 1, taille: 50 }).catch(() => null)
-      : Promise.resolve(null),
-  ]);
+  const [resultat, stats, adherents, publicationsBrutes, jeudisBruts, motBrut, evenementsBruts, campagneBrute, commentairesBruts] =
+    await Promise.all([
+      listerContenusAssociation().catch(() => null),
+      statsAssociation().catch(() => null),
+      onglet === 'adherents'
+        ? listerAbonnements({ domaine: 'association', page: 1, taille: 50 }).catch(() => null)
+        : Promise.resolve(null),
+      onglet === 'publications'
+        ? listerPublicationsAssociation({ langue }).catch(() => null)
+        : Promise.resolve(null),
+      onglet === 'publications' ? prochainsJeudis(4).catch(() => null) : Promise.resolve(null),
+      onglet === 'publications' ? lireMotDuMois().catch(() => null) : Promise.resolve(null),
+      onglet === 'agenda' ? listerEvenementsAssociation().catch(() => null) : Promise.resolve(null),
+      onglet === 'campagne' ? lireCampagne().catch(() => null) : Promise.resolve(null),
+      onglet === 'commentaires'
+        ? listerCommentairesAssociation('en_attente').catch(() => null)
+        : Promise.resolve(null),
+    ]);
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
 
   const contenus = resultat.donnees as unknown as LigneContenu[];
   const chiffres = ((stats?.ok ? stats.donnees : [])[0] ?? null) as StatsAssociation | null;
   const lignesAdherents = (adherents?.ok ? adherents.donnees : []) as unknown as LigneAdherent[];
 
+  const publications = (publicationsBrutes?.ok
+    ? publicationsBrutes.donnees
+    : []) as unknown as LignePublication[];
+
+  const jeudis = ((jeudisBruts?.ok ? jeudisBruts.donnees : []) as {
+    jour: string;
+    titre: string | null;
+    etat: string | null;
+  }[]).map((jeudi) => ({
+    jour: String(jeudi.jour).slice(0, 10),
+    titre: jeudi.titre,
+    etat: jeudi.etat,
+  }));
+
+  // `admin_lire_mot_du_mois` rend zéro ou une ligne : il n'y a qu'un mot
+  // affiché à la fois, un index partiel le garantit.
+  const mot = ((motBrut?.ok ? motBrut.donnees : [])[0] ?? null) as {
+    texte: string;
+    signature: string;
+  } | null;
+
+  const evenements = (evenementsBruts?.ok
+    ? evenementsBruts.donnees
+    : []) as unknown as LigneEvenement[];
+
+  const campagne = ((campagneBrute?.ok ? campagneBrute.donnees : [])[0] ?? null) as Campagne | null;
+
+  const commentaires = (commentairesBruts?.ok
+    ? commentairesBruts.donnees
+    : []) as unknown as LigneCommentaire[];
+
   const ecran = `/${langue}/admin/association`;
-  const lien = (p: { onglet?: Onglet; contenu?: string; nouvelle?: boolean }): string => {
+  const lien = (p: {
+    onglet?: Onglet;
+    contenu?: string;
+    nouvelle?: boolean;
+    evenement?: boolean;
+  }): string => {
     const q = new URLSearchParams();
     if (p.onglet !== undefined && p.onglet !== 'publications') q.set('onglet', p.onglet);
     if (p.contenu !== undefined) q.set('contenu', p.contenu);
     if (p.nouvelle === true) q.set('nouvelle', '1');
+    if (p.evenement === true) q.set('evenement', '1');
     const suite = q.toString();
     return suite === '' ? ecran : `${ecran}?${suite}`;
   };
@@ -173,6 +222,14 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
    * liste vide plutôt qu'une erreur : une adresse copiée après une
    * suppression doit rendre l'écran, pas une page cassée.
    */
+  /** Le nombre à poser sur un onglet, ou `null` quand il n'en appelle pas. */
+  const compteur = (valeur: Onglet): number | null => {
+    if (valeur === 'publications') return contenus.length;
+    if (valeur === 'commentaires') return Number(chiffres?.a_moderer ?? 0);
+    if (valeur === 'adherents') return Number(chiffres?.adherents ?? 0);
+    return null;
+  };
+
   const selection = ouvert === undefined ? [] : contenus.filter((c) => c.id === ouvert);
 
   const date = (iso: string | null): string =>
@@ -266,23 +323,26 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
               <p className={styles.bandeauNote}>{t('admin.assoARenouvelerNote')}</p>
             </li>
             {/*
-              LES DEUX DERNIERS NE SONT PAS CEUX DU PROTOTYPE.
+              LES QUATRE CHIFFRES DU PROTOTYPE, ENFIN TOUS RÉELS.
 
-              Il affiche « À MODÉRER » et « PROCHAINE PUBLICATION ». Ni la
-              modération de commentaires ni la programmation n'existent — le
-              cahier des charges §F10 bis ne connaît que `brouillon` et
-              `publie`. Deux cases vides auraient dit le contraire ; ces
-              deux-là répondent à la même question, avec des chiffres réels.
+              Les deux derniers étaient des substituts : ni la modération ni la
+              programmation n'existaient, et deux cases vides auraient annoncé
+              des fonctions absentes. Les migrations 0096 et 0099 les ont
+              apportées ; `admin_stats_association` les compte depuis la 0102.
             */}
             <li className={styles.bandeauCellule}>
-              <p className={styles.bandeauIntitule}>{t('admin.assoBrouillons')}</p>
-              <p className={styles.bandeauValeur}>{Number(chiffres.brouillons)}</p>
-              <p className={styles.bandeauNote}>{t('admin.assoBrouillonsNote')}</p>
+              <p className={styles.bandeauIntitule}>{t('admin.assoAModerer')}</p>
+              <p className={styles.bandeauValeur}>{Number(chiffres.a_moderer)}</p>
+              <p className={styles.bandeauNote}>{t('admin.assoAModererNote')}</p>
             </li>
             <li className={styles.bandeauCellule}>
-              <p className={styles.bandeauIntitule}>{t('admin.assoDerniere')}</p>
-              <p className={styles.bandeauValeur}>{date(chiffres.derniere_publication)}</p>
-              <p className={styles.bandeauNote}>{t('admin.assoDerniereNote')}</p>
+              <p className={styles.bandeauIntitule}>{t('admin.assoProchaine')}</p>
+              <p className={styles.bandeauValeur}>{date(chiffres.prochaine_publication)}</p>
+              <p className={styles.bandeauNote}>
+                {chiffres.prochaine_publication === null
+                  ? t('admin.assoProchaineAucune')
+                  : t('admin.assoProchaineNote')}
+              </p>
             </li>
           </ul>
         </div>
@@ -314,13 +374,47 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
               aria-current={actif ? 'true' : undefined}
             >
               {t(`admin.assoOnglet_${valeur}` as CleTraduction)}
-              <span className={styles.segCompte}>
-                {valeur === 'publications' ? contenus.length : Number(chiffres?.adherents ?? 0)}
-              </span>
+              {/*
+                CHAQUE ONGLET COMPTE CE QU'IL A À TRAITER, ou rien.
+
+                Un compteur à zéro sur l'agenda ne dirait pas « rien à faire » :
+                il dirait « aucun atelier », ce qui est une autre information
+                et qui se lit déjà dans l'onglet. On ne compte donc que là où
+                le nombre APPELLE un geste.
+              */}
+              {compteur(valeur) === null ? null : (
+                <span className={styles.segCompte}>{compteur(valeur)}</span>
+              )}
             </a>
           );
         })}
       </nav>
+
+      {onglet === 'publications' ? (
+        <OngletPublications
+          langue={langue}
+          publications={publications}
+          jeudis={jeudis}
+          mot={mot}
+          lienPublication={(id) => `/${langue}/admin/association/rediger?contenu=${id}`}
+        />
+      ) : null}
+
+      {onglet === 'agenda' ? (
+        <OngletAgenda
+          langue={langue}
+          evenements={evenements}
+          ouvert={nouvelEvenement}
+          lienNouveau={lien({ onglet: 'agenda', evenement: true })}
+          lienFermer={lien({ onglet: 'agenda' })}
+        />
+      ) : null}
+
+      {onglet === 'commentaires' ? (
+        <OngletCommentaires langue={langue} commentaires={commentaires} />
+      ) : null}
+
+      {onglet === 'campagne' ? <OngletCampagne langue={langue} campagne={campagne} /> : null}
 
       {onglet === 'adherents' ? (
         /* ── Les adhérents ────────────────────────────────────────────── */
@@ -380,104 +474,7 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
             </table>
           )}
         </div>
-      ) : (
-        /* ── Les publications ─────────────────────────────────────────── */
-        <div className={`${styles.carte} ${styles.grilleCadre}`}>
-          {contenus.length === 0 ? (
-            <p className={styles.grilleVide}>{traduire(langue, 'admin.aucunContenu')}</p>
-          ) : (
-            <table
-              className={styles.grille}
-              style={
-                {
-                  '--grille-colonnes': COLONNES_PUBLICATIONS,
-                  '--grille-min': LARGEUR_MIN_PUBLICATIONS,
-                } as CSSProperties
-              }
-            >
-              <thead>
-                <tr className={`${styles.grilleEntete} ${styles.grilleEnteteVentes}`}>
-                  <th scope="col">{t('admin.assoColPublication')}</th>
-                  <th scope="col">{t('admin.colStatut')}</th>
-                  <th scope="col">{t('admin.assoColDate')}</th>
-                  {/*
-                    DEUX LIBELLÉS COURTS, et c'est le prototype qui l'impose.
-                    Ses colonnes étroites s'appellent « Vues » et « Com. » : un
-                    mot entier y passerait à la ligne et ferait grandir
-                    l'en-tête de dix-sept pixels. `title` rend le mot complet
-                    à qui survole, et `abbr` à qui écoute la page.
-                  */}
-                  <th scope="col" abbr={t('admin.colLangues')} title={t('admin.colLangues')}>
-                    {t('admin.assoColLangCourt')}
-                  </th>
-                  <th scope="col" abbr={t('admin.assoColUne')} title={t('admin.assoColUne')}>
-                    {t('admin.assoColUneCourt')}
-                  </th>
-                  <th scope="col" />
-                </tr>
-              </thead>
-              <tbody>
-                {contenus.map((contenu) => (
-                  <tr className={styles.grilleRangee} key={contenu.id}>
-                    <td>
-                      <a className={styles.publicationCellule} href={lien({ contenu: contenu.id })}>
-                        <span className={styles.pastilleType} aria-hidden="true">
-                          {abreger(contenu.categorie)}
-                        </span>
-                        <span>
-                          <span className={styles.publicationTitre}>
-                            {contenu.titre ?? contenu.slug}
-                          </span>
-                          <span className={styles.publicationType}>
-                            {t(`admin.contenuCategorie_${contenu.categorie}` as CleTraduction)}
-                            {' · '}
-                            {t(`admin.contenuAcces_${contenu.acces}` as CleTraduction)}
-                          </span>
-                        </span>
-                      </a>
-                    </td>
-
-                    <td>
-                      <span
-                        className={`${styles.etat} ${
-                          contenu.statut === 'publie' ? styles.etatPublie : styles.etatBrouillon
-                        }`}
-                      >
-                        {t(`admin.statut_${contenu.statut}` as CleTraduction)}
-                      </span>
-                    </td>
-
-                    <td className={styles.noteVentes}>{date(contenu.publie_le)}</td>
-
-                    {/*
-                      VUES et COMMENTAIRES au prototype. Nous ne comptons ni
-                      l'un ni l'autre : aucune mesure d'audience n'est posée,
-                      et l'espace n'a pas de fil de commentaires. Les langues
-                      disponibles et la mise à la une, elles, décident de ce
-                      que le site affiche — et se lisent ici d'un coup d'œil.
-                    */}
-                    <td className={styles.noteVentes}>
-                      {contenu.langues.length > 0
-                        ? contenu.langues.map((code) => code.toUpperCase()).join(' · ')
-                        : '—'}
-                    </td>
-
-                    <td className={styles.grilleNombre}>
-                      {contenu.vedette ? (
-                        <span title={t('admin.assoColUne')}>{'★'}</span>
-                      ) : (
-                        <span className={styles.noteVentes}>{'—'}</span>
-                      )}
-                    </td>
-
-                    <td aria-hidden="true">{'›'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
+      ) : null}
 
       {/*
         LE PANNEAU DE RÉDACTION NE S’OUVRE QUE SUR LA PUBLICATION CHOISIE.

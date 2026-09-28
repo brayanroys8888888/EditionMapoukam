@@ -47,7 +47,7 @@ session relira §F4 bis et rouvrira la question.
 | Étape | Contenu | Fait |
 | --- | --- | --- |
 | 1 | **Socle de données** — publications, agenda, échanges | ✅ |
-| 2 | Administration — l'éditeur ✅, les cinq onglets à venir | ◑ |
+| 2 | **Administration** — l'éditeur et les cinq onglets | ✅ |
 | 3 | Espace adhérent — `/espace`, article, commentaires | |
 | 4 | Automatismes serveur — publication datée, e-mails, liens signés | |
 
@@ -258,10 +258,39 @@ c'est le formulaire qu'elle remplit qui détruit.
   case pose `prevenir_adherents` ; l'e-mail viendra avec les automatismes.
   Promettre un envoi qui ne part pas serait pire que ne rien promettre
 
-### Ce qui reste à l'étape 2
+### `dave` — les cinq onglets ✅
 
-- [ ] `dave` — les cinq onglets : Publications (avec rythme hebdomadaire et mot
-      du mois), Agenda, Commentaires, Adhérents, Campagne
+- [x] **Publications** — pastille de type (CR, RT, PDF, ▶), état, date, vues,
+      commentaires ; **rythme hebdomadaire** et **mot du mois** en colonne
+- [x] **Agenda** — une carte par événement avec sa jauge, le formulaire de
+      création, et la case d'ajout **dans la grille** : la place où l'on ajoute
+      un atelier est celle où il apparaîtra
+- [x] **Commentaires** — la file, les plus anciens d'abord : une file traitée
+      par les plus récents laisserait les premiers messages attendre
+      indéfiniment
+- [x] **Adhérents** — inchangé
+- [x] **Campagne** — le formulaire et l'aperçu côté adhérent
+- [x] **La bande affiche enfin les quatre chiffres du prototype** : « à
+      modérer » et « prochaine publication » étaient des substituts depuis la
+      `0095`, faute de commentaires et de programmation. Les deux existent
+- [x] **10 tests de composant**
+
+> **Les compteurs d'onglets ne comptent que là où le nombre appelle un geste.**
+> Publications, commentaires et adhérents en portent un ; l'agenda et la
+> campagne n'en portent aucun. Un zéro sur l'agenda ne dirait pas « rien à
+> faire », il dirait « aucun atelier » — autre information, qui se lit déjà
+> dans l'onglet.
+
+> **Trois choix de rendu, et leur raison.** Le vide du rythme est **dessiné**
+> en pointillé, pas laissé blanc : un blanc se lirait comme une ligne en
+> attente de chargement. « Approuver » est primaire et « Masquer » discret : un
+> refus qui se clique aussi facilement qu'une approbation se clique par erreur.
+> Et l'aperçu de campagne montre ce qui est **enregistré**, non ce qu'on tape —
+> le prototype fait l'inverse, mais ce sont des chiffres que les adhérents
+> liront comme un bilan.
+
+> **Le lien d'un séminaire n'est jamais affiché**, même à l'équipe : il vaut une
+> place, il se recopie. Un test l'interdit explicitement.
 
 ## Étape 3 — L'espace adhérent
 

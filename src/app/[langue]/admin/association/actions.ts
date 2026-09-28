@@ -264,6 +264,131 @@ export async function enregistrerRedaction(
   );
 }
 
+/**
+ * MODÉRER UN ÉCHANGE — approuver ou masquer.
+ *
+ * Le retour se fait sur l'onglet des commentaires, jamais sur la liste des
+ * publications : l'éditeur traite une file, et le renvoyer ailleurs lui ferait
+ * rouvrir l'onglet à chaque message.
+ */
+export async function modererCommentaire(langueBrute: string, donnees: FormData): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const ecran = `/${langue}/admin/association?onglet=commentaires`;
+
+  await appelerRoute(
+    ecran,
+    `/api/admin/association/commentaires/${texte(donnees, 'id') ?? ''}/moderation`,
+    'POST',
+    { decision: texte(donnees, 'decision') },
+    'modere',
+    200,
+  );
+}
+
+/** Le mot du mois. L'enregistrement archive le précédent, la base s'en charge. */
+export async function enregistrerMot(langueBrute: string, donnees: FormData): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const ecran = `/${langue}/admin/association`;
+
+  await appelerRoute(
+    ecran,
+    '/api/admin/association/mot-du-mois',
+    'PUT',
+    {
+      texte: texte(donnees, 'texte'),
+      ...(texte(donnees, 'signature') === undefined
+        ? {}
+        : { signature: texte(donnees, 'signature') }),
+    },
+    'mot',
+    200,
+  );
+}
+
+/**
+ * LA CAMPAGNE — les régions partent TOUTES, à chaque enregistrement.
+ *
+ * Le bloc fait foi côté base : une région absente est retirée. Le formulaire
+ * envoie donc l'intégralité de ce qu'il affiche, y compris les lignes qu'on
+ * n'a pas touchées. N'envoyer que les champs modifiés effacerait les autres.
+ */
+export async function enregistrerCampagneAction(
+  langueBrute: string,
+  donnees: FormData,
+): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const ecran = `/${langue}/admin/association?onglet=campagne`;
+
+  const regions: { region: string; kits: number }[] = [];
+  for (const [cle, valeur] of donnees.entries()) {
+    if (!cle.startsWith('kits_')) continue;
+    const region = cle.slice('kits_'.length).trim();
+    if (region === '') continue;
+    const kits = Number(valeur);
+    regions.push({ region, kits: Number.isFinite(kits) && kits > 0 ? Math.floor(kits) : 0 });
+  }
+
+  /*
+   * Une région AJOUTÉE par le champ libre rejoint la liste. Vide, elle est
+   * ignorée — un formulaire envoyé sans rien saisir ne doit pas créer une
+   * région sans nom, que plus rien ne permettrait ensuite de retirer.
+   */
+  const nouvelle = texte(donnees, 'region_nouvelle');
+  if (nouvelle !== undefined) {
+    regions.push({ region: nouvelle, kits: nombre(donnees, 'kits_nouvelle') ?? 0 });
+  }
+
+  await appelerRoute(
+    ecran,
+    '/api/admin/association/campagne',
+    'PUT',
+    {
+      ...(texte(donnees, 'id') === undefined ? {} : { id: texte(donnees, 'id') }),
+      intitule: texte(donnees, 'intitule'),
+      objectif_kits: nombre(donnees, 'objectif_kits'),
+      fin_le: texte(donnees, 'fin_le') ?? null,
+      regions,
+    },
+    'campagne',
+    200,
+  );
+}
+
+/** Un atelier, un séminaire ou une formation. */
+export async function enregistrerEvenement(langueBrute: string, donnees: FormData): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const ecran = `/${langue}/admin/association?onglet=agenda`;
+
+  const type = texte(donnees, 'type') ?? 'atelier_presentiel';
+  const jour = texte(donnees, 'jour') ?? '';
+  const heure = texte(donnees, 'heure') ?? '09:00';
+
+  await appelerRoute(
+    ecran,
+    '/api/admin/association/evenements',
+    'PUT',
+    {
+      ...(texte(donnees, 'id') === undefined ? {} : { id: texte(donnees, 'id') }),
+      type,
+      titre: texte(donnees, 'titre'),
+      debut_le: new Date(`${jour}T${heure}:00Z`).toISOString(),
+      places: nombre(donnees, 'places'),
+      /*
+       * LE LIEU ET LE LIEN S'EXCLUENT, et c'est le TYPE qui décide lequel
+       * part. Envoyer les deux ferait refuser la base — à juste titre : un
+       * séminaire en ligne n'a pas de salle. Le formulaire montre les deux
+       * champs, l'action n'en retient qu'un.
+       */
+      lieu: type === 'seminaire_en_ligne' ? null : (texte(donnees, 'lieu') ?? null),
+      lien: type === 'seminaire_en_ligne' ? (texte(donnees, 'lien') ?? null) : null,
+      description: texte(donnees, 'description') ?? '',
+      publics: [],
+    },
+    'evenement',
+    200,
+  );
+}
+
 export async function creerContenu(langueBrute: string, donnees: FormData): Promise<void> {
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/association`;
