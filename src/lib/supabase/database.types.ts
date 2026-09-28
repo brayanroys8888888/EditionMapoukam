@@ -2798,6 +2798,15 @@ export type Database = {
           recurrent_par_devise: Json
         }[]
       }
+      admin_stats_association: {
+        Args: { p_at?: string }
+        Returns: {
+          a_renouveler: number
+          adherents: number
+          brouillons: number
+          derniere_publication: string
+        }[]
+      }
       admin_stats_commandes: {
         Args: { p_at?: string }
         Returns: {

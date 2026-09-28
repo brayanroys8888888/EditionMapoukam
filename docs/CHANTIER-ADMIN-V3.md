@@ -18,8 +18,8 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | Coquille partagée | 1 | 1 | 0 |
 | Catalogue | 6 | 3 | 3 |
 | Ventes | 4 | 4 | 0 |
-| Communauté | 5 | 0 | 5 |
-| **Total** | **16** | **8** | **8** |
+| Communauté | 5 | 1 | 4 |
+| **Total** | **16** | **9** | **7** |
 
 ---
 
@@ -243,7 +243,46 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 - [ ] **`utilisateurs` — Utilisateurs**
 - [ ] **`avis` — Avis des lecteurs**
 - [ ] **`temoignages` — Témoignages du site**
-- [ ] **`dave` — Association DAVE** (5 onglets)
+- [x] **`dave` — Association DAVE** — relevé `admin-association`, **écart de
+      dimension nul**
+  - [x] en-tête à emblème (logo 56 px, rayon 16, marge 5) — nouveau paramètre
+        `embleme` du gabarit, et un groupe de titre qui n'a rien changé aux
+        onze autres écrans (`titre ✓` vérifié sur promos et offres)
+  - [x] gouttière de colonne à **24 px** : une valeur que notre échelle n'a
+        pas, et que le prototype n'emploie que sur cet écran
+  - [x] bande de quatre chiffres — migration `0095`,
+        `admin_stats_association`, comptés **en base contre `app_now()`** :
+        une fenêtre de trente jours comparée en TypeScript répondrait selon
+        l'horloge du serveur de rendu. 6 tests, dont les **deux bords** de la
+        fenêtre séparément
+  - [x] liste des publications à la grille du prototype
+        (`minmax(0,1fr) 100px 64px 52px 40px 16px`, `min-width: 500px`)
+  - [x] onglet Adhérents, servi par `admin_lister_abonnements` filtré sur le
+        domaine — aucune migration de plus
+  - [x] la rédaction ne s'ouvre plus que sur la publication cliquée : l'écran
+        dépliait jusque-là les huit contenus et leurs huit formulaires
+  - — **trois onglets sur cinq écartés** : Agenda, Commentaires, Campagne.
+      Aucun n'a de données ni de spécification — le cahier des charges §F4 bis
+      décrit un espace qui **« ne sert que du texte »**, sans agenda
+      d'ateliers, sans fil de commentaires et sans campagne chiffrée par
+      région. Les dessiner vides aurait annoncé trois fonctions absentes
+  - — **deux chiffres de la bande remplacés** : « À modérer » et « Prochaine
+      publication » supposent une modération et une programmation qui
+      n'existent pas (§F10 bis ne connaît que `brouillon` et `publie`). À leur
+      place, les **brouillons** et la **dernière parution** — même question,
+      chiffres réels
+  - — **colonnes VUES et COMMENTAIRES remplacées** par les langues et la mise
+      à la une : aucune mesure d'audience n'est posée, et il n'y a pas de
+      commentaires. Les largeurs, elles, ne bougent pas
+  - — **pastille de type à une seule teinte** : le prototype en a quatre, une
+      par FORMAT (compte rendu, récit, fiche PDF, replay). Nous n'avons pas de
+      formats mais six catégories thématiques ; six teintes inventées seraient
+      de la décoration qui ressemble à de l'information. Le « Fiche PDF » du
+      prototype est d'ailleurs **interdit par la spécification** : « aucun
+      téléchargement, aucun fichier »
+  - — **la liste prend toute la largeur** : le prototype lui laisse 821 px et
+      garde 300 px pour « Rythme hebdomadaire » et « Mot du mois », deux
+      cartes sans données. Laisser le vide aurait dessiné leur absence
 - [ ] **`daveEdit` — Rédiger une publication**
 
 ---

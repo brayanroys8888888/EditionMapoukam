@@ -1979,6 +1979,94 @@ const SCENES = {
    * │   éprouvées par `design-tokens.test.ts`.                              │
    * └──────────────────────────────────────────────────────────────────────┘
    */
+  /*
+   * L'ARTICLE DE L'ESPACE ADHERENT.
+   *
+   * Le prototype l'atteint depuis la liste de l'association, en cliquant le
+   * premier contenu. L'application prend l'adresse directe du meme contenu —
+   * « Sur le terrain avec l'Association DAVE », qui est le contenu a la une
+   * du jeu de demonstration comme il est le premier de la maquette.
+   *
+   * Il est en acces LIBRE : le corps se rend donc sans session, et ce que la
+   * mesure compare est bien l'article, jamais le mur.
+   */
+  'association-article': {
+    largeur: BUREAU,
+    pleinePage: true,
+    maquette: async (p) => {
+      await p.goto(MAQUETTE_BUREAU, { waitUntil: 'load' });
+      await p.waitForTimeout(900);
+      await p.getByText('Association', { exact: true }).first().click();
+      await p.waitForTimeout(900);
+      await p.evaluate(() => {
+        const cartes = globalThis.document.querySelectorAll('article, .card, [class*="card"]');
+        const cible = [...cartes][0];
+        if (cible) (cible.querySelector('a, button') ?? cible).click();
+      });
+      await p.waitForTimeout(900);
+      await poser(p);
+    },
+    app: async (p) => {
+      await p.goto(`${APP}/fr/association/sur-le-terrain-avec-l-association-dave`, {
+        waitUntil: 'domcontentloaded',
+      });
+      await p.waitForTimeout(1500);
+      await poser(p);
+    },
+    sondes: {
+      'bande de tete': {
+        maquette: 'main > section',
+        app: '[class*="article-association-v3_bande__"]',
+        // Sa hauteur suit le titre et le chapeau, qui different d'un contenu
+        // a l'autre. Ses rembourrages et sa teinte, eux, se comparent.
+        ignore: ['h'],
+      },
+      'bloc de tete': {
+        maquette: 'main > section > div',
+        app: '[class*="article-association-v3_bandeContenu__"]',
+        ignore: ['h'],
+      },
+      'retour': {
+        maquette: 'main > section button',
+        app: '[class*="article-association-v3_retour__"]',
+        // Le libelle est le meme, mais l'icone du prototype n'a pas la notre.
+        ignore: ['w'],
+      },
+      'categorie': {
+        maquette: 'main > section > div > span',
+        app: '[class*="article-association-v3_categorie__"]',
+        ignore: ['w'],
+      },
+      'titre': {
+        maquette: 'main h1',
+        app: '[class*="article-association-v3_titre__"]',
+        // Le titre du jeu de demonstration n'a pas la longueur du leur.
+        ignore: ['h'],
+      },
+      'chapeau': {
+        maquette: 'main > section p:nth-of-type(1)',
+        app: '[class*="article-association-v3_chapeau__"]',
+        ignore: ['h', 'y'],
+      },
+      'photo': {
+        maquette: 'img[class*="articleHero"]',
+        app: '[class*="article-association-v3_photo__"]',
+        // Sa position suit la hauteur du titre et du chapeau au-dessus.
+        ignore: ['y'],
+      },
+      'paragraphe du corps': {
+        maquette: 'main > article p',
+        app: '[class*="article-association-v3_corps__"] p',
+        ignore: ['y', 'h'],
+      },
+      'intertitre du corps': {
+        maquette: 'main > article h2',
+        app: '[class*="article-association-v3_corps__"] h2',
+        ignore: ['y'],
+      },
+    },
+  },
+
   association: {
     largeur: BUREAU,
     pleinePage: true,
@@ -2647,6 +2735,85 @@ const SCENES = {
    * demonstration quatre — d'ou l'ecart de hauteur sur la grille, attendu et
    * ignore. Les cotes de la CARTE, elles, sont comparables une a une.
    */
+  /*
+   * L'ASSOCIATION DAVE.
+   *
+   * Le prototype porte cinq onglets, nous en tenons deux : trois d'entre eux
+   * — agenda, commentaires, campagne — n'ont ni donnees ni specification. Les
+   * sondes visent donc l'en-tete a embleme, la bande de chiffres, le
+   * segmente et la liste des publications, qui existent des deux cotes.
+   */
+  'admin-association': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, 'Association Dave'),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/association`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'embleme': {
+        maquette: 'img[style*="object-fit: contain"]',
+        app: '[class*="admin_embleme"]',
+      },
+      'en-tete': {
+        maquette: 'div:has(> img[style*="object-fit: contain"])',
+        app: '[class*="admin_entete"]',
+        // L'image du prototype contre NOTRE ligne : seule sa HAUTEUR se
+        // compare, c'est elle qui pousse tout ce qui suit.
+        ignore: ['x', 'y', 'w'],
+      },
+      'bande de chiffres': {
+        maquette: 'div[style*="padding: 0px"][style*="overflow: hidden"]',
+        app: '[class*="admin_bandeau"]:not([class*="Grille"]):not([class*="Cellule"]):not([class*="Intitule"]):not([class*="Valeur"]):not([class*="Note"])',
+      },
+      'cellule de chiffre': {
+        maquette: 'div[style*="padding: 0px"][style*="overflow: hidden"] div[style*="padding: var(--space-4) var(--space-6)"]',
+        app: '[class*="admin_bandeauCellule"]',
+        ignore: ['w'],
+      },
+      'segmente': { maquette: '.seg', app: '[class*="admin_seg"]:not([class*="admin_segOpt"])', ignore: ['w'] },
+      'segment': { maquette: '.seg-opt', app: '[class*="admin_segOpt"]', ignore: ['w'] },
+      'en-tete de colonnes': {
+        maquette: 'div[style*="min-width: 500px"]',
+        app: '[class*="admin_grilleEntete"]',
+        // Cinq colonnes chez nous, six au prototype : voir le commentaire de
+        // l'ecran. La BOITE, elle, se compare.
+        ignore: ['w'],
+      },
+      'pastille de type': {
+        maquette: 'div[style*="min-width: 500px"] span[style*="border-radius: 12px"]',
+        app: '[class*="admin_pastilleType"]',
+        /*
+         * `y` : la pastille est centree dans sa rangee, et la rangee suit le
+         * TITRE — deux lignes au prototype, une seule sur nos huit contenus.
+         * C'est l'ecart de contenu annonce au plan ; la BOITE de la pastille,
+         * elle, se compare au pixel.
+         */
+        ignore: ['y'],
+      },
+      'premiere rangee': {
+        maquette: 'div[style*="min-width: 500px"][style*="cursor: pointer"]',
+        app: '[class*="admin_grilleRangee"]',
+        /*
+         * `h` : la hauteur suit le nombre de lignes du titre.
+         *
+         * `w` : le prototype met la liste dans une colonne de 821 px et garde
+         * 300 px a droite pour deux cartes — « Rythme hebdomadaire » (les
+         * quatre jeudis a venir) et « Mot du mois ». Ni l'une ni l'autre n'a
+         * de donnees : il n'y a ni programmation ni billet mensuel dans le
+         * cahier des charges. Sans ces deux cartes, la liste prend toute la
+         * largeur — et lui laisser un vide de 300 px pour ressembler a la
+         * maquette serait dessiner l'absence de deux fonctions.
+         */
+        ignore: ['h', 'w'],
+      },
+    },
+  },
+
   'admin-offres': {
     largeur: BUREAU,
     connecte: 'admin',

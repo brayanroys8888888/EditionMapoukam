@@ -527,6 +527,17 @@
   gap: var(--pas-6);
 }
 
+/*
+ * 24 px — une valeur que notre echelle n'a pas, et que le prototype emploie
+ * sur le seul ecran de l'association. Entre `--pas-4` (17,6) et `--pas-6`
+ * (26,4), elle ne se derive d'aucun des deux. Posee ici plutot qu'ajoutee a
+ * l'echelle : un cinquieme pas inviterait a l'employer ailleurs, alors qu'un
+ * seul ecran le demande.
+ */
+.colonneAssociation {
+  gap: 24px;
+}
+
 .entete {
   display: flex;
   flex-wrap: wrap;
@@ -3937,6 +3948,142 @@ textarea.saisie {
   align-self: flex-start;
   margin-top: 4px;
   background: transparent;
+}
+
+/* ── L'en-tête à emblème, et l'écran de l'association ───────────────────── */
+
+/*
+ * Le titre et son sous-titre passent dans un GROUPE dès qu'un emblème les
+ * précède. Sans lui, `justify-content: space-between` sur `.entete` écarterait
+ * le logo du titre aux deux bouts de la ligne.
+ *
+ * Le groupe existe sur TOUS les écrans, emblème ou pas : un seul chemin de
+ * rendu, donc rien à vérifier deux fois. Avec un enfant unique, son
+ * `align-items` n'a aucun effet et la mise en page est celle d'avant.
+ */
+.enteteGroupe {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-4);
+}
+
+/*
+ * LA PLAQUE DU LOGO PREND LA TEINTE DE CARTE, PAS DU BLANC.
+ *
+ * Le prototype pose le logo sur du blanc pur. Le projet n'a aucun jeton
+ * blanc, et ce n'est pas un oubli : `tokens.css` porte deux mesures qui ont
+ * écarté le
+ * blanc pour insuffisance de contraste. En introduire un pour une plaque de
+ * logo ferait entrer dans la palette une valeur qu'elle refuse ailleurs.
+ *
+ * Les cotes, elles, sont celles du relevé — 56 px, rayon 16, 5 px de marge
+ * intérieure — et c'est ce que la mesure compare.
+ */
+.embleme {
+  width: 56px;
+  height: 56px;
+  flex: none;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--surface);
+  object-fit: contain;
+  box-shadow: var(--ombre-s);
+}
+
+/*
+ * La bande de l'association serre ses colonnes à 220 px là où celle des
+ * ventes tient à 240. Trois chiffres courts et une date : la même largeur
+ * aurait laissé une colonne vide au-delà de 1100 px.
+ */
+.bandeauGrilleAssociation {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA PASTILLE DE TYPE PORTE UNE SEULE TEINTE, ET C'EST VOULU.             │
+ * │                                                                          │
+ * │ Le prototype en a quatre, une par FORMAT de publication — compte rendu,  │
+ * │ récit de terrain, fiche PDF, replay. Nous n'avons pas de formats : le    │
+ * │ cahier des charges §F10 bis donne une CATÉGORIE thématique, et il y en   │
+ * │ a six.                                                                   │
+ * │                                                                          │
+ * │ Inventer six teintes pour six catégories serait de la décoration qui     │
+ * │ ressemble à de l'information : le lecteur y chercherait un sens qu'elles │
+ * │ n'auraient pas. L'abréviation dit la catégorie, la seconde ligne l'écrit │
+ * │ en toutes lettres, et la teinte reste celle de l'accent.                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.pastilleType {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--action) 12%, var(--surface));
+  color: var(--accent-encre);
+  font-size: 11px;
+  font-weight: var(--graisse-forte);
+}
+
+.publicationCellule {
+  display: flex;
+  align-items: center;
+  gap: var(--pas-3);
+  min-width: 0;
+}
+
+/*
+ * DEUX LIGNES AU PLUS, et une ellipse au-delà.
+ *
+ * Un titre de publication peut être long ; laissé libre, il ferait grandir sa
+ * rangée et briserait l'alignement de toute la colonne. `line-clamp` coupe au
+ * mot près, là où une hauteur fixe couperait au milieu d'une lettre.
+ */
+.publicationTitre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+  color: var(--accent-encre);
+}
+
+.publicationType {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.grilleNombre {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Le nom d'un adhérent, et son adresse dessous. */
+.adherentNom {
+  margin: 0;
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+}
+
+.adherentEmail {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /*

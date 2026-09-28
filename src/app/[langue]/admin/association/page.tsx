@@ -1,7 +1,12 @@
+import type { CSSProperties } from 'react';
 import type { Metadata } from 'next';
 
 import { langueValide, messageErreur, traduire, LANGUES_INTERFACE, type CleTraduction } from '@/i18n';
-import { listerContenusAssociation } from '@/lib/admin/service';
+import {
+  listerAbonnements,
+  listerContenusAssociation,
+  statsAssociation,
+} from '@/lib/admin/service';
 import { CATEGORIES_ASSOCIATION } from '@/lib/association/service';
 import { Erreur } from '@/components/etats';
 import { BoutonSoumission, GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
@@ -46,6 +51,38 @@ interface Parametres {
 
 const ACCES = ['libre', 'abonnes'] as const;
 
+/*
+ * Les colonnes, telles que le prototype les pose.
+ *
+ * PUBLICATION | STATUT 100 | DATE 64 | LANGUES 52 | À LA UNE 40 | chevron 16.
+ * Le prototype met VUES et COMMENTAIRES dans les deux colonnes étroites ;
+ * nous n'avons ni l'un ni l'autre, et la raison est écrite plus bas. Les
+ * largeurs, elles, ne bougent pas.
+ */
+const COLONNES_PUBLICATIONS = 'minmax(0, 1fr) 100px 64px 52px 40px 16px';
+const LARGEUR_MIN_PUBLICATIONS = '500px';
+
+const COLONNES_ADHERENTS = 'minmax(0, 1.6fr) minmax(0, 1fr) 130px 130px 130px';
+const LARGEUR_MIN_ADHERENTS = '680px';
+
+/** Les onglets que nous pouvons tenir. Voir le bloc « CINQ ONGLETS ». */
+const ONGLETS = ['publications', 'adherents'] as const;
+type Onglet = (typeof ONGLETS)[number];
+
+/**
+ * L'abréviation d'une catégorie, pour la pastille de 38 px.
+ *
+ * Deux lettres, tirées du nom et non d'un compteur : « VA » pour
+ * vie-associative, « BS » pour besoins-spécifiques. Un rang numérique
+ * changerait de sens le jour où une catégorie serait ajoutée au milieu.
+ */
+function abreger(categorie: string): string {
+  const mots = categorie.split('-');
+  const premiere = mots[0]?.[0] ?? '?';
+  const seconde = mots[1]?.[0] ?? mots[0]?.[1] ?? '';
+  return `${premiere}${seconde}`.toUpperCase();
+}
+
 function premier(valeur: string | string[] | undefined): string | undefined {
   return Array.isArray(valeur) ? valeur[0] : valeur;
 }
@@ -64,6 +101,25 @@ interface LigneContenu {
   langues: string[];
 }
 
+/** Les quatre chiffres, tels que `admin_stats_association` les compte. */
+interface StatsAssociation {
+  adherents: number | string;
+  a_renouveler: number | string;
+  brouillons: number | string;
+  derniere_publication: string | null;
+}
+
+/** Une adhésion, telle que `admin_lister_abonnements` la rend. */
+interface LigneAdherent {
+  id: string;
+  nom: string | null;
+  email: string | null;
+  offre: string;
+  statut_observe: string;
+  fin_acces: string | null;
+  cree_le: string;
+}
+
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
   const langue = langueValide((await params).langue);
   return {
@@ -74,21 +130,101 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 
 export default async function PageAdminAssociation({ params, searchParams }: Parametres) {
   const { langue, administrateur } = await exigerAdministrateur((await params).langue);
+  const t = (cle: CleTraduction): string => traduire(langue, cle);
   const requete = await searchParams;
   const erreur = premier(requete['erreur']);
 
-  const resultat = await listerContenusAssociation().catch(() => null);
+  const onglet: Onglet = ONGLETS.includes(premier(requete['onglet']) as Onglet)
+    ? (premier(requete['onglet']) as Onglet)
+    : 'publications';
+  const ouvert = premier(requete['contenu']);
+  const nouvelle = premier(requete['nouvelle']) === '1';
+
+  /*
+   * Trois lectures en parallèle. Les adhérents ne sont demandés que sur leur
+   * onglet : une liste d'abonnements coûte une jointure et une pagination, et
+   * la payer pour un onglet qu'on n'affiche pas serait la payer à chaque visite.
+   */
+  const [resultat, stats, adherents] = await Promise.all([
+    listerContenusAssociation().catch(() => null),
+    statsAssociation().catch(() => null),
+    onglet === 'adherents'
+      ? listerAbonnements({ domaine: 'association', page: 1, taille: 50 }).catch(() => null)
+      : Promise.resolve(null),
+  ]);
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
 
   const contenus = resultat.donnees as unknown as LigneContenu[];
+  const chiffres = ((stats?.ok ? stats.donnees : [])[0] ?? null) as StatsAssociation | null;
+  const lignesAdherents = (adherents?.ok ? adherents.donnees : []) as unknown as LigneAdherent[];
+
+  const ecran = `/${langue}/admin/association`;
+  const lien = (p: { onglet?: Onglet; contenu?: string; nouvelle?: boolean }): string => {
+    const q = new URLSearchParams();
+    if (p.onglet !== undefined && p.onglet !== 'publications') q.set('onglet', p.onglet);
+    if (p.contenu !== undefined) q.set('contenu', p.contenu);
+    if (p.nouvelle === true) q.set('nouvelle', '1');
+    const suite = q.toString();
+    return suite === '' ? ecran : `${ecran}?${suite}`;
+  };
+
+  /*
+   * La publication ouverte, s'il y en a une. Un identifiant inconnu rend une
+   * liste vide plutôt qu'une erreur : une adresse copiée après une
+   * suppression doit rendre l'écran, pas une page cassée.
+   */
+  const selection = ouvert === undefined ? [] : contenus.filter((c) => c.id === ouvert);
+
+  const date = (iso: string | null): string =>
+    iso
+      ? new Date(iso).toLocaleDateString(langue, { day: 'numeric', month: 'short' })
+      : '—';
 
   return (
     <GabaritAdmin
       langue={langue}
       administrateur={administrateur}
       section="/association"
-      titre={traduire(langue, 'admin.association')}
-      sousTitre={traduire(langue, 'admin.associationSousTitre')}
+      gouttiere="association"
+      titre={t('admin.association')}
+      sousTitre={t('admin.assoSousTitreV3')}
+      embleme={
+        /*
+         * Le logo vit dans `public/images/association/`, d'où le middleware le
+         * laisse passer sans redirection. Il est décoratif : le titre à côté
+         * dit déjà de quoi l'écran parle, et un texte de remplacement qui
+         * répète le titre fait perdre une ligne à qui écoute la page.
+         */
+        <img
+          className={styles.embleme}
+          src="/images/association/logo-dave.jpg"
+          alt=""
+          width={56}
+          height={56}
+          /* Il est en haut de page, toujours visible : le differer le ferait
+             apparaitre apres coup, sous les yeux de l'editeur. */
+          loading="eager"
+          decoding="async"
+        />
+      }
+      actions={
+        <a className={styles.boutonPrimaire} href={lien({ nouvelle: true })}>
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {t('admin.assoNouvellePublication')}
+        </a>
+      }
     >
       {erreur ? (
         <p className={styles.alerte} role="alert">
@@ -115,186 +251,421 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
         <p className={styles.succes}>{traduire(langue, 'admin.contenuSupprime')}</p>
       ) : null}
 
-      <div className={styles.cadre}>
-        {contenus.length === 0 ? (
-          <p className={styles.vide}>{traduire(langue, 'admin.aucunContenu')}</p>
-        ) : (
-          <div className={styles.versions}>
-            {contenus.map((contenu) => (
-              <article className={styles.version} key={contenu.id}>
-                <header className={styles.versionEntete}>
-                  <span className={styles.versionLangue}>
+      {/* ── La bande de quatre chiffres ──────────────────────────────────── */}
+      {chiffres ? (
+        <div className={`${styles.carte} ${styles.bandeau}`}>
+          <ul className={`${styles.bandeauGrille} ${styles.bandeauGrilleAssociation}`}>
+            <li className={styles.bandeauCellule}>
+              <p className={styles.bandeauIntitule}>{t('admin.assoAdherents')}</p>
+              <p className={styles.bandeauValeur}>{Number(chiffres.adherents)}</p>
+              <p className={styles.bandeauNote}>{t('admin.assoAdherentsNote')}</p>
+            </li>
+            <li className={styles.bandeauCellule}>
+              <p className={styles.bandeauIntitule}>{t('admin.assoARenouveler')}</p>
+              <p className={styles.bandeauValeur}>{Number(chiffres.a_renouveler)}</p>
+              <p className={styles.bandeauNote}>{t('admin.assoARenouvelerNote')}</p>
+            </li>
+            {/*
+              LES DEUX DERNIERS NE SONT PAS CEUX DU PROTOTYPE.
+
+              Il affiche « À MODÉRER » et « PROCHAINE PUBLICATION ». Ni la
+              modération de commentaires ni la programmation n'existent — le
+              cahier des charges §F10 bis ne connaît que `brouillon` et
+              `publie`. Deux cases vides auraient dit le contraire ; ces
+              deux-là répondent à la même question, avec des chiffres réels.
+            */}
+            <li className={styles.bandeauCellule}>
+              <p className={styles.bandeauIntitule}>{t('admin.assoBrouillons')}</p>
+              <p className={styles.bandeauValeur}>{Number(chiffres.brouillons)}</p>
+              <p className={styles.bandeauNote}>{t('admin.assoBrouillonsNote')}</p>
+            </li>
+            <li className={styles.bandeauCellule}>
+              <p className={styles.bandeauIntitule}>{t('admin.assoDerniere')}</p>
+              <p className={styles.bandeauValeur}>{date(chiffres.derniere_publication)}</p>
+              <p className={styles.bandeauNote}>{t('admin.assoDerniereNote')}</p>
+            </li>
+          </ul>
+        </div>
+      ) : null}
+
+      {/*
+        ┌──────────────────────────────────────────────────────────────────┐
+        │ CINQ ONGLETS AU PROTOTYPE, DEUX ICI.                             │
+        │                                                                  │
+        │ Il propose Publications · Agenda · Commentaires · Adhérents ·    │
+        │ Campagne. Trois d'entre eux n'ont ni données ni spécification :  │
+        │ le cahier des charges §F4 bis décrit un espace qui « ne sert que │
+        │ du texte », sans agenda d'ateliers, sans fil de commentaires et  │
+        │ sans campagne de dons chiffrée par région.                       │
+        │                                                                  │
+        │ Les dessiner vides aurait annoncé trois fonctions absentes, et   │
+        │ un éditeur aurait cliqué dessus. Les deux qui restent sont       │
+        │ entièrement servis par de vraies données.                        │
+        └──────────────────────────────────────────────────────────────────┘
+      */}
+      <nav className={styles.seg} aria-label={t('admin.assoOnglets')}>
+        {ONGLETS.map((valeur) => {
+          const actif = onglet === valeur;
+          return (
+            <a
+              key={valeur}
+              className={actif ? `${styles.segOpt} ${styles.segActif}` : styles.segOpt}
+              href={lien({ onglet: valeur })}
+              aria-current={actif ? 'true' : undefined}
+            >
+              {t(`admin.assoOnglet_${valeur}` as CleTraduction)}
+              <span className={styles.segCompte}>
+                {valeur === 'publications' ? contenus.length : Number(chiffres?.adherents ?? 0)}
+              </span>
+            </a>
+          );
+        })}
+      </nav>
+
+      {onglet === 'adherents' ? (
+        /* ── Les adhérents ────────────────────────────────────────────── */
+        <div className={`${styles.carte} ${styles.grilleCadre}`}>
+          {lignesAdherents.length === 0 ? (
+            <p className={styles.grilleVide}>{t('admin.assoAucunAdherent')}</p>
+          ) : (
+            <table
+              className={styles.grille}
+              style={
+                {
+                  '--grille-colonnes': COLONNES_ADHERENTS,
+                  '--grille-min': LARGEUR_MIN_ADHERENTS,
+                } as CSSProperties
+              }
+            >
+              <thead>
+                <tr className={`${styles.grilleEntete} ${styles.grilleEnteteVentes}`}>
+                  <th scope="col">{t('admin.assoColAdherent')}</th>
+                  <th scope="col">{t('admin.assoColFormule')}</th>
+                  <th scope="col">{t('admin.assoColDepuis')}</th>
+                  <th scope="col">{t('admin.assoColEcheance')}</th>
+                  <th scope="col">{t('admin.colStatut')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lignesAdherents.map((adherent) => (
+                  <tr className={styles.grilleRangee} key={adherent.id}>
+                    <td>
+                      <p className={styles.adherentNom}>{adherent.nom ?? t('admin.nonPublie')}</p>
+                      <p className={styles.adherentEmail}>{adherent.email ?? ''}</p>
+                    </td>
                     {/*
-                      Un contenu sans version française n'a pas de titre à
-                      montrer. Son slug le désigne alors — c'est l'identifiant
-                      que le rédacteur a choisi, et il le reconnaîtra.
+                      « PROFIL » au prototype — « Parent », « Enseignante ».
+                      Aucun champ de ce genre n'existe, et aucune règle ne dit
+                      d'en collecter un. La FORMULE, elle, est un fait.
                     */}
-                    {contenu.titre ?? contenu.slug}
-                  </span>
-
-                  <span
-                    className={`${styles.etat} ${
-                      contenu.statut === 'publie' ? styles.etatPublie : styles.etatBrouillon
-                    }`}
-                  >
-                    {traduire(langue, `admin.statut_${contenu.statut}` as CleTraduction)}
-                  </span>
-
-                  <span className={styles.etat}>
-                    {traduire(langue, `admin.contenuAcces_${contenu.acces}` as CleTraduction)}
-                  </span>
-
-                  <span className={styles.versionFichiers}>
-                    {contenu.slug}
-                    {' · '}
-                    {traduire(langue, 'admin.colLangues')} :{' '}
-                    {contenu.langues.length > 0
-                      ? contenu.langues
-                          .map((code) =>
-                            code === 'fr' || code === 'en'
-                              ? traduire(langue, `langue.${code}` as CleTraduction)
-                              : code,
-                          )
-                          .join(', ')
-                      : '—'}
-                    {contenu.publie_le
-                      ? ` · ${new Date(contenu.publie_le).toLocaleDateString(langue)}`
-                      : ''}
-                  </span>
-                </header>
-
-                {/* ── Rangement ────────────────────────────────────────── */}
-                <form className={styles.formulaire} action={modifierContenu.bind(null, langue)}>
-                  <input type="hidden" name="id" value={contenu.id} />
-
-                  <span className={styles.blocIntitule}>
-                    {traduire(langue, 'admin.contenuReglages')}
-                  </span>
-
-                  <div className={styles.rangee}>
-                    <div className={styles.champ}>
-                      <label className={styles.libelle} htmlFor={`cat-${contenu.id}`}>
-                        {traduire(langue, 'admin.contenuCategorie')}
-                      </label>
-                      <select
-                        className={styles.saisie}
-                        id={`cat-${contenu.id}`}
-                        name="categorie"
-                        defaultValue={contenu.categorie}
+                    <td className={styles.noteVentes}>
+                      {t(`admin.offrePeriode_${adherent.offre}` as CleTraduction)}
+                    </td>
+                    <td className={styles.noteVentes}>{date(adherent.cree_le)}</td>
+                    <td className={styles.noteVentes}>{date(adherent.fin_acces)}</td>
+                    <td>
+                      <span
+                        className={`${styles.etat} ${
+                          adherent.statut_observe === 'actif'
+                            ? styles.etatPublie
+                            : styles.etatBrouillon
+                        }`}
                       >
-                        {CATEGORIES_ASSOCIATION.map((categorie) => (
-                          <option key={categorie} value={categorie}>
-                            {traduire(langue, `v2.cat_${categorie}` as CleTraduction)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.champ}>
-                      <label className={styles.libelle} htmlFor={`acces-${contenu.id}`}>
-                        {traduire(langue, 'admin.contenuAcces')}
-                      </label>
-                      <select
-                        className={styles.saisie}
-                        id={`acces-${contenu.id}`}
-                        name="acces"
-                        defaultValue={contenu.acces}
-                      >
-                        {ACCES.map((acces) => (
-                          <option key={acces} value={acces}>
-                            {traduire(langue, `admin.contenuAcces_${acces}` as CleTraduction)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className={styles.champ}>
-                      <label className={styles.libelle} htmlFor={`ordre-${contenu.id}`}>
-                        {traduire(langue, 'admin.contenuOrdre')}
-                      </label>
-                      <input
-                        className={styles.saisie}
-                        id={`ordre-${contenu.id}`}
-                        name="ordre"
-                        type="number"
-                        min={0}
-                        max={999}
-                        step={1}
-                        defaultValue={contenu.ordre}
-                      />
-                    </div>
-                  </div>
-
-                  <label className={styles.interrupteur} htmlFor={`vedette-${contenu.id}`}>
-                    <input
-                      className={styles.interrupteurCase}
-                      id={`vedette-${contenu.id}`}
-                      name="vedette"
-                      type="checkbox"
-                      value="oui"
-                      defaultChecked={contenu.vedette}
-                    />
-                    <span>
-                      <span className={styles.interrupteurNom}>
-                        {traduire(langue, 'admin.contenuVedette')}
+                        {adherent.statut_observe}
                       </span>
-                      <span className={styles.interrupteurNote}>
-                        {traduire(langue, 'admin.contenuVedetteAide')}
-                      </span>
-                    </span>
-                  </label>
-
-                  <div className={styles.boutons}>
-                    <BoutonSoumission variante="secondaire">
-                      {traduire(langue, 'admin.contenuEnregistrer')}
-                    </BoutonSoumission>
-                  </div>
-                </form>
-
-                {/* ── Publication et suppression ───────────────────────── */}
-                <div className={styles.boutons}>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      ) : (
+        /* ── Les publications ─────────────────────────────────────────── */
+        <div className={`${styles.carte} ${styles.grilleCadre}`}>
+          {contenus.length === 0 ? (
+            <p className={styles.grilleVide}>{traduire(langue, 'admin.aucunContenu')}</p>
+          ) : (
+            <table
+              className={styles.grille}
+              style={
+                {
+                  '--grille-colonnes': COLONNES_PUBLICATIONS,
+                  '--grille-min': LARGEUR_MIN_PUBLICATIONS,
+                } as CSSProperties
+              }
+            >
+              <thead>
+                <tr className={`${styles.grilleEntete} ${styles.grilleEnteteVentes}`}>
+                  <th scope="col">{t('admin.assoColPublication')}</th>
+                  <th scope="col">{t('admin.colStatut')}</th>
+                  <th scope="col">{t('admin.assoColDate')}</th>
                   {/*
-                    L'état VOULU part dans le formulaire, jamais « bascule » :
-                    deux onglets ouverts sur cette liste inverseraient sinon
-                    deux fois un statut touché une seule fois.
+                    DEUX LIBELLÉS COURTS, et c'est le prototype qui l'impose.
+                    Ses colonnes étroites s'appellent « Vues » et « Com. » : un
+                    mot entier y passerait à la ligne et ferait grandir
+                    l'en-tête de dix-sept pixels. `title` rend le mot complet
+                    à qui survole, et `abbr` à qui écoute la page.
                   */}
-                  <form
-                    className={styles.formulaireNu}
-                    action={changerPublication.bind(null, langue)}
-                  >
-                    <input type="hidden" name="id" value={contenu.id} />
-                    <input
-                      type="hidden"
-                      name="publie"
-                      value={contenu.statut === 'publie' ? 'non' : 'oui'}
-                    />
-                    <BoutonSoumission variante="discret">
-                      {traduire(
-                        langue,
-                        contenu.statut === 'publie'
-                          ? 'admin.contenuDepublier'
-                          : 'admin.contenuPublier',
+                  <th scope="col" abbr={t('admin.colLangues')} title={t('admin.colLangues')}>
+                    {t('admin.assoColLangCourt')}
+                  </th>
+                  <th scope="col" abbr={t('admin.assoColUne')} title={t('admin.assoColUne')}>
+                    {t('admin.assoColUneCourt')}
+                  </th>
+                  <th scope="col" />
+                </tr>
+              </thead>
+              <tbody>
+                {contenus.map((contenu) => (
+                  <tr className={styles.grilleRangee} key={contenu.id}>
+                    <td>
+                      <a className={styles.publicationCellule} href={lien({ contenu: contenu.id })}>
+                        <span className={styles.pastilleType} aria-hidden="true">
+                          {abreger(contenu.categorie)}
+                        </span>
+                        <span>
+                          <span className={styles.publicationTitre}>
+                            {contenu.titre ?? contenu.slug}
+                          </span>
+                          <span className={styles.publicationType}>
+                            {t(`admin.contenuCategorie_${contenu.categorie}` as CleTraduction)}
+                            {' · '}
+                            {t(`admin.contenuAcces_${contenu.acces}` as CleTraduction)}
+                          </span>
+                        </span>
+                      </a>
+                    </td>
+
+                    <td>
+                      <span
+                        className={`${styles.etat} ${
+                          contenu.statut === 'publie' ? styles.etatPublie : styles.etatBrouillon
+                        }`}
+                      >
+                        {t(`admin.statut_${contenu.statut}` as CleTraduction)}
+                      </span>
+                    </td>
+
+                    <td className={styles.noteVentes}>{date(contenu.publie_le)}</td>
+
+                    {/*
+                      VUES et COMMENTAIRES au prototype. Nous ne comptons ni
+                      l'un ni l'autre : aucune mesure d'audience n'est posée,
+                      et l'espace n'a pas de fil de commentaires. Les langues
+                      disponibles et la mise à la une, elles, décident de ce
+                      que le site affiche — et se lisent ici d'un coup d'œil.
+                    */}
+                    <td className={styles.noteVentes}>
+                      {contenu.langues.length > 0
+                        ? contenu.langues.map((code) => code.toUpperCase()).join(' · ')
+                        : '—'}
+                    </td>
+
+                    <td className={styles.grilleNombre}>
+                      {contenu.vedette ? (
+                        <span title={t('admin.assoColUne')}>{'★'}</span>
+                      ) : (
+                        <span className={styles.noteVentes}>{'—'}</span>
                       )}
-                    </BoutonSoumission>
-                  </form>
+                    </td>
 
-                  <form
-                    className={styles.formulaireNu}
-                    action={supprimerContenu.bind(null, langue)}
-                  >
+                    <td aria-hidden="true">{'›'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/*
+        LE PANNEAU DE RÉDACTION NE S’OUVRE QUE SUR LA PUBLICATION CHOISIE.
+
+        Il portait AUTREFOIS les huit contenus dépliés en même temps : huit
+        formulaires de réglages, huit dépôts de version et huit boutons de
+        suppression sur une même page. Cliquer une rangée de la liste le
+        réduit à celle qu’on édite — et c’est aussi ce que fait le
+        prototype, dont la rangée mène à l’éditeur.
+      */}
+      {selection.length === 0 ? null : (
+        <div className={styles.cadre}>
+          <div className={styles.versions}>
+              {selection.map((contenu) => (
+                <article className={styles.version} key={contenu.id}>
+                  <header className={styles.versionEntete}>
+                    <span className={styles.versionLangue}>
+                      {/*
+                        Un contenu sans version française n'a pas de titre à
+                        montrer. Son slug le désigne alors — c'est l'identifiant
+                        que le rédacteur a choisi, et il le reconnaîtra.
+                      */}
+                      {contenu.titre ?? contenu.slug}
+                    </span>
+
+                    <span
+                      className={`${styles.etat} ${
+                        contenu.statut === 'publie' ? styles.etatPublie : styles.etatBrouillon
+                      }`}
+                    >
+                      {traduire(langue, `admin.statut_${contenu.statut}` as CleTraduction)}
+                    </span>
+
+                    <span className={styles.etat}>
+                      {traduire(langue, `admin.contenuAcces_${contenu.acces}` as CleTraduction)}
+                    </span>
+
+                    <span className={styles.versionFichiers}>
+                      {contenu.slug}
+                      {' · '}
+                      {traduire(langue, 'admin.colLangues')} :{' '}
+                      {contenu.langues.length > 0
+                        ? contenu.langues
+                            .map((code) =>
+                              code === 'fr' || code === 'en'
+                                ? traduire(langue, `langue.${code}` as CleTraduction)
+                                : code,
+                            )
+                            .join(', ')
+                        : '—'}
+                      {contenu.publie_le
+                        ? ` · ${new Date(contenu.publie_le).toLocaleDateString(langue)}`
+                        : ''}
+                    </span>
+                  </header>
+
+                  {/* ── Rangement ────────────────────────────────────────── */}
+                  <form className={styles.formulaire} action={modifierContenu.bind(null, langue)}>
                     <input type="hidden" name="id" value={contenu.id} />
-                    <BoutonSoumission variante="danger">
-                      {traduire(langue, 'admin.contenuSupprimer')}
-                    </BoutonSoumission>
-                  </form>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
 
-        <p className={styles.aide}>{traduire(langue, 'admin.contenuSuppressionAide')}</p>
-      </div>
+                    <span className={styles.blocIntitule}>
+                      {traduire(langue, 'admin.contenuReglages')}
+                    </span>
+
+                    <div className={styles.rangee}>
+                      <div className={styles.champ}>
+                        <label className={styles.libelle} htmlFor={`cat-${contenu.id}`}>
+                          {traduire(langue, 'admin.contenuCategorie')}
+                        </label>
+                        <select
+                          className={styles.saisie}
+                          id={`cat-${contenu.id}`}
+                          name="categorie"
+                          defaultValue={contenu.categorie}
+                        >
+                          {CATEGORIES_ASSOCIATION.map((categorie) => (
+                            <option key={categorie} value={categorie}>
+                              {traduire(langue, `v2.cat_${categorie}` as CleTraduction)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.champ}>
+                        <label className={styles.libelle} htmlFor={`acces-${contenu.id}`}>
+                          {traduire(langue, 'admin.contenuAcces')}
+                        </label>
+                        <select
+                          className={styles.saisie}
+                          id={`acces-${contenu.id}`}
+                          name="acces"
+                          defaultValue={contenu.acces}
+                        >
+                          {ACCES.map((acces) => (
+                            <option key={acces} value={acces}>
+                              {traduire(langue, `admin.contenuAcces_${acces}` as CleTraduction)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className={styles.champ}>
+                        <label className={styles.libelle} htmlFor={`ordre-${contenu.id}`}>
+                          {traduire(langue, 'admin.contenuOrdre')}
+                        </label>
+                        <input
+                          className={styles.saisie}
+                          id={`ordre-${contenu.id}`}
+                          name="ordre"
+                          type="number"
+                          min={0}
+                          max={999}
+                          step={1}
+                          defaultValue={contenu.ordre}
+                        />
+                      </div>
+                    </div>
+
+                    <label className={styles.interrupteur} htmlFor={`vedette-${contenu.id}`}>
+                      <input
+                        className={styles.interrupteurCase}
+                        id={`vedette-${contenu.id}`}
+                        name="vedette"
+                        type="checkbox"
+                        value="oui"
+                        defaultChecked={contenu.vedette}
+                      />
+                      <span>
+                        <span className={styles.interrupteurNom}>
+                          {traduire(langue, 'admin.contenuVedette')}
+                        </span>
+                        <span className={styles.interrupteurNote}>
+                          {traduire(langue, 'admin.contenuVedetteAide')}
+                        </span>
+                      </span>
+                    </label>
+
+                    <div className={styles.boutons}>
+                      <BoutonSoumission variante="secondaire">
+                        {traduire(langue, 'admin.contenuEnregistrer')}
+                      </BoutonSoumission>
+                    </div>
+                  </form>
+
+                  {/* ── Publication et suppression ───────────────────────── */}
+                  <div className={styles.boutons}>
+                    {/*
+                      L'état VOULU part dans le formulaire, jamais « bascule » :
+                      deux onglets ouverts sur cette liste inverseraient sinon
+                      deux fois un statut touché une seule fois.
+                    */}
+                    <form
+                      className={styles.formulaireNu}
+                      action={changerPublication.bind(null, langue)}
+                    >
+                      <input type="hidden" name="id" value={contenu.id} />
+                      <input
+                        type="hidden"
+                        name="publie"
+                        value={contenu.statut === 'publie' ? 'non' : 'oui'}
+                      />
+                      <BoutonSoumission variante="discret">
+                        {traduire(
+                          langue,
+                          contenu.statut === 'publie'
+                            ? 'admin.contenuDepublier'
+                            : 'admin.contenuPublier',
+                        )}
+                      </BoutonSoumission>
+                    </form>
+
+                    <form
+                      className={styles.formulaireNu}
+                      action={supprimerContenu.bind(null, langue)}
+                    >
+                      <input type="hidden" name="id" value={contenu.id} />
+                      <BoutonSoumission variante="danger">
+                        {traduire(langue, 'admin.contenuSupprimer')}
+                      </BoutonSoumission>
+                    </form>
+                  </div>
+                </article>
+              ))}
+          </div>
+
+          <p className={styles.aide}>{traduire(langue, 'admin.contenuSuppressionAide')}</p>
+        </div>
+      )}
 
       {/* ── Écrire une version ───────────────────────────────────────────── */}
       <section className={styles.section}>
@@ -391,141 +762,149 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
         </div>
       </section>
 
-      {/* ── Créer un contenu ─────────────────────────────────────────────── */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.contenuCreerTitre')}</h2>
+      {/*
+        LA CRÉATION S’OUVRE PAR LE BOUTON DE LA BARRE, comme partout ailleurs.
 
-        <div className={styles.cadre}>
-          <form className={styles.formulaire} action={creerContenu.bind(null, langue)}>
-            <div className={styles.rangee}>
+        Ce formulaire était affiché en permanence, sous les huit contenus.
+        Il n’a de sens qu’au moment où l’on crée, et le laisser ouvert
+        proposait un dixième contenu à chaque visite.
+      */}
+      {nouvelle ? (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.contenuCreerTitre')}</h2>
+
+          <div className={styles.cadre}>
+            <form className={styles.formulaire} action={creerContenu.bind(null, langue)}>
+              <div className={styles.rangee}>
+                <div className={styles.champ}>
+                  <label className={styles.libelle} htmlFor="contenu-slug">
+                    {traduire(langue, 'admin.contenuSlug')}
+                  </label>
+                  <input
+                    className={styles.saisie}
+                    id="contenu-slug"
+                    name="slug"
+                    minLength={3}
+                    maxLength={96}
+                    // Le même motif que la contrainte de la table et que le schéma
+                    // Zod de la route, qui restent seuls juges : celui-ci épargne
+                    // un aller-retour, il ne décide rien.
+                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                    required
+                    aria-describedby="contenu-slug-aide"
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label className={styles.libelle} htmlFor="contenu-categorie">
+                    {traduire(langue, 'admin.contenuCategorie')}
+                  </label>
+                  <select
+                    className={styles.saisie}
+                    id="contenu-categorie"
+                    name="categorie"
+                    defaultValue="vie-associative"
+                  >
+                    {CATEGORIES_ASSOCIATION.map((categorie) => (
+                      <option key={categorie} value={categorie}>
+                        {traduire(langue, `v2.cat_${categorie}` as CleTraduction)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className={styles.champ}>
+                  <label className={styles.libelle} htmlFor="contenu-acces">
+                    {traduire(langue, 'admin.contenuAcces')}
+                  </label>
+                  <select
+                    className={styles.saisie}
+                    id="contenu-acces"
+                    name="acces"
+                    defaultValue="abonnes"
+                    aria-describedby="contenu-acces-aide"
+                  >
+                    {ACCES.map((acces) => (
+                      <option key={acces} value={acces}>
+                        {traduire(langue, `admin.contenuAcces_${acces}` as CleTraduction)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <p className={styles.aide} id="contenu-slug-aide">
+                {traduire(langue, 'admin.contenuSlugAide')}
+              </p>
+              <p className={styles.aide} id="contenu-acces-aide">
+                {traduire(langue, 'admin.contenuAccesAide')}
+              </p>
+
               <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-slug">
-                  {traduire(langue, 'admin.contenuSlug')}
+                <label className={styles.libelle} htmlFor="contenu-titre">
+                  {traduire(langue, 'admin.contenuTitre')}
                 </label>
                 <input
                   className={styles.saisie}
-                  id="contenu-slug"
-                  name="slug"
-                  minLength={3}
-                  maxLength={96}
-                  // Le même motif que la contrainte de la table et que le schéma
-                  // Zod de la route, qui restent seuls juges : celui-ci épargne
-                  // un aller-retour, il ne décide rien.
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                  id="contenu-titre"
+                  name="titre"
+                  maxLength={200}
                   required
-                  aria-describedby="contenu-slug-aide"
                 />
               </div>
 
               <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-categorie">
-                  {traduire(langue, 'admin.contenuCategorie')}
+                <label className={styles.libelle} htmlFor="contenu-chapeau">
+                  {traduire(langue, 'admin.contenuChapeau')}
                 </label>
-                <select
-                  className={styles.saisie}
-                  id="contenu-categorie"
-                  name="categorie"
-                  defaultValue="vie-associative"
-                >
-                  {CATEGORIES_ASSOCIATION.map((categorie) => (
-                    <option key={categorie} value={categorie}>
-                      {traduire(langue, `v2.cat_${categorie}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-acces">
-                  {traduire(langue, 'admin.contenuAcces')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="contenu-acces"
-                  name="acces"
-                  defaultValue="abonnes"
-                  aria-describedby="contenu-acces-aide"
-                >
-                  {ACCES.map((acces) => (
-                    <option key={acces} value={acces}>
-                      {traduire(langue, `admin.contenuAcces_${acces}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <p className={styles.aide} id="contenu-slug-aide">
-              {traduire(langue, 'admin.contenuSlugAide')}
-            </p>
-            <p className={styles.aide} id="contenu-acces-aide">
-              {traduire(langue, 'admin.contenuAccesAide')}
-            </p>
-
-            <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="contenu-titre">
-                {traduire(langue, 'admin.contenuTitre')}
-              </label>
-              <input
-                className={styles.saisie}
-                id="contenu-titre"
-                name="titre"
-                maxLength={200}
-                required
-              />
-            </div>
-
-            <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="contenu-chapeau">
-                {traduire(langue, 'admin.contenuChapeau')}
-              </label>
-              <textarea
-                className={styles.zoneTexte}
-                id="contenu-chapeau"
-                name="chapeau"
-                maxLength={400}
-                rows={2}
-              />
-            </div>
-
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-minutes">
-                  {traduire(langue, 'admin.contenuMinutes')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="contenu-minutes"
-                  name="minutes"
-                  type="number"
-                  min={1}
-                  max={600}
-                  step={1}
+                <textarea
+                  className={styles.zoneTexte}
+                  id="contenu-chapeau"
+                  name="chapeau"
+                  maxLength={400}
+                  rows={2}
                 />
               </div>
 
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-image">
-                  {traduire(langue, 'admin.contenuImage')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="contenu-image"
-                  name="image_url"
-                  maxLength={500}
-                  aria-describedby="contenu-image-aide"
-                />
+              <div className={styles.rangee}>
+                <div className={styles.champ}>
+                  <label className={styles.libelle} htmlFor="contenu-minutes">
+                    {traduire(langue, 'admin.contenuMinutes')}
+                  </label>
+                  <input
+                    className={styles.saisie}
+                    id="contenu-minutes"
+                    name="minutes"
+                    type="number"
+                    min={1}
+                    max={600}
+                    step={1}
+                  />
+                </div>
+
+                <div className={styles.champ}>
+                  <label className={styles.libelle} htmlFor="contenu-image">
+                    {traduire(langue, 'admin.contenuImage')}
+                  </label>
+                  <input
+                    className={styles.saisie}
+                    id="contenu-image"
+                    name="image_url"
+                    maxLength={500}
+                    aria-describedby="contenu-image-aide"
+                  />
+                </div>
               </div>
-            </div>
 
-            <p className={styles.aide} id="contenu-image-aide">
-              {traduire(langue, 'admin.contenuImageAide')}
-            </p>
+              <p className={styles.aide} id="contenu-image-aide">
+                {traduire(langue, 'admin.contenuImageAide')}
+              </p>
 
-            <BoutonSoumission>{traduire(langue, 'admin.contenuCreer')}</BoutonSoumission>
-          </form>
-        </div>
-      </section>
+              <BoutonSoumission>{traduire(langue, 'admin.contenuCreer')}</BoutonSoumission>
+            </form>
+          </div>
+        </section>
+      ) : null}
     </GabaritAdmin>
   );
 }

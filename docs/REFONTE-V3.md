@@ -1100,6 +1100,57 @@ publié est OFFERT, donc `disponible_achat = false`, donc pas de bouton d'ajout.
 C'est la règle du dépôt — on ne propose pas d'acheter ce qu'on donne — et le
 prototype dessine le bouton partout parce que ses données sont fictives.
 
+### `Association / article`, livré le 28 septembre 2026 — l'écran que lit un adhérent
+
+`src/components/v2/article-association-v3.{tsx,module.css}`, derrière `estV3()`
+dans `src/app/[langue]/association/[slug]/page.tsx` — qui n'avait **aucune
+branche V3** jusqu'ici. La V2 reste en place, intacte.
+
+C'est le pendant de `Association`, livré le 7 septembre : la liste avait sa
+version V3, l'article qu'elle ouvre ne l'avait pas. Un lecteur qui cliquait un
+contenu passait donc d'un écran refondu à un écran qui ne l'était pas.
+
+**Trois choses bougent, et aucune n'est une couleur.**
+
+1. **Le titre quitte la colonne pour une bande de tête pleine largeur**, en
+   `--fond-doux`, fermée par un filet. C'est elle qui sépare l'article de
+   l'en-tête du site, et c'est ce qui fait qu'un titre de 54 px ne flotte pas.
+2. **La photo descend SOUS le chapeau** au lieu de le surmonter. On lit ce
+   qu'est le texte avant de voir son illustration — et sur la connexion lente
+   du §5.1, l'image n'est plus ce qui retarde la première ligne lisible.
+3. **Le corps prend une colonne de 900 px** (844 de texte), la seule largeur où
+   une ligne de 18,5 px garde son retour à la ligne sous l'œil.
+
+**Les cotes viennent de la mesure, pas du dossier.** `03-screens-desktop.md`
+annonce « 17,5 px / 1,7 » pour le corps ; le relevé donne **18,5 px et 1,78**.
+Quand les deux divergent, c'est la mesure qui fait foi : elle décrit ce que le
+lecteur verra. De même, la photo est en **16/8** et non en 16/9 — un
+dix-huitième qui ne se voit pas sur l'image, mais qui déplace de sept pixels
+tout ce qui suit.
+
+**Relevé `association-article` : écart de dimension nul.** Neuf sondes. Le seul
+écart restant est une couleur, répétée deux fois — notre `--v3-terre-encre`
+(`#8c491a`, **5,72:1** sur la crème) contre la terre cuite plus claire du
+prototype. C'est l'arbitrage de palette appliqué à tout le site, pas une
+particularité de cet écran.
+
+**Ce qui ne change pas, et c'est le point qui compte.** `sections` vaut `null`
+dès que `can_read` est faux — la **base** le décide, et la colonne `corps`
+n'est accordée ni à `anon` ni à `authenticated`. Le composant ne compare aucun
+droit : il rend ce qu'on lui donne, et le mur quand on ne lui donne rien. Un
+composant qui déciderait lui-même serait un second mur, et celui-là se
+contournerait avec la vue « source ».
+
+`tests/composants/article-association-v3.test.tsx` éprouve ce maillon par
+l'absence plutôt que par la présence : il ne demande pas « le mur est-il là »,
+il vérifie qu'**aucun paragraphe d'article n'a été rendu**. Un composant qui
+replierait sur un corps vide passerait le premier contrôle et raterait
+celui-ci.
+
+Le mur garde ses **deux** portes — adhérer, et se connecter. Un adhérent déjà
+inscrit qui tombe dessus n'a pas besoin d'adhérer ; sans le second lien, il
+repartirait en croyant devoir payer une seconde fois.
+
 ### `Association`, livré le 7 septembre 2026 — quatrième écran de la passe droite → gauche
 
 Prototype, lignes 674 à 784. `src/components/v2/association-v3.{tsx,module.css}`,

@@ -1,0 +1,309 @@
+/*
+ * L'ARTICLE DE L'ESPACE ADHÉRENT — V3.
+ *
+ * Toutes les cotes viennent du relevé du prototype, pas de son texte de
+ * passation : celui-ci annonce « 17,5 px / 1,7 » pour le corps, la mesure
+ * donne 18,5 px et 1,78. Quand les deux divergent, c'est la mesure qui fait
+ * foi — c'est elle qui décrit ce que le lecteur verra.
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── La bande de tête ───────────────────────────────────────────────────── */
+
+/*
+ * Pleine largeur, teinte douce : elle sépare l'article de l'en-tête du site
+ * sans filet, et c'est ce qui fait qu'un titre de 54 px ne flotte pas.
+ */
+.bande {
+  background: var(--fond-doux);
+  /* Le filet la sépare de l'article : sans lui, la teinte s'arrête net. */
+  border-bottom: 1px solid var(--bordure);
+}
+
+.bandeContenu {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 52px 28px 46px;
+}
+
+.retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--accent-encre);
+  text-decoration: none;
+}
+
+.retour:hover {
+  text-decoration: underline;
+}
+
+.categorie {
+  display: block;
+  /*
+   * 24 px sous le lien de retour — cote relevée. À 10 px, la catégorie et le
+   * titre remontaient ENSEMBLE de quatorze pixels : un seul manque, deux
+   * sondes en échec, comme sur la carte d'offre.
+   */
+  margin-top: 24px;
+  font-size: 11.5px;
+  line-height: 1.6;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.titre {
+  margin: 14px 0 16px;
+  font-family: var(--police-titre);
+  font-size: 54px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.04;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+.chapeau {
+  margin: 0 0 22px;
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+/*
+ * « Réservé aux adhérents » est dit dans la LIGNE DE MÉTA, à côté de la date.
+ * C'est là qu'on lit ce qu'est ce texte avant de le lire — et non en bas,
+ * après un chapeau qui aurait donné l'illusion d'un article ouvert.
+ */
+.reserve {
+  font-weight: var(--graisse-forte);
+  color: var(--accent-encre);
+}
+
+/* ── L'article ──────────────────────────────────────────────────────────── */
+
+.article {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/*
+ * 16/8 — le format du prototype, et non 16/9.
+ *
+ * Un dix-huitième de différence ne se voit pas à l'œil sur une image, mais il
+ * déplace de sept pixels tout ce qui suit sur une largeur de 844.
+ */
+.photo {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 8;
+  margin: 34px 0 44px;
+  border-radius: 30px;
+  object-fit: cover;
+  /* `--ombre-m` porte exactement la cote du prototype : 0 3px 10px à 16 %. */
+  box-shadow: var(--ombre-m);
+}
+
+.corps > section > h2 {
+  margin: 44px 0 16px;
+  font-family: var(--police-titre);
+  font-size: 32px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+/*
+ * Le PREMIER intertitre n'a pas de marge haute : la photo lui en a déjà
+ * donné 44. Sans cela, ils s'additionnent et ouvrent un trou de 88 px que
+ * rien ne justifie.
+ */
+.corps > section:first-child > h2 {
+  margin-top: 0;
+}
+
+.corps p {
+  margin: 0 0 20px;
+  font-size: 18.5px;
+  line-height: 1.78;
+  color: var(--encre);
+}
+
+.corps ul {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+ * La puce est un FILET à gauche, pas un disque.
+ *
+ * C'est le motif du prototype, et il tient mieux la ligne longue : un disque
+ * pose un point à côté d'un texte de 18,5 px et laisse l'œil le chercher, là
+ * où le filet accompagne toute la hauteur de l'élément.
+ */
+.corps li {
+  margin-bottom: 12px;
+  padding-left: 18px;
+  border-left: 3px solid var(--action);
+  font-size: 18.5px;
+  line-height: 1.78;
+  color: var(--encre);
+}
+
+/* ── Le mur d'adhésion ──────────────────────────────────────────────────── */
+
+.mur {
+  margin: 0 0 44px;
+  padding: 36px 32px;
+  border-radius: 30px;
+  background: var(--fond-doux);
+  text-align: center;
+}
+
+.murTitre {
+  margin: 0 0 12px;
+  font-family: var(--police-titre);
+  font-size: 28px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+.murTexte {
+  max-width: 56ch;
+  margin: 0 auto 24px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--encre-douce);
+}
+
+.murActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin: 0;
+}
+
+.murLien {
+  font-size: 15px;
+  color: var(--encre-douce);
+  text-decoration: underline;
+}
+
+.murLien:hover {
+  color: var(--accent-encre);
+}
+
+.murBouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--cible-min);
+  padding: 12px 26px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-texte);
+  font-family: var(--police-titre);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+.murBouton:hover {
+  background: var(--action-survol);
+}
+
+/* ── À lire ensuite ─────────────────────────────────────────────────────── */
+
+.suite {
+  margin-top: 56px;
+  padding: 48px 0 64px;
+  border-top: 1px solid var(--bordure);
+}
+
+.suiteContenu {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+.suiteTitre {
+  margin: 0 0 24px;
+  font-family: var(--police-titre);
+  font-size: 28px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+.suiteGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 24px;
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SOUS 760 px, LE TITRE DE 54 px NE TIENT PLUS.                           │
+ * │                                                                          │
+ * │ Il déborderait de sa colonne sur un téléphone, et la page prendrait une  │
+ * │ barre de défilement horizontale. La bande perd aussi la moitié de sa     │
+ * │ respiration : 52 px en haut sur un écran de 640 px de haut, c'est un     │
+ * │ douzième de l'écran donné à du vide.                                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  .bandeContenu {
+    padding: 28px 20px 26px;
+  }
+
+  .titre {
+    font-size: 34px;
+  }
+
+  .chapeau {
+    font-size: 17px;
+  }
+
+  .article {
+    padding: 0 20px;
+  }
+
+  .photo {
+    margin: 24px 0 28px;
+    border-radius: 20px;
+  }
+
+  .corps > section > h2 {
+    margin: 32px 0 12px;
+    font-size: 24px;
+  }
+
+  .corps p,
+  .corps li {
+    font-size: 16.5px;
+  }
+}

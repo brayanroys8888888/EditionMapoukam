@@ -9,6 +9,8 @@ import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { getServerEnv } from '@/lib/config/env';
 import { Erreur } from '@/components/etats';
 import { CarteContenu, imageDuContenu } from '@/components/v2/carte-association';
+import { ArticleAssociationV3 } from '@/components/v2/article-association-v3';
+import { estV3 } from '@/design/version';
 import styles from '@/components/v2/association.module.css';
 import boutique from '@/components/v2/boutique.module.css';
 
@@ -130,6 +132,27 @@ export default async function PageContenuAssociatif({ params }: Parametres) {
   const aLireEnsuite = voisins
     .filter((voisin) => voisin.slug !== contenu.slug)
     .slice(0, NOMBRE_A_LIRE_ENSUITE);
+
+  /*
+   * ┌───────────────────────────────────────────────────────────────┐
+   * │ SOUS ORGANIC, L'ARTICLE EST REDESSINÉ — PAS SEULEMENT REPEINT.      │
+   * │                                                                      │
+   * │ Le titre passe de la colonne à une BANDE de tête pleine largeur, la   │
+   * │ photo descend SOUS le chapeau au lieu de le surmonter, et le corps    │
+   * │ prend une colonne de 900 px — la seule largeur où une ligne de        │
+   * │ 18,5 px reste lisible sans que l'œil perde son retour à la ligne.     │
+   * │                                                                      │
+   * │ Ce qui ne change pas : la lecture du contenu, le fait que `sections`  │
+   * │ vaille `null` quand le droit est fermé, et le mur qui prend alors sa  │
+   * │ place. La V2 reste intacte sous cette condition — le même partage     │
+   * │ que sur `/association`, livré le 7 septembre.                         │
+   * └───────────────────────────────────────────────────────────────┘
+   */
+  if (estV3()) {
+    return (
+      <ArticleAssociationV3 langue={langue} contenu={contenu} aLireEnsuite={aLireEnsuite} />
+    );
+  }
 
   /*
    * ┌──────────────────────────────────────────────────────────────────────┐

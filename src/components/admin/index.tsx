@@ -108,9 +108,11 @@ export function GabaritAdmin({
   administrateur,
   titre,
   sousTitre,
+  embleme,
   actions,
   enteteActions,
   aere = false,
+  gouttiere,
   enteteIntegree = false,
   children,
 }: {
@@ -121,6 +123,13 @@ export function GabaritAdmin({
   titre: string;
   sousTitre?: string;
   /**
+   * Une image POSÉE À GAUCHE DU TITRE — le logo de l'Association DAVE, et lui
+   * seul aujourd'hui. Le titre et son sous-titre passent alors dans un groupe
+   * aligné sur son centre : sans ce groupe, `justify-content: space-between`
+   * écarterait le logo du titre aux deux bouts de la ligne.
+   */
+  embleme?: ReactNode;
+  /**
    * Ce que porte la BARRE SUPÉRIEURE : l'action principale de l'écran, et
    * l'indicateur de suivi là où il a un sens. Collante, donc atteignable sur
    * un tableau de dix-huit lignes sans remonter.
@@ -130,6 +139,12 @@ export function GabaritAdmin({
   enteteActions?: ReactNode;
   /** Le tableau de bord empile des panneaux étrangers : il respire plus. */
   aere?: boolean;
+  /**
+   * La gouttiere de la colonne, quand elle n'est ni celle de tout le monde
+   * (17,6 px) ni celle du tableau de bord (26,4). L'ecran de l'association
+   * en demande 24, et le prototype ne la tire d'aucune des deux.
+   */
+  gouttiere?: 'association';
   /**
    * L'écran porte son propre titre, dans son contenu.
    *
@@ -224,12 +239,23 @@ export function GabaritAdmin({
         </div>
 
         <div className={styles.page}>
-          <div className={aere ? `${styles.colonne} ${styles.colonneAeree}` : styles.colonne}>
+          <div
+            className={[
+              styles.colonne,
+              aere ? styles.colonneAeree : '',
+              gouttiere === 'association' ? styles.colonneAssociation : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+          >
             {enteteIntegree ? null : (
               <div className={styles.entete}>
-                <div>
-                  <h1 className={styles.titre}>{titre}</h1>
-                  {sousTitre ? <p className={styles.sousTitre}>{sousTitre}</p> : null}
+                <div className={styles.enteteGroupe}>
+                  {embleme}
+                  <div>
+                    <h1 className={styles.titre}>{titre}</h1>
+                    {sousTitre ? <p className={styles.sousTitre}>{sousTitre}</p> : null}
+                  </div>
                 </div>
                 {enteteActions}
               </div>

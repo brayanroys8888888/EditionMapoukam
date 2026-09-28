@@ -882,6 +882,19 @@ export async function listerContenusAssociation(
   return await appeler<unknown[]>(client, 'admin_lister_contenus_association', {});
 }
 
+/**
+ * Les quatre chiffres de l'écran : adhérents, adhésions à renouveler,
+ * brouillons, dernière publication.
+ *
+ * Le « à renouveler » se compte en base, contre `app_now()` : comparé ici, il
+ * répondrait selon l'horloge du serveur de rendu et ignorerait le temps
+ * déplacé par la console de simulation.
+ */
+export async function statsAssociation(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_stats_association', {});
+}
+
 /** Le détail d'un contenu, versions et corps compris. */
 export async function lireContenuAssociation(
   id: string,
