@@ -78,6 +78,23 @@ const ECRIVAINS_ADMIS: readonly { fichier: string; role: string }[] = [
       'plus rien ne dirait pourquoi cet avis avait pu être écrit.',
   },
   {
+    fichier: 'supabase/migrations/20260928000099_association_commentaires.sql',
+    role:
+      'AUCUN — la migration des échanges entre adhérents redéclare `anonymize_user` et ' +
+      '`dev_reset_demo_state` pour y ajouter l’effacement de `association_comments`, et ' +
+      'reprend le reste VERBATIM depuis la base vivante. Les écritures sur `entitlements` ' +
+      'sont donc celles des migrations 0014 et 0043, à la ligne près : aucun droit nouveau ' +
+      'n’est accordé ni retiré ici.',
+  },
+  {
+    fichier: 'supabase/migrations/20260928000100_association_sans_cascade.sql',
+    role:
+      'AUCUN — même raison. La migration retire les cascades vers `users` et redéclare ' +
+      '`anonymize_user` une dernière fois, pour qu’elle appelle ' +
+      '`association_effacer_traces` au lieu de recopier ses trois effacements. ' +
+      'L’écriture sur `entitlements` est inchangée.',
+  },
+  {
     fichier: 'supabase/migrations/20260927000094_facture_a_l_octroi.sql',
     role:
       'ACHAT (reprise) — `fulfill_order` est redéclarée pour y ajouter l’émission de la ' +

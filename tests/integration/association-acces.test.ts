@@ -61,7 +61,8 @@ async function fabriquerContenu(
   await query(
     `insert into public.association_content_translations (content_id, langue, titre, chapeau, corps)
      select id, 'fr', $2, 'Ce que tout le monde peut lire.',
-            '[{"titre": "Section", "paragraphes": ["Le texte réservé."]}]'::jsonb
+            '[{"type": "intertitre", "texte": "Section"},
+               {"type": "paragraphe", "texte": "Le texte réservé."}]'::jsonb
      from public.association_contents where slug = $1
      on conflict (content_id, langue) do update set corps = excluded.corps`,
     [slug, `Contenu ${slug}`],
@@ -127,7 +128,7 @@ describe('un visiteur non connecté', () => {
   it('reçoit le texte d’un contenu libre', async () => {
     const contenu = await lireContenuAssociatif(null, LIBRE, { at: LENDEMAIN });
     expect(contenu?.peutLire).toBe(true);
-    expect(contenu?.sections?.length).toBeGreaterThan(0);
+    expect(contenu?.blocs?.length).toBeGreaterThan(0);
   });
 
   it('reçoit la fiche d’un contenu réservé, MAIS PAS SON TEXTE', async () => {
@@ -136,7 +137,7 @@ describe('un visiteur non connecté', () => {
     expect(contenu?.peutLire).toBe(false);
     // `null`, et non `[]` : « verrouillé » ne se confond pas avec « publié
     // sans texte », et l'écran n'affiche le mur d'adhésion que pour le premier.
-    expect(contenu?.sections).toBeNull();
+    expect(contenu?.blocs).toBeNull();
     expect(contenu?.chapeau).not.toBe('');
   });
 });
@@ -146,7 +147,7 @@ describe('un compte connecté SANS abonnement associatif', () => {
     const contenu = await lireContenuAssociatif(visiteur.id, RESERVE, { at: LENDEMAIN });
     expect(contenu?.peutLire).toBe(false);
     expect(contenu?.motif).toBe('preview');
-    expect(contenu?.sections).toBeNull();
+    expect(contenu?.blocs).toBeNull();
   });
 });
 
@@ -155,7 +156,7 @@ describe('un adhérent de l’association', () => {
     const contenu = await lireContenuAssociatif(adherent.id, RESERVE, { at: LENDEMAIN });
     expect(contenu?.peutLire).toBe(true);
     expect(contenu?.motif).toBe('subscription');
-    expect(contenu?.sections?.length).toBeGreaterThan(0);
+    expect(contenu?.blocs?.length).toBeGreaterThan(0);
   });
 
   it('ne voit toujours pas les brouillons', async () => {

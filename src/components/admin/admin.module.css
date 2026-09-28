@@ -4086,6 +4086,285 @@ textarea.saisie {
   white-space: nowrap;
 }
 
+/* ── L'éditeur de publication ───────────────────────────────────────────── */
+
+.redaction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+/*
+ * `999 1 560px` et `1 1 300px` : la colonne principale prend tout ce qu'elle
+ * peut, la latérale son minimum. Sous 860 px elles passent l'une sous
+ * l'autre, et la liste de contrôle se retrouve alors SOUS le texte — à
+ * l'endroit où on la cherche quand on vient de finir d'écrire.
+ */
+.redactionColonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--pas-4);
+}
+
+.redactionPrincipale {
+  display: flex;
+  flex: 999 1 560px;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.redactionCote {
+  display: flex;
+  flex: 1 1 300px;
+  flex-direction: column;
+  gap: var(--pas-4);
+  position: sticky;
+  top: 84px;
+}
+
+.redactionCarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-4);
+}
+
+.redactionEntete {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pas-3);
+  margin: 0;
+}
+
+.redactionCompteur {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+/*
+ * Le compteur vire à l'accent AU-DELÀ de la limite, jamais à son approche :
+ * prévenir trop tôt fait s'arrêter d'écrire avant d'y être.
+ */
+.redactionCompteurTrop {
+  font-weight: var(--graisse-forte);
+  color: var(--accent-encre);
+}
+
+/*
+ * Le titre s'écrit dans la police et la taille qu'il AURA.
+ *
+ * Sans bordure ni fond : ce n'est pas un champ de formulaire, c'est le titre
+ * de l'article. Un éditeur qui voit son titre en 14 px dans une boîte grise
+ * n'a aucune idée de la place qu'il prendra sur une carte.
+ */
+.redactionTitre {
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: var(--police-titre);
+  font-size: 32px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+.redactionTitre::placeholder {
+  color: color-mix(in srgb, var(--encre) 35%, transparent);
+}
+
+.redactionCouverture {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+/* ── Les blocs du corps ─────────────────────────────────────────────────── */
+
+.redactionBloc {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pas-3);
+  padding: var(--pas-2) 0;
+  border-top: 1px solid var(--bordure);
+}
+
+/*
+ * L'étiquette de type fait 74 px, fixes. À largeur libre, « Intertitre » et
+ * « Photo » décaleraient les champs de vingt pixels l'un par rapport à
+ * l'autre, et la colonne de saisie ne serait plus une colonne.
+ */
+.redactionBlocType {
+  flex: none;
+  width: 74px;
+  padding-top: 10px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.redactionBlocChamp {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.redactionIntertitre {
+  font-family: var(--police-titre);
+  font-size: 19px;
+}
+
+.redactionCitation {
+  font-family: var(--police-titre);
+  font-size: 17px;
+}
+
+.redactionBlocGestes {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/*
+ * Les deux gestes restent DISCRETS jusqu'au survol : ils accompagnent
+ * l'écriture, ils ne la disputent pas. Éteints plutôt qu'absents sur le
+ * premier bloc — sinon les autres se décaleraient d'une ligne à l'autre.
+ */
+.redactionGeste {
+  width: 28px;
+  height: 26px;
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--encre);
+  opacity: 0.5;
+  cursor: pointer;
+  transition: opacity var(--transition-couleur);
+}
+
+.redactionGeste:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.redactionGeste:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+
+.redactionAjouts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-2);
+  padding-top: var(--pas-3);
+  border-top: 1px dashed var(--bordure);
+}
+
+.redactionPuces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pas-2);
+}
+
+/* ── La liste de contrôle ───────────────────────────────────────────────── */
+
+.redactionControles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.redactionControle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: color-mix(in srgb, var(--encre) 55%, transparent);
+}
+
+/*
+ * Ce qui MANQUE est en gras et en encre pleine ; ce qui est fait s'efface.
+ * C'est l'inverse d'une liste de courses : on ne regarde pas ce qu'on a déjà.
+ */
+.redactionControleManquant {
+  font-weight: 600;
+  color: var(--encre);
+}
+
+.redactionPastille {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--action);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.redactionControle:not(.redactionControleManquant) .redactionPastille {
+  border-color: var(--region-afrique_ouest-encre);
+  background: var(--region-afrique_ouest-encre);
+  color: var(--fond);
+}
+
+/* ── L'aperçu ───────────────────────────────────────────────────────────── */
+
+.redactionApercu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-6);
+}
+
+.redactionApercuH1 {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 32px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.redactionApercuH2 {
+  margin: var(--pas-3) 0 0;
+  font-family: var(--police-titre);
+  font-size: 21px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+}
+
+.redactionApercuChapeau {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+.redactionApercuCitation {
+  margin: 0;
+  padding-left: var(--pas-3);
+  border-left: 3px solid var(--action);
+  font-family: var(--police-titre);
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--accent-encre);
+}
+
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │

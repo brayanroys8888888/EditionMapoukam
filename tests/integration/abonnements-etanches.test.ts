@@ -109,7 +109,8 @@ beforeAll(async () => {
   await query(
     `insert into public.association_content_translations (content_id, langue, titre, chapeau, corps)
      select id, 'fr', 'Contenu réservé de test', 'Chapeau public.',
-            '[{"titre": "Section", "paragraphes": ["Texte réservé."]}]'::jsonb
+            '[{"type": "intertitre", "texte": "Section"},
+               {"type": "paragraphe", "texte": "Texte réservé."}]'::jsonb
      from public.association_contents where slug = $1
      on conflict (content_id, langue) do nothing`,
     [SLUG_RESERVE],

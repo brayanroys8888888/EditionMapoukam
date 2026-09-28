@@ -93,12 +93,11 @@ async function appelerRoute(
   redirect(`${ecran}?${succes}=1`);
 }
 
-/** Une section du corps, telle que la route l'attend. */
-interface SectionSaisie {
-  titre: string;
-  paragraphes?: string[];
-  points?: string[];
-}
+/** Un bloc du corps, tel que la route l'attend depuis la migration 0103. */
+type BlocSaisi =
+  | { type: 'intertitre'; texte: string }
+  | { type: 'paragraphe'; texte: string }
+  | { type: 'liste'; elements: string[] };
 
 /**
  * Le texte saisi dans une zone de saisie, découpé en sections.
@@ -125,8 +124,8 @@ interface SectionSaisie {
  * section : c'est l'ordre dans lequel l'écran public les affiche, et prétendre
  * ici les entrelacer donnerait un aperçu que la lecture dément.
  */
-function decouperEnSections(brut: string): SectionSaisie[] {
-  const sections: SectionSaisie[] = [];
+function decouperEnBlocs(brut: string): BlocSaisi[] {
+  const blocs: BlocSaisi[] = [];
 
   // `\r\n` autant que `\n` : un texte collé depuis un traitement de texte
   // Windows arriverait sinon avec un retour chariot collé à chaque ligne.
@@ -147,14 +146,122 @@ function decouperEnSections(brut: string): SectionSaisie[] {
       else paragraphes.push(ligne);
     }
 
-    sections.push({
-      titre,
-      ...(paragraphes.length > 0 ? { paragraphes } : {}),
-      ...(points.length > 0 ? { points } : {}),
-    });
+    /*
+     * L'ORDRE EST CELUI DE LA LECTURE : titre, paragraphes, puis puces.
+     *
+     * C'est déjà l'ordre que cette zone de saisie produisait ; le modèle a
+     * changé, pas la convention. Ce formulaire ne sait toujours pas dire une
+     * citation ni une photo — c'est `daveEdit` qui les apportera.
+     */
+    blocs.push({ type: 'intertitre', texte: titre });
+    for (const paragraphe of paragraphes) blocs.push({ type: 'paragraphe', texte: paragraphe });
+    if (points.length > 0) blocs.push({ type: 'liste', elements: points });
   }
 
-  return sections;
+  return blocs;
+}
+
+/**
+ * ENREGISTRER UNE PUBLICATION depuis l'écran de rédaction.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE SLUG EST DÉRIVÉ DU TITRE, ET UNE SEULE FOIS.                         │
+ * │                                                                          │
+ * │ Le cahier des charges §F10 bis l'interdit de modification : c'est        │
+ * │ l'adresse publique du contenu, et les anciennes adresses du blog y       │
+ * │ renvoient. L'écran ne le montre donc pas, et l'action ne le calcule      │
+ * │ qu'à la CRÉATION — sur une mise à jour, c'est celui du contenu qui       │
+ * │ repart, inchangé.                                                        │
+ * │                                                                          │
+ * │ « L'interdit le plus sûr est l'absence du champ », dit la spécification. │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+function enSlug(titre: string): string {
+  return (
+    titre
+      .normalize('NFD')
+      // Les accents partent, la lettre reste : « é » devient « e », et non
+      // rien du tout — sans quoi « rentrée » deviendrait « rentr ».
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 100) || 'publication'
+  );
+}
+
+/** Une case décochée n'envoie RIEN : c'est son absence qui vaut « non ». */
+function coche(donnees: FormData, nom: string): boolean {
+  return donnees.get(nom) === 'oui';
+}
+
+export async function enregistrerRedaction(
+  langueBrute: string,
+  donnees: FormData,
+): Promise<void> {
+  const langue = langueValide(langueBrute);
+  const ecran = `/${langue}/admin/association`;
+
+  const id = texte(donnees, 'id');
+  const titre = texte(donnees, 'titre') ?? '';
+
+  /*
+   * La date et l'heure arrivent séparées, comme l'écran les demande. Sans
+   * jour choisi, il n'y a pas de programmation : un contenu reste brouillon,
+   * ce qui est l'état voulu tant que l'éditeur n'a pas fixé de créneau.
+   */
+  const jour = texte(donnees, 'programme_jour');
+  const heure = texte(donnees, 'programme_heure') ?? '08:00';
+  const programmeLe = jour === undefined ? null : new Date(`${jour}T${heure}:00Z`).toISOString();
+
+  let corps: unknown[] = [];
+  try {
+    const brut: unknown = JSON.parse(texte(donnees, 'corps') ?? '[]');
+    corps = Array.isArray(brut) ? brut : [];
+  } catch {
+    // Un corps illisible n'écrase pas le précédent en silence : on repart
+    // sur un refus de la route, qui dira au moins que la demande était mal
+    // formée. C'est le seul cas où cette action juge quelque chose.
+    redirect(`${ecran}?erreur=corps_illisible`);
+  }
+
+  const publics = (texte(donnees, 'publics') ?? '')
+    .split(',')
+    .map((valeur) => valeur.trim())
+    .filter((valeur) => valeur !== '');
+
+  await appelerRoute(
+    ecran,
+    '/api/admin/association/redaction',
+    'PUT',
+    {
+      ...(id === undefined ? {} : { id }),
+      slug: texte(donnees, 'slug') ?? enSlug(titre),
+      langue,
+      type: texte(donnees, 'type'),
+      categorie: texte(donnees, 'categorie') ?? 'actions',
+      acces: texte(donnees, 'acces') ?? 'abonnes',
+      titre,
+      chapeau: texte(donnees, 'chapeau') ?? '',
+      texte_alternatif: texte(donnees, 'texte_alternatif') ?? '',
+      corps,
+      publics,
+      signe_par: texte(donnees, 'signe_par') ?? null,
+      image_url: texte(donnees, 'image_url') ?? null,
+      video_url: texte(donnees, 'video_url') ?? null,
+      video_minutes: nombre(donnees, 'video_minutes') ?? null,
+      fichier_pdf: texte(donnees, 'fichier_pdf') ?? null,
+      pdf_pages: nombre(donnees, 'pdf_pages') ?? null,
+      evenement_id: texte(donnees, 'evenement_id') ?? null,
+      vedette: coche(donnees, 'vedette'),
+      commentaires_ouverts: coche(donnees, 'commentaires_ouverts'),
+      prevenir_adherents: coche(donnees, 'prevenir_adherents'),
+      programme_le: programmeLe,
+      publier: coche(donnees, 'publier'),
+    },
+    'maj',
+    200,
+  );
 }
 
 export async function creerContenu(langueBrute: string, donnees: FormData): Promise<void> {
@@ -233,7 +340,7 @@ export async function poserVersion(langueBrute: string, donnees: FormData): Prom
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/association`;
 
-  const corps = decouperEnSections(texte(donnees, 'corps') ?? '');
+  const corps = decouperEnBlocs(texte(donnees, 'corps') ?? '');
 
   await appelerRoute(
     ecran,

@@ -128,6 +128,16 @@ export async function deleteTestUser(user: Pick<TestUser, 'id'>): Promise<void> 
   // compte de test bloquerait sinon sa suppression, et le message parlerait
   // d'une contrainte plutot que d'un avis.
   await query(`delete from public.book_reviews where user_id = $1`, [user.id]);
+  /*
+   * Les traces de l'espace associatif — coeurs, inscriptions, commentaires.
+   * Les trois references a `users` sont en `on delete restrict` (migration
+   * 0100), donc la suppression du compte echouerait sans cette ligne.
+   *
+   * On appelle la FONCTION, jamais trois `delete` recopies : c'est la meme
+   * qu'emploie `anonymize_user`, et l'ordre y est deja juste (un coeur
+   * reference un commentaire).
+   */
+  await query(`select public.association_effacer_traces($1)`, [user.id]);
   await query(`delete from public.promo_redemptions where user_id = $1`, [user.id]);
   await query(`delete from public.payment_events where user_id = $1`, [user.id]);
   await query(`delete from public.invoices where user_id = $1`, [user.id]);

@@ -2,7 +2,6 @@ import { createServiceClient } from '@/lib/supabase/clients';
 import type { AppSupabaseClient } from '@/lib/supabase/clients';
 import type { MotifAcces } from '@/domain/access/types';
 import type { LangueInterface } from '@/i18n';
-import type { Section } from '@/content/editorial';
 
 /**
  * ┌──────────────────────────────────────────────────────────────────────────┐
@@ -74,7 +73,7 @@ export interface ContenuAssociatif {
 
 /** Le détail. Le corps est `null` dès que `peutLire` est faux. */
 export interface ContenuAssociatifDetaille extends Omit<ContenuAssociatif, 'vedette'> {
-  sections: Section[] | null;
+  blocs: Bloc[] | null;
 }
 
 interface LigneListe {
@@ -96,40 +95,70 @@ interface LigneDetail extends Omit<LigneListe, 'vedette'> {
 }
 
 /**
- * Le corps est du JSON en base : on le RELIT plutôt qu'on ne l'affirme.
+ * UN BLOC DE CORPS — la forme que l'éditeur produit et que l'article rend.
  *
- * `corps` est contraint à un tableau par la base, mais rien n'y contraint la
- * forme de chaque élément — le back-office écrit ce que l'éditeur saisit. Une
- * section mal formée est écartée ici plutôt que de faire tomber la page
- * entière sur un `undefined` en plein rendu.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CINQ TYPES, ET LA BASE LES VÉRIFIE AUSSI.                               │
+ * │                                                                          │
+ * │ `corps_associatif_valide` (migration 0103) refuse un bloc inconnu à      │
+ * │ l'écriture. Ce lecteur le refuse à nouveau à la LECTURE, et ce n'est pas │
+ * │ une répétition inutile : la base garde ce qui entre, ce lecteur garde    │
+ * │ l'écran debout devant ce qui y serait entré autrement — par une          │
+ * │ migration, une reprise de données, une main sur psql.                    │
+ * │                                                                          │
+ * │ Un bloc mal formé est ÉCARTÉ, jamais rendu à moitié : une photo sans     │
+ * │ adresse laisserait un cadre vide que le lecteur prendrait pour une       │
+ * │ image qui n'a pas chargé.                                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
-function enSection(brut: unknown): Section | null {
-  if (typeof brut !== 'object' || brut === null) return null;
+export type Bloc =
+  | { type: 'intertitre'; texte: string }
+  | { type: 'paragraphe'; texte: string }
+  | { type: 'liste'; elements: string[] }
+  | { type: 'citation'; texte: string }
+  | { type: 'photo'; url: string; legende?: string };
 
-  const objet = brut as Record<string, unknown>;
-  if (typeof objet.titre !== 'string' || objet.titre.trim() === '') return null;
-
-  // `every` avec un prédicat de type suffit à restreindre le tableau : pas
-  // d'assertion à écrire ici, et c'est mieux ainsi — une assertion aurait
-  // affirmé ce que la vérification démontre.
-  const textes = (valeur: unknown): string[] | undefined =>
-    Array.isArray(valeur) && valeur.every((element) => typeof element === 'string')
-      ? valeur
-      : undefined;
-
-  const paragraphes = textes(objet.paragraphes);
-  const points = textes(objet.points);
-
-  return {
-    titre: objet.titre,
-    ...(paragraphes && paragraphes.length > 0 ? { paragraphes } : {}),
-    ...(points && points.length > 0 ? { points } : {}),
-  };
+function texteNonVide(valeur: unknown): string | null {
+  return typeof valeur === 'string' && valeur.trim() !== '' ? valeur : null;
 }
 
-function enSections(brut: unknown): Section[] {
+function enBloc(brut: unknown): Bloc | null {
+  if (typeof brut !== 'object' || brut === null) return null;
+  const objet = brut as Record<string, unknown>;
+
+  switch (objet.type) {
+    case 'intertitre':
+    case 'paragraphe':
+    case 'citation': {
+      const texte = texteNonVide(objet.texte);
+      return texte === null ? null : { type: objet.type, texte };
+    }
+
+    case 'liste': {
+      // `every` avec un prédicat de type suffit à restreindre le tableau :
+      // aucune assertion à écrire, et c'est mieux ainsi — une assertion
+      // affirmerait ce que la vérification démontre.
+      const elements = Array.isArray(objet.elements)
+        ? objet.elements.filter((element): element is string => typeof element === 'string')
+        : [];
+      return elements.length > 0 ? { type: 'liste', elements } : null;
+    }
+
+    case 'photo': {
+      const url = texteNonVide(objet.url);
+      if (url === null) return null;
+      const legende = texteNonVide(objet.legende);
+      return { type: 'photo', url, ...(legende === null ? {} : { legende }) };
+    }
+
+    default:
+      return null;
+  }
+}
+
+function enBlocs(brut: unknown): Bloc[] {
   if (!Array.isArray(brut)) return [];
-  return brut.map(enSection).filter((section): section is Section => section !== null);
+  return brut.map(enBloc).filter((bloc): bloc is Bloc => bloc !== null);
 }
 
 /**
@@ -216,7 +245,7 @@ export async function lireContenuAssociatif(
     chapeau: ligne.chapeau ?? '',
     // `null` et non `[]` : « verrouillé » et « publié sans texte » ne se
     // ressemblent pas à l'écran, et l'un des deux affiche un cadenas.
-    sections: ligne.can_read ? enSections(ligne.corps) : null,
+    blocs: ligne.can_read ? enBlocs(ligne.corps) : null,
     peutLire: ligne.can_read,
     motif: ligne.reason,
   };

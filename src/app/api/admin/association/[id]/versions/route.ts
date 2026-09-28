@@ -26,11 +26,30 @@ import { parseJsonBody } from '@/lib/http/validate';
  * `PUT` : écrire deux fois la même version donne le même résultat. La fonction
  * SQL insère ou remplace la ligne `(contenu, langue)`.
  */
-const sectionSchema = z.object({
-  titre: z.string().trim().min(1).max(200),
-  paragraphes: z.array(z.string().trim().min(1).max(4000)).max(50).optional(),
-  points: z.array(z.string().trim().min(1).max(1000)).max(50).optional(),
-});
+/*
+ * LES CINQ BLOCS, ÉNUMÉRÉS.
+ *
+ * Le corps était une suite de SECTIONS `{titre, paragraphes, points}` ; il est
+ * une suite de BLOCS depuis la migration 0103, qui sait dire une citation et
+ * une photo — et qui laisse un article commencer par du texte.
+ *
+ * `discriminatedUnion` et non `union` : le message d'erreur nomme alors le
+ * type fautif au lieu d'énumérer les cinq formes possibles.
+ */
+const blocSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('intertitre'), texte: z.string().trim().min(1).max(300) }),
+  z.object({ type: z.literal('paragraphe'), texte: z.string().trim().min(1).max(4000) }),
+  z.object({ type: z.literal('citation'), texte: z.string().trim().min(1).max(1000) }),
+  z.object({
+    type: z.literal('liste'),
+    elements: z.array(z.string().trim().min(1).max(1000)).min(1).max(50),
+  }),
+  z.object({
+    type: z.literal('photo'),
+    url: z.string().trim().min(1).max(500),
+    legende: z.string().trim().max(300).optional(),
+  }),
+]);
 
 const versionSchema = z.object({
   // Les deux langues de l'interface, et elles seules : une version dans une
@@ -38,7 +57,7 @@ const versionSchema = z.object({
   langue: z.enum(LANGUES_INTERFACE),
   titre: z.string().trim().min(1).max(200),
   chapeau: z.string().trim().max(400).nullable().default(null),
-  corps: z.array(sectionSchema).max(80).nullable().default(null),
+  corps: z.array(blocSchema).max(200).nullable().default(null),
 });
 
 export async function PUT(

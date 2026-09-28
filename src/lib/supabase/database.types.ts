@@ -96,6 +96,150 @@ export type Database = {
           },
         ]
       }
+      association_campaign_regions: {
+        Row: {
+          campaign_id: string
+          kits: number
+          region: string
+        }
+        Insert: {
+          campaign_id: string
+          kits?: number
+          region: string
+        }
+        Update: {
+          campaign_id?: string
+          kits?: number
+          region?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_campaign_regions_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "association_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_campaigns: {
+        Row: {
+          actif: boolean
+          cree_le: string
+          fin_le: string | null
+          id: string
+          intitule: string
+          maj_le: string
+          objectif_kits: number
+        }
+        Insert: {
+          actif?: boolean
+          cree_le?: string
+          fin_le?: string | null
+          id?: string
+          intitule: string
+          maj_le?: string
+          objectif_kits: number
+        }
+        Update: {
+          actif?: boolean
+          cree_le?: string
+          fin_le?: string | null
+          id?: string
+          intitule?: string
+          maj_le?: string
+          objectif_kits?: number
+        }
+        Relationships: []
+      }
+      association_comment_likes: {
+        Row: {
+          comment_id: string
+          pose_le: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          pose_le?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          pose_le?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "association_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_comment_likes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_comments: {
+        Row: {
+          content_id: string
+          cree_le: string
+          id: string
+          modere_le: string | null
+          modere_par: string | null
+          statut: Database["public"]["Enums"]["statut_commentaire"]
+          texte: string
+          user_id: string
+        }
+        Insert: {
+          content_id: string
+          cree_le?: string
+          id?: string
+          modere_le?: string | null
+          modere_par?: string | null
+          statut?: Database["public"]["Enums"]["statut_commentaire"]
+          texte: string
+          user_id: string
+        }
+        Update: {
+          content_id?: string
+          cree_le?: string
+          id?: string
+          modere_le?: string | null
+          modere_par?: string | null
+          statut?: Database["public"]["Enums"]["statut_commentaire"]
+          texte?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_comments_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "association_contents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_comments_modere_par_fkey"
+            columns: ["modere_par"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       association_content_translations: {
         Row: {
           chapeau: string
@@ -104,6 +248,7 @@ export type Database = {
           id: string
           langue: string
           maj_le: string
+          texte_alternatif: string
           titre: string
         }
         Insert: {
@@ -113,6 +258,7 @@ export type Database = {
           id?: string
           langue: string
           maj_le?: string
+          texte_alternatif?: string
           titre: string
         }
         Update: {
@@ -122,6 +268,7 @@ export type Database = {
           id?: string
           langue?: string
           maj_le?: string
+          texte_alternatif?: string
           titre?: string
         }
         Relationships: [
@@ -138,44 +285,193 @@ export type Database = {
         Row: {
           acces: Database["public"]["Enums"]["association_access"]
           categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
           cree_le: string
+          email_envoye_le: string | null
+          evenement_id: string | null
+          fichier_pdf: string | null
           id: string
           image_url: string | null
           maj_le: string
           minutes: number | null
           ordre: number
+          pdf_pages: number | null
+          prevenir_adherents: boolean
+          programme_le: string | null
+          publics: Database["public"]["Enums"]["public_association"][]
           publie_le: string | null
+          signe_par: string
           slug: string
           statut: Database["public"]["Enums"]["translation_status"]
+          type_publication: Database["public"]["Enums"]["type_publication"]
           vedette: boolean
+          video_minutes: number | null
+          video_url: string | null
+          vues: number
         }
         Insert: {
           acces?: Database["public"]["Enums"]["association_access"]
           categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts?: boolean
           cree_le?: string
+          email_envoye_le?: string | null
+          evenement_id?: string | null
+          fichier_pdf?: string | null
           id?: string
           image_url?: string | null
           maj_le?: string
           minutes?: number | null
           ordre?: number
+          pdf_pages?: number | null
+          prevenir_adherents?: boolean
+          programme_le?: string | null
+          publics?: Database["public"]["Enums"]["public_association"][]
           publie_le?: string | null
+          signe_par?: string
           slug: string
           statut?: Database["public"]["Enums"]["translation_status"]
+          type_publication?: Database["public"]["Enums"]["type_publication"]
           vedette?: boolean
+          video_minutes?: number | null
+          video_url?: string | null
+          vues?: number
         }
         Update: {
           acces?: Database["public"]["Enums"]["association_access"]
           categorie?: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts?: boolean
           cree_le?: string
+          email_envoye_le?: string | null
+          evenement_id?: string | null
+          fichier_pdf?: string | null
           id?: string
           image_url?: string | null
           maj_le?: string
           minutes?: number | null
           ordre?: number
+          pdf_pages?: number | null
+          prevenir_adherents?: boolean
+          programme_le?: string | null
+          publics?: Database["public"]["Enums"]["public_association"][]
           publie_le?: string | null
+          signe_par?: string
           slug?: string
           statut?: Database["public"]["Enums"]["translation_status"]
+          type_publication?: Database["public"]["Enums"]["type_publication"]
           vedette?: boolean
+          video_minutes?: number | null
+          video_url?: string | null
+          vues?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_contents_evenement_fkey"
+            columns: ["evenement_id"]
+            isOneToOne: false
+            referencedRelation: "association_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_event_registrations: {
+        Row: {
+          event_id: string
+          inscrit_le: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          inscrit_le?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          inscrit_le?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "association_event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "association_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "association_event_registrations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      association_events: {
+        Row: {
+          cree_le: string
+          debut_le: string
+          description: string
+          id: string
+          lien: string | null
+          lieu: string | null
+          maj_le: string
+          places: number
+          publics: Database["public"]["Enums"]["public_association"][]
+          titre: string
+          type_evenement: Database["public"]["Enums"]["type_evenement"]
+        }
+        Insert: {
+          cree_le?: string
+          debut_le: string
+          description?: string
+          id?: string
+          lien?: string | null
+          lieu?: string | null
+          maj_le?: string
+          places: number
+          publics?: Database["public"]["Enums"]["public_association"][]
+          titre: string
+          type_evenement: Database["public"]["Enums"]["type_evenement"]
+        }
+        Update: {
+          cree_le?: string
+          debut_le?: string
+          description?: string
+          id?: string
+          lien?: string | null
+          lieu?: string | null
+          maj_le?: string
+          places?: number
+          publics?: Database["public"]["Enums"]["public_association"][]
+          titre?: string
+          type_evenement?: Database["public"]["Enums"]["type_evenement"]
+        }
+        Relationships: []
+      }
+      association_words: {
+        Row: {
+          actif: boolean
+          cree_le: string
+          id: string
+          maj_le: string
+          signature: string
+          texte: string
+        }
+        Insert: {
+          actif?: boolean
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          signature?: string
+          texte: string
+        }
+        Update: {
+          actif?: boolean
+          cree_le?: string
+          id?: string
+          maj_le?: string
+          signature?: string
+          texte?: string
         }
         Relationships: []
       }
@@ -2011,16 +2307,29 @@ export type Database = {
         Returns: {
           acces: Database["public"]["Enums"]["association_access"]
           categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
           cree_le: string
+          email_envoye_le: string | null
+          evenement_id: string | null
+          fichier_pdf: string | null
           id: string
           image_url: string | null
           maj_le: string
           minutes: number | null
           ordre: number
+          pdf_pages: number | null
+          prevenir_adherents: boolean
+          programme_le: string | null
+          publics: Database["public"]["Enums"]["public_association"][]
           publie_le: string | null
+          signe_par: string
           slug: string
           statut: Database["public"]["Enums"]["translation_status"]
+          type_publication: Database["public"]["Enums"]["type_publication"]
           vedette: boolean
+          video_minutes: number | null
+          video_url: string | null
+          vues: number
         }
         SetofOptions: {
           from: "*"
@@ -2110,6 +2419,81 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_enregistrer_campagne: {
+        Args: {
+          p_acteur: string
+          p_fin_le?: string
+          p_id: string
+          p_intitule: string
+          p_objectif_kits: number
+          p_regions?: Json
+        }
+        Returns: {
+          actif: boolean
+          cree_le: string
+          fin_le: string | null
+          id: string
+          intitule: string
+          maj_le: string
+          objectif_kits: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_campaigns"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_enregistrer_evenement: {
+        Args: {
+          p_acteur: string
+          p_debut_le: string
+          p_description?: string
+          p_id: string
+          p_lien?: string
+          p_lieu?: string
+          p_places: number
+          p_publics?: Database["public"]["Enums"]["public_association"][]
+          p_titre: string
+          p_type: Database["public"]["Enums"]["type_evenement"]
+        }
+        Returns: {
+          cree_le: string
+          debut_le: string
+          description: string
+          id: string
+          lien: string | null
+          lieu: string | null
+          maj_le: string
+          places: number
+          publics: Database["public"]["Enums"]["public_association"][]
+          titre: string
+          type_evenement: Database["public"]["Enums"]["type_evenement"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_enregistrer_mot_du_mois: {
+        Args: { p_acteur: string; p_signature?: string; p_texte: string }
+        Returns: {
+          actif: boolean
+          cree_le: string
+          id: string
+          maj_le: string
+          signature: string
+          texte: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_words"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_enregistrer_promo: {
         Args: {
           p_acteur: string
@@ -2144,6 +2528,67 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_enregistrer_publication: {
+        Args: {
+          p_acces: Database["public"]["Enums"]["association_access"]
+          p_acteur: string
+          p_categorie: Database["public"]["Enums"]["association_category"]
+          p_chapeau: string
+          p_commentaires_ouverts?: boolean
+          p_corps: Json
+          p_evenement_id?: string
+          p_fichier_pdf?: string
+          p_id: string
+          p_image_url?: string
+          p_langue: string
+          p_pdf_pages?: number
+          p_prevenir_adherents?: boolean
+          p_programme_le?: string
+          p_publics?: Database["public"]["Enums"]["public_association"][]
+          p_publier?: boolean
+          p_signe_par?: string
+          p_slug: string
+          p_texte_alternatif: string
+          p_titre: string
+          p_type: Database["public"]["Enums"]["type_publication"]
+          p_vedette?: boolean
+          p_video_minutes?: number
+          p_video_url?: string
+        }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
+          cree_le: string
+          email_envoye_le: string | null
+          evenement_id: string | null
+          fichier_pdf: string | null
+          id: string
+          image_url: string | null
+          maj_le: string
+          minutes: number | null
+          ordre: number
+          pdf_pages: number | null
+          prevenir_adherents: boolean
+          programme_le: string | null
+          publics: Database["public"]["Enums"]["public_association"][]
+          publie_le: string | null
+          signe_par: string
+          slug: string
+          statut: Database["public"]["Enums"]["translation_status"]
+          type_publication: Database["public"]["Enums"]["type_publication"]
+          vedette: boolean
+          video_minutes: number | null
+          video_url: string | null
+          vues: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_contents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_enregistrer_temoignage: {
         Args: {
           p_acteur: string
@@ -2167,6 +2612,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_inscrits_evenement: {
+        Args: { p_event_id: string }
+        Returns: {
+          email: string
+          inscrit_le: string
+          nom: string
+        }[]
+      }
       admin_lire_abonnement: {
         Args: { p_subscription_id: string }
         Returns: {
@@ -2188,6 +2641,17 @@ export type Database = {
           statut: Database["public"]["Enums"]["subscription_status"]
           statut_observe: Database["public"]["Enums"]["subscription_status_effectif"]
           zone: Database["public"]["Enums"]["price_zone"]
+        }[]
+      }
+      admin_lire_campagne: {
+        Args: never
+        Returns: {
+          fin_le: string
+          id: string
+          intitule: string
+          objectif_kits: number
+          regions: Json
+          total: number
         }[]
       }
       admin_lire_commande: {
@@ -2241,6 +2705,15 @@ export type Database = {
           themes: string[]
           traductions: Json
           type_document: Database["public"]["Enums"]["document_type"]
+        }[]
+      }
+      admin_lire_mot_du_mois: {
+        Args: never
+        Returns: {
+          id: string
+          maj_le: string
+          signature: string
+          texte: string
         }[]
       }
       admin_lire_temoignage: { Args: { p_id: string }; Returns: Json }
@@ -2345,6 +2818,20 @@ export type Database = {
           zone: Database["public"]["Enums"]["price_zone"]
         }[]
       }
+      admin_lister_commentaires_association: {
+        Args: { p_statut?: Database["public"]["Enums"]["statut_commentaire"] }
+        Returns: {
+          auteur_email: string
+          auteur_nom: string
+          content_id: string
+          contenu_slug: string
+          contenu_titre: string
+          cree_le: string
+          id: string
+          statut: Database["public"]["Enums"]["statut_commentaire"]
+          texte: string
+        }[]
+      }
       admin_lister_contenus_association: {
         Args: never
         Returns: {
@@ -2358,6 +2845,22 @@ export type Database = {
           statut: Database["public"]["Enums"]["translation_status"]
           titre: string
           vedette: boolean
+        }[]
+      }
+      admin_lister_evenements: {
+        Args: { p_at?: string }
+        Returns: {
+          debut_le: string
+          description: string
+          id: string
+          inscrits: number
+          lien: string
+          lieu: string
+          passe: boolean
+          places: number
+          publics: Database["public"]["Enums"]["public_association"][]
+          titre: string
+          type_evenement: Database["public"]["Enums"]["type_evenement"]
         }[]
       }
       admin_lister_livres: {
@@ -2425,6 +2928,28 @@ export type Database = {
           zone: Database["public"]["Enums"]["price_zone"]
         }[]
       }
+      admin_lister_publications_association: {
+        Args: {
+          p_langue?: string
+          p_type?: Database["public"]["Enums"]["type_publication"]
+        }
+        Returns: {
+          acces: Database["public"]["Enums"]["association_access"]
+          categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
+          etat: Database["public"]["Enums"]["statut_publication"]
+          id: string
+          langues: string[]
+          nb_commentaires: number
+          programme_le: string
+          publie_le: string
+          slug: string
+          titre: string
+          type_publication: Database["public"]["Enums"]["type_publication"]
+          vedette: boolean
+          vues: number
+        }[]
+      }
       admin_lister_temoignages: {
         Args: never
         Returns: {
@@ -2486,6 +3011,29 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_moderer_commentaire: {
+        Args: {
+          p_acteur: string
+          p_commentaire: string
+          p_decision: Database["public"]["Enums"]["statut_commentaire"]
+        }
+        Returns: {
+          content_id: string
+          cree_le: string
+          id: string
+          modere_le: string | null
+          modere_par: string | null
+          statut: Database["public"]["Enums"]["statut_commentaire"]
+          texte: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "association_comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_modifier_contenu_association: {
         Args: {
           p_acces?: Database["public"]["Enums"]["association_access"]
@@ -2500,16 +3048,29 @@ export type Database = {
         Returns: {
           acces: Database["public"]["Enums"]["association_access"]
           categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
           cree_le: string
+          email_envoye_le: string | null
+          evenement_id: string | null
+          fichier_pdf: string | null
           id: string
           image_url: string | null
           maj_le: string
           minutes: number | null
           ordre: number
+          pdf_pages: number | null
+          prevenir_adherents: boolean
+          programme_le: string | null
+          publics: Database["public"]["Enums"]["public_association"][]
           publie_le: string | null
+          signe_par: string
           slug: string
           statut: Database["public"]["Enums"]["translation_status"]
+          type_publication: Database["public"]["Enums"]["type_publication"]
           vedette: boolean
+          video_minutes: number | null
+          video_url: string | null
+          vues: number
         }
         SetofOptions: {
           from: "*"
@@ -2728,6 +3289,7 @@ export type Database = {
           id: string
           langue: string
           maj_le: string
+          texte_alternatif: string
           titre: string
         }
         SetofOptions: {
@@ -2737,21 +3299,43 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_prochains_jeudis: {
+        Args: { p_at?: string; p_nb?: number }
+        Returns: {
+          content_id: string
+          etat: Database["public"]["Enums"]["statut_publication"]
+          jour: string
+          titre: string
+        }[]
+      }
       admin_publier_contenu_association: {
         Args: { p_acteur: string; p_id: string; p_publie: boolean }
         Returns: {
           acces: Database["public"]["Enums"]["association_access"]
           categorie: Database["public"]["Enums"]["association_category"]
+          commentaires_ouverts: boolean
           cree_le: string
+          email_envoye_le: string | null
+          evenement_id: string | null
+          fichier_pdf: string | null
           id: string
           image_url: string | null
           maj_le: string
           minutes: number | null
           ordre: number
+          pdf_pages: number | null
+          prevenir_adherents: boolean
+          programme_le: string | null
+          publics: Database["public"]["Enums"]["public_association"][]
           publie_le: string | null
+          signe_par: string
           slug: string
           statut: Database["public"]["Enums"]["translation_status"]
+          type_publication: Database["public"]["Enums"]["type_publication"]
           vedette: boolean
+          video_minutes: number | null
+          video_url: string | null
+          vues: number
         }
         SetofOptions: {
           from: "*"
@@ -2801,10 +3385,12 @@ export type Database = {
       admin_stats_association: {
         Args: { p_at?: string }
         Returns: {
+          a_moderer: number
           a_renouveler: number
           adherents: number
           brouillons: number
           derniere_publication: string
+          prochaine_publication: string
         }[]
       }
       admin_stats_commandes: {
@@ -2864,6 +3450,11 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      association_campagne_total: {
+        Args: { p_campaign_id: string }
+        Returns: number
+      }
+      association_compter_vue: { Args: { p_id: string }; Returns: undefined }
       association_contenu: {
         Args: {
           p_at?: string
@@ -2885,6 +3476,10 @@ export type Database = {
           titre: string
         }[]
       }
+      association_effacer_traces: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       association_liste: {
         Args: { p_at?: string; p_langue?: string; p_user?: string }
         Returns: {
@@ -2900,6 +3495,10 @@ export type Database = {
           titre: string
           vedette: boolean
         }[]
+      }
+      association_places_restantes: {
+        Args: { p_event_id: string }
+        Returns: number
       }
       book_review_summary: {
         Args: { p_books: string[] }
@@ -2970,6 +3569,7 @@ export type Database = {
           dernier_acces_le: string
         }[]
       }
+      corps_associatif_valide: { Args: { p_corps: Json }; Returns: boolean }
       create_order: {
         Args: {
           p_devise: string
@@ -3328,6 +3928,13 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["statut_promo"]
       }
+      statut_publication: {
+        Args: {
+          p_programme_le: string
+          p_statut: Database["public"]["Enums"]["translation_status"]
+        }
+        Returns: Database["public"]["Enums"]["statut_publication"]
+      }
       taille_page_admin: { Args: { p_demandee: number }; Returns: number }
       temoignages: {
         Args: { p_langue?: string; p_limite?: number }
@@ -3373,6 +3980,12 @@ export type Database = {
       page_orientation: "paysage" | "portrait"
       price_zone: "international" | "afrique"
       promo_type: "montant" | "pourcentage"
+      public_association:
+        | "parents"
+        | "enseignants"
+        | "pro_handicap"
+        | "donateurs"
+        | "partenaires"
       region_conte:
         | "afrique_ouest"
         | "sahel"
@@ -3380,7 +3993,9 @@ export type Database = {
         | "afrique_australe"
         | "afrique_est"
       review_status: "en_attente" | "publie" | "rejete"
+      statut_commentaire: "en_attente" | "publie" | "masque"
       statut_promo: "inactif" | "programme" | "expire" | "epuise" | "actif"
+      statut_publication: "brouillon" | "programme" | "publie"
       subscription_domain: "lecture" | "association"
       subscription_status: "essai" | "actif" | "annule" | "impaye" | "expire"
       subscription_status_effectif:
@@ -3391,6 +4006,15 @@ export type Database = {
         | "expire"
         | "anomalie"
       translation_status: "brouillon" | "publie"
+      type_evenement:
+        | "atelier_presentiel"
+        | "seminaire_en_ligne"
+        | "formation_enseignants"
+      type_publication:
+        | "compte_rendu"
+        | "recit_terrain"
+        | "fiche_pdf"
+        | "replay"
       user_role: "user" | "admin"
       user_status: "actif" | "suspendu" | "anonymise"
     }
@@ -3573,6 +4197,13 @@ export const Constants = {
       page_orientation: ["paysage", "portrait"],
       price_zone: ["international", "afrique"],
       promo_type: ["montant", "pourcentage"],
+      public_association: [
+        "parents",
+        "enseignants",
+        "pro_handicap",
+        "donateurs",
+        "partenaires",
+      ],
       region_conte: [
         "afrique_ouest",
         "sahel",
@@ -3581,7 +4212,9 @@ export const Constants = {
         "afrique_est",
       ],
       review_status: ["en_attente", "publie", "rejete"],
+      statut_commentaire: ["en_attente", "publie", "masque"],
       statut_promo: ["inactif", "programme", "expire", "epuise", "actif"],
+      statut_publication: ["brouillon", "programme", "publie"],
       subscription_domain: ["lecture", "association"],
       subscription_status: ["essai", "actif", "annule", "impaye", "expire"],
       subscription_status_effectif: [
@@ -3593,6 +4226,17 @@ export const Constants = {
         "anomalie",
       ],
       translation_status: ["brouillon", "publie"],
+      type_evenement: [
+        "atelier_presentiel",
+        "seminaire_en_ligne",
+        "formation_enseignants",
+      ],
+      type_publication: [
+        "compte_rendu",
+        "recit_terrain",
+        "fiche_pdf",
+        "replay",
+      ],
       user_role: ["user", "admin"],
       user_status: ["actif", "suspendu", "anonymise"],
     },

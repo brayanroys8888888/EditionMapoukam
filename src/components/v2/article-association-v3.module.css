@@ -170,6 +170,56 @@
   color: var(--encre);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA CITATION ET LA FIGURE N'ONT PAS DE COTE RELEVÉE.                      │
+ * │                                                                          │
+ * │ L'article du prototype n'en contient aucune : le modèle en blocs les     │
+ * │ permet depuis la migration 0103, la maquette ne les montre pas. Elles    │
+ * │ prennent donc la mesure de ce qui les entoure — le filet de l'accent,    │
+ * │ comme les puces de liste, et le rayon de la photo de tête divisé par     │
+ * │ deux pour une image qui n'est pas la couverture.                         │
+ * │                                                                          │
+ * │ Elles seront relevées le jour où le prototype en portera une. D'ici là,  │
+ * │ elles sont COHÉRENTES, pas mesurées — et c'est dit ici plutôt que        │
+ * │ découvert au prochain relèvement.                                        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.citation {
+  margin: 0 0 20px;
+  padding-left: 18px;
+  border-left: 3px solid var(--action);
+  font-family: var(--police-titre);
+  font-size: 22px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  color: var(--accent-encre);
+}
+
+.figure {
+  margin: 0 0 28px;
+}
+
+.figure img {
+  display: block;
+  width: 100%;
+  border-radius: 15px;
+  object-fit: cover;
+}
+
+/*
+ * La légende ACCOMPAGNE l'image : plus petite que le corps, et moins appuyée.
+ * À la même taille, elle se lirait comme un paragraphe et couperait la lecture.
+ */
+.figure figcaption {
+  margin-top: 8px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+
 /* ── Le mur d'adhésion ──────────────────────────────────────────────────── */
 
 .mur {

@@ -167,7 +167,7 @@ export default async function PageContenuAssociatif({ params }: Parametres) {
    * │ sa place, après le texte, quand le lecteur a vu ce que l'association │
    * │ produit.                                                             │
    * │                                                                      │
-   * │ `contenu.sections` est LU, jamais déduit : c'est la base qui rend le │
+   * │ `contenu.blocs` est LU, jamais déduit : c'est la base qui rend le    │
    * │ corps à `null` quand le droit est fermé. Cet écran ne compare aucun  │
    * │ abonnement — `frontend-architecture` l'interdit.                     │
    * └──────────────────────────────────────────────────────────────────────┘
@@ -259,25 +259,32 @@ export default async function PageContenuAssociatif({ params }: Parametres) {
         </p>
 
         {/* ── Le corps, quand le droit est ouvert ───────────────────────── */}
-        {contenu.sections ? (
+        {contenu.blocs ? (
           <div className={styles.corps}>
-            {contenu.sections.map((section) => (
-              <section key={section.titre}>
-                <h2>{section.titre}</h2>
+            {/*
+              LA V2 REND LES MÊMES BLOCS, PLUS SOBREMENT.
 
-                {section.paragraphes?.map((paragraphe) => (
-                  <p key={paragraphe}>{paragraphe}</p>
-                ))}
-
-                {section.points ? (
-                  <ul>
-                    {section.points.map((point) => (
-                      <li key={point}>{point}</li>
+              Elle n'a ni figure ni citation dessinées : une citation y passe
+              en paragraphe, une photo en image simple. C'est un rendu
+              dégradé, jamais un rendu FAUX — aucun texte ne disparaît.
+            */}
+            {contenu.blocs.map((bloc, rang) => {
+              const cle = `${bloc.type}-${String(rang)}`;
+              if (bloc.type === 'intertitre') return <h2 key={cle}>{bloc.texte}</h2>;
+              if (bloc.type === 'liste') {
+                return (
+                  <ul key={cle}>
+                    {bloc.elements.map((element) => (
+                      <li key={element}>{element}</li>
                     ))}
                   </ul>
-                ) : null}
-              </section>
-            ))}
+                );
+              }
+              if (bloc.type === 'photo') {
+                return <img key={cle} src={bloc.url} alt="" loading="lazy" decoding="async" />;
+              }
+              return <p key={cle}>{bloc.texte}</p>;
+            })}
           </div>
         ) : (
           /*
@@ -328,7 +335,7 @@ export default async function PageContenuAssociatif({ params }: Parametres) {
           domaine `association` n'est pas décoratif — les deux abonnements
           sont étanches, et celui de lecture n'ouvrirait pas cet espace.
         */}
-        {contenu.sections ? (
+        {contenu.blocs ? (
           <div className={styles.mur}>
             {logo}
             <h2 className={styles.murTitre}>{presentation.appel.titre}</h2>

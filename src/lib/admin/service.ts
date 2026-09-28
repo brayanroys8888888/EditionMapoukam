@@ -895,6 +895,200 @@ export async function statsAssociation(options: { client?: AppSupabaseClient } =
   return await appeler<unknown[]>(client, 'admin_stats_association', {});
 }
 
+/* ── L'Association DAVE : publications, agenda, modération, campagne ─────── */
+
+export async function listerPublicationsAssociation(
+  filtres: { type?: string | null; langue?: string } = {},
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lister_publications_association', {
+    p_type: filtres.type ?? null,
+    p_langue: filtres.langue ?? 'fr',
+  });
+}
+
+/** Les quatre prochains jeudis, et ce qui y est programmé. */
+export async function prochainsJeudis(
+  nb = 4,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_prochains_jeudis', { p_nb: nb });
+}
+
+export async function listerCommentairesAssociation(
+  statut: 'en_attente' | 'publie' | 'masque' = 'en_attente',
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lister_commentaires_association', {
+    p_statut: statut,
+  });
+}
+
+export async function modererCommentaireAssociation(
+  acteur: ActeurId,
+  commentaire: string,
+  decision: 'publie' | 'masque',
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_moderer_commentaire', {
+    p_acteur: acteur,
+    p_commentaire: commentaire,
+    p_decision: decision,
+  });
+}
+
+export async function listerEvenementsAssociation(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lister_evenements', {});
+}
+
+export async function enregistrerEvenementAssociation(
+  acteur: ActeurId,
+  evenement: {
+    id?: string | null;
+    type: string;
+    titre: string;
+    debutLe: string;
+    places: number;
+    lieu?: string | null;
+    lien?: string | null;
+    description?: string;
+    publics?: string[];
+  },
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_enregistrer_evenement', {
+    p_acteur: acteur,
+    p_id: evenement.id ?? null,
+    p_type: evenement.type,
+    p_titre: evenement.titre,
+    p_debut_le: evenement.debutLe,
+    p_places: evenement.places,
+    p_lieu: evenement.lieu ?? null,
+    p_lien: evenement.lien ?? null,
+    p_description: evenement.description ?? '',
+    p_publics: evenement.publics ?? [],
+  });
+}
+
+export async function inscritsEvenement(
+  evenement: string,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_inscrits_evenement', { p_event_id: evenement });
+}
+
+export async function lireMotDuMois(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lire_mot_du_mois', {});
+}
+
+export async function enregistrerMotDuMois(
+  acteur: ActeurId,
+  texte: string,
+  signature: string | null,
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_enregistrer_mot_du_mois', {
+    p_acteur: acteur,
+    p_texte: texte,
+    p_signature: signature,
+  });
+}
+
+export async function lireCampagne(options: { client?: AppSupabaseClient } = {}) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown[]>(client, 'admin_lire_campagne', {});
+}
+
+export async function enregistrerCampagne(
+  acteur: ActeurId,
+  campagne: {
+    id?: string | null;
+    intitule: string;
+    objectifKits: number;
+    finLe?: string | null;
+    regions: { region: string; kits: number }[];
+  },
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_enregistrer_campagne', {
+    p_acteur: acteur,
+    p_id: campagne.id ?? null,
+    p_intitule: campagne.intitule,
+    p_objectif_kits: campagne.objectifKits,
+    p_fin_le: campagne.finLe ?? null,
+    p_regions: campagne.regions,
+  });
+}
+
+/** Écrit une publication et sa version française, dans la même transaction. */
+export async function enregistrerPublicationAssociation(
+  acteur: ActeurId,
+  publication: {
+    id?: string | null;
+    slug: string;
+    langue: string;
+    type: string;
+    categorie: string;
+    acces: string;
+    titre: string;
+    chapeau: string;
+    texteAlternatif: string;
+    corps: unknown[];
+    publics?: string[];
+    signePar?: string | null;
+    imageUrl?: string | null;
+    videoUrl?: string | null;
+    videoMinutes?: number | null;
+    fichierPdf?: string | null;
+    pdfPages?: number | null;
+    evenementId?: string | null;
+    vedette?: boolean;
+    commentairesOuverts?: boolean;
+    prevenirAdherents?: boolean;
+    programmeLe?: string | null;
+    publier?: boolean;
+  },
+  options: { client?: AppSupabaseClient } = {},
+) {
+  const client = options.client ?? createServiceClient();
+  return await appeler<unknown>(client, 'admin_enregistrer_publication', {
+    p_acteur: acteur,
+    p_id: publication.id ?? null,
+    p_slug: publication.slug,
+    p_langue: publication.langue,
+    p_type: publication.type,
+    p_categorie: publication.categorie,
+    p_acces: publication.acces,
+    p_titre: publication.titre,
+    p_chapeau: publication.chapeau,
+    p_texte_alternatif: publication.texteAlternatif,
+    p_corps: publication.corps,
+    p_publics: publication.publics ?? [],
+    p_signe_par: publication.signePar ?? null,
+    p_image_url: publication.imageUrl ?? null,
+    p_video_url: publication.videoUrl ?? null,
+    p_video_minutes: publication.videoMinutes ?? null,
+    p_fichier_pdf: publication.fichierPdf ?? null,
+    p_pdf_pages: publication.pdfPages ?? null,
+    p_evenement_id: publication.evenementId ?? null,
+    p_vedette: publication.vedette ?? false,
+    p_commentaires_ouverts: publication.commentairesOuverts ?? true,
+    p_prevenir_adherents: publication.prevenirAdherents ?? false,
+    p_programme_le: publication.programmeLe ?? null,
+    p_publier: publication.publier ?? false,
+  });
+}
+
 /** Le détail d'un contenu, versions et corps compris. */
 export async function lireContenuAssociation(
   id: string,

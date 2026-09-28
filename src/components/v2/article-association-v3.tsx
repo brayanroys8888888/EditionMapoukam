@@ -14,7 +14,7 @@ import styles from './article-association-v3.module.css';
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ CE QUI CHANGE EST LA FORME. LE DROIT, LUI, NE PASSE PAS PAR ICI.        │
  * │                                                                          │
- * │ `sections` vaut `null` dès que `can_read` est faux — la BASE le décide,  │
+ * │ `blocs` vaut `null` dès que `can_read` est faux — la BASE le décide,    │
  * │ et la colonne `corps` n'est de toute façon accordée ni à `anon` ni à     │
  * │ `authenticated` (§ privilège absent). Ce composant ne compare aucun      │
  * │ droit : il rend ce qu'on lui donne, et le mur quand on ne lui donne      │
@@ -95,7 +95,7 @@ export function ArticleAssociationV3({
               </>
             ) : null}
 
-            {contenu.sections ? null : (
+            {contenu.blocs ? null : (
               <>
                 <span aria-hidden="true">·</span>
                 <span className={styles.reserve}>{t('v2.assoReserve')}</span>
@@ -123,25 +123,57 @@ export function ArticleAssociationV3({
           decoding="async"
         />
 
-        {contenu.sections ? (
+        {contenu.blocs ? (
           <div className={styles.corps}>
-            {contenu.sections.map((section) => (
-              <section key={section.titre}>
-                <h2>{section.titre}</h2>
+            {contenu.blocs.map((bloc, rang) => {
+              /*
+                LA CLÉ EST LE RANG, ET C'EST L'UN DES RARES CAS OÙ IL LE FAUT.
 
-                {section.paragraphes?.map((paragraphe) => (
-                  <p key={paragraphe}>{paragraphe}</p>
-                ))}
+                Deux paragraphes peuvent porter le même texte — une reprise,
+                un refrain — et deux intertitres aussi. Une clé tirée du
+                contenu en ferait des doublons que React refuserait de rendre.
+                Les blocs ne sont ni réordonnés ni filtrés à l'affichage : le
+                rang est donc stable tant que la page vit.
+              */
+              const cle = `${bloc.type}-${String(rang)}`;
 
-                {section.points ? (
-                  <ul>
-                    {section.points.map((point) => (
-                      <li key={point}>{point}</li>
-                    ))}
-                  </ul>
-                ) : null}
-              </section>
-            ))}
+              switch (bloc.type) {
+                case 'intertitre':
+                  return <h2 key={cle}>{bloc.texte}</h2>;
+
+                case 'paragraphe':
+                  return <p key={cle}>{bloc.texte}</p>;
+
+                case 'liste':
+                  return (
+                    <ul key={cle}>
+                      {bloc.elements.map((element) => (
+                        <li key={element}>{element}</li>
+                      ))}
+                    </ul>
+                  );
+
+                case 'citation':
+                  return (
+                    <blockquote key={cle} className={styles.citation}>
+                      {bloc.texte}
+                    </blockquote>
+                  );
+
+                case 'photo':
+                  return (
+                    /*
+                      `figure` et non un `div` : une image et sa légende sont
+                      une unité, et c'est ce que le balisage doit dire à qui
+                      écoute la page. Sans légende, pas de `figcaption` vide.
+                    */
+                    <figure key={cle} className={styles.figure}>
+                      <img src={bloc.url} alt="" loading="lazy" decoding="async" />
+                      {bloc.legende ? <figcaption>{bloc.legende}</figcaption> : null}
+                    </figure>
+                  );
+              }
+            })}
           </div>
         ) : (
           <div className={styles.mur}>

@@ -35,19 +35,24 @@ const BASE: ContenuAssociatifDetaille = {
   peutLire: false,
   /* LU, jamais déduit : c'est la base qui dit pourquoi l'accès est fermé. */
   motif: 'none',
-  sections: null,
+  blocs: null,
 };
 
 const OUVERT: ContenuAssociatifDetaille = {
   ...BASE,
   peutLire: true,
   motif: 'subscription',
-  sections: [
-    {
-      titre: 'La puissance d’un outil adapté',
-      paragraphes: ['Sur le terrain, nous mesurons chaque jour la puissance du conte.'],
-      points: ['Un atelier par trimestre', 'Deux écoles partenaires'],
-    },
+  /*
+   * Les cinq types de blocs, pour que le rendu de CHACUN soit éprouvé. Un
+   * `switch` à qui il manque une branche ne rend rien pour ce type — et une
+   * citation qui disparaît ne laisse aucune trace à l'écran.
+   */
+  blocs: [
+    { type: 'intertitre', texte: 'La puissance d’un outil adapté' },
+    { type: 'paragraphe', texte: 'Sur le terrain, nous mesurons chaque jour la puissance du conte.' },
+    { type: 'liste', elements: ['Un atelier par trimestre', 'Deux écoles partenaires'] },
+    { type: 'citation', texte: 'Un livre lu à voix haute change une salle entière.' },
+    { type: 'photo', url: '/images/association/logo-dave.jpg', legende: 'Atelier de Douala' },
   ],
 };
 
@@ -58,6 +63,8 @@ describe('l’article de l’espace adhérent', () => {
     expect(screen.getByText('La puissance d’un outil adapté')).toBeTruthy();
     expect(screen.getByText(/nous mesurons chaque jour/)).toBeTruthy();
     expect(screen.getByText('Deux écoles partenaires')).toBeTruthy();
+    expect(screen.getByText(/change une salle entière/)).toBeTruthy();
+    expect(screen.getByText('Atelier de Douala')).toBeTruthy();
   });
 
   it('NE REND AUCUN corps quand `sections` est nul — il rend le mur', () => {
@@ -66,11 +73,16 @@ describe('l’article de l’espace adhérent', () => {
     );
 
     /*
-     * On n'interroge pas « le mur est-il là » : on vérifie qu'AUCUN
-     * paragraphe d'article n'a été rendu. Un composant qui replierait sur un
-     * corps vide passerait le premier contrôle et raterait celui-ci.
+     * On n'interroge pas « le mur est-il là » : on vérifie que le conteneur
+     * du corps n'existe PAS. Un composant qui replierait sur un corps vide
+     * passerait le premier contrôle et raterait celui-ci.
+     *
+     * Viser le conteneur et non les balises : le MUR porte lui aussi un `h2`
+     * et des `p`, et un sélecteur qui les compterait trouverait trois
+     * éléments sur une page où rien n'a fuité.
      */
-    expect(container.querySelectorAll('article section').length).toBe(0);
+    const corps = container.querySelector('[class*="corps"]');
+    expect(corps).toBeNull();
     expect(screen.queryByText(/nous mesurons chaque jour/)).toBeNull();
   });
 

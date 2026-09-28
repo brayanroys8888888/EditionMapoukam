@@ -62,7 +62,10 @@ async function poserVersionComplete(id: string, langue: 'fr' | 'en'): Promise<vo
     langue,
     titre: langue === 'fr' ? 'Titre publiable' : 'Publishable title',
     chapeau: 'Chapeau.',
-    corps: [{ titre: 'Section', paragraphes: ['Un paragraphe.'] }],
+    corps: [
+      { type: 'intertitre', texte: 'Section' },
+      { type: 'paragraphe', texte: 'Un paragraphe.' },
+    ],
   });
   expect(resultat.ok).toBe(true);
 }
