@@ -4,9 +4,10 @@ import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18
 import { listerOffres } from '@/lib/admin/service';
 import { formateur, lireDevise } from '@/lib/money/affichage';
 import { Erreur } from '@/components/etats';
-import { BoutonSoumission, GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
+import { GabaritAdmin, stylesAdmin as styles } from '@/components/admin';
 import { exigerAdministrateur } from '../garde';
-import { changerVente, creerOffre, poserPrix, supprimerOffre } from './actions';
+import { PanneauOffre, type OffreEditable } from './panneau-offre';
+import { offresLesPlusChoisies } from './plus-choisie';
 
 /**
  * LES OFFRES D'ABONNEMENT — §4.3 F12 bis.
@@ -37,16 +38,27 @@ import { changerVente, creerOffre, poserPrix, supprimerOffre } from './actions';
  * │ Le refus d'activer une offre sans prix vit dans la même fonction. L'écran │
  * │ n'empêche pas le geste : il montre le manque, et la base tranche.         │
  * └──────────────────────────────────────────────────────────────────────────┘
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA GRILLE DE CARTES REMPLACE LE TABLEAU — ET CE N'EST PAS QU'UN HABIT.   │
+ * │                                                                          │
+ * │ Quatre formules ne font pas un tableau : on ne les balaye pas du regard   │
+ * │ pour en trouver une, on les COMPARE. Le prototype le dit en les mettant  │
+ * │ côte à côte, chacune portant son prix par zone, et c'est la seule         │
+ * │ disposition où « laquelle est la plus chère en Afrique » se lit d'un      │
+ * │ coup d'œil.                                                              │
+ * │                                                                          │
+ * │ Ce qui disparaît du tableau : rien. Le code, le domaine, la périodicité,  │
+ * │ l'ordre et le compte d'abonnés sont tous rendus — dans la carte pour ce   │
+ * │ qui se compare, dans le tiroir pour ce qui s'édite.                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
 interface Parametres {
   params: Promise<{ langue: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-const DOMAINES = ['lecture', 'association'] as const;
-const PERIODES = ['mensuel', 'annuel'] as const;
-const ZONES = ['international', 'afrique'] as const;
-const DEVISES = ['EUR', 'XAF', 'XOF'] as const;
+const ZONES = ['afrique', 'international'] as const;
 
 function premier(valeur: string | string[] | undefined): string | undefined {
   return Array.isArray(valeur) ? valeur[0] : valeur;
@@ -85,13 +97,17 @@ export async function generateMetadata({ params }: Parametres): Promise<Metadata
 
 export default async function PageAdminOffres({ params, searchParams }: Parametres) {
   const { langue, administrateur } = await exigerAdministrateur((await params).langue);
+  const t = (cle: CleTraduction): string => traduire(langue, cle);
   const requete = await searchParams;
   const erreur = premier(requete['erreur']);
+  const ouverte = premier(requete['offre']);
+  const nouvelle = premier(requete['nouvelle']) === '1';
 
   const resultat = await listerOffres().catch(() => null);
   if (!resultat?.ok) return <Erreur langue={langue} code="erreur_interne" />;
 
   const offres = resultat.donnees as unknown as LigneOffre[];
+  const ecran = `/${langue}/admin/offres`;
 
   /*
    * Un formateur PAR DEVISE, résolu depuis la base.
@@ -113,13 +129,79 @@ export default async function PageAdminOffres({ params, searchParams }: Parametr
   const montant = (prix: PrixOffre): string =>
     formateurs.get(prix.devise)?.(prix.montant) ?? `${String(prix.montant)} ${prix.devise}`;
 
+  /*
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ « LE PLUS CHOISI » EST COMPTÉ, JAMAIS DÉCRÉTÉ.                         │
+   * │                                                                        │
+   * │ Le prototype écrit la mention en dur sur sa première carte. Ici elle    │
+   * │ désigne la formule qui devance STRICTEMENT toutes les autres de son     │
+   * │ domaine, et seulement si elle a au moins un abonné.                     │
+   * │                                                                        │
+   * │ Les deux gardes comptent autant l'une que l'autre. Sans le « au moins  │
+   * │ un », la mention se poserait le premier jour sur une formule que        │
+   * │ personne n'a prise. Sans le « strictement », deux formules à égalité    │
+   * │ se la disputeraient et l'ordre de la liste trancherait — c'est-à-dire   │
+   * │ le hasard.                                                             │
+   * │                                                                        │
+   * │ Par DOMAINE, parce que lecture et adhésion ne se concurrencent pas :    │
+   * │ comparer leurs effectifs dirait seulement lequel des deux publics est   │
+   * │ le plus nombreux.                                                      │
+   * └────────────────────────────────────────────────────────────────────────┘
+   */
+  /*
+   * La regle vit dans `plus-choisie.ts`, et elle y vit pour etre TESTEE : ses
+   * trois gardes — au moins un abonne, strictement devant, et par domaine —
+   * sont ce qui empeche la mention de mentir. Voir ce fichier pour le detail.
+   */
+  const meilleures = offresLesPlusChoisies(offres);
+
+  const lien = (parametres: { offre?: string; nouvelle?: boolean }): string => {
+    const p = new URLSearchParams();
+    if (parametres.offre !== undefined) p.set('offre', parametres.offre);
+    if (parametres.nouvelle === true) p.set('nouvelle', '1');
+    const suite = p.toString();
+    return suite === '' ? ecran : `${ecran}?${suite}`;
+  };
+
+  const offreOuverte = offres.find((offre) => offre.id === ouverte) ?? null;
+
+  /** La ligne « Mensuel · 4 abonnés », telle que le prototype l'écrit. */
+  const ligneMeta = (offre: LigneOffre): string => {
+    const contrats = Number(offre.abonnements);
+    const periode = t(`admin.offrePeriode_${offre.periode}` as CleTraduction);
+    const abonnes =
+      contrats === 1
+        ? t('admin.offreUnAbonne')
+        : t('admin.offreDesAbonnes').replace('{nb}', String(contrats));
+    return `${periode} · ${abonnes}`;
+  };
+
   return (
     <GabaritAdmin
       langue={langue}
       administrateur={administrateur}
       section="/offres"
-      titre={traduire(langue, 'admin.offres')}
-      sousTitre={traduire(langue, 'admin.offresSousTitre')}
+      titre={t('admin.offres')}
+      sousTitre={t('admin.offresSousTitreV3')}
+      actions={
+        <a className={styles.boutonPrimaire} href={lien({ nouvelle: true })}>
+          {/* Le « + » des boutons de création, comme sur les deux catalogues. */}
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.75"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          {t('admin.offreNouvelle')}
+        </a>
+      }
     >
       {erreur ? (
         <p className={styles.alerte} role="alert">
@@ -133,390 +215,122 @@ export default async function PageAdminOffres({ params, searchParams }: Parametr
       {requete['maj'] ? (
         <p className={styles.succes}>{traduire(langue, 'admin.offreModifiee')}</p>
       ) : null}
-      {requete['prix'] ? (
-        <p className={styles.succes}>{traduire(langue, 'admin.offrePrixPose')}</p>
-      ) : null}
       {requete['supprime'] ? (
         <p className={styles.succes}>{traduire(langue, 'admin.offreSupprimee')}</p>
       ) : null}
 
-      <div className={styles.cadre}>
-        {offres.length === 0 ? (
-          <p className={styles.vide}>{traduire(langue, 'admin.aucuneOffre')}</p>
-        ) : (
-          <table className={styles.tableau}>
-            <thead>
-              <tr>
-                <th scope="col">{traduire(langue, 'admin.colCode')}</th>
-                <th scope="col">{traduire(langue, 'admin.colDomaine')}</th>
-                <th scope="col">{traduire(langue, 'admin.offrePeriode')}</th>
-                <th scope="col">{traduire(langue, 'admin.colStatut')}</th>
-                <th scope="col" className={styles.numerique}>
-                  {traduire(langue, 'admin.colPrix')}
-                </th>
-                <th scope="col">{traduire(langue, 'admin.colManques')}</th>
-                <th scope="col" className={styles.numerique}>
-                  {traduire(langue, 'admin.colAbonnements')}
-                </th>
-                <th scope="col">{traduire(langue, 'admin.colActions')}</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {offres.map((offre) => {
-                const contrats = Number(offre.abonnements);
-
-                return (
-                  <tr key={offre.id}>
-                    <td className={styles.cellulePrincipale}>
-                      {offre.libelle_fr}
-                      <br />
-                      <span className={styles.note}>{offre.code}</span>
-                    </td>
-
-                    <td>
-                      {traduire(langue, `admin.offreDomaine_${offre.domaine}` as CleTraduction)}
-                    </td>
-
-                    <td>
-                      {traduire(langue, `admin.offrePeriode_${offre.periode}` as CleTraduction)}
-                    </td>
-
-                    <td>
-                      <span
-                        className={`${styles.etat} ${
-                          offre.actif ? styles.etatPublie : styles.etatBrouillon
-                        }`}
-                      >
-                        {traduire(langue, offre.actif ? 'admin.offreActive' : 'admin.offreInactive')}
-                      </span>
-                    </td>
-
-                    <td className={styles.numerique}>
-                      {ZONES.filter((zone) => offre.prix[zone] !== undefined).map((zone) => (
-                        <span key={zone} style={{ display: 'block' }}>
-                          {/* Le prix, PUIS la zone : c'est le montant qu'on
-                              cherche du regard dans une colonne de chiffres. */}
-                          {montant(offre.prix[zone] as PrixOffre)}{' '}
-                          <span className={styles.note}>
-                            {traduire(langue, `admin.conteZone_${zone}` as CleTraduction)}
-                          </span>
-                        </span>
-                      ))}
-
-                      {Object.keys(offre.prix).length === 0 ? (
-                        <span className={styles.note}>
-                          {traduire(langue, 'admin.offreSansPrix')}
-                        </span>
-                      ) : null}
-                    </td>
-
-                    <td>
-                      {offre.manques.length === 0 ? (
-                        <span className={styles.note}>{traduire(langue, 'admin.offreComplete')}</span>
-                      ) : (
-                        <span className={styles.manque}>
-                          {traduire(langue, 'admin.offreManqueZone').replace(
-                            '{zones}',
-                            offre.manques
-                              .map((zone) =>
-                                traduire(langue, `admin.conteZone_${zone}` as CleTraduction),
-                              )
-                              .join(', '),
-                          )}
-                        </span>
-                      )}
-                    </td>
-
-                    <td className={styles.numerique}>{contrats}</td>
-
-                    <td>
-                      <div className={styles.boutons}>
-                        {/*
-                          L'état VOULU part dans le formulaire, jamais « bascule » :
-                          deux onglets ouverts sur cette liste inverseraient sinon
-                          deux fois un drapeau touché une seule fois.
-                        */}
-                        <form className={styles.formulaireNu} action={changerVente.bind(null, langue)}>
-                          <input type="hidden" name="id" value={offre.id} />
-                          <input type="hidden" name="actif" value={offre.actif ? 'non' : 'oui'} />
-                          <BoutonSoumission variante="discret">
-                            {traduire(
-                              langue,
-                              offre.actif ? 'admin.offreDesactiver' : 'admin.offreActiver',
-                            )}
-                          </BoutonSoumission>
-                        </form>
-
-                        {/*
-                          Le bouton de suppression est ÉTEINT dès qu'un contrat
-                          s'y rattache. La base refuserait de toute façon — c'est
-                          elle qui décide — mais proposer un geste qu'on sait
-                          voué à l'échec revient à faire perdre un aller-retour.
-                        */}
-                        <form
-                          className={styles.formulaireNu}
-                          action={supprimerOffre.bind(null, langue)}
-                        >
-                          <input type="hidden" name="id" value={offre.id} />
-                          <BoutonSoumission variante="danger" disabled={contrats > 0}>
-                            {traduire(langue, 'admin.offreSupprimer')}
-                          </BoutonSoumission>
-                        </form>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-
-        <p className={styles.aide}>{traduire(langue, 'admin.offreSuppressionAide')}</p>
-      </div>
-
-      {/* ── Poser un prix ────────────────────────────────────────────────── */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.offrePrixTitre')}</h2>
-
-        <div className={styles.cadre}>
-          <form className={styles.formulaire} action={poserPrix.bind(null, langue)}>
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="prix-offre">
-                  {traduire(langue, 'admin.offrePrixOffre')}
-                </label>
-                <select className={styles.saisie} id="prix-offre" name="id" required>
-                  {offres.map((offre) => (
-                    <option key={offre.id} value={offre.id}>
-                      {offre.libelle_fr} ({offre.code})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="prix-zone">
-                  {traduire(langue, 'admin.colZone')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="prix-zone"
-                  name="zone"
-                  defaultValue="international"
-                >
-                  {ZONES.map((zone) => (
-                    <option key={zone} value={zone}>
-                      {traduire(langue, `admin.conteZone_${zone}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="prix-montant">
-                  {traduire(langue, 'admin.offrePrixMontant')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="prix-montant"
-                  name="montant"
-                  type="number"
-                  min={1}
-                  step={1}
-                  required
-                  aria-describedby="prix-aide"
-                />
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="prix-devise">
-                  {traduire(langue, 'admin.colDevise')}
-                </label>
-                <select className={styles.saisie} id="prix-devise" name="devise" defaultValue="EUR">
-                  {DEVISES.map((devise) => (
-                    <option key={devise} value={devise}>
-                      {devise}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <p className={styles.aide} id="prix-aide">
-              {traduire(langue, 'admin.offrePrixAide')}
-            </p>
-
-            <BoutonSoumission disabled={offres.length === 0}>
-              {traduire(langue, 'admin.offrePrixPoser')}
-            </BoutonSoumission>
-          </form>
+      {offres.length === 0 ? (
+        <div className={styles.carte}>
+          <p className={styles.vide}>{t('admin.aucuneOffre')}</p>
         </div>
-      </section>
-
-      {/* ── Créer une offre ──────────────────────────────────────────────── */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.offreCreerTitre')}</h2>
-
-        <div className={styles.cadre}>
-          <form className={styles.formulaire} action={creerOffre.bind(null, langue)}>
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-code">
-                  {traduire(langue, 'admin.offreCode')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="offre-code"
-                  name="code"
-                  minLength={3}
-                  maxLength={48}
-                  // Le même motif que la contrainte de la table et que le schéma
-                  // Zod de la route, qui restent seuls juges : celui-ci épargne
-                  // un aller-retour, il ne décide rien.
-                  pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                  required
-                  aria-describedby="offre-code-aide"
-                />
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-domaine">
-                  {traduire(langue, 'admin.offreDomaine')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="offre-domaine"
-                  name="domaine"
-                  defaultValue="lecture"
-                  aria-describedby="offre-domaine-aide"
-                >
-                  {DOMAINES.map((domaine) => (
-                    <option key={domaine} value={domaine}>
-                      {traduire(langue, `admin.offreDomaine_${domaine}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-periode">
-                  {traduire(langue, 'admin.offrePeriode')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="offre-periode"
-                  name="periode"
-                  defaultValue="mensuel"
-                  aria-describedby="offre-periode-aide"
-                >
-                  {PERIODES.map((periode) => (
-                    <option key={periode} value={periode}>
-                      {traduire(langue, `admin.offrePeriode_${periode}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <p className={styles.aide} id="offre-code-aide">
-              {traduire(langue, 'admin.offreCodeAide')}
-            </p>
-            <p className={styles.aide} id="offre-domaine-aide">
-              {traduire(langue, 'admin.offreDomaineAide')}
-            </p>
-            <p className={styles.aide} id="offre-periode-aide">
-              {traduire(langue, 'admin.offrePeriodeAide')}
-            </p>
-
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-libelle-fr">
-                  {traduire(langue, 'admin.offreLibelleFr')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="offre-libelle-fr"
-                  name="libelle_fr"
-                  maxLength={120}
-                  required
-                />
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-libelle-en">
-                  {traduire(langue, 'admin.offreLibelleEn')}
-                </label>
+      ) : (
+        <div className={styles.offresGrille}>
+          {offres.map((offre) => (
+            <article key={offre.id} className={`${styles.carte} ${styles.offreCarte}`}>
+              <div className={styles.offreHaut}>
                 {/*
-                  L'anglais est EXIGÉ à la création, comme le français.
-                  L'interface a deux langues et une clé manquante s'y replie sur
-                  le français : une offre sans libellé anglais s'afficherait en
-                  français au milieu d'un tunnel anglais, sans que rien ne le
-                  signale à l'éditeur.
+                  Le sur-titre n'occupe la place que s'il a quelque chose à
+                  dire : un `<p>` vide pousserait l'étiquette d'une ligne sur
+                  les cartes sans mention, et les hauteurs de carte
+                  cesseraient de s'aligner.
                 */}
-                <input
-                  className={styles.saisie}
-                  id="offre-libelle-en"
-                  name="libelle_en"
-                  maxLength={120}
-                  required
-                />
+                {meilleures.has(offre.id) ? (
+                  <p className={styles.offreKicker}>{t('admin.offrePlusChoisie')}</p>
+                ) : (
+                  <span />
+                )}
+
+                <span
+                  className={`${styles.etat} ${styles.etatPetit} ${
+                    offre.actif ? styles.etatPublie : styles.etatBrouillon
+                  }`}
+                >
+                  {t(offre.actif ? 'admin.offreVisibleTag' : 'admin.offreMasqueeTag')}
+                </span>
               </div>
 
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-ordre">
-                  {traduire(langue, 'admin.offreOrdre')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="offre-ordre"
-                  name="ordre"
-                  type="number"
-                  min={0}
-                  max={999}
-                  step={1}
-                  defaultValue={0}
-                  aria-describedby="offre-ordre-aide"
-                />
-              </div>
-            </div>
-
-            <p className={styles.aide} id="offre-ordre-aide">
-              {traduire(langue, 'admin.offreOrdreAide')}
-            </p>
-
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-descriptif-fr">
-                  {traduire(langue, 'admin.offreDescriptifFr')}
-                </label>
-                <textarea
-                  className={styles.zoneTexte}
-                  id="offre-descriptif-fr"
-                  name="descriptif_fr"
-                  maxLength={400}
-                  rows={3}
-                />
+              <div>
+                <h2 className={styles.offreNom}>{offre.libelle_fr}</h2>
+                <p className={styles.offreMeta}>{ligneMeta(offre)}</p>
               </div>
 
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="offre-descriptif-en">
-                  {traduire(langue, 'admin.offreDescriptifEn')}
-                </label>
-                <textarea
-                  className={styles.zoneTexte}
-                  id="offre-descriptif-en"
-                  name="descriptif_en"
-                  maxLength={400}
-                  rows={3}
-                />
-              </div>
-            </div>
+              <div className={styles.offrePrix}>
+                {ZONES.filter((zone) => offre.prix[zone] !== undefined).map((zone) => (
+                  <div key={zone} className={styles.offrePrixLigne}>
+                    <span className={styles.offrePrixZone}>
+                      {t(`admin.conteZone_${zone}` as CleTraduction)}
+                    </span>
+                    <span className={styles.offrePrixValeur}>
+                      {montant(offre.prix[zone] as PrixOffre)}
+                    </span>
+                  </div>
+                ))}
 
-            <BoutonSoumission>{traduire(langue, 'admin.offreCreer')}</BoutonSoumission>
-          </form>
+                {/*
+                  LE MANQUE EST DIT DANS LA COLONNE DES PRIX, pas en marge.
+                  C'est là qu'on cherche le prix, donc là qu'il faut lire qu'il
+                  n'y en a pas — et c'est aussi ce qui empêche l'offre d'être
+                  mise en vente.
+                */}
+                {offre.manques.map((zone) => (
+                  <div key={zone} className={styles.offrePrixLigne}>
+                    <span className={styles.offrePrixZone}>
+                      {t(`admin.conteZone_${zone}` as CleTraduction)}
+                    </span>
+                    <span className={styles.manque}>{t('admin.offreSansPrix')}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/*
+                UNE SEULE LIGNE À COCHE, ET C'EST L'ACCROCHE DE LA FORMULE.
+
+                Le prototype en montre trois ou quatre par carte — « ce que
+                l'offre ouvre », éditable ligne par ligne. La base ne porte
+                qu'un `descriptif`, et la page publique ne lit MÊME PAS ce
+                champ pour ses puces : elles sont figées en
+                internationalisation, une par nature de carte. Afficher ici
+                une liste éditable donnerait à croire que le site la rend.
+                Le tiroir porte l'arbitrage complet.
+              */}
+              {offre.descriptif_fr ? (
+                <ul className={styles.offreInclus}>
+                  <li className={styles.offreInclusLigne}>
+                    <span className={styles.offreCoche} aria-hidden="true">
+                      {'✓'}
+                    </span>
+                    <span>{offre.descriptif_fr}</span>
+                  </li>
+                </ul>
+              ) : null}
+
+              <a
+                className={`${styles.boutonSecondaire} ${styles.offreAction}`}
+                href={lien({ offre: offre.id })}
+              >
+                {t('admin.offreModifier')}
+              </a>
+            </article>
+          ))}
         </div>
-      </section>
+      )}
+
+      <p className={styles.aide}>{t('admin.offreAchatUniteAide')}</p>
+
+      {nouvelle ? (
+        <PanneauOffre langue={langue} offre={null} fermeture={lien({})} />
+      ) : offreOuverte ? (
+        <PanneauOffre
+          langue={langue}
+          offre={
+            {
+              ...offreOuverte,
+              abonnements: Number(offreOuverte.abonnements),
+            } satisfies OffreEditable
+          }
+          fermeture={lien({})}
+        />
+      ) : null}
     </GabaritAdmin>
   );
 }

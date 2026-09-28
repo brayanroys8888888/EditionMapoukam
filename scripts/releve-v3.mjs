@@ -2639,6 +2639,90 @@ const SCENES = {
 
   /* ══ ADMINISTRATION — codes promotionnels ═════════════════════════════ */
 
+  /*
+   * LES OFFRES D'ABONNEMENT.
+   *
+   * Une grille de cartes, pas un tableau : les sondes visent donc la carte et
+   * ses etages, et non des colonnes. La MAQUETTE en a trois, le jeu de
+   * demonstration quatre — d'ou l'ecart de hauteur sur la grille, attendu et
+   * ignore. Les cotes de la CARTE, elles, sont comparables une a une.
+   */
+  'admin-offres': {
+    largeur: BUREAU,
+    connecte: 'admin',
+    pleinePage: true,
+    maquette: (p) => maquetteAdmin(p, "Offres d'abonnement"),
+    app: async (p) => {
+      await p.goto(`${APP}/fr/admin/offres`, { waitUntil: 'load' });
+      await p.waitForTimeout(1200);
+    },
+    sondes: {
+      ...SONDES_CHROME_ADMIN,
+
+      'bouton principal': {
+        maquette: 'div[style*="backdrop-filter: blur(10px)"] button',
+        app: '[class*="admin_barreActions"] a',
+      },
+      'grille des cartes': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"]',
+        app: '[class*="admin_offresGrille"]',
+        // Trois cartes dans la maquette, quatre offres en base.
+        ignore: ['h'],
+      },
+      'carte': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] > div.card',
+        app: '[class*="admin_offreCarte"]',
+        // La hauteur suit le nombre de prix et la longueur de l'accroche.
+        ignore: ['h'],
+      },
+      'rangee haute': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] > div.card > div[style*="justify-content: space-between"]',
+        app: '[class*="admin_offreHaut"]',
+      },
+      /*
+       * L'etiquette a sa propre sonde : c'est elle qui fixe la hauteur de la
+       * rangee haute, et sans elle un ecart de hauteur se lisait sur la rangee
+       * sans qu'on sache lequel de ses deux enfants le portait.
+       */
+      'etiquette': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] > div.card > div[style*="justify-content: space-between"] > *:nth-child(2)',
+        app: '[class*="admin_etatPetit"]',
+        // Le libelle differe d'une langue a l'autre, donc la largeur aussi.
+        ignore: ['w'],
+      },
+      'nom de l’offre': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] h4',
+        app: '[class*="admin_offreNom"]',
+        ignore: ['w'],
+      },
+      'meta de la carte': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] > div.card > div:nth-child(2) > *:nth-child(2)',
+        app: '[class*="admin_offreMeta"]',
+        ignore: ['w'],
+      },
+      'ligne de prix': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] div[style*="padding: 10px 0"]',
+        app: '[class*="admin_offrePrixLigne"]',
+      },
+      'bouton de la carte': {
+        maquette: 'div[style*="minmax(min(100%, 330px), 1fr)"] button.btn-secondary',
+        app: '[class*="admin_offreAction"]',
+        /*
+         * `w` : le libelle diffère d'une langue à l'autre.
+         *
+         * `y` : il est le DERNIER etage de la carte, donc sa position depend de
+         * tout ce qui le precede — et le prototype porte trois lignes a coche
+         * là où le jeu de demonstration en porte une. C'est l'ecart de CONTENU
+         * annonce au plan : on mesure la boite, la typographie et les
+         * rembourrages, plus les positions jusqu'a ce que le contenu diverge.
+         * Les etages situes AU-DESSUS des lignes a coche, eux, sont compares
+         * au pixel — et c'est ainsi qu'on a vu les 4 px manquants sous le nom.
+         */
+        ignore: ['w', 'y'],
+      },
+    },
+  },
+
   'admin-promos': {
     largeur: BUREAU,
     connecte: 'admin',

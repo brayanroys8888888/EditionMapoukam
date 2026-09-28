@@ -3747,6 +3747,198 @@ textarea.saisie {
   font-size: 14.5px;
 }
 
+/* ── Les cartes d'offre ─────────────────────────────────────────────────── */
+
+/*
+ * Une carte par formule, et non une rangée de tableau.
+ *
+ * `minmax(min(100%, 330px), 1fr)` plutôt que `minmax(330px, 1fr)` : le `min()`
+ * est ce qui empêche la carte de dépasser son conteneur sous 330 px de large.
+ * Sans lui, la grille impose 330 px à une colonne qui n'en a que 300, et la
+ * page prend une barre de défilement horizontale sur téléphone.
+ */
+.offresGrille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: var(--pas-4);
+  align-items: start;
+}
+
+.offreCarte {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: var(--pas-3);
+}
+
+.offreHaut {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--pas-2);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE SUR-TITRE DIT UN FAIT COMPTÉ, PAS UNE INTENTION COMMERCIALE.         │
+ * │                                                                          │
+ * │ Le prototype écrit « LE PLUS CHOISI » en dur sur sa première carte. Ici  │
+ * │ il est DÉRIVÉ du nombre d'abonnements rendu par `admin_lister_offres`,   │
+ * │ et il n'apparaît que si une formule devance STRICTEMENT les autres de    │
+ * │ son domaine. À égalité, ou sans aucun abonné, il ne s'affiche pas : une  │
+ * │ distinction posée sur zéro abonné serait une phrase inventée.            │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.offreKicker {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.55;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'ÉTIQUETTE DE CES CARTES EST PLUS PETITE QUE CELLE DES TABLEAUX.       │
+ * │                                                                          │
+ * │ 11 px et 3/10 px de rembourrage, contre 12 px et 4/11 px partout         │
+ * │ ailleurs. Ce n'est pas une inattention du prototype : la mesure le donne │
+ * │ sur les deux écrans, et une valeur unique ferait échouer l'un des deux   │
+ * │ relevés.                                                                 │
+ * │                                                                          │
+ * │ Les COULEURS, elles, restent celles de `.etatPublie` et                  │
+ * │ `.etatBrouillon` — la teinte du prototype ne passe pas le contraste,     │
+ * │ arbitrage déjà inscrit sur les trois écrans précédents.                  │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.etatPetit {
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ 1,5 px DE REMBOURRAGE, ET NON LES 3 px DU PROTOTYPE.                     │
+   * │                                                                          │
+   * │ Ce n'est pas un ecart : c'est ce qu'il faut pour n'en avoir aucun.       │
+   * │                                                                          │
+   * │ L'etiquette du prototype n'a pas de bordure. Les notres en portent une   │
+   * │ de 1,5 px, decision d'accessibilite deja inscrite : l'etat se lit a la   │
+   * │ FORME autant qu'a la couleur. Cette bordure occupe de la hauteur, et     │
+   * │ reprendre les 3 px du prototype donnait une boite de 26 px la ou il en   │
+   * │ fait 23 — deux pixels qui poussaient ensuite le nom de l'offre, le bloc  │
+   * │ des prix et tout ce qui suit dans la carte.                              │
+   * │                                                                          │
+   * │ La bordure prend donc la place du rembourrage, des deux cotes. La BOITE  │
+   * │ EXTERIEURE — la seule que la mise en page voit — retombe au pixel, et   │
+   * │ l'oeil ne distingue pas les deux versions.                               │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  padding: 2px 9px;
+  font-size: 11px;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+  /*
+   * NI CAPITALES, NI GRAS — et c'est le prototype qui le veut.
+   *
+   * `.etat` force les deux, parce que sur un TABLEAU une etiquette doit se
+   * detacher d'une colonne de texte. Sur une carte, elle est seule en haut a
+   * droite : le prototype l'ecrit « Visible », pas « VISIBLE », et la mesure
+   * le confirme des deux cotes (`textTransform: none`, graisse 400).
+   */
+  font-weight: var(--graisse-normale);
+  text-transform: none;
+  /* Pas d'icone dans cette etiquette : l'ecart de gouttiere serait un faux. */
+  gap: 0;
+}
+
+.offreNom {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 20px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+  color: var(--encre);
+}
+
+.offreMeta {
+  /*
+   * 4 px SOUS LE NOM, et c'est une cote relevée, pas une respiration choisie.
+   *
+   * Le bloc du nom n'a pas de gouttière dans le prototype : l'écart vient de
+   * la marge basse du titre. Sans ces 4 px, la ligne de méta ET tout le bloc
+   * des prix remontaient de 4 px — un seul manque, deux sondes en échec.
+   */
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.offrePrix {
+  border-top: 1px solid color-mix(in srgb, var(--encre) 16%, transparent);
+}
+
+.offrePrixLigne {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--pas-3);
+  padding: 10px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--encre) 7%, transparent);
+}
+
+.offrePrixZone {
+  font-size: 13px;
+  line-height: 1.55;
+  color: color-mix(in srgb, var(--encre) 58%, transparent);
+}
+
+.offrePrixValeur {
+  font-size: 15px;
+  font-weight: var(--graisse-forte);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.offreInclus {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.offreInclusLigne {
+  display: flex;
+  gap: 9px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/*
+ * La coche prend l'encre de sauge, celle de `.etatPublie` — c'est la même
+ * affirmation (« ceci est ouvert ») rendue par le même vert, et elle porte
+ * 5,43:1 sur la crème là où la teinte du prototype n'en portait que 3,14:1.
+ */
+.offreCoche {
+  flex: none;
+  color: var(--region-afrique_ouest-encre);
+}
+
+/*
+ * Le bouton se cale à gauche, et non sur toute la largeur de la carte.
+ *
+ * Et il ne PEINT PAS son fond : `.boutonSecondaire` pose `--fond`, ce qui
+ * convient sur la page mais dessine une pilule crème sur une carte crème. Le
+ * prototype le veut fantôme — seule sa bordure le délimite. Le jeton reste
+ * celui du bouton ; c'est la surface qui change, et sur cet écran seulement.
+ */
+.offreAction {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: transparent;
+}
+
 /*
  * ┌──────────────────────────────────────────────────────────────────────────┐
  * │ DEUX OPACITES POUR LE MEME ROLE, ET C'EST LE PROTOTYPE QUI LE VEUT.     │

@@ -102,85 +102,145 @@ async function appelerRoute(
   redirect(`${ecran}?${succes}=1`);
 }
 
-export async function creerOffre(langueBrute: string, donnees: FormData): Promise<void> {
-  const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/offres`;
+/**
+ * Un appel qui NE REDIRIGE PAS : il rend le code d'erreur, ou `null`.
+ *
+ * `enregistrerOffre` enchaîne jusqu'à trois écritures ; `appelerRoute`
+ * redirigerait après la première et les suivantes ne partiraient jamais.
+ */
+async function tenter(
+  chemin: string,
+  methode: 'POST' | 'PATCH' | 'PUT',
+  corps: unknown,
+  attendu: number,
+): Promise<{ code: string | null; corps: Record<string, unknown> | null }> {
+  const reponse = await fetch(`${getServerEnv().NEXT_PUBLIC_APP_URL}${chemin}`, {
+    method: methode,
+    headers: { 'content-type': 'application/json', cookie: await enteteCookie() },
+    body: JSON.stringify(corps),
+    cache: 'no-store',
+  });
 
-  /*
-   * Pas de champ `actif` : une offre NAÎT HORS VENTE, et la route ne l'accepte
-   * même pas. Mettre en vente une offre encore sans prix la rendrait invisible
-   * partout — `offres_publiques` la joint à ses prix et n'en trouverait aucun
-   * — et l'éditeur croirait avoir ouvert quelque chose que personne ne voit.
-   */
-  await appelerRoute(
-    ecran,
-    '/api/admin/offers',
-    'POST',
-    {
-      code: texte(donnees, 'code'),
-      domaine: texte(donnees, 'domaine'),
-      periode: texte(donnees, 'periode'),
-      libelle_fr: texte(donnees, 'libelle_fr'),
-      libelle_en: texte(donnees, 'libelle_en'),
-      ...(texte(donnees, 'descriptif_fr') !== undefined
-        ? { descriptif_fr: texte(donnees, 'descriptif_fr') }
-        : {}),
-      ...(texte(donnees, 'descriptif_en') !== undefined
-        ? { descriptif_en: texte(donnees, 'descriptif_en') }
-        : {}),
-      ordre: nombre(donnees, 'ordre') ?? 0,
-    },
-    'cree',
-    201,
-  );
+  const details = (await reponse.json().catch(() => null)) as Record<string, unknown> | null;
+  if (reponse.status !== attendu) return { code: codeErreur(details), corps: details };
+  return { code: null, corps: details };
 }
 
 /**
- * Met une offre en vente, ou l'en retire.
+ * ENREGISTRE UNE OFFRE : son identité, puis ses prix.
  *
- * L'écran envoie l'état VOULU, jamais « bascule » : deux onglets ouverts sur la
- * même liste inverseraient sinon deux fois de suite un drapeau que l'éditeur
- * n'a touché qu'une fois.
- *
- * Le refus d'activer une offre sans prix vient de la base — `admin_modifier_offre`
- * le nomme —, et cette action ne le rejoue pas.
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS ÉCRITURES, ET PAS DE TRANSACTION — ce qui est SANS DANGER ICI.     │
+ * │                                                                          │
+ * │ L'identité part d'abord, puis un prix par zone renseignée : il n'existe   │
+ * │ pas de route qui pose les deux zones d'un coup, et en inventer une pour   │
+ * │ l'occasion déplacerait une règle de tarification dans un écran.           │
+ * │                                                                          │
+ * │ Une interruption entre deux écritures laisse donc une offre à qui il      │
+ * │ manque un prix. C'est exactement l'état qu'une offre neuve occupe déjà —  │
+ * │ la base REFUSE de mettre en vente une offre sans prix (migration 0068),   │
+ * │ et la carte affiche le manque. L'état intermédiaire est visible et        │
+ * │ corrigeable ; il n'est jamais silencieux, et rien ne se vend entre-temps. │
+ * │                                                                          │
+ * │ La première erreur arrête la suite et revient à l'écran : poursuivre      │
+ * │ après un refus écrirait des prix sur une offre dont le nom n'a pas été    │
+ * │ accepté.                                                                 │
+ * └──────────────────────────────────────────────────────────────────────────┘
  */
-export async function changerVente(langueBrute: string, donnees: FormData): Promise<void> {
+export async function enregistrerOffre(langueBrute: string, donnees: FormData): Promise<void> {
   const langue = langueValide(langueBrute);
   const ecran = `/${langue}/admin/offres`;
+  const id = texte(donnees, 'id');
 
-  await appelerRoute(
-    ecran,
-    `/api/admin/offers/${texte(donnees, 'id') ?? ''}`,
-    'PATCH',
-    { actif: donnees.get('actif') === 'oui' },
-    'maj',
-    200,
-  );
-}
+  let cible = id;
+  let succes = 'maj';
 
-export async function poserPrix(langueBrute: string, donnees: FormData): Promise<void> {
-  const langue = langueValide(langueBrute);
-  const ecran = `/${langue}/admin/offres`;
+  if (cible === undefined) {
+    /*
+     * Pas de champ `actif` à la création : une offre NAÎT HORS VENTE, et la
+     * route ne l'accepte même pas autrement. La mettre en vente sans prix la
+     * rendrait invisible partout — `offres_publiques` la joint à ses prix et
+     * n'en trouverait aucun — et l'éditeur croirait avoir ouvert quelque chose.
+     */
+    const cree = await tenter(
+      '/api/admin/offers',
+      'POST',
+      {
+        code: texte(donnees, 'code'),
+        domaine: texte(donnees, 'domaine'),
+        periode: texte(donnees, 'periode'),
+        libelle_fr: texte(donnees, 'libelle_fr'),
+        libelle_en: texte(donnees, 'libelle_en'),
+        ...(texte(donnees, 'descriptif_fr') !== undefined
+          ? { descriptif_fr: texte(donnees, 'descriptif_fr') }
+          : {}),
+        ...(texte(donnees, 'descriptif_en') !== undefined
+          ? { descriptif_en: texte(donnees, 'descriptif_en') }
+          : {}),
+        ordre: nombre(donnees, 'ordre') ?? 0,
+      },
+      201,
+    );
+    if (cree.code !== null) redirect(`${ecran}?erreur=${cree.code}`);
+
+    // `POST /api/admin/offers` rend la LIGNE créée, telle que
+    // `admin_creer_offre` la renvoie — donc `id` à la racine, pas sous `offre`.
+    const neuf = cree.corps?.['id'];
+    // Sans identifiant rendu, les prix n'ont pas de destinataire. L'offre
+    // existe : l'éditeur la rouvre et pose ses prix, plutôt qu'un échec muet.
+    if (typeof neuf !== 'string') {
+      revalidatePath(ecran);
+      redirect(`${ecran}?cree=1`);
+    }
+    cible = neuf;
+    succes = 'cree';
+  } else {
+    /*
+     * L'état VOULU de la case part tel quel — jamais « bascule ». Une case
+     * décochée n'envoie RIEN en HTML : c'est son absence qui vaut `false`, et
+     * c'est pourquoi on lit la présence plutôt qu'une valeur.
+     */
+    const modifie = await tenter(
+      `/api/admin/offers/${cible}`,
+      'PATCH',
+      {
+        libelle_fr: texte(donnees, 'libelle_fr'),
+        libelle_en: texte(donnees, 'libelle_en'),
+        descriptif_fr: texte(donnees, 'descriptif_fr') ?? '',
+        descriptif_en: texte(donnees, 'descriptif_en') ?? '',
+        ...(nombre(donnees, 'ordre') !== undefined ? { ordre: nombre(donnees, 'ordre') } : {}),
+        actif: donnees.get('actif') === 'oui',
+      },
+      200,
+    );
+    if (modifie.code !== null) redirect(`${ecran}?erreur=${modifie.code}`);
+  }
 
   /*
    * Le montant part TEL QUEL, dans la plus petite unité de sa devise : 799
    * pour 7,99 €, 2500 pour 2 500 FCFA. Aucune multiplication ici — le franc
-   * CFA n'a pas de sous-unité, et diviser ou multiplier par cent selon la
-   * devise serait une règle de conversion écrite dans un écran.
+   * CFA n'a pas de sous-unité, et convertir selon la devise serait une règle
+   * de tarification écrite dans une action d'écran.
+   *
+   * Une zone laissée VIDE n'est pas effacée : elle est ignorée. Retirer un
+   * prix existant parce qu'un champ est vide ferait disparaître une offre de
+   * la vente sur une frappe malheureuse.
    */
-  await appelerRoute(
-    ecran,
-    `/api/admin/offers/${texte(donnees, 'id') ?? ''}/prices`,
-    'PUT',
-    {
-      zone: texte(donnees, 'zone'),
-      montant: nombre(donnees, 'montant'),
-      devise: texte(donnees, 'devise'),
-    },
-    'prix',
-    200,
-  );
+  for (const zone of ['afrique', 'international'] as const) {
+    const montant = nombre(donnees, `montant_${zone}`);
+    if (montant === undefined) continue;
+
+    const pose = await tenter(
+      `/api/admin/offers/${cible}/prices`,
+      'PUT',
+      { zone, montant, devise: texte(donnees, `devise_${zone}`) },
+      200,
+    );
+    if (pose.code !== null) redirect(`${ecran}?erreur=${pose.code}`);
+  }
+
+  revalidatePath(ecran);
+  redirect(`${ecran}?${succes}=1`);
 }
 
 export async function supprimerOffre(langueBrute: string, donnees: FormData): Promise<void> {

@@ -17,9 +17,9 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 | --- | --- | --- | --- |
 | Coquille partagée | 1 | 1 | 0 |
 | Catalogue | 6 | 3 | 3 |
-| Ventes | 4 | 3 | 1 |
+| Ventes | 4 | 4 | 0 |
 | Communauté | 5 | 0 | 5 |
-| **Total** | **16** | **7** | **9** |
+| **Total** | **16** | **8** | **8** |
 
 ---
 
@@ -160,7 +160,35 @@ une mesure — `node scripts/releve-v3.mjs <scène>`, itérée jusqu'à écart n
 > d'avertissement et le brun `accent-800` de leurs chiffres. Elles sont dérivées
 > de `--action` par `color-mix` — proches, pas identiques. Même famille que les
 > cartes, déjà tranchée le 27 septembre.
-- [ ] **`offres` — Offres d'abonnement**
+- [x] **`offres` — Offres d'abonnement**
+  - [x] grille de cartes en `auto-fit minmax(min(100%, 330px), 1fr)` à la place
+        du tableau : quatre formules ne se balayent pas, elles se comparent —
+        relevé `admin-offres`, **écart de dimension nul**
+  - [x] tiroir d'édition et de création, prix par zone, mise en vente
+  - [x] **« La plus choisie » est COMPTÉE, jamais décrétée** — dérivée du
+        nombre d'abonnements, une au plus par domaine, et retirée à égalité
+        comme à zéro abonné. Extraite dans `plus-choisie.ts` pour être
+        éprouvée : 7 tests, un par mensonge interdit
+  - [x] la suppression reste offerte, éteinte dès qu'un abonnement s'y rattache
+        — le prototype ne la porte pas, et sans elle une offre saisie par
+        erreur ne quitterait plus jamais l'écran
+  - — **trois champs du prototype écartés**, chacun pour une raison nommée :
+    - « Ce que l'offre ouvre / n'ouvre pas », liste éditable par formule. **La
+      page publique ne lit pas la base pour ces puces** : elles sont figées en
+      internationalisation, une fois par NATURE de carte (abonnement, adhésion,
+      achat à l'unité), pas par formule. Un éditeur les remplirait sans que le
+      site change. Les rendre éditables demande de refondre la page publique —
+      **décision attendue du propriétaire**
+    - « Appliquer le nouveau prix aux abonnés actuels » — aucun des deux
+      prestataires ne fait de prélèvement récurrent, l'interrupteur
+      n'appliquerait rien. Même famille que « Offrir un mois »
+    - « Aperçu sur le site » à chaque frappe — il montrerait une carte que le
+      site ne rend pas ainsi tant que le premier point n'est pas tranché ; un
+      aperçu faux est pire qu'un aperçu absent
+  - — **périodicité et domaine figés après création** : la base le refuse
+        (migration `0068`), et le refus est juste — un abonné a souscrit à une
+        périodicité. Le prototype met le segmenté dans les deux cas ; ici il
+        n'apparaît qu'à la création
 - [x] **`promos` — Codes promo**
   - [x] migration `0093` — `promo_codes.debut_le`, `statut_promo` (unique
         implémentation), liste filtrable, compteurs par statut
