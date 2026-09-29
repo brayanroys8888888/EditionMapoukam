@@ -41,7 +41,7 @@ const TROIS = [contenu({ slug: 'a' }), contenu({ slug: 'b' }), contenu({ slug: '
 
 describe('le héros', () => {
   it('porte le sur-titre, le titre et les deux paragraphes du propriétaire', () => {
-    render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
 
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(FR.titre);
     expect(screen.getByText(FR.chapeau)).toBeTruthy();
@@ -63,7 +63,7 @@ describe('le héros', () => {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   it('le bouton d’adhésion mène au tunnel, avec le domaine « association »', () => {
-    render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
 
     expect(screen.getByRole('link', { name: FR.appel.action }).getAttribute('href')).toBe(
       '/fr/abonnement/souscrire?domaine=association',
@@ -71,11 +71,37 @@ describe('le héros', () => {
   });
 
   /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ PROPOSER D'ADHÉRER À UN ADHÉRENT, C'EST LUI PROPOSER DE PAYER DEUX   │
+   * │ FOIS.                                                                 │
+   * │                                                                      │
+   * │ Cette page affichait « Adhérer » à tout le monde, et l'espace n'était │
+   * │ lié de nulle part : qui venait de payer retombait sur l'appel à payer │
+   * │ et devait deviner l'adresse de `/espace`.                             │
+   * │                                                                      │
+   * │ `adherent` est LU — le verdict d'`association_acces_espace`, traduit  │
+   * │ par la page. Ce composant ne le calcule pas, et le lien n'ouvre       │
+   * │ aucun droit : `/espace` revérifie à l'arrivée.                        │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('mène un ADHÉRENT à son espace, et les DEUX appels le suivent', () => {
+    render(<AssociationV3 langue="fr" contenus={TROIS} adherent />);
+
+    const liens = screen.getAllByRole('link', { name: 'Entrer dans l’espace adhérent' });
+    expect(liens).toHaveLength(2);
+    for (const lien of liens) expect(lien.getAttribute('href')).toBe('/fr/espace');
+
+    // Et plus un seul chemin vers le tunnel : il n'aurait rien à y vendre.
+    expect(screen.queryByRole('link', { name: FR.appel.action })).toBeNull();
+    expect(screen.queryByRole('link', { name: FR.appel.titre })).toBeNull();
+  });
+
+  /**
    * Une ancre qui ne trouve pas sa cible ne lève rien : le clic ne fait
    * simplement rien, et personne ne s'en aperçoit avant un utilisateur.
    */
   it('le bouton des récits descend jusqu’à une ancre qui EXISTE', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
 
     const ancre = screen.getByRole('link', { name: FR.actionRecits }).getAttribute('href') ?? '';
 
@@ -97,7 +123,7 @@ describe('le héros', () => {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   it('le collage nomme ses trois images, et les trois différemment', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
     const collage = container.querySelector('[class*="_collage_"]') as HTMLElement;
 
     const textes = [...collage.querySelectorAll('img')].map((image) => image.getAttribute('alt'));
@@ -109,7 +135,7 @@ describe('le héros', () => {
 
 describe('la bande de l’action de terrain', () => {
   it('porte les trois axes, avec leur numéro caché aux lecteurs d’écran', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
     const bande = container.querySelector('[class*="_bande_"]') as HTMLElement;
 
     expect(within(bande).getByRole('heading', { level: 2 }).textContent).toBe(
@@ -141,7 +167,7 @@ describe('adhérer', () => {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   it('la carte de mises en garde porte les trois notes, telles qu’elles sont écrites', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
     const notes = container.querySelector('[class*="_notes_"]') as HTMLElement;
 
     expect(within(notes).getByText(FR.notesTitre)).toBeTruthy();
@@ -156,7 +182,7 @@ describe('adhérer', () => {
   });
 
   it('les trois façons de soutenir portent chacune leur pictogramme', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
     const cartes = container.querySelectorAll('[class*="_soutien_"]');
 
     expect(cartes).toHaveLength(FR.soutiens.length);
@@ -174,7 +200,7 @@ describe('adhérer', () => {
    * repères d'un lecteur d'écran.
    */
   it('la rangée sans titre visible en porte quand même un', () => {
-    render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
 
     const titres = screen
       .getAllByRole('heading', { level: 2 })
@@ -184,7 +210,7 @@ describe('adhérer', () => {
   });
 
   it('la citation ferme la page, et son bouton mène au même tunnel', () => {
-    render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
 
     expect(screen.getByText(FR.citation)).toBeTruthy();
     expect(screen.getByText(FR.citationRelance)).toBeTruthy();
@@ -196,7 +222,7 @@ describe('adhérer', () => {
 
 describe('les contenus', () => {
   it('la liste vide le DIT, plutôt que de disparaître', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={[]} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={[]} adherent={false} />);
 
     expect(screen.getByText(traduire('fr', 'v2.assoVide'))).toBeTruthy();
 
@@ -223,7 +249,7 @@ describe('les contenus', () => {
       contenu({ slug: `contenu-${String(rang)}` }),
     );
 
-    render(<AssociationV3 langue="fr" contenus={huit} />);
+    render(<AssociationV3 langue="fr" contenus={huit} adherent={false} />);
 
     for (const item of huit) {
       expect(screen.getByRole('link', { name: new RegExp(item.titre) })).toBeTruthy();
@@ -231,7 +257,7 @@ describe('les contenus', () => {
   });
 
   it('chaque lien pointe la fiche du contenu, dans la langue servie', () => {
-    render(<AssociationV3 langue="en" contenus={TROIS} />);
+    render(<AssociationV3 langue="en" contenus={TROIS} adherent={false} />);
 
     for (const item of TROIS) {
       expect(
@@ -254,7 +280,7 @@ describe('les contenus', () => {
     const ferme = contenu({ slug: 'ferme', acces: 'abonnes', peutLire: false, motif: 'preview' });
     const ouvert = contenu({ slug: 'ouvert', acces: 'abonnes', peutLire: true, motif: 'subscription' });
 
-    render(<AssociationV3 langue="fr" contenus={[ferme, ouvert]} />);
+    render(<AssociationV3 langue="fr" contenus={[ferme, ouvert]} adherent={false} />);
 
     const pastilles = screen.getAllByText(traduire('fr', 'v2.assoReserve'));
     expect(pastilles).toHaveLength(1);
@@ -269,7 +295,7 @@ describe('les contenus', () => {
    * deux fois la même phrase, la première annoncée comme une image.
    */
   it('les vignettes des contenus sont décoratives', () => {
-    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} />);
+    const { container } = render(<AssociationV3 langue="fr" contenus={TROIS} adherent={false} />);
     const section = container.querySelector('[class*="_sectionArticles_"]') as HTMLElement;
 
     const images = [...section.querySelectorAll('img')];
@@ -287,6 +313,7 @@ describe('les contenus', () => {
       <AssociationV3
         langue="fr"
         contenus={[contenu({ slug: 'date', publieLe: '2026-09-01T00:00:00.000Z' })]}
+        adherent={false}
       />,
     );
 

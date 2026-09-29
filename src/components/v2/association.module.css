@@ -251,6 +251,48 @@
   padding-left: 26px;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA V2 N'AVAIT AUCUNE RÈGLE POUR LES MÉDIAS DU CORPS — ET C'EST PIRE     │
+ * │ QU'UN PLAFOND MANQUANT.                                                  │
+ * │                                                                          │
+ * │ Sans largeur déclarée, une image s'affiche à sa taille NATURELLE. Une    │
+ * │ photo d'appareil moderne fait quatre mille pixels de large : elle ne     │
+ * │ dépassait pas seulement la colonne, elle débordait la page et y          │
+ * │ ajoutait un défilement horizontal.                                       │
+ * │                                                                          │
+ * │ Personne ne l'avait vu parce que les huit contenus d'origine portent des │
+ * │ photos déjà mises à la bonne taille, choisies à la main. Le dépôt de     │
+ * │ fichiers du 29 septembre a changé cela : ce qui arrive maintenant est ce │
+ * │ qui sort de l'appareil.                                                  │
+ * │                                                                          │
+ * │ Les mêmes bornes qu'en V3, à la lettre : la V2 est un rendu DÉGRADÉ,     │
+ * │ jamais un rendu faux.                                                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.corps img,
+.corps video {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: min(560px, 80vh);
+  margin: 0 auto 22px;
+  border-radius: var(--rayon-encart);
+}
+
+/* Le fond sombre tient la place d'une vidéo dont la première image n'est pas
+   encore là : un rectangle crème se confondrait avec un trou dans la page. */
+.corps video {
+  background: var(--chrome);
+}
+
+.corps audio {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 0 22px;
+}
+
 .corps li::before {
   content: '';
   position: absolute;

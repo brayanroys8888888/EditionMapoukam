@@ -38,6 +38,7 @@ import styles from '@/components/offres/offres.module.css';
  */
 interface Parametres {
   params: Promise<{ langue: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
 export async function generateMetadata({ params }: Parametres): Promise<Metadata> {
@@ -71,8 +72,22 @@ function LigneComparatif({
   );
 }
 
-export default async function PageOffres({ params }: Parametres) {
+export default async function PageOffres({ params, searchParams }: Parametres) {
   const langue = langueValide((await params).langue);
+
+  /*
+   * POURQUOI ON ARRIVE ICI, quand on y est envoyé depuis l'espace adhérent.
+   *
+   * `espace`     — on n'a jamais adhéré ;
+   * `renouveler` — on a adhéré, et l'adhésion s'est refermée.
+   *
+   * Sans cette nuance, les deux liraient la même phrase d'accueil, et le
+   * second se demanderait ce qu'il a perdu. Toute autre valeur est ignorée :
+   * l'adresse est publique, et rien ne doit dépendre de ce qu'on y écrit.
+   */
+  const brut = (await searchParams)['motif'];
+  const demande = Array.isArray(brut) ? brut[0] : brut;
+  const motif = demande === 'espace' || demande === 'renouveler' ? demande : null;
 
   let offres;
   try {
@@ -100,7 +115,7 @@ export default async function PageOffres({ params }: Parametres) {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   if (estV3()) {
-    return <OffresV3 langue={langue} offres={offres} />;
+    return <OffresV3 langue={langue} offres={offres} motif={motif} />;
   }
 
   const { abonnement, association, achat_unite: achat } = offres;

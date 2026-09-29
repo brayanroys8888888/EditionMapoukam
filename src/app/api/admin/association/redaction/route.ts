@@ -29,7 +29,41 @@ const blocSchema = z.discriminatedUnion('type', [
     url: z.string().trim().min(1).max(500),
     legende: z.string().trim().max(300).optional(),
   }),
+  /*
+   * VIDÉO ET AUDIO — migration 0108, la même forme que la photo.
+   *
+   * Un média posé DANS le texte, entre deux paragraphes. À ne pas confondre
+   * avec `video_url` plus bas, qui porte LA vidéo d'un replay : celle-là est
+   * le contenu, celles-ci l'illustrent.
+   */
+  z.object({
+    type: z.literal('video'),
+    url: z.string().trim().min(1).max(500),
+    legende: z.string().trim().max(300).optional(),
+  }),
+  z.object({
+    type: z.literal('audio'),
+    url: z.string().trim().min(1).max(500),
+    legende: z.string().trim().max(300).optional(),
+  }),
 ]);
+
+/**
+ * COMBIEN DE VIDÉOS LE CORPS D'UN TYPE DONNÉ ACCEPTE.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UN REPLAY PORTE UNE VIDÉO, ET IL LA PORTE DÉJÀ.                         │
+ * │                                                                          │
+ * │ C'est `video_url`, avec sa durée : celle que l'espace adhérent liste     │
+ * │ sous « Replays » et dont la carte annonce les minutes. Le corps d'un     │
+ * │ replay n'en reçoit donc aucune autre — la seconde ne serait annoncée     │
+ * │ nulle part, et la durée affichée ne parlerait plus que de la première.   │
+ * │                                                                          │
+ * │ Les autres types n'ont pas de plafond : un récit de terrain peut porter  │
+ * │ deux témoignages filmés sans cesser d'être un récit.                     │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+const VIDEOS_MAX: Record<string, number> = { replay: 0 };
 
 const redactionSchema = z.object({
   id: z.uuid().nullish(),
@@ -126,6 +160,22 @@ export async function PUT(request: Request): Promise<Response> {
         message: 'Un article se publie avec au moins un paragraphe.',
       });
     }
+  }
+
+  /*
+   * CELLE-CI S'APPLIQUE AUSSI AU BROUILLON, et c'est la différence.
+   *
+   * Les trois refus ci-dessus disent « il manque quelque chose » : un
+   * brouillon a le droit d'être incomplet. Celui-ci dit « il y en a de trop ».
+   * Laisser passer trois vidéos dans un brouillon de replay ferait découvrir
+   * le refus le jour de la publication, une fois l'article écrit.
+   */
+  const plafond = VIDEOS_MAX[d.type];
+  if (plafond !== undefined && d.corps.filter((bloc) => bloc.type === 'video').length > plafond) {
+    return fail(422, {
+      code: 'replay_une_seule_video',
+      message: 'Un replay ne porte qu’une vidéo : celle de son encadré.',
+    });
   }
 
   const resultat = await enregistrerPublicationAssociation(garde.acteur.id, {

@@ -48,7 +48,7 @@ session relira §F4 bis et rouvrira la question.
 | --- | --- | --- |
 | 1 | **Socle de données** — publications, agenda, échanges | ✅ |
 | 2 | **Administration** — l'éditeur et les cinq onglets | ✅ |
-| 3 | Espace adhérent — `/espace`, article, commentaires | |
+| 3 | Espace adhérent — `/espace`, article, commentaires | en cours |
 | 4 | Automatismes serveur — publication datée, e-mails, liens signés | |
 
 ---
@@ -249,14 +249,14 @@ c'est le formulaire qu'elle remplit qui détruit.
 > refusé, et il a bien fait : l'erreur de compilation est la seule chose qui
 > sépare un barillet pratique d'une **clé `service_role` publiée**.
 
-### Deux manques nommés, pas cachés
+### Un manque nommé, pas caché
 
-- **Le dépôt de fichier n'est pas branché** : couverture, photo et PDF se
-  saisissent par adresse. Le document le range dans « non simulé » (Partie E) ;
-  il viendra avec les liens signés de l'étape 4. L'aide du champ le dit
 - **« Prévenir les adhérents » enregistre une intention, pas un envoi.** La
   case pose `prevenir_adherents` ; l'e-mail viendra avec les automatismes.
   Promettre un envoi qui ne part pas serait pire que ne rien promettre
+
+> Le **dépôt de fichier** figurait ici comme second manque. Il est branché
+> depuis le 29 septembre — migration `0109`, voir plus bas.
 
 ### `dave` — les cinq onglets ✅
 
@@ -292,13 +292,146 @@ c'est le formulaire qu'elle remplit qui détruit.
 > **Le lien d'un séminaire n'est jamais affiché**, même à l'équipe : il vaut une
 > place, il se recopie. Un test l'interdit explicitement.
 
+### Le corps accepte la vidéo et le son — migration `0108` (29 septembre)
+
+Demande du propriétaire. Le corps portait cinq types de blocs ; il en porte
+sept. Un média **dans le texte**, entre deux paragraphes : le témoignage filmé
+d'une mère au milieu d'un récit, les trois minutes d'un atelier au milieu d'un
+compte rendu. Sans lui, l'éditeur n'avait que deux issues — couper le média, ou
+le mettre en tête et faire passer l'article pour un replay.
+
+- [x] `video` et `audio`, même forme que `photo` : une adresse, une légende
+- [x] La contrainte de base, le schéma Zod, le lecteur du service et les **deux**
+      rendus d'article (V3 et V2) suivent ensemble
+- [x] `preload="none"` partout — §5.1 : un média qui se charge de lui-même
+      dépense un forfait que personne n'a engagé
+- [x] **Un replay ne porte qu'une vidéo, et il la porte déjà** : celle de
+      `video_url`, avec sa durée, celle que l'espace liste sous « Replays ».
+      Son corps n'en reçoit aucune autre
+- [x] 7 tests d'intégration, 6 de composant
+
+> **Ce refus-là s'applique DÈS LE BROUILLON**, contrairement à ses trois
+> voisins. Ils disent « il manque quelque chose », et un brouillon a le droit
+> d'être incomplet ; celui-ci dit « il y en a de trop ». Le découvrir à la
+> publication ferait écrire tout l'article pour rien.
+
+> **Pourquoi la limite n'est pas en base.** Elle croise deux tables — le type
+> vit sur `association_contents`, le corps sur
+> `association_content_translations` — ce qu'une contrainte `check` ne sait pas
+> dire. Et elle ne protège aucune donnée : une seconde vidéo n'est pas
+> incohérente, elle est de trop. Elle vit donc dans la route, avec ses sœurs.
+
+### Le dépôt de fichiers, et deux bucket (29 septembre)
+
+Demande du propriétaire : « choisir un fichier dans l'appareil ». Migration
+`0109`, route `POST /api/admin/association/fichiers`, contrôle `ChampFichier`
+posé sur la couverture, la fiche PDF, la vidéo du replay et chaque média du
+corps.
+
+- [x] **C'est le RÔLE qui décide du bucket, pas le format.** La `couverture` va
+      dans `association-images`, **public** ; `photo`, `video`, `audio` et
+      `document` dans `association-fichiers`, **privé**
+- [x] Le privé est servi par **URL signée de 300 s**, produite par le service au
+      moment de lire — donc jamais pour qui n'a pas le droit de lire
+- [x] Quatre contrôles au dépôt : rôle, taille, type déclaré, **octets de tête**
+- [x] Le **nom d'origine est jeté**, remplacé par un jeton aléatoire
+- [x] Les **adresses collées à la main continuent de marcher**
+- [x] **Le dépôt se VOIT** : confirmation « ✓ *nom* déposé », et aperçu du média
+      dans le bloc — sans quoi le seul retour était un champ qui se remplissait
+      d'un chemin de stockage, et l'éditeur croyait son fichier perdu
+- [x] **Les médias sont bornés en HAUTEUR**, pas seulement en largeur : une
+      photo de téléphone en 3:4 remplissait 1 125 px dans une colonne de 844 —
+      plus d'un écran pour une illustration. Et la V2 n'avait aucune règle du
+      tout : une photo s'y affichait à sa taille naturelle, débordant la page
+      et ajoutant un défilement horizontal
+- [x] 14 tests d'intégration, 9 de composant
+
+> **Pourquoi la couverture est publique.** C'est le même arbitrage que `covers`
+> à la migration `0020` : elle s'affiche sur les cartes de `/association`, y
+> compris celles des contenus RÉSERVÉS, où elle est justement ce qui donne
+> envie d'adhérer. La signer la retirerait du CDN et ferait payer une URL neuve
+> à chaque visite, à un public dont §5.1 rappelle qu'une part importante est sur
+> réseau mobile lent.
+
+> **Pourquoi le reste ne l'est pas.** Ces fichiers vivent dans le corps, que la
+> base ne rend que si `can_read` est vrai. Les mettre en accès libre ferait
+> tenir le mur sur le texte seul, et laisserait passer tout ce qui n'en est pas.
+> C'est l'arbitrage n° 15 du cahier des charges, du 28 septembre.
+
+> **Un type dont on ne sait pas reconnaître la signature est REFUSÉ.** Le
+> réflexe inverse — « je ne sais pas vérifier, donc je laisse passer » —
+> transforme chaque format ajouté en trou, sans que personne le remarque : le
+> dépôt marche, et c'est tout ce qu'on regarde.
+
+### Publier tout de suite, et pouvoir enfin garder un brouillon (29 septembre)
+
+- [x] Trois diffusions : **publier maintenant**, programmer, garder en brouillon
+- [x] Le créneau ne s'affiche que sous « programmer » — visible ailleurs, il
+      ferait choisir une date sans effet
+- [x] **Un brouillon a le droit d'être incomplet** : la liste de contrôle ne
+      bloque plus que ce qui PARAÎT
+
+> **Deux défauts fermés au passage.** L'écran ne savait que programmer : le
+> champ caché `publier` valait l'état courant, si bien qu'un texte neuf ne
+> pouvait jamais paraître tout de suite. Et le bouton « Brouillon » d'à côté
+> envoyait EXACTEMENT la même chose que son voisin — deux gestes, un seul
+> effet. Il a disparu.
+
+### Le formulaire « Écrire une version » est retiré (29 septembre)
+
+Demande du propriétaire. Il était le dernier morceau de l'ancien écran, et il
+était **seul** à savoir écrire la version ANGLAISE : le retirer sans plus aurait
+rendu l'anglais inéditable.
+
+- [x] L'éditeur porte désormais la **langue du texte**, dans l'adresse (`?v=en`)
+      et en champ caché
+- [x] Deux **liens** FR / EN en tête de l'écran, absents tant que rien n'est
+      enregistré
+
+> **Le défaut que cela ferme.** L'écran lisait la version `fr` EN DUR, et
+> l'action enregistrait sous la langue de l'INTERFACE. Ouvrir
+> `/en/admin/association/rediger` chargeait donc le texte français et
+> l'écrivait par-dessus l'anglais. Personne ne l'avait vu parce que la version
+> anglaise se posait ailleurs — par le formulaire qui vient de disparaître.
+
+### La création passe enfin par l'écran de rédaction (29 septembre)
+
+« Nouvelle publication » ouvrait un formulaire replié au **bas** de l'écran
+précédent, pendant que `daveEdit` existait à côté. Deux chemins de création
+divergent, et c'est toujours celui qu'on n'a pas regardé qui écrit en base.
+
+- [x] Le bouton est un **lien** vers `/admin/association/rediger`, d'un clic
+- [x] Un **volet de choix** à sa droite — un `<details>`, donc sans JavaScript —
+      pose le type avant d'arriver : `rediger?type=replay`
+- [x] L'ancien formulaire est **supprimé**, et ses sept clés de traduction avec
+- [x] `categorie` et `acces` passent de champs cachés à deux **sélecteurs** :
+      ils ne vivaient que dans le formulaire disparu, et sans eux toute
+      publication neuve serait née « Nos actions, réservée »
+- [x] `TYPES_PUBLICATION` et `SIGLE_TYPE` vivent dans **un seul** module —
+      trois écrans les recopiaient
+
+> **Les puces « Publics concernés » rendaient mal, et voici pourquoi.** Elles
+> portaient `.segOpt`, qui n'a ni fond ni trait : c'est `.seg`, le CONTENEUR,
+> qui les dessine — et il n'y en a pas ici, puisqu'on en choisit plusieurs.
+> Chaque bouton retombait donc sur le dessin du **navigateur**, gris système sur
+> une carte sombre. Rien ne le signalait : un bouton sans style reste un bouton,
+> et il marche.
+
 ## Étape 3 — L'espace adhérent
 
-- [ ] Route `/espace` et sa **règle d'entrée** (A1) — cinq situations, dont la
-      fenêtre de sept jours après un impayé
-- [ ] Mot du mois, rubriques, À la une, derniers contenus
-- [ ] Agenda avec inscription, campagne, fiches, replays
+- [x] Route `/espace` et sa **règle d'entrée** (A1) — migrations `0106` et
+      `0107`, quatre verdicts, la période de grâce lue en base et jamais
+      recopiée
+- [x] Mot du mois, rubriques, À la une, derniers contenus
+- [x] Agenda (état seulement), campagne, fiches, replays
+- [x] **L'entrée dans l'espace après l'achat** : la confirmation de
+      souscription et les deux appels de `/association` mènent à `/espace` dès
+      que le verdict l'ouvre. Ils menaient à la page publique — celle qui
+      propose justement d'adhérer —, et l'adhérent devait deviner l'adresse
+- [ ] Le test de la traduction **verdict → redirection** (les cinq situations
+      sont vérifiées à la main, pas par la porte)
 - [ ] Article : commentaires, cœurs, « À lire ensuite »
+- [ ] Le bouton « S'inscrire » de l'agenda
 - [ ] Mobile : une colonne, zones tactiles de 44 px
 
 ## Étape 4 — Les automatismes

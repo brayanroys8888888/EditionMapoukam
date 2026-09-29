@@ -236,6 +236,169 @@ base locale est revenue à son jeu de démonstration.
 
 ---
 
+## 0 undecies. L'installateur en une commande — 23 septembre 2026
+
+`installation/installer.sh` installe tout sur un VPS neuf. Il peut être relancé
+sans rien perdre, et chaque fonction à laquelle il manque une clé est éteinte
+au lieu de faire échouer le site. Le mode d'emploi est dans
+`installation/LISEZMOI.md`. Le script ne porte aucun commentaire, à la demande
+du propriétaire.
+
+- `installation/mapoukam.conf` est **pré-rempli** avec les clés de
+  `.env.local` (Notch Pay, Resend, Google). Il est gitignoré et s'envoie par
+  `scp`. Ce sont les clés exposées le 19 septembre : il faut les faire tourner
+  dans ce fichier aussi.
+- **Défaut corrigé** : `docker/env.exemple` et `docs/VPS-PAS-A-PAS.md`
+  posaient `SUPABASE_ALIAS_INTERNE=api.editionsmapoukam.com`, ce qui est faux
+  sur un VPS (voir `docs/DOCKER.md` §6). Avec cette valeur, le conteneur `app`
+  envoyait du TLS vers le port 443 de la passerelle, qui n'écoute qu'en clair.
+  La bonne valeur est `passerelle.interne`.
+- Les images sont épinglées sur les versions **éprouvées** (postgres
+  17.6.1.155, storage-api v1.67.26), avec repli sur un second registre si le
+  premier ne répond pas.
+- Éprouvé dans un conteneur Ubuntu 24.04 : la construction du `.env`, les
+  replis et la conservation des secrets à la relance. **Le parcours complet
+  n'a pas encore tourné sur un vrai VPS.**
+
+---
+
+## 0 decies. L'hébergement sur un VPS — la pile Docker, et onze défauts
+
+> Écrit du 21 au 23 septembre 2026. **La porte est verte : 1987 tests,
+> 126 fichiers.** Trois commits prêts, non poussés.
+
+### La demande, et le premier malentendu à ne pas rejouer
+
+> « aujourd'hui je voudrais que tu m'aide a héberger le site hostiger
+> proprement » — puis « base de donne plus frontend ».
+
+Le propriétaire n'a **qu'un hébergement web** Hostinger, pas de VPS. Deux
+constats ont fermé des portes, et ils ne sont pas à redécouvrir :
+
+1. **La base ne peut pas être du MySQL.** Hostinger en fournit ; ce site repose
+   sur PostgreSQL **et** sur la pile Supabase autour — authentification,
+   stockage à URL signées, PostgREST, RLS avec `auth.uid()`. Mesuré : 54
+   politiques RLS sur 38 tables, 177 fonctions SQL dont 164 en
+   `security definer`, 124 requêtes applicatives. **MySQL n'a pas de RLS** :
+   les règles redescendraient dans le TypeScript, ce que trois tests
+   d'architecture interdisent. Ce serait des semaines, pour un gain nul.
+2. **Un hébergement web ne fait pas tourner Docker.** Donc pas de Supabase
+   auto-hébergé. La base reste chez Supabase, ou il faut un VPS.
+
+Le domaine définitif est **`editionsmapoukam.com`** — au pluriel, là où
+l'ancien sous-domaine était `edition-mapoukam.royceproject.site`, singulier et
+avec un tiret. Les deux orthographes coexistent dans le dépôt.
+
+### Ce qui a été construit
+
+| Fichier | Ce qu'il porte |
+| --- | --- |
+| `docker-compose.yml` | huit services : base, auth, rest, storage, imgproxy, passerelle Nginx, migrations, application |
+| `Dockerfile` | le **seul** conteneur construit : l'application. Trois étages, poppler dans l'image finale, jamais root |
+| `docker/env.exemple` | 49 variables, dont 35 déjà bonnes et le domaine inscrit |
+| `docker/generer-cles.mjs` | les six secrets de la pile, sans dépendance |
+| `docker/appliquer-migrations.sh` | les 87 migrations, idempotent |
+| `docker/passerelle.conf`, `docker/db-init/*.sql` | routage, mots de passe des rôles |
+| `docs/VPS-PAS-A-PAS.md` | procédure **autonome**, domaine réel, aucun renvoi |
+| `docs/DOCKER.md` | la pile, et le tableau des **douze** pièges |
+| `docs/HEBERGEMENT-VPS.md` | l'autre chemin : composition officielle Supabase + `systemd` |
+| `docs/VPS-A-INSTALLER.md` | la liste des logiciels |
+
+### Les onze défauts, tous silencieux
+
+**Téléchargement** (commit `65b0659`, quatre défauts) : le nom de fichier
+accentué ne traverse pas le paramètre `download` d'une URL signée ; une action
+serveur qui redirige vers un fichier bloque la file du routeur — passé deux
+téléchargements, la page entière devenait muette ; le `<select>` de langue
+était rendu **hors** du formulaire, donc jamais soumis ; le rotor s'éteignait
+à 2,5 s sur une génération d'une minute.
+
+**Pile Docker** (commits `8b35ccd` et suivants, sept défauts) :
+
+| Défaut | Ce qu'on voyait |
+| --- | --- |
+| Montage d'un **dossier** sur `/docker-entrypoint-initdb.d` | il **remplace** l'initialisation de l'image : base « saine » mais nue |
+| `POSTGRES_USER=postgres` | écrase le superutilisateur attendu (`supabase_admin`) : `migrate.sh` échoue, aucun rôle créé |
+| Scripts montés à la **racine** du répertoire d'init | joués **avant** `migrate.sh`, donc avant la création des rôles |
+| Pas de `start_period` sur le contrôle de santé | base déclarée « unhealthy », quatre services refusés |
+| `alter` sur un rôle **absent** (`supabase_functions_admin`) | tout le fichier s'arrête : `storage` en boucle, `storage.buckets` jamais créée, migration 0020 en échec |
+| Variables **vides** refusées par le schéma Zod | page d'erreur derrière un HTTP 200 |
+| Course sur `storage.buckets` | créée par le service `storage`, pas par une migration ; `service_started` ne garantit pas « a fini » |
+
+Le dernier n'était visible **que** grâce au `service_completed_successfully`
+ajouté par le propriétaire : la course existait avant, masquée par les 45
+secondes qui séparaient deux commandes manuelles.
+
+### Deux décisions prises
+
+**Une variable vide vaut une variable absente** (`src/lib/config/env.ts`,
+`secretFacultatif`). Tous les hébergeurs transmettent des variables vides ;
+`optional()` accepte l'absence, jamais le vide. +5 tests.
+
+**La V3 devient la direction par défaut.** Le site en ligne servait la V3
+— mesuré sur `data-design` — pendant que le repli du code servait la V2. La
+règle n'a pas changé : *« le repli est la direction VALIDÉE, pas la plus
+récente »*. Sa condition était factuelle, et `docs/REFONTE-V3.md` enregistre
+les **treize lots livrés** les 5 et 6 septembre. Les assertions ont donc été
+réécrites, pas supprimées, et ce qui reste interdit y est inscrit : **qu'un
+repli serve une direction non livrée**.
+
+### Les pièges d'environnement, à ne pas rechercher
+
+- **Docker Hub est injoignable depuis cette machine** (délais TLS répétés).
+  Le miroir **`public.ecr.aws/supabase/*` répond**. L'essai a donc tourné sur
+  `postgres 17.6.1.155` et `storage-api 1.67.26`, alors que le modèle déclare
+  `17.4.1.075` et `1.25.7` — **ces deux versions ne sont pas éprouvées**.
+  `gotrue v2.179.0`, la version déclarée, est disponible sur le miroir et
+  fonctionne ; `v2.195.0` **échoue** (`must be owner of function uid`).
+- **Le port 54322** est tenu par la pile Supabase de développement. Les deux
+  piles ne cohabitent pas : `docker stop` sur les conteneurs `supabase_*`
+  avant de monter celle-ci, `supabase start` pour revenir.
+- **`npm run verify` tubé dans `tail` sort TOUJOURS en 0** : le code d'un tube
+  est celui de son dernier maillon. Lire le rapport, jamais le code de sortie.
+- **L'ingestion expire sous charge** : un `Test timed out in 300000ms` sur
+  `ingestion.test.ts` n'est pas une régression. Rejouer le fichier seul.
+- **Un montage dont la source n'existe pas ne provoque pas d'erreur** : Docker
+  **crée un dossier vide** à sa place, silencieusement (vérifié le
+  23 septembre). D'où une base sans rôles et des emails sans code si
+  quelqu'un récupère `docker-compose.yml` sans le reste du dépôt.
+
+### ⚠️ Incident de sécurité — rotation TOUJOURS EN ATTENTE
+
+`docker compose config` **résout `env_file` et l'imprime en clair**. Lancée le
+19 septembre pour valider la composition, elle a exposé dans la transcription :
+la clé d'API **Resend**, le **secret client Google**, **`BETTER_AUTH_SECRET`**
+et les trois clés **Notch Pay** (mode test).
+
+**À faire tourner, et à remplacer dans Vercel** : Resend et Google en priorité.
+Valider une composition se fait avec `docker compose config --quiet`.
+
+### L'état du dépôt
+
+- `CLAUDE.md` et `QUESTIONS.md` ont été **retirés du dépôt** par le
+  propriétaire (commits `9113c26`, `9d30433`), puis **restaurés localement** et
+  ajoutés au `.gitignore`. Ils servent toujours en session.
+- `compose-resolu.yml` — composition **entièrement résolue**, secrets en clair,
+  générée à la demande, **gitignorée**. Les secrets vivent donc à trois
+  endroits sur ce disque : `.env`, `.env.local`, ce fichier.
+- Trois commits **non poussés** : `615fbd6`, `8d4bfc0`, `adf7e49`.
+
+### À savoir avant de reprendre
+
+- **La migration `0087` n'est toujours pas appliquée au Supabase hébergé** :
+  les couvertures du back-office en ligne restent sur leur substitut.
+- **Les six secrets extérieurs restent à saisir** dans le `.env` du VPS :
+  Google (2), Notch Pay (3), Resend (1, qui sert aussi de `SMTP_PASS`). Le
+  domaine doit être **vérifié chez Resend** — l'étape la plus lente.
+- **La reprise des données** du Supabase hébergé vers le VPS n'est pas faite.
+  C'est la seule étape qui déplace une base de production : à répéter à blanc.
+- `modelslandcontact@gmail.com` est **administrateur** sur le projet hébergé,
+  adresse confirmée d'autorité le 19 septembre. Ces deux écritures ne sont pas
+  dans le journal d'audit — elles passent par `service_role`, hors des
+  fonctions `admin_*`.
+
+---
+
 ## 0 nonies. Le téléchargement — QUATRE défauts, dont deux invisibles
 
 > Écrit le 19 septembre 2026. **La porte est verte : 1971 tests, 125 fichiers (+11).**

@@ -1,0 +1,605 @@
+/*
+ * L'ESPACE ADHÉRENT.
+ *
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ IL N'A PAS DE COTE RELEVÉE, ET C'EST DIT ICI PLUTÔT QUE DÉCOUVERT.      │
+ * │                                                                          │
+ * │ Le prototype du site ne porte pas cet écran : il est né du document du   │
+ * │ 28 septembre, qui décrit des FONCTIONS et non des pixels. Les cotes      │
+ * │ ci-dessous reprennent donc celles des écrans déjà mesurés — la colonne   │
+ * │ de 1200, les cartes à 28 px de rayon, l'échelle d'espacement — pour que  │
+ * │ l'espace appartienne visiblement au même site.                           │
+ * │                                                                          │
+ * │ Le jour où le prototype en portera une version, c'est elle qui fera foi, │
+ * │ et ce fichier se mesurera comme les autres.                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 28px 72px;
+}
+
+/* ── Le bandeau d'impayé ────────────────────────────────────────────────── */
+
+/*
+ * EN TÊTE, et non en pied : c'est la seule information de cette page qui
+ * demande un geste, et qui a une date limite. Plus bas, elle serait lue après
+ * le contenu qu'elle menace.
+ */
+.bandeauImpaye {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-3);
+  padding: 18px 22px;
+  border: 1.5px solid var(--region-afrique_centrale-encre);
+  border-radius: 20px;
+  background: var(--region-afrique_centrale-fond);
+}
+
+.bandeauImpayeTitre {
+  margin: 0;
+  font-weight: var(--graisse-forte);
+  color: var(--region-afrique_centrale-encre);
+}
+
+.bandeauImpayeTexte {
+  flex: 1 1 320px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.bandeauImpayeBouton {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: 10px 20px;
+  border-radius: var(--rayon-pastille);
+  background: var(--action);
+  color: var(--action-texte);
+  font-family: var(--police-titre);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+/* ── L'en-tête ──────────────────────────────────────────────────────────── */
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-4);
+}
+
+.logo {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  padding: 5px;
+  border-radius: 16px;
+  background: var(--surface);
+  object-fit: contain;
+  box-shadow: var(--ombre-s);
+}
+
+.oeil {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.bonjour {
+  margin: 4px 0 0;
+  font-family: var(--police-titre);
+  font-size: 34px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+}
+
+.accueil {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+
+/* Les pastilles se poussent à droite tant qu'il y a la place. */
+.pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pas-2);
+  margin-left: auto;
+}
+
+.pastille {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-pastille);
+  background: var(--surface);
+  font-size: 12.5px;
+}
+
+.pastillePoint {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--region-afrique_ouest-encre);
+}
+
+/* ── Le mot du mois ─────────────────────────────────────────────────────── */
+
+.mot {
+  padding: 28px 32px;
+  border-radius: 28px;
+  background: var(--fond-doux);
+}
+
+.motOeil {
+  margin: 0 0 12px;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.motTexte {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 22px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.motSignature {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--encre-douce);
+}
+
+/* ── Les deux colonnes ──────────────────────────────────────────────────── */
+
+.colonnes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.principale {
+  display: flex;
+  flex: 999 1 560px;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.cote {
+  display: flex;
+  flex: 1 1 300px;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── À la une ───────────────────────────────────────────────────────────── */
+
+.une {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 24px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: box-shadow var(--transition-couleur);
+}
+
+.une:hover {
+  box-shadow: var(--ombre-m);
+}
+
+.unePhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 8;
+  object-fit: cover;
+}
+
+.uneEtiquettes {
+  display: flex;
+  gap: 8px;
+  margin: 20px 24px 0;
+}
+
+.etiquetteUne,
+.etiquetteType,
+.etiquetteRecent {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--rayon-pastille);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.etiquetteUne {
+  background: var(--action);
+  color: var(--action-texte);
+}
+
+.etiquetteType {
+  border: 1px solid var(--bordure);
+  color: var(--encre-douce);
+}
+
+/*
+ * « Récent » prend la sauge, pas la terre cuite : la terre cuite est celle de
+ * l'ACTION sur ce site, et une étiquette n'appelle aucun geste.
+ */
+.etiquetteRecent {
+  background: var(--region-afrique_ouest-fond);
+  color: var(--region-afrique_ouest-encre);
+  font-weight: var(--graisse-forte);
+}
+
+.uneTitre {
+  margin: 12px 24px 0;
+  font-family: var(--police-titre);
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+}
+
+.uneChapeau {
+  margin: 8px 24px 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--encre-douce);
+}
+
+.uneMeta {
+  margin: 10px 24px 0;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/* ── La grille des contenus ─────────────────────────────────────────────── */
+
+.grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 24px;
+}
+
+.carte {
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 18px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+  color: inherit;
+  text-decoration: none;
+  overflow: hidden;
+  transition: box-shadow var(--transition-couleur);
+}
+
+.carte:hover {
+  box-shadow: var(--ombre-m);
+}
+
+.cartePhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.carteHaut {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 16px 18px 0;
+}
+
+.carteTitre {
+  /*
+   * DEUX LIGNES AU PLUS. Laissé libre, un titre long ferait grandir sa carte
+   * et briserait l'alignement de toute la rangée.
+   */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  margin: 10px 18px 0;
+  font-size: 16px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.35;
+}
+
+.carteMeta {
+  margin: 8px 18px 0;
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/* ── Les blocs de la colonne ────────────────────────────────────────────── */
+
+.bloc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--ombre-s);
+}
+
+.blocTitre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 18px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.2;
+}
+
+.blocVide {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--encre-douce);
+}
+
+/* ── L'agenda ───────────────────────────────────────────────────────────── */
+
+.evenement {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pas-3);
+  padding-top: var(--pas-3);
+  border-top: 1px solid var(--bordure);
+}
+
+.evenementDate {
+  flex: none;
+  width: 56px;
+  padding: 8px 0;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--action) 12%, var(--surface));
+  color: var(--accent-encre);
+  font-weight: var(--graisse-forte);
+  font-size: 13px;
+  text-align: center;
+}
+
+.evenementCorps {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.evenementType {
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-encre);
+}
+
+.evenementTitre {
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+}
+
+.evenementLieu {
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+.evenementInscrit {
+  flex: none;
+  align-self: center;
+  font-size: 12.5px;
+  font-weight: var(--graisse-forte);
+  color: var(--region-afrique_ouest-encre);
+}
+
+.evenementNon {
+  flex: none;
+}
+
+/* ── La campagne ────────────────────────────────────────────────────────── */
+
+.campagne {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-3);
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--v3-sauge, var(--chrome));
+  color: var(--fond);
+}
+
+.campagneOeil {
+  margin: 0;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.campagneTitre {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 19px;
+  font-weight: var(--graisse-normale);
+  line-height: 1.25;
+}
+
+.campagneTotal {
+  margin: 0;
+  font-family: var(--police-titre);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.campagneObjectif {
+  font-family: var(--police-interface);
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.campagneJauge {
+  display: block;
+  height: 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 25%);
+  overflow: hidden;
+}
+
+.campagneJaugeRemplie {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--fond);
+}
+
+.campagneRegions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: var(--pas-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campagneRegionNom {
+  display: block;
+  font-size: 11.5px;
+  opacity: 0.8;
+}
+
+.campagneRegionKits {
+  display: block;
+  font-family: var(--police-titre);
+  font-size: 18px;
+}
+
+/* ── Les fiches ─────────────────────────────────────────────────────────── */
+
+.fiche {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--pas-3);
+  border-top: 1px solid var(--bordure);
+  color: inherit;
+  text-decoration: none;
+}
+
+.ficheTitre {
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+}
+
+.ficheMeta {
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/* ── Les replays ────────────────────────────────────────────────────────── */
+
+.replays {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-4);
+}
+
+.replaysBande {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: 24px;
+}
+
+.replay {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.replayPhoto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.replayTitre {
+  font-size: 14px;
+  font-weight: var(--graisse-forte);
+  line-height: 1.3;
+}
+
+.replayDuree {
+  font-size: 12.5px;
+  color: var(--encre-douce);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ SUR TÉLÉPHONE, UNE SEULE COLONNE — ET DANS L'ORDRE DU DOCUMENT.         │
+ * │                                                                          │
+ * │ En-tête, mot du mois, à la une, liste, agenda, campagne, replays. Les    │
+ * │ deux colonnes s'empilent d'elles-mêmes par `flex-wrap` ; ce bloc ne fait │
+ * │ que resserrer les marges et ramener les titres à une taille lisible sur  │
+ * │ un écran de poche.                                                       │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+@media (max-width: 760px) {
+  .page {
+    gap: 22px;
+    padding: 24px 18px 56px;
+  }
+
+  .bonjour {
+    font-size: 26px;
+  }
+
+  .pastilles {
+    margin-left: 0;
+  }
+
+  .mot {
+    padding: 22px 20px;
+  }
+
+  .motTexte {
+    font-size: 18px;
+  }
+
+  .uneTitre {
+    margin: 10px 18px 0;
+    font-size: 21px;
+  }
+
+  .uneChapeau,
+  .uneMeta {
+    margin-left: 18px;
+    margin-right: 18px;
+  }
+}

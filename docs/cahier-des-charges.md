@@ -407,8 +407,51 @@ document et n'avait pas de modèle économique (section 3.6).*
 - **Page d'un contenu** `/association/<slug>` : titre, chapeau et catégorie pour
   tous ; le corps pour les adhérents seuls. Sinon, à la place du corps, le mur
   d'adhésion et le lien vers les offres
-- **Aucun téléchargement, aucun fichier** : l'espace ne sert que du texte
 - Les adresses `/blog` et `/blog/<slug>` redirigent en **308**
+
+##### Ce qui a changé le 28 septembre 2026 : l'espace sert aussi des fichiers
+
+Cette section portait, du 3 au 28 septembre 2026 :
+
+> **Aucun téléchargement, aucun fichier** : l'espace ne sert que du texte.
+
+**La règle est retirée.** Décision du propriétaire du 28 septembre 2026, sur le
+document *« 11 — Association DAVE : fonctionnalités complètes »*, qui décrit
+quatre formes de publication : compte rendu, récit de terrain, **fiche PDF** et
+**replay** vidéo.
+
+**Pourquoi la règle existait.** Elle datait du remplacement de la section
+« blog », dont l'espace associatif a pris la place. Servir des fichiers
+supposait un stockage, des liens signés et une politique de rétention — tout ce
+que le catalogue avait déjà, et qu'il aurait fallu doubler pour un espace qui
+n'était alors qu'une liste d'articles. Interdire les fichiers était la manière
+la plus courte de dire « pas maintenant ».
+
+**Pourquoi elle tombe.** L'association ne publie pas que des textes : elle
+produit des supports pédagogiques et filme ses ateliers. Un espace réservé qui
+ne peut ni donner une fiche d'activités ni rendre un replay n'offre pas ce que
+l'adhésion promet.
+
+**Ce qui ne change pas, et qui n'est pas négociable.** La règle métier centrale
+du projet tient, entière :
+
+- **le téléchargement d'un livre du CATALOGUE n'est accordé que par un achat**,
+  jamais par un abonnement, et l'adhésion n'y change rien (sections 3.1 et
+  3.6.2). Une fiche de l'association n'est pas un titre du catalogue : elle n'a
+  ni prix, ni fiche produit, ni existence hors de l'espace ;
+- les fichiers de l'espace sont servis **par liens signés de courte durée**,
+  jamais par une adresse publique, et le droit est vérifié à chaque requête
+  (section 5.2, règle 3). Leur adresse en base n'est **pas lisible** : le
+  privilège de colonne est retiré à `anon` comme à `authenticated`, si bien
+  qu'une requête qui la demande échoue avant qu'une ligne soit lue ;
+- l'étanchéité des deux abonnements reste celle de la section 3.6.2 : un
+  abonnement de lecture n'ouvre pas l'espace, et l'adhésion n'ouvre pas le
+  catalogue.
+
+**Ce que la décision ajoute au périmètre**, et qui est décrit par le document du
+28 septembre : un agenda d'ateliers avec inscriptions, des échanges entre
+adhérents modérés avant affichage, une campagne suivie en nombre de kits, un
+mot du mois, et la programmation d'une publication à une date choisie.
 
 ### 4.2 Front-office — Espace utilisateur
 
@@ -1173,8 +1216,9 @@ Les coûts d'infrastructure augmentent avec le trafic et le volume de stockage, 
 | 10 | Accès d'un livret pédagogique | **Modulaire, titre par titre** : offert, inclus dans l'abonnement, vendu à l'unité, ou plusieurs à la fois — voir section 3.5.2 (tranché le 2 septembre 2026) |
 | 11 | Catalogue mêlé ou séparé | **Séparé, sans rien fermer** : `/contes` et `/livrets` s'ajoutent, `/catalogue` reste le fonds entier — voir section 3.5.3 (tranché le 2 septembre 2026) |
 | 12 | Devenir de la section « blog » | **Remplacée par l'espace de l'Association Dave.** Ses cinq articles y sont repris en **accès libre** et leurs adresses redirigent en 308 — voir section 3.6.4 (tranché le 3 septembre 2026) |
-| 13 | Rapport entre les deux abonnements | **Étanches et cumulables** : `lecture` n'ouvre que le catalogue, `association` que l'espace associatif, un compte peut porter les deux, et aucun des deux n'ouvre de téléchargement — voir section 3.6.2 (tranché le 3 septembre 2026) |
+| 13 | Rapport entre les deux abonnements | **Étanches et cumulables** : `lecture` n'ouvre que le catalogue, `association` que l'espace associatif, un compte peut porter les deux, et aucun des deux n'ouvre le téléchargement d'un livre du catalogue — voir section 3.6.2 (tranché le 3 septembre 2026, précisé le 28 septembre : les fichiers propres à l'espace associatif relèvent de l'arbitrage 15) |
 | 14 | Où vivent les offres et leurs prix | **En base, modifiables depuis le back-office** (F12 bis), et non plus dans ce document ni dans le code — voir section 3.3 (tranché le 3 septembre 2026) |
+| 15 | Fichiers dans l'espace associatif | **Autorisés** : fiches PDF et replays vidéo, servis par liens signés de courte durée. La règle « aucun téléchargement, aucun fichier » est retirée — voir section 4.1 F4 bis. Le téléchargement des livres du catalogue reste réservé à l'achat à l'unité (tranché le 28 septembre 2026) |
 
 ### 16.2 Points ouverts — à trancher avant le démarrage
 

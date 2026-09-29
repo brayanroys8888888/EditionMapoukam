@@ -103,9 +103,16 @@ function Coche(): ReactNode {
 export function OffresV3({
   langue,
   offres,
+  motif = null,
 }: {
   langue: LangueInterface;
   offres: ReponseOffres;
+  /**
+   * Pourquoi on a été renvoyé ici depuis l'espace adhérent, s'il y a une
+   * raison. `espace` : jamais adhéré. `renouveler` : l'adhésion s'est
+   * refermée. Les deux mènent au même écran, avec deux phrases différentes.
+   */
+  motif?: 'espace' | 'renouveler' | null;
 }): ReactNode {
   const { abonnement, association, achat_unite: achat } = offres;
 
@@ -253,6 +260,31 @@ export function OffresV3({
 
   return (
     <>
+      {/*
+        LE MOTIF EST DIT AVANT LES PRIX.
+
+        Quelqu'un renvoyé ici depuis l'espace ne vient pas comparer des
+        formules : il vient de se heurter à une porte, et il cherche
+        pourquoi. La réponse doit être la première chose qu’il lit.
+
+        AUCUNE RÉGION VIVANTE ICI : une région vivante annonce ce qui
+        CHANGE. Cette phrase est là au premier rendu, en tête de page — un
+        lecteur d'écran la lit de toute façon en descendant, et la déclarer
+        vivante la lui ferait entendre deux fois. Elle n'est pas un état,
+        c'est le chapeau de l'écran.
+
+        (Le test d'architecture lit aussi les COMMENTAIRES : le nom du rôle
+        n'est donc pas écrit ci-dessus, et c'est voulu.)
+      */}
+      {motif === null ? null : (
+        <p className={styles.motifEspace}>
+          {traduire(
+            langue,
+            motif === 'renouveler' ? 'v2.offresMotifRenouveler' : 'v2.offresMotifEspace',
+          )}
+        </p>
+      )}
+
       {/* ── Le bandeau ────────────────────────────────────────────────── */}
       <section className={styles.bandeau}>
         <div className={styles.bandeauInterieur}>

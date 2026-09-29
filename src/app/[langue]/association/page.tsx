@@ -7,7 +7,7 @@ import {
   LOGO_ASSOCIATION,
   VIDEO_PRESENTATION,
 } from '@/content/association';
-import { lireContenusAssociatifs } from '@/lib/association/service';
+import { lireContenusAssociatifs, verdictEspaceAdherent } from '@/lib/association/service';
 import { identifierAppelantAvecCookies } from '@/lib/auth/session';
 import { Erreur } from '@/components/etats';
 import { Revele } from '@/components/v2/revele';
@@ -69,6 +69,30 @@ export default async function PageAssociation({ params }: Parametres) {
     return <Erreur langue={langue} code="erreur_interne" />;
   }
 
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ CETTE PAGE PROPOSE D'ADHÉRER. ENCORE FAUT-IL QUE CE SOIT UTILE.      │
+   * │                                                                      │
+   * │ Elle affichait « Adhérer » à tout le monde, adhérents compris — et    │
+   * │ l'espace, lui, n'était lié de nulle part. Qui venait de payer         │
+   * │ retombait sur l'appel à payer, et devait taper l'adresse de           │
+   * │ `/espace` pour entrer dans ce qu'il avait acheté.                     │
+   * │                                                                      │
+   * │ Le verdict est LU, jamais déduit : c'est le même                      │
+   * │ `association_acces_espace` que la porte de `/espace` interroge, et    │
+   * │ c'est lui qui lit la période de grâce. Ce bouton n'ouvre donc aucun   │
+   * │ droit — au pire il mène à une porte qui referme.                      │
+   * │                                                                      │
+   * │ Un échec de lecture rend `false` : on montre alors l'appel à          │
+   * │ l'adhésion, qui est le chemin de la page publique. Se tromper dans    │
+   * │ ce sens-là coûte un clic ; se tromper dans l'autre promettrait une    │
+   * │ porte fermée.                                                         │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const acces =
+    appelant === null ? null : await verdictEspaceAdherent(appelant.id).catch(() => null);
+  const adherent = acces?.verdict === 'ouvert' || acces?.verdict === 'impaye_tolere';
+
   const [premier, ...suite] = contenus;
 
   /*
@@ -87,7 +111,7 @@ export default async function PageAssociation({ params }: Parametres) {
    * └──────────────────────────────────────────────────────────────────────┘
    */
   if (estV3()) {
-    return <AssociationV3 langue={langue} contenus={contenus} />;
+    return <AssociationV3 langue={langue} contenus={contenus} adherent={adherent} />;
   }
 
   return (
@@ -187,9 +211,13 @@ export default async function PageAssociation({ params }: Parametres) {
             */}
             <a
               className={styles.bouton}
-              href={`/${langue}/abonnement/souscrire?domaine=association`}
+              href={
+                adherent
+                  ? `/${langue}/espace`
+                  : `/${langue}/abonnement/souscrire?domaine=association`
+              }
             >
-              {presentation.appel.action}
+              {adherent ? traduire(langue, 'v2.assoEntrerEspace') : presentation.appel.action}
             </a>
           </p>
         </div>

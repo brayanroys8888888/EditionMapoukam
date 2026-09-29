@@ -188,9 +188,16 @@ function Ligne({
 export function AssociationV3({
   langue,
   contenus,
+  adherent,
 }: {
   langue: LangueInterface;
   contenus: ContenuAssociatif[];
+  /**
+   * LU, jamais déduit — le verdict d'`association_acces_espace`, traduit en
+   * booléen par la page. Il ne décide de rien : il choisit seulement entre
+   * deux liens, et la porte de `/espace` revérifie le droit à l'arrivée.
+   */
+  adherent: boolean;
 }): ReactNode {
   const presentation = lirePresentationAssociation(langue);
   const [terrain, adhesion] = presentation.sections;
@@ -238,9 +245,15 @@ export function AssociationV3({
               */}
               <a
                 className={styles.boutonPrincipal}
-                href={`/${langue}/abonnement/souscrire?domaine=association`}
+                href={
+                  adherent
+                    ? `/${langue}/espace`
+                    : `/${langue}/abonnement/souscrire?domaine=association`
+                }
               >
-                {presentation.appel.action}
+                {adherent
+                  ? traduire(langue, 'v2.assoEntrerEspace')
+                  : presentation.appel.action}
               </a>
 
               {/*
@@ -391,11 +404,17 @@ export function AssociationV3({
             */}
             <blockquote className={styles.citation}>{presentation.citation}</blockquote>
             <p className={styles.citationRelance}>{presentation.citationRelance}</p>
+            {/* Le second appel suit le premier : proposer d'adhérer à un
+                adhérent, c'est lui proposer de payer deux fois. */}
             <a
               className={styles.panneauAction}
-              href={`/${langue}/abonnement/souscrire?domaine=association`}
+              href={
+                adherent
+                  ? `/${langue}/espace`
+                  : `/${langue}/abonnement/souscrire?domaine=association`
+              }
             >
-              {presentation.appel.titre}
+              {adherent ? traduire(langue, 'v2.assoEntrerEspace') : presentation.appel.titre}
             </a>
           </div>
         </Revele>

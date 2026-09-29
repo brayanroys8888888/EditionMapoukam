@@ -104,6 +104,68 @@ describe('AUCUNE RÈGLE MÉTIER RECALCULÉE CÔTÉ INTERFACE', () => {
     expect(coupables).toEqual([]);
   });
 
+  /**
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ UNE FONCTION NE TRAVERSE PAS LA FRONTIÈRE SERVEUR → CLIENT.          │
+   * │                                                                      │
+   * │ Les propriétés d'un composant client sont SÉRIALISÉES par le serveur. │
+   * │ Une fonction ordinaire ne l'est pas : Next refuse à l'exécution.      │
+   * │                                                                      │
+   * │ Le défaut passe TOUS les filets habituels. `tsc` est content — le     │
+   * │ type déclare bien une fonction. ESLint aussi. Et les tests de         │
+   * │ composant le sont encore plus : ils rendent le composant SANS         │
+   * │ frontière, donc lui passent la fonction sans broncher. L'écran        │
+   * │ répond 200, puis la limite d'erreur prend la main dans le navigateur, │
+   * │ avec un identifiant de trace et rien d'autre.                         │
+   * │                                                                      │
+   * │ Arrivé le 29 septembre 2026 sur l'éditeur de publication : une        │
+   * │ fonction `lienVersion` qui fabriquait deux adresses. Deux chaînes ont │
+   * │ suffi à la remplacer.                                                 │
+   * │                                                                      │
+   * │ Les Server Actions font exception, et c'est la seule : elles portent  │
+   * │ une marque qui leur tient lieu d'adresse. Une flèche écrite sur place │
+   * │ n'en a pas — d'où le motif, qui ne vise QUE les flèches littérales.   │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  it('aucun composant SERVEUR ne passe une fonction à un composant CLIENT', () => {
+    /** Les modules marqués `'use client'`, et ce qu'ils exportent. */
+    const exportsClients = new Set<string>();
+
+    for (const fichier of sourcesInterface()) {
+      const source = readFileSync(fichier, 'utf8');
+      if (!/^['"]use client['"]/m.test(source)) continue;
+
+      for (const trouve of source.matchAll(/export function ([A-Z]\w*)/g)) {
+        if (trouve[1]) exportsClients.add(trouve[1]);
+      }
+    }
+
+    // Le parcours doit porter sur quelque chose : sans composant client
+    // repéré, ce test passerait au vert en n'examinant rien.
+    expect(exportsClients.size).toBeGreaterThanOrEqual(3);
+
+    const coupables: string[] = [];
+
+    for (const fichier of sourcesInterface()) {
+      const source = readFileSync(fichier, 'utf8');
+      // Un fichier client peut passer ce qu'il veut à un autre : il n'y a pas
+      // de frontière entre eux.
+      if (/^['"]use client['"]/m.test(source)) continue;
+
+      for (const nom of exportsClients) {
+        // `<Nom …>` puis, dans la même balise, une propriété dont la valeur
+        // s'ouvre sur une flèche : `prop={(` ou `prop={() =>`.
+        const balise = new RegExp(`<${nom}[\\s>][^>]*?\\w+=\\{\\s*\\(`, 's');
+        if (balise.test(source)) coupables.push(`${chemin(fichier)} → <${nom}>`);
+      }
+    }
+
+    expect(
+      coupables,
+      `Une fonction passée à un composant client ne se sérialise pas : Next la refuse à l’exécution, et rien avant ne le signale. ${coupables.join(' ; ')}`,
+    ).toEqual([]);
+  });
+
   it('aucun composant ne formate un montant lui-même', () => {
     // ┌────────────────────────────────────────────────────────────────────┐
     // │ LE FRANC CFA N'A PAS DE SOUS-UNITÉ.                                │

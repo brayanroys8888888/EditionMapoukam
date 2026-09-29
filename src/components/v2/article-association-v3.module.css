@@ -201,11 +201,40 @@
   margin: 0 0 28px;
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ UNE PHOTO DE CORPS EST BORNÉE EN HAUTEUR, ET PAS SEULEMENT EN LARGEUR.  │
+ * │                                                                          │
+ * │ `width: 100%` seul suffit tant que les photos sont en paysage. La        │
+ * │ colonne fait 844 px de texte : une photo 3:2 y tient en 563 px de haut,  │
+ * │ ce qui se regarde. La même colonne rend une photo de TÉLÉPHONE, en 3:4,  │
+ * │ sur 1 125 px — plus d'un écran, pour une illustration au milieu d'un     │
+ * │ paragraphe. Le lecteur ne voit plus que l'image et perd le fil.          │
+ * │                                                                          │
+ * │ D'où trois changements qui vont ensemble :                               │
+ * │                                                                          │
+ * │   `width: auto` + `max-width: 100%` — l'image garde ses proportions au   │
+ * │   lieu d'être étirée à la colonne ;                                      │
+ * │                                                                          │
+ * │   `max-height` — le plafond, exprimé en `min()` pour qu'un écran court   │
+ * │   (un téléphone en paysage) ne se fasse pas manger non plus ;            │
+ * │                                                                          │
+ * │   `margin: 0 auto` — une image plus étroite que la colonne se centre,    │
+ * │   au lieu de se coller à gauche en laissant un vide qu'on prend pour     │
+ * │   une erreur de mise en page.                                            │
+ * │                                                                          │
+ * │ `object-fit: cover` disparaît avec eux : il RECADRAIT. Sur une           │
+ * │ couverture, recadrer est voulu — le format est décidé par le dessin.     │
+ * │ Sur une photo de terrain, cela coupe la tête des gens.                   │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .figure img {
   display: block;
-  width: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: min(560px, 80vh);
+  margin: 0 auto;
   border-radius: 15px;
-  object-fit: cover;
 }
 
 /*
@@ -217,6 +246,39 @@
   font-size: 13.5px;
   line-height: 1.6;
   color: var(--encre-douce);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LA VIDÉO PREND LA PLACE D'UNE PHOTO — LE SON PREND UNE LIGNE.           │
+ * │                                                                          │
+ * │ Un lecteur vidéo dessiné comme l'image qu'il remplace garde le rythme de │
+ * │ la colonne : même largeur, même rayon. `aspect-ratio` réserve sa place   │
+ * │ AVANT que le fichier réponde, ce qui évite que le texte saute sous les   │
+ * │ yeux d'un lecteur sur réseau lent — §5.1.                                │
+ * │                                                                          │
+ * │ Le fond sombre n'est pas un goût : une vidéo dont la première image      │
+ * │ n'est pas encore là laisse voir ce qu'il y a dessous, et un rectangle    │
+ * │ crème se confondrait avec un trou dans la page.                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.figure video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 15px;
+  background: var(--chrome);
+}
+
+/*
+ * Le son ne prend pas de hauteur — un lecteur audio fait la sienne, et elle
+ * est la même partout. Il est seulement borné en largeur : étiré sur 844 px,
+ * son bouton de lecture se retrouve à un bout et sa durée à l'autre.
+ */
+.figure audio {
+  display: block;
+  width: 100%;
+  max-width: 560px;
 }
 
 

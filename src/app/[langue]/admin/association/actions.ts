@@ -206,11 +206,25 @@ export async function enregistrerRedaction(
   const titre = texte(donnees, 'titre') ?? '';
 
   /*
-   * La date et l'heure arrivent séparées, comme l'écran les demande. Sans
-   * jour choisi, il n'y a pas de programmation : un contenu reste brouillon,
-   * ce qui est l'état voulu tant que l'éditeur n'a pas fixé de créneau.
+   * ┌────────────────────────────────────────────────────────────────────────┐
+   * │ TROIS DIFFUSIONS, ET LA VALEUR PAR DÉFAUT EST LA PLUS PRUDENTE.        │
+   * │                                                                        │
+   * │   `maintenant` → publié à l'instant, `publier = true` ;                │
+   * │   `programme`  → un créneau, et le contenu reste brouillon jusque-là ; │
+   * │   `brouillon`  → ni l'un ni l'autre.                                   │
+   * │                                                                        │
+   * │ Un champ absent ou inconnu vaut `brouillon` : une requête bricolée, ou │
+   * │ un formulaire d'une version précédente, ne doit pas faire PARAÎTRE un  │
+   * │ texte. Se tromper vers le brouillon coûte un clic ; se tromper vers la │
+   * │ publication met un texte en ligne que personne n'a relu.               │
+   * │                                                                        │
+   * │ La date et l'heure n'accompagnent QUE `programme`. Les lire dans les   │
+   * │ deux autres cas poserait un créneau sur un contenu déjà publié, et     │
+   * │ l'écran d'administration l'annoncerait deux fois.                      │
+   * └────────────────────────────────────────────────────────────────────────┘
    */
-  const jour = texte(donnees, 'programme_jour');
+  const diffusion = texte(donnees, 'diffusion');
+  const jour = diffusion === 'programme' ? texte(donnees, 'programme_jour') : undefined;
   const heure = texte(donnees, 'programme_heure') ?? '08:00';
   const programmeLe = jour === undefined ? null : new Date(`${jour}T${heure}:00Z`).toISOString();
 
@@ -237,7 +251,15 @@ export async function enregistrerRedaction(
     {
       ...(id === undefined ? {} : { id }),
       slug: texte(donnees, 'slug') ?? enSlug(titre),
-      langue,
+      /*
+       * LA LANGUE DU TEXTE, pas celle de l'interface.
+       *
+       * Elle valait `langue` — celle des libellés —, si bien qu'un éditeur
+       * qui travaillait sur `/en/admin/…` écrivait la version anglaise avec
+       * le texte français chargé devant lui. L'écran la porte désormais, et
+       * la route la revalide.
+       */
+      langue: texte(donnees, 'langue_version') ?? 'fr',
       type: texte(donnees, 'type'),
       categorie: texte(donnees, 'categorie') ?? 'actions',
       acces: texte(donnees, 'acces') ?? 'abonnes',
@@ -257,7 +279,7 @@ export async function enregistrerRedaction(
       commentaires_ouverts: coche(donnees, 'commentaires_ouverts'),
       prevenir_adherents: coche(donnees, 'prevenir_adherents'),
       programme_le: programmeLe,
-      publier: coche(donnees, 'publier'),
+      publier: diffusion === 'maintenant',
     },
     'maj',
     200,

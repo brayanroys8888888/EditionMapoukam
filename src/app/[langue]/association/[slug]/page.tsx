@@ -283,6 +283,18 @@ export default async function PageContenuAssociatif({ params }: Parametres) {
               if (bloc.type === 'photo') {
                 return <img key={cle} src={bloc.url} alt="" loading="lazy" decoding="async" />;
               }
+              /*
+                Les deux médias de la 0108 passent, eux aussi, en version
+                simple : le lecteur du navigateur, sans figure ni légende
+                dessinées. `preload="none"` reste, lui, non négociable — c'est
+                le forfait du lecteur, pas une affaire de direction artistique.
+              */
+              if (bloc.type === 'video') {
+                return <video key={cle} src={bloc.url} controls preload="none" playsInline />;
+              }
+              if (bloc.type === 'audio') {
+                return <audio key={cle} src={bloc.url} controls preload="none" />;
+              }
               return <p key={cle}>{bloc.texte}</p>;
             })}
           </div>

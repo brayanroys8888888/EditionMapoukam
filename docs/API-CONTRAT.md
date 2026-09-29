@@ -501,6 +501,8 @@ plafonnée**, indissociables.
 | `DELETE /api/admin/association/{id}` | — | `204` |
 | `PUT /api/admin/association/{id}/versions` | `langue` (`fr`\|`en`), `titre`, `chapeau?`, `corps?` (sections : `titre`, `paragraphes[]?`, `points[]?`) | Version enregistrée |
 | `PUT /api/admin/association/{id}/publication` | `publie` (booléen) | Contenu publié ou dépublié |
+| `POST /api/admin/association/fichiers` | `multipart` : `role` (`couverture`\|`photo`\|`video`\|`audio`\|`document`), `fichier` | `201 { chemin, apercu }` — `chemin` part en base, `apercu` ne sert qu'à l'écran |
+| `PUT /api/admin/association/redaction` | `id?`, `slug`, `langue`, `type`, `categorie`, `acces`, `titre`, `chapeau`, `texte_alternatif`, **`corps[]` (blocs)**, `publics[]`, `signe_par?`, `image_url?`, `video_url?`, `video_minutes?`, `fichier_pdf?`, `pdf_pages?`, `evenement_id?`, `vedette?`, `commentaires_ouverts?`, `prevenir_adherents?`, `programme_le?`, `publier?` | Contenu **et** sa version, en une transaction |
 | `GET /api/admin/audit` | `action?`, `cible_id?`, `page`, `taille` | `{ entrees[], page }` |
 | `GET /api/admin/stats` | `agregat`, `debut?`, `fin?`, `page`, `taille` | `{ agregat, donnees[] }` |
 | `POST /api/admin/maintenance/purge-copies` | — | Rapport de purge |
@@ -569,6 +571,90 @@ recompte pas les zones sans prix.
 - le **statut** ne se change que par `…/publication`, qui exige une version
   **française complète** — titre et corps non vide — et refuse en `422` sinon ;
 - **dépublier n'est pas annuler** : `publie_le` est conservée.
+
+### Le dépôt de fichiers de l'association — deux bucket, et la ligne entre eux
+
+`POST /api/admin/association/fichiers` (migration `0109`) accepte un fichier et
+rend **deux valeurs, à ne pas confondre** :
+
+- **`chemin`** — `bucket/jeton.ext`, ce qui part **en base**. `mediaAssociatif`
+  le retraduit au moment de servir. Écrire une URL signée en base y poserait une
+  adresse périmée cinq minutes plus tard ;
+- **`apercu`** — ce que l'**écran** affiche, et rien d'autre. Sans lui, le
+  fichier qu'on vient de déposer apparaît cassé : le champ porte un chemin de
+  stockage, qu'un navigateur prend pour une adresse relative et va chercher là
+  où il n'y a rien. L'éditeur croirait son dépôt raté alors qu'il a réussi.
+
+**C'est le RÔLE qui décide du bucket, pas le format** — parce que c'est le rôle
+qui dit qui doit voir le fichier. Une couverture et une photo de corps sont le
+même format et n'ont pas le même public.
+
+| Rôle | Bucket | Servi comment | Plafond |
+|---|---|---|---|
+| `couverture` | `association-images`, **public** | URL publique, cachable par le CDN | 5 Mo |
+| `photo`, `video`, `audio`, `document` | `association-fichiers`, **privé** | URL **signée**, 300 s | 10 / 200 / 50 / 50 Mo |
+
+La couverture est publique **délibérément**, comme `covers` l'est pour les
+livres : elle s'affiche sur les cartes de `/association`, y compris celles des
+contenus réservés, où elle est justement ce qui donne envie d'adhérer. La signer
+la retirerait du CDN, sur un public dont §5.1 rappelle qu'une part importante est
+sur réseau mobile lent.
+
+Tout le reste vit derrière le mur : `association_contenu` ne rend `corps` que si
+`can_read` est vrai, et la colonne n'est accordée ni à `anon` ni à
+`authenticated`. **La signature suit donc le droit, elle ne l'ouvre pas** — aucune
+n'est émise pour qui n'a pas le droit de lire, et un média dont la signature
+échoue est **écarté** plutôt que rendu avec son chemin brut.
+
+Quatre contrôles au dépôt, et le dernier est le seul qui prouve quelque chose :
+le **rôle**, la **taille** (avant de lire les octets), le **type déclaré** contre
+la liste close du rôle, et les **octets de tête**. `file.type` est déclaré par le
+navigateur, et un navigateur se pilote : un exécutable renommé `.png` passe les
+trois premiers sans broncher. Un type dont on ne sait pas reconnaître la
+signature est **refusé**, jamais accepté par défaut.
+
+Le **nom d'origine est jeté** : il se nettoie mal, et surtout il se devine —
+`atelier-douala.pdf` et `atelier-yaounde.pdf` se déduisent l'un de l'autre, ce
+qui suffirait à trouver sur le bucket public ce qui n'a pas encore été annoncé.
+Ce qui compte de lui, l'extension, est redéduit du type MIME vérifié.
+
+Les **adresses collées à la main continuent de marcher** : une valeur qui ne
+commence pas par le nom d'un des deux bucket est servie telle quelle.
+
+### Les blocs d'un corps associatif — sept types, et pas un de plus
+
+`PUT /api/admin/association/redaction` reçoit le corps en **blocs**, et non en
+sections. La forme est vérifiée trois fois, et ce n'est pas une répétition
+inutile : Zod refuse la requête, `corps_associatif_valide` refuse l'écriture
+(contrainte de `association_content_translations`), et le lecteur de
+`src/lib/association/service.ts` écarte à la LECTURE ce qui serait entré par une
+autre voie — une migration, une reprise de données, une main sur psql.
+
+| Type | Forme |
+|---|---|
+| `intertitre` | `{ type, texte }` |
+| `paragraphe` | `{ type, texte }` |
+| `liste` | `{ type, elements[] }` |
+| `citation` | `{ type, texte }` |
+| `photo` | `{ type, url, legende? }` |
+| `video` | `{ type, url, legende? }` |
+| `audio` | `{ type, url, legende? }` |
+
+Les deux derniers datent de la migration **0108**. Ils posent un média **dans le
+texte**, entre deux paragraphes — à ne pas confondre avec `video_url`, qui porte
+LA vidéo d'un replay, avec sa durée, et que l'espace adhérent liste sous
+« Replays ».
+
+**Un bloc de texte sans texte et un média sans adresse sont refusés** : ils
+occuperaient une place à l'écran sans rien dire, et un cadre vide se confond
+avec un chargement qui n'est jamais arrivé.
+
+Refus propres au type, tous en `422` :
+
+| `code` | Quand |
+|---|---|
+| `publication_incomplete` | à la publication ou à la programmation seulement : un replay sans `video_url`, une fiche sans `fichier_pdf`, un article sans un seul paragraphe. Un brouillon a le droit d'être incomplet. |
+| `replay_une_seule_video` | **dès le brouillon** : un replay porte une vidéo, celle de `video_url`, et son corps n'en reçoit aucune autre. Ce refus ne dit pas « il manque », il dit « il y en a de trop » — le découvrir le jour de la publication ferait écrire tout l'article pour rien. |
 
 `GET /api/admin/association/{id}` rend le **corps** de toutes les versions, sans
 verdict d'accès, y compris sur un brouillon réservé : un rédacteur relit ce

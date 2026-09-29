@@ -130,7 +130,22 @@ export default async function PageSouscrire({ params, searchParams }: Parametres
 
   // Les trois seules différences entre les deux parcours.
   const formules = association ? offres.association.offres : offres.abonnement.offres;
-  const retour = association ? `/${langue}/association` : `/${langue}/compte/abonnement`;
+  /*
+   * ┌──────────────────────────────────────────────────────────────────────┐
+   * │ L'ADHÉRENT REPART VERS SON ESPACE, PAS VERS LA VITRINE.              │
+   * │                                                                      │
+   * │ Ce lien menait à `/association`, la page publique — celle qui         │
+   * │ propose justement d'adhérer. Quelqu'un qui venait de payer y          │
+   * │ retrouvait l'appel à l'adhésion, et n'avait plus qu'à deviner         │
+   * │ l'adresse de l'espace pour entrer dans ce qu'il avait acheté.         │
+   * │                                                                      │
+   * │ `/espace` ne fait confiance à rien de ce que cette page croit : il    │
+   * │ relit le verdict d'entrée en base et renvoie aux offres si l'octroi   │
+   * │ n'a pas eu lieu. Le lien n'ouvre donc aucun droit — il désigne la     │
+   * │ seule porte qui, elle, le vérifie.                                    │
+   * └──────────────────────────────────────────────────────────────────────┘
+   */
+  const retour = association ? `/${langue}/espace` : `/${langue}/compte/abonnement`;
   const rappel = association
     ? 'souscription.rappelAssociation'
     : 'souscription.rappelTelechargement';

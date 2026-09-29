@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Metadata } from 'next';
 
-import { langueValide, messageErreur, traduire, LANGUES_INTERFACE, type CleTraduction } from '@/i18n';
+import { langueValide, messageErreur, traduire, type CleTraduction } from '@/i18n';
 import {
   lireCampagne,
   lireMotDuMois,
@@ -21,13 +21,8 @@ import { OngletAgenda, type LigneEvenement } from './onglet-agenda';
 import { OngletCampagne, type Campagne } from './onglet-campagne';
 import { OngletCommentaires, type LigneCommentaire } from './onglet-commentaires';
 import { OngletPublications, type LignePublication } from './onglet-publications';
-import {
-  changerPublication,
-  creerContenu,
-  modifierContenu,
-  poserVersion,
-  supprimerContenu,
-} from './actions';
+import { SIGLE_TYPE, TYPES_PUBLICATION, type TypePublication } from './types-publication';
+import { changerPublication, modifierContenu, supprimerContenu } from './actions';
 
 /**
  * L'ESPACE ASSOCIATIF — §3.6, §4.3 F12 bis.
@@ -131,7 +126,6 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
     ? (premier(requete['onglet']) as Onglet)
     : 'publications';
   const ouvert = premier(requete['contenu']);
-  const nouvelle = premier(requete['nouvelle']) === '1';
   const nouvelEvenement = premier(requete['evenement']) === '1';
 
   /*
@@ -202,20 +196,18 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
     : []) as unknown as LigneCommentaire[];
 
   const ecran = `/${langue}/admin/association`;
-  const lien = (p: {
-    onglet?: Onglet;
-    contenu?: string;
-    nouvelle?: boolean;
-    evenement?: boolean;
-  }): string => {
+  const lien = (p: { onglet?: Onglet; contenu?: string; evenement?: boolean }): string => {
     const q = new URLSearchParams();
     if (p.onglet !== undefined && p.onglet !== 'publications') q.set('onglet', p.onglet);
     if (p.contenu !== undefined) q.set('contenu', p.contenu);
-    if (p.nouvelle === true) q.set('nouvelle', '1');
     if (p.evenement === true) q.set('evenement', '1');
     const suite = q.toString();
     return suite === '' ? ecran : `${ecran}?${suite}`;
   };
+
+  /** L'écran de rédaction, à vide ou avec son type déjà posé. */
+  const ecranRedaction = (type?: TypePublication): string =>
+    type === undefined ? `${ecran}/rediger` : `${ecran}/rediger?type=${type}`;
 
   /*
    * La publication ouverte, s'il y en a une. Un identifiant inconnu rend une
@@ -265,22 +257,74 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
         />
       }
       actions={
-        <a className={styles.boutonPrimaire} href={lien({ nouvelle: true })}>
-          <svg
-            width="15"
-            height="15"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.75"
-            strokeLinecap="round"
-            aria-hidden="true"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          {t('admin.assoNouvellePublication')}
-        </a>
+        /*
+         * ┌──────────────────────────────────────────────────────────────────┐
+         * │ UN BOUTON SCINDÉ : LE GESTE À GAUCHE, LE CHOIX À DROITE.        │
+         * │                                                                  │
+         * │ Le bouton principal EST un lien vers l'écran de rédaction, et il │
+         * │ y va d'un clic. Il ouvrait auparavant un formulaire replié au    │
+         * │ bas de cette page — celui-là a disparu : deux chemins de         │
+         * │ création divergent, et c'est toujours celui qu'on n'a pas        │
+         * │ regardé qui écrit en base.                                       │
+         * │                                                                  │
+         * │ Le volet de droite épargne le second choix : le type est déjà    │
+         * │ posé en arrivant. C'est un `<details>`, donc il s'ouvre au       │
+         * │ clavier et sans une ligne de JavaScript — la même mécanique que  │
+         * │ les rayons du menu public.                                       │
+         * └──────────────────────────────────────────────────────────────────┘
+         */
+        <span className={styles.scinde}>
+          <a className={styles.boutonPrimaire} href={ecranRedaction()}>
+            <svg
+              width="15"
+              height="15"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.75"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            {t('admin.assoNouvellePublication')}
+          </a>
+
+          <details className={styles.menu}>
+            <summary
+              className={`${styles.boutonPrimaire} ${styles.menuResume}`}
+              aria-label={t('admin.assoChoisirType')}
+              title={t('admin.assoChoisirType')}
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </summary>
+
+            <div className={styles.menuPanneau}>
+              <p className={styles.menuIntitule}>{t('admin.assoChoisirType')}</p>
+              {TYPES_PUBLICATION.map((valeur) => (
+                <a className={styles.menuLien} key={valeur} href={ecranRedaction(valeur)}>
+                  <span className={styles.pastilleType} aria-hidden="true">
+                    {SIGLE_TYPE[valeur]}
+                  </span>
+                  {t(`admin.redType_${valeur}` as CleTraduction)}
+                </a>
+              ))}
+            </div>
+          </details>
+        </span>
       }
     >
       {erreur ? (
@@ -294,9 +338,6 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
       ) : null}
       {requete['maj'] ? (
         <p className={styles.succes}>{traduire(langue, 'admin.contenuModifie')}</p>
-      ) : null}
-      {requete['version'] ? (
-        <p className={styles.succes}>{traduire(langue, 'admin.contenuVersionPosee')}</p>
       ) : null}
       {requete['publie'] ? (
         <p className={styles.succes}>{traduire(langue, 'admin.contenuPublie')}</p>
@@ -663,245 +704,6 @@ export default async function PageAdminAssociation({ params, searchParams }: Par
           <p className={styles.aide}>{traduire(langue, 'admin.contenuSuppressionAide')}</p>
         </div>
       )}
-
-      {/* ── Écrire une version ───────────────────────────────────────────── */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.contenuVersionTitre')}</h2>
-
-        <div className={styles.cadre}>
-          <form className={styles.formulaire} action={poserVersion.bind(null, langue)}>
-            <div className={styles.rangee}>
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="version-contenu">
-                  {traduire(langue, 'admin.contenuVersionContenu')}
-                </label>
-                <select className={styles.saisie} id="version-contenu" name="id" required>
-                  {contenus.map((contenu) => (
-                    <option key={contenu.id} value={contenu.id}>
-                      {contenu.titre ?? contenu.slug} ({contenu.slug})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="version-langue">
-                  {traduire(langue, 'admin.contenuVersionLangue')}
-                </label>
-                <select
-                  className={styles.saisie}
-                  id="version-langue"
-                  name="langueVersion"
-                  defaultValue="fr"
-                >
-                  {LANGUES_INTERFACE.map((code) => (
-                    <option key={code} value={code}>
-                      {traduire(langue, `langue.${code}` as CleTraduction)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="version-titre">
-                {traduire(langue, 'admin.contenuTitre')}
-              </label>
-              <input
-                className={styles.saisie}
-                id="version-titre"
-                name="titre"
-                maxLength={200}
-                required
-              />
-            </div>
-
-            <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="version-chapeau">
-                {traduire(langue, 'admin.contenuChapeau')}
-              </label>
-              <textarea
-                className={styles.zoneTexte}
-                id="version-chapeau"
-                name="chapeau"
-                maxLength={400}
-                rows={2}
-                aria-describedby="version-chapeau-aide"
-              />
-            </div>
-
-            <p className={styles.aide} id="version-chapeau-aide">
-              {traduire(langue, 'admin.contenuChapeauAide')}
-            </p>
-
-            <div className={styles.champ}>
-              <label className={styles.libelle} htmlFor="version-corps">
-                {traduire(langue, 'admin.contenuVersionCorps')}
-              </label>
-              <textarea
-                className={styles.zoneTexte}
-                id="version-corps"
-                name="corps"
-                rows={16}
-                aria-describedby="version-corps-aide"
-              />
-            </div>
-
-            <p className={styles.aide} id="version-corps-aide">
-              {traduire(langue, 'admin.contenuVersionCorpsAide')}
-            </p>
-            <p className={styles.aide}>{traduire(langue, 'admin.contenuVersionAide')}</p>
-
-            <BoutonSoumission disabled={contenus.length === 0}>
-              {traduire(langue, 'admin.contenuVersionPoser')}
-            </BoutonSoumission>
-          </form>
-        </div>
-      </section>
-
-      {/*
-        LA CRÉATION S’OUVRE PAR LE BOUTON DE LA BARRE, comme partout ailleurs.
-
-        Ce formulaire était affiché en permanence, sous les huit contenus.
-        Il n’a de sens qu’au moment où l’on crée, et le laisser ouvert
-        proposait un dixième contenu à chaque visite.
-      */}
-      {nouvelle ? (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitre}>{traduire(langue, 'admin.contenuCreerTitre')}</h2>
-
-          <div className={styles.cadre}>
-            <form className={styles.formulaire} action={creerContenu.bind(null, langue)}>
-              <div className={styles.rangee}>
-                <div className={styles.champ}>
-                  <label className={styles.libelle} htmlFor="contenu-slug">
-                    {traduire(langue, 'admin.contenuSlug')}
-                  </label>
-                  <input
-                    className={styles.saisie}
-                    id="contenu-slug"
-                    name="slug"
-                    minLength={3}
-                    maxLength={96}
-                    // Le même motif que la contrainte de la table et que le schéma
-                    // Zod de la route, qui restent seuls juges : celui-ci épargne
-                    // un aller-retour, il ne décide rien.
-                    pattern="[a-z0-9]+(-[a-z0-9]+)*"
-                    required
-                    aria-describedby="contenu-slug-aide"
-                  />
-                </div>
-
-                <div className={styles.champ}>
-                  <label className={styles.libelle} htmlFor="contenu-categorie">
-                    {traduire(langue, 'admin.contenuCategorie')}
-                  </label>
-                  <select
-                    className={styles.saisie}
-                    id="contenu-categorie"
-                    name="categorie"
-                    defaultValue="vie-associative"
-                  >
-                    {CATEGORIES_ASSOCIATION.map((categorie) => (
-                      <option key={categorie} value={categorie}>
-                        {traduire(langue, `v2.cat_${categorie}` as CleTraduction)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className={styles.champ}>
-                  <label className={styles.libelle} htmlFor="contenu-acces">
-                    {traduire(langue, 'admin.contenuAcces')}
-                  </label>
-                  <select
-                    className={styles.saisie}
-                    id="contenu-acces"
-                    name="acces"
-                    defaultValue="abonnes"
-                    aria-describedby="contenu-acces-aide"
-                  >
-                    {ACCES.map((acces) => (
-                      <option key={acces} value={acces}>
-                        {traduire(langue, `admin.contenuAcces_${acces}` as CleTraduction)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <p className={styles.aide} id="contenu-slug-aide">
-                {traduire(langue, 'admin.contenuSlugAide')}
-              </p>
-              <p className={styles.aide} id="contenu-acces-aide">
-                {traduire(langue, 'admin.contenuAccesAide')}
-              </p>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-titre">
-                  {traduire(langue, 'admin.contenuTitre')}
-                </label>
-                <input
-                  className={styles.saisie}
-                  id="contenu-titre"
-                  name="titre"
-                  maxLength={200}
-                  required
-                />
-              </div>
-
-              <div className={styles.champ}>
-                <label className={styles.libelle} htmlFor="contenu-chapeau">
-                  {traduire(langue, 'admin.contenuChapeau')}
-                </label>
-                <textarea
-                  className={styles.zoneTexte}
-                  id="contenu-chapeau"
-                  name="chapeau"
-                  maxLength={400}
-                  rows={2}
-                />
-              </div>
-
-              <div className={styles.rangee}>
-                <div className={styles.champ}>
-                  <label className={styles.libelle} htmlFor="contenu-minutes">
-                    {traduire(langue, 'admin.contenuMinutes')}
-                  </label>
-                  <input
-                    className={styles.saisie}
-                    id="contenu-minutes"
-                    name="minutes"
-                    type="number"
-                    min={1}
-                    max={600}
-                    step={1}
-                  />
-                </div>
-
-                <div className={styles.champ}>
-                  <label className={styles.libelle} htmlFor="contenu-image">
-                    {traduire(langue, 'admin.contenuImage')}
-                  </label>
-                  <input
-                    className={styles.saisie}
-                    id="contenu-image"
-                    name="image_url"
-                    maxLength={500}
-                    aria-describedby="contenu-image-aide"
-                  />
-                </div>
-              </div>
-
-              <p className={styles.aide} id="contenu-image-aide">
-                {traduire(langue, 'admin.contenuImageAide')}
-              </p>
-
-              <BoutonSoumission>{traduire(langue, 'admin.contenuCreer')}</BoutonSoumission>
-            </form>
-          </div>
-        </section>
-      ) : null}
     </GabaritAdmin>
   );
 }

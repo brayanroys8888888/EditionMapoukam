@@ -1210,6 +1210,13 @@ textarea.saisie {
 }
 
 .interrupteurNom {
+  /*
+   * `block` : le libellé et sa note vivent dans la MÊME cellule de grille, et
+   * sont tous deux en ligne par défaut. Ils se collaient — « Mettre à la
+   * uneRemplace l'article à la une » —, ce qui se lit comme un seul mot et ne
+   * ressemble à rien d'autre qu'à une faute de frappe.
+   */
+  display: block;
   font-size: var(--taille-m);
   font-weight: var(--graisse-forte);
   color: var(--encre);
@@ -1329,6 +1336,105 @@ textarea.saisie {
 
 .boutonDiscret:hover {
   color: var(--accent-encre);
+}
+
+/* ── Le bouton scindé de la barre d'outils ──────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ DEUX COMMANDES COLLÉES, ET UN SEUL TRAIT ENTRE ELLES.                   │
+ * │                                                                          │
+ * │ À gauche le geste par défaut, à droite son volet de choix. Les deux      │
+ * │ portent `.boutonPrimaire` : c'est la MÊME commande, et les peindre       │
+ * │ différemment laisserait croire à deux actions de poids différents.       │
+ * │                                                                          │
+ * │ Les coins ne sont arrondis qu'à l'extérieur, sans quoi le trait du       │
+ * │ milieu se lirait comme un espace entre deux boutons voisins.             │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.scinde {
+  display: inline-flex;
+  align-items: stretch;
+}
+
+.scinde > .boutonPrimaire {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.menu {
+  position: relative;
+}
+
+/*
+ * `list-style` ET le pseudo-élément WebKit : Safari dessine encore son
+ * triangle par `::-webkit-details-marker`, que `list-style: none` ne touche
+ * pas. L'oublier pose une flèche grise à côté de la nôtre.
+ */
+.menuResume {
+  border-left-color: color-mix(in srgb, var(--marque-encre) 35%, transparent);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-right: var(--pas-3);
+  padding-left: var(--pas-3);
+  list-style: none;
+}
+
+.menuResume::-webkit-details-marker {
+  display: none;
+}
+
+/*
+ * Le volet s'ouvre SOUS le bouton, aligné à droite : la barre d'outils est
+ * collée au bord de l'écran, et un volet aligné à gauche en sortirait.
+ */
+.menuPanneau {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--pas-1));
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 232px;
+  padding: var(--pas-2);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  background: var(--surface);
+  box-shadow: var(--ombre-l);
+}
+
+.menuIntitule {
+  margin: 0 0 var(--pas-1);
+  padding: 0 var(--pas-2);
+  color: var(--encre-douce);
+  font-size: var(--taille-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.menuLien {
+  display: flex;
+  align-items: center;
+  gap: var(--pas-2);
+  min-height: var(--cible-min);
+  padding: var(--pas-1) var(--pas-2);
+  border-radius: var(--rayon-bouton);
+  color: var(--encre);
+  font-size: var(--taille-s);
+}
+
+.menuLien:hover {
+  background: var(--fond-doux);
+  color: var(--accent-encre);
+}
+
+/* Dans le volet, la pastille n'est qu'un repère : elle ne mène pas la ligne. */
+.menuLien > .pastilleType {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: 10px;
 }
 
 /*
@@ -4269,10 +4375,226 @@ textarea.saisie {
   border-top: 1px dashed var(--bordure);
 }
 
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ CES PUCES ONT LEUR PROPRE DESSIN, ET C'EST LE DÉFAUT QU'ELLES RÉPARENT. │
+ * │                                                                          │
+ * │ Elles portaient `.segOpt`, qui n'a ni fond, ni trait, ni rayon : c'est   │
+ * │ `.seg`, le CONTENEUR, qui les dessine, et il n'y en a pas ici — les      │
+ * │ publics ne forment pas un segment, on en choisit plusieurs.              │
+ * │                                                                          │
+ * │ Sans lui, chaque bouton retombait sur le dessin du NAVIGATEUR : un gris  │
+ * │ système, un trait système, et sur un système en thème sombre un gris     │
+ * │ presque noir sur une carte sombre. Rien ne le signalait — un bouton      │
+ * │ sans style reste un bouton, et il marche.                                │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
 .redactionPuces {
   display: flex;
   flex-wrap: wrap;
   gap: var(--pas-2);
+}
+
+.redactionPuce {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--cible-min);
+  padding: var(--pas-1) var(--pas-3);
+  border: 1px solid var(--bordure-forte);
+  border-radius: var(--rayon-bouton);
+  background: var(--surface);
+  color: var(--encre);
+  font-size: var(--taille-s);
+  cursor: pointer;
+  transition: background var(--transition-couleur), border-color var(--transition-couleur),
+    color var(--transition-couleur);
+}
+
+.redactionPuce:hover {
+  border-color: var(--accent-encre);
+  color: var(--accent-encre);
+}
+
+/*
+ * Le choisi prend la marque, comme partout ailleurs dans ces écrans. Son
+ * encre est `--marque-encre`, et non `--encre` : sous thème sombre, l'encre
+ * courante devient crème, et une crème sur la terre cuite ne se lit plus.
+ */
+.redactionPuceChoisie,
+.redactionPuceChoisie:hover {
+  border-color: var(--marque);
+  background: var(--marque);
+  color: var(--marque-encre);
+}
+
+/* ── Le choix de diffusion ──────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ TROIS CHOIX EMPILÉS, ET LE CADRE EST CE QUI SE CLIQUE.                  │
+ * │                                                                          │
+ * │ Chaque `<label>` porte le cadre, si bien que la cible fait toute la      │
+ * │ largeur de la carte plutôt que les vingt-deux pixels du bouton radio.    │
+ * │ Sur un écran tactile, viser un radio de 22 px est un geste raté sur      │
+ * │ deux — et l'un des trois choix MET UN TEXTE EN LIGNE.                    │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.redactionDiffusion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pas-2);
+}
+
+.redactionChoix {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 4px 12px;
+  padding: var(--pas-2) var(--pas-3);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon-md);
+  cursor: pointer;
+}
+
+/*
+ * `:has()` plutôt qu'une classe posée en JavaScript : l'état coché est déjà
+ * dans le DOM, et le recopier dans React ferait deux sources pour un seul
+ * fait — celle qui a l'air d'avoir raison étant, comme toujours, la copie.
+ */
+.redactionChoix:has(.redactionChoixCase:checked) {
+  border-color: var(--marque);
+  background: color-mix(in srgb, var(--marque) 8%, var(--surface));
+}
+
+.redactionChoix:has(.redactionChoixCase:focus-visible) {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: 2px;
+}
+
+.redactionChoixCase {
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--action);
+}
+
+.redactionChoixNom {
+  display: block;
+  font-size: var(--taille-m);
+  font-weight: var(--graisse-forte);
+  color: var(--encre);
+}
+
+/* ── Le dépôt d'un fichier ──────────────────────────────────────────────── */
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ LE `<label>` EST LE BOUTON, ET L'`<input type="file">` EST CACHÉ.       │
+ * │                                                                          │
+ * │ Un sélecteur de fichiers natif ne se met pas en forme : son bouton et    │
+ * │ son « Aucun fichier sélectionné » sont dessinés par le système, et       │
+ * │ changent d'un navigateur à l'autre. Le seul moyen d'obtenir un bouton    │
+ * │ qui ressemble aux autres est de déléguer au libellé, qui ouvre le même   │
+ * │ sélecteur au clic comme au clavier.                                      │
+ * │                                                                          │
+ * │ D'où `.depotEntree` ci-dessous : il est retiré de la vue, PAS de la      │
+ * │ page. `display: none` le sortirait de l'ordre de tabulation, et le       │
+ * │ dépôt deviendrait inatteignable au clavier — le champ reste donc là,     │
+ * │ d'un pixel, sous le bouton qui le commande.                              │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.depot {
+  display: flex;
+  position: relative;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--pas-2);
+  margin-top: var(--pas-1);
+}
+
+.depotBouton {
+  display: inline-flex;
+  align-items: center;
+  /* Le rotor et le libellé, quand les deux sont là. */
+  gap: var(--pas-2);
+  min-height: var(--cible-min);
+  padding: var(--pas-1) var(--pas-3);
+  border: 1px dashed var(--bordure-forte);
+  border-radius: var(--rayon-bouton);
+  color: var(--encre-douce);
+  font-size: var(--taille-s);
+  cursor: pointer;
+}
+
+.depotBouton:hover {
+  border-color: var(--accent-encre);
+  border-style: solid;
+  color: var(--accent-encre);
+}
+
+.depotEntree {
+  position: absolute;
+  bottom: 0;
+  left: var(--pas-3);
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+/* Le contour du focus se pose sur le BOUTON, puisque c'est lui qu'on voit. */
+.depotEntree:focus-visible + .depotBouton,
+.depot:has(.depotEntree:focus-visible) .depotBouton {
+  outline: var(--focus-epaisseur) solid var(--focus-couleur);
+  outline-offset: 2px;
+}
+
+.depotRefus {
+  flex: 1 1 100%;
+  /* La même encre que `.alerte`, qui porte déjà les refus de cet écran. */
+  color: var(--creme-accent);
+  font-size: var(--taille-s);
+}
+
+/*
+ * La confirmation, discrète : elle rassure, elle ne réclame rien.
+ *
+ * `--encre-douce` et non `--souligne` : ce dernier est un beige de TRAIT, il
+ * vaut 1,7:1 en texte sur la surface. Un message de confirmation illisible ne
+ * confirme rien.
+ */
+.depotFait {
+  color: var(--encre-douce);
+  font-size: var(--taille-s);
+}
+
+/*
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │ L'APERÇU D'UN MÉDIA DU CORPS — BORNÉ EN HAUTEUR.                        │
+ * │                                                                          │
+ * │ Un bloc de corps est une ligne d'un formulaire, pas une page d'article.  │
+ * │ Sans plafond, une photo de deux mille pixels pousserait les blocs        │
+ * │ suivants hors de l'écran, et réordonner deviendrait impraticable.        │
+ * └──────────────────────────────────────────────────────────────────────────┘
+ */
+.redactionBlocApercu {
+  display: block;
+  margin-bottom: var(--pas-2);
+}
+
+.redactionBlocApercu img,
+.redactionBlocApercu video {
+  display: block;
+  max-height: 160px;
+  max-width: 100%;
+  border-radius: var(--rayon-md);
+  object-fit: cover;
+}
+
+.redactionBlocApercu audio {
+  display: block;
+  width: 100%;
+  max-width: 420px;
 }
 
 /* ── La liste de contrôle ───────────────────────────────────────────────── */

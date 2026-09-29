@@ -172,6 +172,38 @@ export function ArticleAssociationV3({
                       {bloc.legende ? <figcaption>{bloc.legende}</figcaption> : null}
                     </figure>
                   );
+
+                /*
+                  ── LES DEUX MÉDIAS DU CORPS — migration 0108 ──────────────
+
+                  `preload="none"` : rien ne descend tant que le lecteur n'a
+                  pas appuyé. §5.1 — une part importante du public est sur
+                  réseau mobile lent, et un média qui se charge de lui-même
+                  dépense un forfait que personne n'a engagé. C'est la même
+                  règle que la vidéo de présentation de `/association`.
+
+                  `playsInline` : sans lui, Safari sur iPhone passe en plein
+                  écran dès la lecture et arrache le lecteur à l'article.
+
+                  Pas de `src` sur un `<source>` séparé : l'adresse est saisie
+                  par l'éditeur, et rien ici ne sait de quel format elle est.
+                  Le navigateur le lit dans l'en-tête de la réponse.
+                */
+                case 'video':
+                  return (
+                    <figure key={cle} className={styles.figure}>
+                      <video src={bloc.url} controls preload="none" playsInline />
+                      {bloc.legende ? <figcaption>{bloc.legende}</figcaption> : null}
+                    </figure>
+                  );
+
+                case 'audio':
+                  return (
+                    <figure key={cle} className={styles.figure}>
+                      <audio src={bloc.url} controls preload="none" />
+                      {bloc.legende ? <figcaption>{bloc.legende}</figcaption> : null}
+                    </figure>
+                  );
               }
             })}
           </div>

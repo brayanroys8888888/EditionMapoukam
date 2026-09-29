@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import { traduire, type CleTraduction, type LangueInterface } from '@/i18n';
 import { BoutonSoumission, stylesAdmin as styles } from '@/components/admin';
 import { enregistrerMot } from './actions';
+import { SIGLE_TYPE, estTypePublication } from './types-publication';
 
 /**
  * L'ONGLET DES PUBLICATIONS — la liste, le rythme, le mot du mois.
@@ -37,14 +38,6 @@ export interface Jeudi {
 
 const COLONNES = 'minmax(0, 1fr) 100px 64px 52px 40px 16px';
 const LARGEUR_MIN = '500px';
-
-/** L'abréviation de la pastille : CR, RT, PDF, ▶ — celles du prototype. */
-const SIGLE: Record<string, string> = {
-  compte_rendu: 'CR',
-  recit_terrain: 'RT',
-  fiche_pdf: 'PDF',
-  replay: '▶',
-};
 
 export function OngletPublications({
   langue,
@@ -105,7 +98,9 @@ export function OngletPublications({
                       href={lienPublication(publication.id)}
                     >
                       <span className={styles.pastilleType} aria-hidden="true">
-                        {SIGLE[publication.type_publication] ?? '?'}
+                        {estTypePublication(publication.type_publication)
+                          ? SIGLE_TYPE[publication.type_publication]
+                          : '?'}
                       </span>
                       <span>
                         <span className={styles.publicationTitre}>

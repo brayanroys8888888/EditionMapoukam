@@ -3450,6 +3450,14 @@ export type Database = {
         }
       }
       app_now: { Args: never; Returns: string }
+      association_acces_espace: {
+        Args: { p_at?: string; p_user: string }
+        Returns: {
+          fin_grace: string
+          fin_periode: string
+          verdict: Database["public"]["Enums"]["acces_espace"]
+        }[]
+      }
       association_campagne_total: {
         Args: { p_campaign_id: string }
         Returns: number
@@ -3479,6 +3487,10 @@ export type Database = {
       association_effacer_traces: {
         Args: { p_user_id: string }
         Returns: undefined
+      }
+      association_espace: {
+        Args: { p_at?: string; p_langue?: string; p_user: string }
+        Returns: Json
       }
       association_liste: {
         Args: { p_at?: string; p_langue?: string; p_user?: string }
@@ -3949,6 +3961,7 @@ export type Database = {
       titres_publies: { Args: never; Returns: number }
     }
     Enums: {
+      acces_espace: "sans_adhesion" | "ouvert" | "impaye_tolere" | "ferme"
       access_reason:
         | "purchase"
         | "granted"
@@ -4163,6 +4176,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      acces_espace: ["sans_adhesion", "ouvert", "impaye_tolere", "ferme"],
       access_reason: [
         "purchase",
         "granted",
