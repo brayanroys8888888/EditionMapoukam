@@ -56,10 +56,50 @@ l'application.
 
 | | Minimum | Recommandé | Pourquoi |
 | --- | --- | --- | --- |
-| RAM | 4 Go | 8 Go | Supabase occupe 2 à 3 Go au repos ; Next.js ~270 Mo. **Le dépôt d'un conte coûte ~0,2 Go de plus**, poppler ~50 Mo (mesuré le 26 septembre 2026 en mode production, conte de 25 Mo et 33 pages — l'ancien chiffre de 3 Go venait du serveur de DÉVELOPPEMENT). À 4 Go, déposer les gros contes depuis l'administration locale (`admin-local/LISEZMOI.md`) : le serveur n'a alors plus aucun rendu à faire. |
+| RAM | 2 Go (avec 4 Go d'échange) | **4 Go** | Mesuré : la pile entière tient en **~0,8 Go au repos**, la construction du site en demande 1 à 1,7 Go, un dépôt de conte ~0,25 Go. Détail en §1.1. |
 | Processeur | 2 cœurs | 4 cœurs | rendu des pages PDF, filigranes |
 | Disque | 40 Go SSD | 80 Go SSD | la base est petite ; le **stockage croît** (pages rendues, copies filigranées par acheteur) |
 | Système | Ubuntu 24.04 LTS | — | les commandes ci-dessous le supposent |
+
+### 1.1 La mémoire, mesurée
+
+Mesures du 26 septembre et du 1er octobre 2026, sur la pile de `docker-compose.yml`
+(les services de Supabase sont ceux du projet, pas la pile officielle complète :
+ni Studio, ni realtime, ni Kong) :
+
+| Service | Au repos |
+| --- | --- |
+| Postgres (`db`) | ~120 Mo |
+| Stockage (`storage`) | ~325 Mo |
+| API (`rest`) | ~25 Mo |
+| Authentification (`auth`) | ~10 Mo |
+| `imgproxy` | ~12 Mo |
+| Le site (`app`, `next start`) | ~270 Mo |
+| **Total** | **~0,8 Go**, plus la passerelle nginx (quelques Mo) |
+
+| Moment | En plus |
+| --- | --- |
+| Dépôt d'un conte de 25 Mo, 33 pages | ~0,2 Go pour le site, ~50 Mo pour poppler |
+| Construction du site (`next build`, à l'installation et à chaque mise à jour) | **1 à 1,7 Go** au pic |
+
+Deux réserves :
+
+- la base mesurée était PETITE et sans visiteurs. Postgres utilise davantage de
+  mémoire à mesure que les données et le trafic grandissent : c'est ce qui fait
+  conseiller **4 Go**, pour la marge ;
+- les anciens chiffres de ce document — « Supabase 2 à 3 Go au repos », « un
+  dépôt consomme 3 Go » — n'avaient pas été mesurés sur cette pile. Le second
+  venait du serveur de DÉVELOPPEMENT.
+
+À **2 Go**, le site tourne, mais la construction s'appuie sur l'échange (swap)
+et devient lente ; c'est pourquoi l'installateur ajoute 4 Go d'échange. Déposer
+les gros contes depuis l'administration locale (`admin-local/LISEZMOI.md`)
+retire en outre tout rendu au serveur.
+
+`imgproxy` (transformation d'images à la volée) n'est appelé nulle part par le
+site — toutes les images passent par `/storage/v1/object/…`. Il est conservé :
+le retirer ne libérerait que ~12 Mo, au prix de modifications dans
+`docker-compose.yml`, `installer.sh` et la configuration du stockage.
 | Swap | 4 Go | 4 Go | filet de sécurité pendant un dépôt |
 
 Accès : **SSH par clé uniquement**, un utilisateur non root pour l'application.

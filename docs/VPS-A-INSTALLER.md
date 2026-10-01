@@ -9,7 +9,7 @@
 | | Valeur |
 | --- | --- |
 | Système | **Ubuntu 24.04 LTS** |
-| Mémoire | **8 Go** de RAM conseillés ; 4 Go possibles si les contes se déposent depuis l'administration locale (un dépôt coûte ~0,2 Go, mesuré le 26 septembre 2026) |
+| Mémoire | **4 Go** de RAM conseillés ; 2 Go possibles avec l'échange ci-dessous, au prix d'une construction lente (mesures : `docs/HEBERGEMENT-VPS.md` §1.1) |
 | Processeur | 4 cœurs (2 au minimum) |
 | Disque | 80 Go SSD (40 au minimum) |
 | Swap | 4 Go |
@@ -139,5 +139,5 @@ pg_dump --version         # 17.x
 nginx -v
 certbot --version
 rclone version
-free -h                   # 8 Go de mémoire, 4 Go de swap
+free -h                   # 4 Go de mémoire (ou plus), 4 Go de swap
 ```

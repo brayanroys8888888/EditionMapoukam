@@ -32,18 +32,17 @@ Internet ──► Nginx (443)
 
 | | Valeur |
 | --- | --- |
-| Serveur | **8 Go de RAM**, 4 cœurs, 80 Go SSD, **Ubuntu 24.04** |
+| Serveur | **4 Go de RAM**, 2 à 4 cœurs, 80 Go SSD, **Ubuntu 24.04** |
 | Accès | SSH, avec un compte capable de `sudo` |
 | Domaine | `editionsmapoukam.com`, avec accès à sa zone DNS |
 
-> **8 Go conseillés, 4 Go possibles.** Mesuré le 26 septembre 2026 en mode
-> production : le site occupe ~270 Mo, et le dépôt d'un conte de 25 Mo
-> (33 pages) en ajoute ~0,2 Go, plus ~50 Mo pour poppler. L'ancien chiffre de
-> 3 Go venait du serveur de développement. Supabase prend 2 à 3 Go au repos :
-> à 4 Go, la marge est mince, et si la mémoire manque c'est PostgreSQL que le
-> système arrête — une panne qui ne ressemble pas du tout à un manque de
-> mémoire. Déposer les gros contes depuis l'administration locale
-> (`admin-local/LISEZMOI.md`) retire tout rendu au serveur.
+> **4 Go conseillés.** Mesuré : toute la pile tient en ~0,8 Go au repos, la
+> construction du site en demande 1 à 1,7 Go, un dépôt de conte ~0,25 Go
+> (`docs/HEBERGEMENT-VPS.md` §1.1). Les 4 Go laissent la marge que réclame
+> une base qui grandit. À 2 Go, le site tourne mais la construction s'appuie
+> sur l'échange et devient lente. Si la mémoire manque, c'est PostgreSQL que
+> le système arrête — une panne qui ne ressemble pas du tout à un manque de
+> mémoire.
 
 ---
 
@@ -532,4 +531,4 @@ docker run --rm -v editionmapoukam_fichiers-storage:/src -v /srv/editionmapoukam
 | Le site répond 200 mais affiche une erreur | une valeur manque dans `.env` ; `docker compose logs app` la nomme |
 | Le dépôt d'un conte échoue sans message clair | `client_max_body_size` absent du bloc Nginx de l'étape 11 |
 | « port is already allocated » | un autre service occupe 3000, 8000 ou 54322 |
-| Le site est lent puis s'arrête | mémoire insuffisante : vérifier les 8 Go et les 4 Go d'échange |
+| Le site est lent puis s'arrête | mémoire insuffisante : vérifier les 4 Go de mémoire et les 4 Go d'échange (`free -h`) |

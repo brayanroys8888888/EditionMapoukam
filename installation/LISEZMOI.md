@@ -9,8 +9,8 @@ HTTPS et compte administrateur. À la fin, il suffit d'ouvrir
 
 ## Ce qu'il faut avant
 
-1. **Un VPS Ubuntu 24.04** (ou 22.04, ou Debian 12). 8 Go de mémoire
-   recommandés, 20 Go de disque libre (le script refuse en dessous de 10). Un accès SSH en `root` ou
+1. **Un VPS Ubuntu 24.04** (ou 22.04, ou Debian 12). 4 Go de mémoire
+   recommandés (2 Go possibles, construction plus lente), 20 Go de disque libre (le script refuse en dessous de 10). Un accès SSH en `root` ou
    avec `sudo`.
 2. **Trois enregistrements DNS de type A**, chez le registrar du domaine, qui
    pointent tous vers l'adresse IP du VPS :

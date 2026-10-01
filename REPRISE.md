@@ -69,9 +69,11 @@ Mesuré le 26 septembre 2026, conte de 25 Mo et 33 pages :
 | serveur `next start` (l'administration locale) | 270 Mo au repos → **432 Mo** pendant le dépôt, + poppler 53 Mo |
 
 Le chiffre de 3 Go venait du serveur de DÉVELOPPEMENT. `docs/HEBERGEMENT-VPS.md`,
-`docs/VPS-A-INSTALLER.md` et `docs/VPS-PAS-A-PAS.md` sont corrigés : 8 Go
-conseillés, 4 Go possibles, d'autant plus si les dépôts se font depuis
-l'administration locale. CLAUDE.md garde « ~3 Go » dans son tableau de pannes :
+`docs/VPS-A-INSTALLER.md` et `docs/VPS-PAS-A-PAS.md` sont corrigés.
+**Mis à jour le 1er octobre 2026** : toute la pile mesurée tient en ~0,8 Go
+au repos, la construction du site prend 1 à 1,7 Go — **4 Go conseillés**,
+2 Go possibles avec l'échange. Détail : `docs/HEBERGEMENT-VPS.md` §1.1.
+`imgproxy` n'est appelé nulle part, mais conservé : ~12 Mo. CLAUDE.md garde « ~3 Go » dans son tableau de pannes :
 il y parle du serveur de développement, non remesuré.
 
 ### Reste à faire
