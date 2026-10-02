@@ -2,6 +2,9 @@
 set -Eeuo pipefail
 
 if [[ $EUID -ne 0 ]]; then
+  if command -v sudo >/dev/null 2>&1; then
+    exec sudo --preserve-env=CODESPACES,CODESPACE_NAME,GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN,GITHUB_TOKEN bash "$0" "$@"
+  fi
   echo "Lancez ce script en root : sudo bash $0" >&2
   exit 1
 fi
@@ -124,9 +127,26 @@ info "domaine : $DOMAINE"
 info "dépôt   : $DEPOT ($BRANCHE)"
 info "dossier : $APP"
 
+CODESPACE=0
+SITE_HOTE="$DOMAINE"
+API_HOTE="$API"
+PORT_SITE_CS=8080
+PORT_API_CS=8000
+if [[ "${CODESPACES:-}" == true && -n "${CODESPACE_NAME:-}" ]]; then
+  CODESPACE=1
+  TRANSFERT="${GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN:-app.github.dev}"
+  PORT_API_CS="$(conf PASSERELLE_PORT 8000)"
+  [[ "$PORT_API_CS" =~ ^[0-9]+$ ]] || PORT_API_CS=8000
+  SITE_HOTE="$CODESPACE_NAME-$PORT_SITE_CS.$TRANSFERT"
+  API_HOTE="$CODESPACE_NAME-$PORT_API_CS.$TRANSFERT"
+  info "mode    : GitHub Codespaces (essai)"
+  info "site    : https://$SITE_HOTE"
+  info "api     : https://$API_HOTE"
+fi
+
 etape "Vérification de la machine"
 command -v apt-get >/dev/null || echec "ce script vise Ubuntu ou Debian : apt-get est introuvable"
-command -v systemctl >/dev/null || echec "systemd est introuvable sur cette machine"
+(( CODESPACE )) || command -v systemctl >/dev/null || echec "systemd est introuvable sur cette machine"
 . /etc/os-release
 info "système : ${PRETTY_NAME:-inconnu}"
 MEMOIRE_MO=$(( $(awk '/MemTotal/ {print $2}' /proc/meminfo) / 1024 ))
@@ -139,6 +159,14 @@ info "disque libre : ${DISQUE_GO} Go"
 etape "Installation des logiciels du système"
 export DEBIAN_FRONTEND=noninteractive NEEDRESTART_MODE=a NEEDRESTART_SUSPEND=1
 apt_() { apt-get -o DPkg::Lock::Timeout=600 -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold -y -q "$@"; }
+if (( CODESPACE )); then
+  apt_ update >/dev/null 2>&1 || alerte "certaines sources apt du codespace ne répondent pas : on continue"
+  reessayer 3 apt_ install ca-certificates curl git nginx openssl jq iproute2
+  docker info >/dev/null 2>&1 || echec "Docker ne répond pas dans ce codespace : créez-le avec l'image par défaut, qui inclut Docker"
+  docker compose version >/dev/null 2>&1 || echec "docker compose est absent de ce codespace"
+  info "$(docker --version)"
+  info "$(docker compose version)"
+else
 reessayer 3 apt_ update
 reessayer 3 apt_ install ca-certificates curl git nginx certbot ufw fail2ban openssl jq iproute2 unattended-upgrades
 
@@ -163,7 +191,12 @@ systemctl enable --now docker
 docker compose version >/dev/null 2>&1 || echec "docker compose est introuvable après installation"
 info "$(docker --version)"
 info "$(docker compose version)"
+fi
 
+if (( CODESPACE )); then
+  etape "Mémoire d'échange et pare-feu"
+  info "sans objet dans un codespace"
+else
 etape "Mémoire d'échange"
 if [[ -z "$(swapon --show --noheadings 2>/dev/null)" ]]; then
   if { fallocate -l 4G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=4096 status=none; } \
@@ -193,10 +226,11 @@ ufw allow 443/tcp >/dev/null
 ufw --force enable >/dev/null
 systemctl enable --now fail2ban >/dev/null 2>&1 || alerte "fail2ban n'a pas démarré : on continue sans"
 info "ouverts : SSH, 80, 443"
+fi
 
 etape "Récupération du code"
 id -u "$UTILISATEUR" >/dev/null 2>&1 || useradd --create-home --shell /bin/bash "$UTILISATEUR"
-usermod -aG docker "$UTILISATEUR"
+if getent group docker >/dev/null; then usermod -aG docker "$UTILISATEUR"; fi
 mkdir -p "$RACINE"
 chown "$UTILISATEUR": "$RACINE"
 en_mapoukam() { runuser -u "$UTILISATEUR" -- env HOME="/home/$UTILISATEUR" "$@"; }
@@ -389,10 +423,10 @@ IMAGE_STORAGE="$(img IMAGE_STORAGE public.ecr.aws/supabase/storage-api:v1.67.26)
 IMAGE_IMGPROXY="$(img IMAGE_IMGPROXY public.ecr.aws/supabase/imgproxy:v3.8.0)"
 
 declare -a LIGNES=(
-  "APP_PUBLIC_URL=https://$DOMAINE"
-  "SUPABASE_PUBLIC_URL=https://$API"
+  "APP_PUBLIC_URL=https://$SITE_HOTE"
+  "SUPABASE_PUBLIC_URL=https://$API_HOTE"
   "SUPABASE_ALIAS_INTERNE=passerelle.interne"
-  "AUTH_REDIRECTIONS_AUTORISEES=https://$DOMAINE/api/auth/google/retour,https://$DOMAINE/api/better-auth/callback/google"
+  "AUTH_REDIRECTIONS_AUTORISEES=https://$SITE_HOTE/api/auth/google/retour,https://$SITE_HOTE/api/better-auth/callback/google"
   "APP_PORT=$(entier APP_PORT 3000)"
   "PASSERELLE_PORT=$(entier PASSERELLE_PORT 8000)"
   "POSTGRES_PORT=$(entier POSTGRES_PORT 54322)"
@@ -466,6 +500,7 @@ chmod 600 "$APP/.env"
 [[ -f "$APP/.env.precedent" ]] && chmod 600 "$APP/.env.precedent"
 info ".env écrit ($(grep -c '^[A-Z_]*=' "$APP/.env") variables)"
 
+https_vps() {
 etape "Nginx et vérification du nom de domaine"
 WEBROOT=/var/www/certbot
 mkdir -p "$WEBROOT/.well-known/acme-challenge"
@@ -621,6 +656,45 @@ EOF
 nginx -t 2>&1 | tail -n 2
 systemctl reload nginx
 info "HTTPS en place"
+}
+
+nginx_codespace() {
+  etape "Nginx devant le site (port $PORT_SITE_CS)"
+  SITE=/etc/nginx/sites-available/editionmapoukam
+  cat > "$SITE" <<EOF
+server {
+    listen $PORT_SITE_CS;
+    server_name _;
+    client_max_body_size 100m;
+    location / {
+        proxy_pass http://127.0.0.1:$(entier APP_PORT 3000);
+        proxy_http_version 1.1;
+        proxy_set_header Host $SITE_HOTE;
+        proxy_set_header X-Forwarded-Host $SITE_HOTE;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_read_timeout 180s;
+        proxy_send_timeout 180s;
+    }
+}
+EOF
+  ln -sf "$SITE" /etc/nginx/sites-enabled/editionmapoukam
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t 2>&1 | tail -n 2
+  if [[ -s /run/nginx.pid ]] && kill -0 "$(cat /run/nginx.pid)" 2>/dev/null; then
+    nginx -s reload
+  else
+    nginx
+  fi
+  info "Nginx écoute sur le port $PORT_SITE_CS"
+}
+
+if (( CODESPACE )); then
+  nginx_codespace
+else
+  https_vps
+fi
 
 etape "Images Docker"
 cd "$APP"
@@ -710,6 +784,16 @@ code_migrations="$(docker inspect -f '{{.State.ExitCode}}' "$(dc ps -aq migratio
 [[ "$code_migrations" == 0 ]] || { dc logs --tail 60 migrations || true; echec "les migrations ont échoué"; }
 info "$(dc logs --no-log-prefix migrations 2>/dev/null | grep -E 'Migrations appliquées' | tail -1)"
 
+if (( CODESPACE )); then
+  etape "Ports publics du codespace"
+  if command -v gh >/dev/null 2>&1 \
+     && reessayer 6 gh codespace ports visibility "$PORT_SITE_CS:public" "$PORT_API_CS:public" -c "$CODESPACE_NAME" >/dev/null 2>&1; then
+    info "ports $PORT_SITE_CS et $PORT_API_CS rendus publics"
+  else
+    alerte "rendez les ports $PORT_SITE_CS et $PORT_API_CS publics à la main : onglet PORTS, clic droit, Port Visibility, Public"
+  fi
+fi
+
 etape "Vérification du site"
 APP_URL_LOCALE="http://127.0.0.1:$(entier APP_PORT 3000)/fr"
 fin=$(( $(date +%s) + 240 ))
@@ -739,12 +823,23 @@ for service in auth rest storage passerelle app; do
   fi
 done
 
-code_api="$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$API/auth/v1/health" || true)"
-[[ "$code_api" == 200 ]] || { dc logs --tail 40 auth || true; echec "https://$API/auth/v1/health répond $code_api au lieu de 200"; }
-code_site="$(curl -s -o /dev/null -w '%{http_code}' -m 30 "https://$DOMAINE/fr" || true)"
-[[ "$code_site" == 200 ]] || echec "https://$DOMAINE/fr répond $code_site au lieu de 200"
-info "https://$DOMAINE répond"
-info "https://$API répond"
+CONSEIL=""
+(( CODESPACE )) && CONSEIL=" (les ports $PORT_SITE_CS et $PORT_API_CS sont-ils publics dans l'onglet PORTS ?)"
+code_api=""
+fin=$(( $(date +%s) + 120 ))
+until [[ "$code_api" == 200 ]]; do
+  code_api="$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://$API_HOTE/auth/v1/health" || true)"
+  [[ "$code_api" == 200 ]] && break
+  if (( $(date +%s) >= fin )); then
+    dc logs --tail 40 auth || true
+    echec "https://$API_HOTE/auth/v1/health répond $code_api au lieu de 200$CONSEIL"
+  fi
+  sleep 5
+done
+code_site="$(curl -s -o /dev/null -w '%{http_code}' -m 30 "https://$SITE_HOTE/fr" || true)"
+[[ "$code_site" == 200 ]] || echec "https://$SITE_HOTE/fr répond $code_site au lieu de 200$CONSEIL"
+info "https://$SITE_HOTE répond"
+info "https://$API_HOTE répond"
 
 ADMIN_EMAIL="$(conf ADMIN_EMAIL "admin@$DOMAINE")"
 ADMIN_AFFICHE=""
@@ -769,13 +864,13 @@ if [[ -n "$ADMIN_EMAIL" ]]; then
 fi
 
 etape "Installation terminée"
-printf '\n    \033[1mOuvrez : https://%s\033[0m\n\n' "$DOMAINE"
+printf '\n    \033[1mOuvrez : https://%s\033[0m\n\n' "$SITE_HOTE"
 for e in "${ETATS[@]}"; do info "$e"; done
-[[ -n "$ADMIN_AFFICHE" ]] && { echo; info "Administration   https://$DOMAINE/fr/admin"; info "Identifiants     $ADMIN_AFFICHE"; }
+[[ -n "$ADMIN_AFFICHE" ]] && { echo; info "Administration   https://$SITE_HOTE/fr/admin"; info "Identifiants     $ADMIN_AFFICHE"; }
 echo
-[[ "$AUTH_GOOGLE" == supabase ]] && info "Chez Google, URI de redirection autorisée : https://$API/auth/v1/callback"
-[[ "$AUTH_GOOGLE" == better-auth ]] && info "Chez Google, URI de redirection autorisée : https://$DOMAINE/api/better-auth/callback/google"
-[[ "$PAYMENT_PROVIDER" == notchpay ]] && info "Chez Notch Pay, URL du webhook : https://$DOMAINE/api/webhooks/payments"
+[[ "$AUTH_GOOGLE" == supabase ]] && info "Chez Google, URI de redirection autorisée : https://$API_HOTE/auth/v1/callback"
+[[ "$AUTH_GOOGLE" == better-auth ]] && info "Chez Google, URI de redirection autorisée : https://$SITE_HOTE/api/better-auth/callback/google"
+[[ "$PAYMENT_PROVIDER" == notchpay ]] && info "Chez Notch Pay, URL du webhook : https://$SITE_HOTE/api/webhooks/payments"
 echo
 info "Journal : $JOURNAL"
 info "Code et configuration : $APP (fichier .env)"

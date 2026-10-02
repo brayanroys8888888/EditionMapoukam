@@ -137,6 +137,42 @@ rappelle les adresses exactes à la fin.
 
 ---
 
+## Faire un essai dans GitHub Codespaces, avant le vrai VPS
+
+Le script reconnaît tout seul qu'il tourne dans un codespace. Il saute alors
+ce qui n'a de sens que sur un serveur : nom de domaine, certificat, pare-feu,
+mémoire d'échange. Il sert le site sur les adresses publiques du codespace,
+qui sont déjà en HTTPS.
+
+1. Sur github.com, dans le dépôt : **Code → Codespaces → Create codespace on
+   main**. La machine par défaut (2 cœurs, 8 Go) suffit. Gardez l'image par
+   défaut : elle contient déjà Docker.
+2. Facultatif : pour tester aussi Notch Pay, Resend et Google, glissez
+   `mapoukam.conf` dans le dossier `installation/` du codespace. Sans lui,
+   l'essai se fait avec les valeurs par défaut.
+3. Dans le terminal du codespace :
+
+   ```bash
+   bash installation/installer.sh
+   ```
+
+À la fin, le script affiche l'adresse du site, de la forme
+`https://<nom-du-codespace>-8080.app.github.dev`.
+
+Le script rend lui-même publics les ports **8080** (le site) et **8000** (la
+base et les fichiers) : le site en a besoin pour joindre sa propre base. S'il
+n'y parvient pas, il le dit : ouvrez l'onglet **PORTS**, faites un clic droit
+sur 8080 puis sur 8000, choisissez **Port Visibility → Public**, et relancez
+le script.
+
+Ce que l'essai ne vérifie pas : le DNS, le certificat Let's Encrypt et le
+pare-feu. Ce sont les seules étapes qui ne tournent que sur le vrai VPS.
+
+Pensez à **arrêter le codespace** après l'essai : le quota gratuit se compte
+en heures d'utilisation.
+
+---
+
 ## Ce que le script ne fait pas
 
 - **Il ne copie pas les données** du Supabase hébergé (comptes, commandes,
