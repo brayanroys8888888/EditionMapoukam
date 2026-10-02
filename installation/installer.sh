@@ -9,6 +9,28 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+importer_variable_codespace() {
+  local ligne="${1//\"/}" nom
+  case "$ligne" in
+    CODESPACES=*|CODESPACE_NAME=*|GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN=*|GITHUB_TOKEN=*)
+      nom="${ligne%%=*}"
+      if [[ -z "${!nom:-}" ]]; then export "$ligne"; fi ;;
+  esac
+}
+retrouver_codespace() {
+  local pid=$PPID ligne
+  while [[ -z "${CODESPACE_NAME:-}" && "$pid" =~ ^[0-9]+$ ]] && (( pid > 1 )); do
+    { while IFS= read -r -d '' ligne; do importer_variable_codespace "$ligne"; done < "/proc/$pid/environ"; } 2>/dev/null || true
+    pid="$(awk '/^PPid:/ {print $2}' "/proc/$pid/status" 2>/dev/null || echo 0)"
+  done
+  if [[ -z "${CODESPACE_NAME:-}" && -r /workspaces/.codespaces/shared/.env ]]; then
+    while IFS= read -r ligne || [[ -n "$ligne" ]]; do importer_variable_codespace "$ligne"; done < /workspaces/.codespaces/shared/.env
+  fi
+  if [[ -n "${CODESPACE_NAME:-}" && -z "${CODESPACES:-}" ]]; then export CODESPACES=true; fi
+  return 0
+}
+retrouver_codespace
+
 JOURNAL=/var/log/mapoukam-installation.log
 touch "$JOURNAL"
 chmod 600 "$JOURNAL"
@@ -196,6 +218,10 @@ fi
 if (( CODESPACE )); then
   etape "Mémoire d'échange et pare-feu"
   info "sans objet dans un codespace"
+  if command -v ufw >/dev/null 2>&1 && [[ "$(ufw status 2>/dev/null || true)" == *"Status: active"* ]]; then
+    ufw --force disable >/dev/null 2>&1 || true
+    info "pare-feu d'un lancement précédent désactivé"
+  fi
 else
 etape "Mémoire d'échange"
 if [[ -z "$(swapon --show --noheadings 2>/dev/null)" ]]; then

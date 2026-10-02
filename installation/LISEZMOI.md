@@ -156,6 +156,10 @@ qui sont déjà en HTTPS.
    bash installation/installer.sh
    ```
 
+   Avec ou sans `sudo`, le résultat est le même : le script passe en root
+   tout seul. Vérifiez qu'il affiche bien `mode : GitHub Codespaces (essai)`
+   dans ses premières lignes.
+
 À la fin, le script affiche l'adresse du site, de la forme
 `https://<nom-du-codespace>-8080.app.github.dev`.
 
