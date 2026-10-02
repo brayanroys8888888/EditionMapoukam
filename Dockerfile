@@ -21,6 +21,10 @@ WORKDIR /app
 # `npm ci` et jamais `npm install` : le verrou fait foi. Et surtout pas
 # `--omit=dev` — TypeScript et consorts sont NÉCESSAIRES au build.
 COPY package.json package-lock.json ./
+# Le `postinstall` de package.json appelle ce script : sans lui, `npm ci`
+# échoue sur « Cannot find module ». Il est copié seul, pour que le cache de
+# cet étage ne saute pas à chaque modification d'un autre fichier de scripts/.
+COPY scripts/copier-wasm.mjs ./scripts/copier-wasm.mjs
 RUN npm ci
 
 
